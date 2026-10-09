@@ -41,7 +41,13 @@ class StaffController extends Controller
             'subcategories' => ['label' => 'Sub Categories', 'actions' => ['view', 'create', 'edit', 'delete']],
             'attributes' => ['label' => 'Attributes', 'actions' => ['view', 'create', 'edit', 'delete']],
             'products' => ['label' => 'Products', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'inventory' => ['label' => 'Inventory', 'actions' => ['view', 'edit']],
+        ],
+        'Inventory' => [
+            'inventory' => ['label' => 'Inventory Management', 'actions' => ['view', 'edit']],
+        ],
+        'Customize' => [
+            'fabric_customizations' => ['label' => 'Fabric Customization Rules', 'actions' => ['view', 'create', 'edit', 'delete']],
+            'custom_orders' => ['label' => 'Customized Orders', 'actions' => ['view', 'edit']],
         ],
         'Reviews' => [
             'reviews' => ['label' => 'Reviews', 'actions' => ['view', 'edit', 'delete']],
@@ -60,6 +66,12 @@ class StaffController extends Controller
         ],
         'Media' => [
             'media_manager' => ['label' => 'Media Manager', 'actions' => ['view', 'create', 'delete']],
+        ],
+        'Support' => [
+            'support' => ['label' => 'Support & Helpdesk', 'actions' => ['view', 'create', 'edit', 'delete']],
+        ],
+        'Settings' => [
+            'settings' => ['label' => 'System & Backup Settings', 'actions' => ['view', 'edit']],
         ]
     ];
 

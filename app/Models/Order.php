@@ -21,7 +21,7 @@ class Order extends Model
                     grand_total, cod_advance_paid, balance_amount
                 )
                 VALUES (
-                    :uid, :onum, :total, :addr, 'placed', 'pending',
+                    :uid, :onum, :total, :addr, 'pending', 'pending',
                     :shipping_fee, :weight_fee, :platform_fee, :packaging_fee, :fee_breakdown,
                     :grand_total, :cod_advance_paid, :balance_amount
                 )
@@ -101,16 +101,18 @@ class Order extends Model
         $params = [];
 
         if ($statusFilter === 'all') {
-            $whereClause = "1=1";
+            $whereClause = "(o.payment_status = 'paid' OR (o.status != 'pending' AND o.order_number NOT LIKE 'PENDING-%'))";
         } elseif ($statusFilter === 'pending') {
-            $whereClause = "o.payment_status != 'paid' AND o.status != 'cancelled'";
+            $whereClause = "((o.payment_status != 'paid' AND o.status != 'cancelled') OR o.status = 'pending' OR o.order_number LIKE 'PENDING-%')";
         } elseif ($statusFilter === 'paid') {
             $whereClause = "o.payment_status = 'paid'";
-        } elseif (in_array($statusFilter, ['placed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'])) {
+        } elseif ($statusFilter === 'placed') {
+            $whereClause = "o.status = 'placed' AND (o.payment_status = 'paid' OR o.order_number NOT LIKE 'PENDING-%')";
+        } elseif (in_array($statusFilter, ['packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'])) {
             $whereClause = "o.status = :status_filter";
             $params['status_filter'] = $statusFilter;
         } else {
-            $whereClause = "1=1";
+            $whereClause = "(o.payment_status = 'paid' OR (o.status != 'pending' AND o.order_number NOT LIKE 'PENDING-%'))";
         }
 
         $sql = "
@@ -259,21 +261,22 @@ class Order extends Model
         ];
 
         $stmt = $this->db->query("
-            SELECT status, payment_status, COUNT(*) as cnt
+            SELECT status, payment_status, order_number
             FROM orders
-            GROUP BY status, payment_status
         ");
         $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         foreach ($rows as $row) {
             $st = $row['status'];
-            $c = (int)$row['cnt'];
-            $counts['all'] += $c;
-            if (isset($counts[$st])) {
-                $counts[$st] += $c;
-            }
-            if ($row['payment_status'] !== 'paid' && $st !== 'cancelled') {
-                $counts['pending'] += $c;
+            $isPending = ($row['payment_status'] !== 'paid' && $st !== 'cancelled') || $st === 'pending' || strpos($row['order_number'], 'PENDING-') === 0;
+
+            if ($isPending) {
+                $counts['pending']++;
+            } else {
+                $counts['all']++;
+                if (isset($counts[$st])) {
+                    $counts[$st]++;
+                }
             }
         }
 
@@ -295,16 +298,18 @@ class Order extends Model
         ];
 
         if ($statusFilter === 'all') {
-            $whereClause = "1=1";
+            $whereClause = "(o.payment_status = 'paid' OR (o.status != 'pending' AND o.order_number NOT LIKE 'PENDING-%'))";
         } elseif ($statusFilter === 'pending') {
-            $whereClause = "o.payment_status != 'paid' AND o.status != 'cancelled'";
+            $whereClause = "((o.payment_status != 'paid' AND o.status != 'cancelled') OR o.status = 'pending' OR o.order_number LIKE 'PENDING-%')";
         } elseif ($statusFilter === 'paid') {
             $whereClause = "o.payment_status = 'paid'";
-        } elseif (in_array($statusFilter, ['placed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'])) {
+        } elseif ($statusFilter === 'placed') {
+            $whereClause = "o.status = 'placed' AND (o.payment_status = 'paid' OR o.order_number NOT LIKE 'PENDING-%')";
+        } elseif (in_array($statusFilter, ['packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'])) {
             $whereClause = "o.status = :status_filter";
             $params['status_filter'] = $statusFilter;
         } else {
-            $whereClause = "1=1";
+            $whereClause = "(o.payment_status = 'paid' OR (o.status != 'pending' AND o.order_number NOT LIKE 'PENDING-%'))";
         }
         
         $sql = "
@@ -365,12 +370,12 @@ class Order extends Model
         ];
 
         $stmt = $this->db->prepare("
-            SELECT o.status, o.payment_status, COUNT(DISTINCT o.id) as cnt
+            SELECT o.status, o.payment_status, o.order_number, COUNT(DISTINCT o.id) as cnt
             FROM orders o
             JOIN order_items oi ON oi.order_id = o.id
             JOIN products p ON oi.product_id = p.id
             WHERE p.vendor_id = :vendor_id
-            GROUP BY o.status, o.payment_status
+            GROUP BY o.id, o.status, o.payment_status, o.order_number
         ");
         $stmt->execute(['vendor_id' => $vendorId]);
         $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
@@ -378,12 +383,15 @@ class Order extends Model
         foreach ($rows as $row) {
             $st = $row['status'];
             $c = (int)$row['cnt'];
-            $counts['all'] += $c;
-            if (isset($counts[$st])) {
-                $counts[$st] += $c;
-            }
-            if ($row['payment_status'] !== 'paid' && $st !== 'cancelled') {
+            $isPending = ($row['payment_status'] !== 'paid' && $st !== 'cancelled') || $st === 'pending' || strpos($row['order_number'], 'PENDING-') === 0;
+
+            if ($isPending) {
                 $counts['pending'] += $c;
+            } else {
+                $counts['all'] += $c;
+                if (isset($counts[$st])) {
+                    $counts[$st] += $c;
+                }
             }
         }
 

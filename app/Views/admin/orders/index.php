@@ -112,33 +112,10 @@
 </div>
 
 <!-- Visible Horizontal & Vertical Scrollbars for Admin Orders Table -->
-<style>
-.admin-table-scroll::-webkit-scrollbar {
-    height: 10px !important;
-    width: 8px !important;
-}
-.admin-table-scroll::-webkit-scrollbar-track {
-    background: #f1f5f9 !important;
-    border-radius: 9999px !important;
-}
-.admin-table-scroll::-webkit-scrollbar-thumb {
-    background: #94a3b8 !important;
-    border-radius: 9999px !important;
-    border: 2px solid #f1f5f9 !important;
-}
-.admin-table-scroll::-webkit-scrollbar-thumb:hover {
-    background: #64748b !important;
-}
-.admin-table-scroll {
-    scrollbar-width: thin !important;
-    scrollbar-color: #94a3b8 #f1f5f9 !important;
-}
-</style>
-
-<!-- Table Container with Fixed Max Height, Sticky Header, and Always-Visible On-Screen Horizontal Scrollbar -->
-<div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 mb-6 overflow-hidden">
-    <div class="overflow-auto admin-table-scroll max-h-[70vh] relative">
-        <table class="w-full text-left border-collapse min-w-[1180px]">
+<!-- Table Container with Clean List Style (No inside vertical scrollbar) -->
+<div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 mb-6">
+    <div class="overflow-x-auto relative rounded-2xl">
+        <table class="w-full text-left border-collapse min-w-[1100px]">
             <thead class="sticky top-0 z-20 bg-gray-50 shadow-2xs">
                 <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
                     <th class="px-5 py-4 border-b border-gray-200">Order ID</th>
@@ -254,40 +231,53 @@
                                 <?php
                                     $refundStatuses = ['refund_pending', 'refund_processing', 'refund_completed', 'refund_failed'];
                                     $isRefundStatus = in_array($order['status'], $refundStatuses);
+                                    
+                                    $nextTransitions = [
+                                        'placed'           => ['packed' => 'Packed'],
+                                        'packed'           => ['shipped' => 'Shipped'],
+                                        'shipped'          => ['out_for_delivery' => 'Out for Delivery'],
+                                        'out_for_delivery' => ['delivered' => 'Delivered']
+                                    ];
+                                    $currentStatus = $order['status'];
+                                    $allowedNext = $nextTransitions[$currentStatus] ?? [];
+
+                                    $statusPillStyles = [
+                                        'placed'           => 'bg-amber-50 hover:bg-amber-100/80 text-amber-900 border-amber-300',
+                                        'packed'           => 'bg-purple-50 hover:bg-purple-100/80 text-purple-900 border-purple-300',
+                                        'shipped'          => 'bg-blue-50 hover:bg-blue-100/80 text-blue-900 border-blue-300',
+                                        'out_for_delivery' => 'bg-indigo-50 hover:bg-indigo-100/80 text-indigo-900 border-indigo-300',
+                                        'delivered'        => 'bg-emerald-50 text-emerald-900 border-emerald-300',
+                                        'cancelled'        => 'bg-rose-50 text-rose-900 border-rose-200'
+                                    ];
+                                    $btnStyle = $statusPillStyles[$currentStatus] ?? 'bg-gray-100 text-gray-800 border-gray-200';
+                                    $label = ucwords(str_replace('_', ' ', $currentStatus));
                                 ?>
-                                <?php if ($this->hasPermission('all_orders', 'edit') && !$isRefundStatus): ?>
+                                <?php if ($this->hasPermission('all_orders', 'edit') && !empty($allowedNext) && !$isRefundStatus): ?>
                                 <div class="flex flex-col items-start space-y-1.5">
-                                    <select class="status-dropdown bg-blue-50 border border-blue-100 text-blue-700 text-sm font-semibold rounded-lg pl-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer" data-id="<?= $order['order_number'] ?>" data-original="<?= htmlspecialchars($order['status']) ?>">
-                                        <?php
-                                            $statuses = [
-                                                'placed'           => 'Placed',
-                                                'packed'           => 'Packed',
-                                                'shipped'          => 'Shipped',
-                                                'out_for_delivery' => 'Out for Delivery',
-                                                'delivered'        => 'Delivered',
-                                                'cancelled'        => 'Cancelled'
-                                            ];
-                                            
-                                            $allowed_next = [
-                                                'placed'           => ['placed', 'packed', 'cancelled'],
-                                                'packed'           => ['packed', 'shipped', 'cancelled'],
-                                                'shipped'          => ['shipped', 'out_for_delivery', 'cancelled'],
-                                                'out_for_delivery' => ['out_for_delivery', 'delivered', 'cancelled'],
-                                                'delivered'        => ['delivered'],
-                                                'cancelled'        => ['cancelled']
-                                            ];
-                                            
-                                            $currentStatus = $order['status'];
-                                            $allowedForCurrent = $allowed_next[$currentStatus] ?? [$currentStatus];
-                                            
-                                            foreach($statuses as $val => $label) {
-                                                $sel = ($currentStatus === $val) ? 'selected' : '';
-                                                $disabled = !in_array($val, $allowedForCurrent) ? 'disabled' : '';
-                                                $optionStyle = $disabled ? 'style="color: #9ca3af; background-color: #f9fafb;"' : 'style="color: #111827; background-color: #ffffff; font-weight: 500;"';
-                                                echo "<option value=\"$val\" $sel $disabled $optionStyle>$label</option>";
-                                            }
-                                        ?>
-                                    </select>
+                                    <div class="relative inline-block text-left status-menu-container">
+                                        <button type="button" 
+                                                onclick="toggleStatusMenu(event, '<?= $order['order_number'] ?>')" 
+                                                class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border shadow-2xs transition-all active:scale-95 cursor-pointer <?= $btnStyle ?>"
+                                                id="status-btn-<?= $order['order_number'] ?>">
+                                            <span><?= $label ?></span>
+                                            <svg class="w-3.5 h-3.5 opacity-70 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        </button>
+                                        <div id="status-menu-<?= $order['order_number'] ?>" 
+                                             class="hidden absolute left-0 top-full mt-1.5 w-48 rounded-2xl bg-white shadow-xl border border-gray-100 p-1.5 z-50 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150">
+                                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-1">Advance Status</div>
+                                            <?php foreach ($allowedNext as $nextVal => $nextLabel): ?>
+                                                <button type="button" 
+                                                        onclick="applyStatusTransition('<?= $order['order_number'] ?>', '<?= $currentStatus ?>', '<?= $nextVal ?>')" 
+                                                        class="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-gray-800 hover:bg-pink-50 hover:text-pink-700 flex items-center justify-between transition-colors group">
+                                                    <span class="flex items-center gap-2">
+                                                        <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                                                        <?= $nextLabel ?>
+                                                    </span>
+                                                    <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-pink-600 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                                </button>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
                                     <?php if (!empty($order['has_modification'])): ?>
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -299,39 +289,21 @@
                                             <?= htmlspecialchars($order['courier_name']) ?>
                                         </span>
                                     <?php endif; ?>
-                                    
-                                    <?php if ($order['status'] === 'cancelled' && !empty($order['cancelled_by_role'])): ?>
-                                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold <?= $order['cancelled_by_role'] === 'buyer' ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-red-50 text-red-700 border border-red-200' ?>">
-                                            <?= $order['cancelled_by_role'] === 'buyer' ? '🙍 Buyer Cancelled' : '🛡 Admin Cancelled' ?>
-                                        </span>
-                                    <?php endif; ?>
                                 </div>
                                 <?php else: ?>
                                 <div class="flex flex-col gap-1">
-                                    <?php
-                                        $statusClass = 'bg-gray-100 text-gray-800';
-                                        if (in_array($order['status'], ['placed', 'packed'])) $statusClass = 'bg-yellow-100 text-yellow-800';
-                                        elseif ($order['status'] === 'shipped') $statusClass = 'bg-blue-100 text-blue-800';
-                                        elseif ($order['status'] === 'delivered') $statusClass = 'bg-green-100 text-green-800';
-                                        elseif ($order['status'] === 'cancelled') $statusClass = 'bg-red-100 text-red-800';
-                                        elseif (in_array($order['status'], ['refund_pending', 'refund_processing'])) $statusClass = 'bg-purple-100 text-purple-800';
-                                        elseif ($order['status'] === 'refund_completed') $statusClass = 'bg-teal-100 text-teal-800';
-                                        elseif ($order['status'] === 'refund_failed') $statusClass = 'bg-red-200 text-red-900';
-                                        
-                                        $formattedStatus = ucwords(str_replace('_', ' ', $order['status']));
-                                    ?>
                                     <div class="flex items-center gap-2">
-                                        <span class="px-2.5 py-1 rounded-full text-xs font-medium <?= $statusClass ?>">
-                                            <?= $formattedStatus ?>
+                                        <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold border shadow-2xs <?= $btnStyle ?>">
+                                            <?php if ($order['status'] === 'delivered'): ?>
+                                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                            <?php elseif ($order['status'] === 'cancelled'): ?>
+                                                <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <?php endif; ?>
+                                            <?= $label ?>
                                         </span>
-                                        <?php if (!empty($order['courier_name'])): ?>
-                                            <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
-                                                <?= htmlspecialchars($order['courier_name']) ?>
-                                            </span>
-                                        <?php endif; ?>
                                     </div>
                                     <?php if ($order['status'] === 'cancelled' && !empty($order['cancelled_by_role'])): ?>
-                                        <span class="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold <?= $order['cancelled_by_role'] === 'buyer' ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-red-50 text-red-700 border border-red-200' ?>">
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold <?= $order['cancelled_by_role'] === 'buyer' ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-red-50 text-red-700 border border-red-200' ?>">
                                             <?= $order['cancelled_by_role'] === 'buyer' ? '🙍 Buyer Cancelled' : '🛡 Admin Cancelled' ?>
                                         </span>
                                     <?php endif; ?>
@@ -485,104 +457,64 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const statusDropdowns = document.querySelectorAll('.status-dropdown');
-    
-    // Style the dropdowns based on their current value (mimicking UI)
-    const updateDropdownStyle = (select) => {
-        if (select.value === 'placed') {
-            select.className = "status-dropdown bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm font-semibold rounded-lg pl-3 pr-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-yellow-500 cursor-pointer";
-        } else if (select.value === 'packed') {
-            select.className = "status-dropdown bg-purple-50 border border-purple-200 text-purple-800 text-sm font-semibold rounded-lg pl-3 pr-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer";
-        } else if (select.value === 'shipped') {
-            select.className = "status-dropdown bg-blue-50 border border-blue-200 text-blue-800 text-sm font-semibold rounded-lg pl-3 pr-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer";
-        } else if (select.value === 'out_for_delivery') {
-            select.className = "status-dropdown bg-indigo-50 border border-indigo-200 text-indigo-800 text-sm font-semibold rounded-lg pl-3 pr-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer";
-        } else if (select.value === 'delivered') {
-            select.className = "status-dropdown bg-green-50 border border-green-200 text-green-800 text-sm font-semibold rounded-lg pl-3 pr-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer";
-        } else if (select.value === 'cancelled') {
-            select.className = "status-dropdown bg-red-50 border border-red-200 text-red-800 text-sm font-semibold rounded-lg pl-3 pr-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer";
-        } else {
-            select.className = "status-dropdown bg-gray-50 border border-gray-200 text-gray-800 text-sm font-semibold rounded-lg pl-3 pr-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer";
+    window.toggleStatusMenu = function(e, orderNumber) {
+        e.stopPropagation();
+        const menu = document.getElementById('status-menu-' + orderNumber);
+        if (!menu) return;
+        const isHidden = menu.classList.contains('hidden');
+        
+        // Close all other menus
+        document.querySelectorAll('[id^="status-menu-"]').forEach(el => el.classList.add('hidden'));
+        
+        if (isHidden) {
+            menu.classList.remove('hidden');
         }
     };
 
-    const updateDropdownOptions = (select, currentStatus) => {
-        const allowedTransitions = {
-            'placed': ['packed', 'cancelled'],
-            'packed': ['shipped', 'cancelled'],
-            'shipped': ['out_for_delivery', 'cancelled'],
-            'out_for_delivery': ['delivered', 'cancelled'],
-            'delivered': [],
-            'cancelled': []
-        };
-        
-        const allowed = allowedTransitions[currentStatus] || [];
-        
-        Array.from(select.options).forEach(opt => {
-            if (opt.value === currentStatus) {
-                opt.disabled = false;
-                opt.hidden = false;
-            } else if (allowed.includes(opt.value)) {
-                opt.disabled = false;
-                opt.hidden = false;
-            } else {
-                opt.disabled = true;
-                opt.hidden = true;
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.status-menu-container')) {
+            document.querySelectorAll('[id^="status-menu-"]').forEach(el => el.classList.add('hidden'));
+        }
+    });
+
+    window.applyStatusTransition = function(orderId, currentStatus, newStatus) {
+        // Close menus
+        document.querySelectorAll('[id^="status-menu-"]').forEach(el => el.classList.add('hidden'));
+
+        if (newStatus === 'packed') {
+            openPackingModal(orderId, null);
+            return;
+        }
+
+        if (newStatus === 'shipped') {
+            openTrackingModal(orderId, null);
+            return;
+        }
+
+        const formatCurrent = currentStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const formatTarget = newStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+        Swal.fire({
+            title: 'Update Order Status?',
+            html: `Are you sure you want to transition Order <b>#${orderId}</b> from <span class="text-gray-600 font-semibold">${formatCurrent}</span> to <span class="text-pink-600 font-bold">${formatTarget}</span>?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#F25996',
+            cancelButtonColor: '#f3f4f6',
+            confirmButtonText: 'Yes, Update Status',
+            cancelButtonText: '<span style="color: #F25996; font-weight: bold;">Cancel</span>',
+            reverseButtons: true,
+            customClass: {
+                popup: 'rounded-2xl shadow-xl border border-gray-100',
+                confirmButton: 'font-bold rounded-full px-6 py-2.5 text-xs tracking-wider uppercase shadow-xs',
+                cancelButton: 'font-bold rounded-full px-6 py-2.5 text-xs tracking-wider uppercase'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                updateStatusAjax(orderId, newStatus, null);
             }
         });
     };
-
-    statusDropdowns.forEach(select => {
-        updateDropdownStyle(select);
-        updateDropdownOptions(select, select.getAttribute('data-original'));
-        
-        select.addEventListener('change', function() {
-            const orderId = this.getAttribute('data-id');
-            const originalStatus = this.getAttribute('data-original');
-            const newStatus = this.value;
-
-            if (newStatus === originalStatus) return;
-
-            const formatCurrent = originalStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-            const formatTarget = newStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
-
-            // If moving to Packed, open packing modal directly
-            if (newStatus === 'packed') {
-                openPackingModal(orderId, select);
-                return;
-            }
-
-            // If moving to Shipped, open tracking modal directly
-            if (newStatus === 'shipped') {
-                openTrackingModal(orderId, select);
-                return;
-            }
-
-            Swal.fire({
-                title: 'Update Order Status?',
-                html: `Are you sure you want to transition Order <b>#${orderId}</b> from <span class="text-gray-600 font-semibold">${formatCurrent}</span> to <span class="text-brand-600 font-bold">${formatTarget}</span>?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#F25996',
-                cancelButtonColor: '#f3f4f6',
-                confirmButtonText: 'Yes, Update Status',
-                cancelButtonText: '<span style="color: #F25996; font-weight: bold;">Cancel</span>',
-                reverseButtons: true,
-                customClass: {
-                    popup: 'rounded-3xl',
-                    confirmButton: 'font-bold rounded-xl px-6 py-3',
-                    cancelButton: 'font-bold rounded-xl px-6 py-3'
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    updateStatusAjax(orderId, newStatus, select);
-                } else {
-                    select.value = originalStatus;
-                    updateDropdownStyle(select);
-                }
-            });
-        });
-    });
 
     let currentTrackingSelect = null;
     let currentTrackingOrderId = null;
@@ -781,21 +713,20 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if(data.success) {
-                selectEl.setAttribute('data-original', status);
-                updateDropdownStyle(selectEl);
-                updateDropdownOptions(selectEl, status);
-                if (status === 'shipped' || status === 'delivered' || status === 'cancelled') {
-                    location.reload();
-                }
+                location.reload();
             } else {
                 alert('Error: ' + data.message);
-                selectEl.value = selectEl.getAttribute('data-original');
+                if (selectEl) {
+                    selectEl.value = selectEl.getAttribute('data-original');
+                }
             }
         })
         .catch(err => {
             console.error(err);
             alert('Failed to update status.');
-            selectEl.value = selectEl.getAttribute('data-original');
+            if (selectEl) {
+                selectEl.value = selectEl.getAttribute('data-original');
+            }
         });
     }
 });
