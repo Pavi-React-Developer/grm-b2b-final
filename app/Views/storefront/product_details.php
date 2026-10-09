@@ -567,32 +567,32 @@ if (!empty($variants)) {
         }
         ?>
         <!-- ===== PRODUCT INFORMATION TABS (Description, How to play, Why Choose, etc.) ===== -->
-        <div class="mt-8 mb-12 bg-[#FAF8F5] rounded-3xl border border-[#EFE9DF] p-6 sm:p-10 shadow-xs">
+        <div class="mt-8 mb-12 bg-white rounded-3xl border border-pink-100/90 p-6 sm:p-10 shadow-sm">
             
             <!-- Tab Navigation Header -->
-            <div class="border-b border-[#E5DFD5] pb-0 mb-8 overflow-x-auto no-scrollbar">
+            <div class="border-b border-pink-100 pb-0 mb-8 overflow-x-auto no-scrollbar">
                 <nav class="flex space-x-6 sm:space-x-10 min-w-max" aria-label="Product Information Tabs">
                     <!-- 1. Description Tab (Default Active) -->
                     <button type="button" 
                             onclick="switchProductInfoTab('tab-description', this)" 
-                            class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-[#1A1A1A] text-[#1A1A1A] font-bold text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
-                        <span class="w-4 h-4 rounded-full border border-current flex items-center justify-center text-[10px] font-serif font-bold italic shrink-0">i</span>
+                            class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-[#F25996] text-[#F25996] font-bold text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                        <span class="w-4 h-4 rounded-full border border-current flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
                         <span>Description</span>
                     </button>
 
                     <!-- 2. How to play / How to use Tab -->
                     <button type="button" 
                             onclick="switchProductInfoTab('tab-how-to-use', this)" 
-                            class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
-                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-gray-700 flex items-center justify-center text-[10px] font-serif font-bold italic shrink-0">i</span>
+                            class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
                         <span><?= htmlspecialchars($howToUseTabTitle) ?></span>
                     </button>
 
                     <!-- 3. Why choose Tab -->
                     <button type="button" 
                             onclick="switchProductInfoTab('tab-why-choose', this)" 
-                            class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
-                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-gray-700 flex items-center justify-center text-[10px] font-serif font-bold italic shrink-0">i</span>
+                            class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
                         <span>Why choose</span>
                     </button>
 
@@ -601,8 +601,8 @@ if (!empty($variants)) {
                         <?php foreach ($filteredCustomTabs as $idx => $tab): ?>
                             <button type="button" 
                                     onclick="switchProductInfoTab('tab-custom-<?= $idx ?>', this)" 
-                                    class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
-                                <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-gray-700 flex items-center justify-center text-[10px] font-serif font-bold italic shrink-0">i</span>
+                                    class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                                <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
                                 <span><?= htmlspecialchars($tab['name']) ?></span>
                             </button>
                         <?php endforeach; ?>
@@ -615,8 +615,9 @@ if (!empty($variants)) {
                 
                 <!-- 1. Description Panel (Default Active) -->
                 <div id="tab-description" class="product-info-panel block transition-opacity duration-300">
-                    <h3 class="text-lg sm:text-xl font-bold font-serif text-[#9C6228] mb-4 tracking-tight">
-                        About <?= htmlspecialchars($product['name']) ?>
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 tracking-tight flex items-center gap-2">
+                        <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                        <span>About <?= htmlspecialchars($product['name']) ?></span>
                     </h3>
                     <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
                         <?php 
@@ -638,8 +639,9 @@ if (!empty($variants)) {
 
                 <!-- 2. How to use / How to play Panel -->
                 <div id="tab-how-to-use" class="product-info-panel hidden transition-opacity duration-300">
-                    <h3 class="text-lg sm:text-xl font-bold font-serif text-[#9C6228] mb-4 tracking-tight">
-                        <?= htmlspecialchars($howToUseTabTitle) ?>
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 tracking-tight flex items-center gap-2">
+                        <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                        <span><?= htmlspecialchars($howToUseTabTitle) ?></span>
                     </h3>
                     <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
                         <?php 
@@ -669,8 +671,9 @@ if (!empty($variants)) {
 
                 <!-- 3. Why choose Panel -->
                 <div id="tab-why-choose" class="product-info-panel hidden transition-opacity duration-300">
-                    <h3 class="text-lg sm:text-xl font-bold font-serif text-[#9C6228] mb-4 tracking-tight">
-                        Why choose
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 tracking-tight flex items-center gap-2">
+                        <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                        <span>Why choose</span>
                     </h3>
                     <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
                         <?php 
@@ -685,9 +688,9 @@ if (!empty($variants)) {
                             }
                         } else {
                             echo '<div class="space-y-3 text-gray-700">';
-                            echo '<div class="flex items-start gap-3"><span class="text-[#9C6228] font-bold text-lg">•</span><p class="leading-relaxed"><strong>Premium Quality Craftsmanship:</strong> Made with top-grade, eco-friendly materials engineered for longevity.</p></div>';
-                            echo '<div class="flex items-start gap-3"><span class="text-[#9C6228] font-bold text-lg">•</span><p class="leading-relaxed"><strong>Safe & Non-Toxic:</strong> Smooth child-safe finish with rounded corners and non-toxic food-grade coating.</p></div>';
-                            echo '<div class="flex items-start gap-3"><span class="text-[#9C6228] font-bold text-lg">•</span><p class="leading-relaxed"><strong>Direct B2B Pricing:</strong> Factory-direct wholesale rates with flexible MOQ and reliable dispatch.</p></div>';
+                            echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Premium Quality Craftsmanship:</strong> Made with top-grade, eco-friendly materials engineered for longevity.</p></div>';
+                            echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Safe & Non-Toxic:</strong> Smooth child-safe finish with rounded corners and non-toxic food-grade coating.</p></div>';
+                            echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Direct B2B Pricing:</strong> Factory-direct wholesale rates with flexible MOQ and reliable dispatch.</p></div>';
                             echo '</div>';
                         }
                         ?>
@@ -698,8 +701,9 @@ if (!empty($variants)) {
                 <?php if (!empty($filteredCustomTabs)): ?>
                     <?php foreach ($filteredCustomTabs as $idx => $tab): ?>
                         <div id="tab-custom-<?= $idx ?>" class="product-info-panel hidden transition-opacity duration-300">
-                            <h3 class="text-lg sm:text-xl font-bold font-serif text-[#9C6228] mb-4 tracking-tight">
-                                <?= htmlspecialchars($tab['name']) ?>
+                            <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-4 tracking-tight flex items-center gap-2">
+                                <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                                <span><?= htmlspecialchars($tab['name']) ?></span>
                             </h3>
                             <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
                                 <?php 
@@ -1944,7 +1948,7 @@ if (!empty($variants)) {
         // Reset all tab buttons
         const tabBtns = document.querySelectorAll('.product-info-tab-btn');
         tabBtns.forEach(tabBtn => {
-            tabBtn.classList.remove('border-[#1A1A1A]', 'text-[#1A1A1A]', 'font-bold');
+            tabBtn.classList.remove('border-[#F25996]', 'text-[#F25996]', 'font-bold');
             tabBtn.classList.add('border-transparent', 'text-gray-500', 'font-medium');
             const icon = tabBtn.querySelector('span:first-child');
             if (icon) {
@@ -1955,7 +1959,7 @@ if (!empty($variants)) {
 
         // Activate clicked tab button
         if (btn) {
-            btn.classList.add('border-[#1A1A1A]', 'text-[#1A1A1A]', 'font-bold');
+            btn.classList.add('border-[#F25996]', 'text-[#F25996]', 'font-bold');
             btn.classList.remove('border-transparent', 'text-gray-500', 'font-medium');
             const activeIcon = btn.querySelector('span:first-child');
             if (activeIcon) {
