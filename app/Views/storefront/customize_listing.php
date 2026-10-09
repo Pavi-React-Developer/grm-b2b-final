@@ -1,4 +1,22 @@
-<div class="bg-gray-50 min-h-screen pt-3 sm:pt-4 pb-12 md:pb-16">
+<div class="bg-gray-50 min-h-screen pb-12 md:pb-16">
+    <!-- ── Breadcrumb Section (Home > Customize) ── -->
+    <div class="bg-white border-b border-gray-200/80 mb-4 sm:mb-6">
+        <div class="w-full max-w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5">
+            <nav class="grm-breadcrumb-nav hide-scrollbar no-scrollbar flex flex-wrap items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium" aria-label="Breadcrumb">
+                <a href="<?= BASE_URL ?>/" class="inline-flex items-center gap-1.5 text-[#F25996] hover:text-[#d8407d] font-semibold transition-colors shrink-0">
+                    <svg class="w-4 h-4 shrink-0 text-[#F25996]" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                    <span>Home</span>
+                </a>
+                <svg class="w-4 h-4 text-[#F25996] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                </svg>
+                <span class="text-[#F25996] font-bold shrink-0">Customize</span>
+            </nav>
+        </div>
+    </div>
+
     <div class="w-full max-w-full mx-auto px-3 sm:px-6 lg:px-8">
         
         <!-- Hero Workshop Banner (Matches Image 2 Style) -->

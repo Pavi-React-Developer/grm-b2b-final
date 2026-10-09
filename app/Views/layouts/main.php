@@ -1133,6 +1133,7 @@ if ($hasDynamicNavbar) {
         }
 
         let cartUpdateTimers = {};
+        let cartDrawerReqSeq = {};
         // Track pending (unsaved) quantities so background syncs don't overwrite faster taps
         let cartPendingQty = {}; // { cartItemId: { qty, moq, maxVal } }
         window.cartDrawerItemsMap = {}; // { [cartItemId]: { price, qty, moq, maxVal } }
@@ -1221,12 +1222,20 @@ if ($hasDynamicNavbar) {
                 clearTimeout(cartUpdateTimers[cartItemId]);
             }
 
-            // Debounce the network request by 200ms so rapid consecutive taps are bundled into one smooth server call
+            // Debounce the network request by 150ms so rapid consecutive taps are bundled into one smooth server call
             cartUpdateTimers[cartItemId] = setTimeout(() => {
                 const sendQty = cartPendingQty[cartItemId] ? cartPendingQty[cartItemId].qty : newQty;
+                const seq = (cartDrawerReqSeq[cartItemId] || 0) + 1;
+                cartDrawerReqSeq[cartItemId] = seq;
+
                 flushCartUpdate(cartItemId, sendQty)
                 .then(res => res.json())
                 .then(data => {
+                    // Stale response check: If user clicked more since this request was sent, discard stale server response
+                    if (seq !== cartDrawerReqSeq[cartItemId]) {
+                        return;
+                    }
+
                     // Only clear pending if user hasn't clicked newer taps while this was in flight
                     if (cartPendingQty[cartItemId] && cartPendingQty[cartItemId].qty === sendQty) {
                         delete cartPendingQty[cartItemId];
@@ -1241,13 +1250,15 @@ if ($hasDynamicNavbar) {
                     }
                 })
                 .catch(err => {
-                    if (cartPendingQty[cartItemId] && cartPendingQty[cartItemId].qty === sendQty) {
-                        delete cartPendingQty[cartItemId];
+                    if (seq === cartDrawerReqSeq[cartItemId]) {
+                        if (cartPendingQty[cartItemId] && cartPendingQty[cartItemId].qty === sendQty) {
+                            delete cartPendingQty[cartItemId];
+                        }
+                        delete cartUpdateTimers[cartItemId];
                     }
-                    delete cartUpdateTimers[cartItemId];
                     console.error('Error updating cart:', err);
                 });
-            }, 200);
+            }, 150);
         }
 
         // Send a cart update to the server (keepalive: request survives page navigation/refresh)
@@ -1276,12 +1287,18 @@ if ($hasDynamicNavbar) {
 
         function removeCartItem(cartItemId, btnElement = null) {
             if (btnElement) {
-                const container = btnElement.closest('.flex.items-start');
+                const container = btnElement.closest('.bg-white') || btnElement.closest('.flex.items-start');
                 if (container) {
                     container.style.opacity = '0.5';
                     container.style.pointerEvents = 'none';
                 }
             }
+            if (cartUpdateTimers[cartItemId]) {
+                clearTimeout(cartUpdateTimers[cartItemId]);
+                delete cartUpdateTimers[cartItemId];
+            }
+            delete cartPendingQty[cartItemId];
+            delete cartDrawerReqSeq[cartItemId];
             if (window.cartDrawerItemsMap) {
                 delete window.cartDrawerItemsMap[cartItemId];
                 calculateDrawerSubtotalInstant();
@@ -1403,7 +1420,7 @@ if ($hasDynamicNavbar) {
         }
 
         function renderCart(data, skipItemsRerender = false) {
-            if (subtotalEl && data.subtotal) subtotalEl.innerText = data.subtotal;
+            const hasPendingClicks = Object.keys(cartPendingQty).length > 0;
             
             // Sync in-memory drawer map
             if (data.items) {
@@ -1426,6 +1443,14 @@ if ($hasDynamicNavbar) {
                     };
                 });
             }
+
+            // If there are pending clicks, calculate instantly rather than taking older server subtotal
+            if (hasPendingClicks) {
+                calculateDrawerSubtotalInstant();
+            } else if (subtotalEl && data.subtotal) {
+                subtotalEl.innerText = data.subtotal;
+            }
+
 
             const cartTitle = document.getElementById('cart-drawer-title');
             if (cartTitle && data.items) {
@@ -1462,12 +1487,6 @@ if ($hasDynamicNavbar) {
                 });
             } else if (itemsContainer) {
                 let html = '';
-                const formatJsPrice = (num) => {
-                    if (num === null || num === undefined) return '';
-                    num = parseFloat(num);
-                    if (isNaN(num)) return '';
-                    return Number.isInteger(num) ? num.toLocaleString('en-IN') : num.toFixed(2).replace(/\.00$/, '');
-                };
 
                 data.items.forEach(item => {
                     let imgSrc = item.primary_image ? item.primary_image : 'https://placehold.co/100x100?text=No+Img';
@@ -1708,7 +1727,6 @@ if ($hasDynamicNavbar) {
                     const rpDisplay = parseFloat(rp.price || 0);
                     const rpBase = parseFloat(rp.base_price || 0);
                     const rpMoq = parseInt(rp.moq) || 1;
-                    const formatJsPrice = (num) => Number.isInteger(num) ? num.toLocaleString() : num.toFixed(2);
                     const rpDisplayStr = formatJsPrice(rpDisplay);
                     const rpBaseStr = formatJsPrice(rpBase);
                     const discPct = (rpBase && rpBase > rpDisplay) ? Math.round(((rpBase - rpDisplay) / rpBase) * 100) : 0;
