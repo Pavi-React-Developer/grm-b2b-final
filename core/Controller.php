@@ -172,16 +172,41 @@ class Controller
                 
                 // Try to find the first module they DO have view access to
                 $fallbackRoutes = [
-                    'products' => '/admin/catalog',
-                    'categories' => '/admin/catalog',
-                    'orders' => '/admin/orders', // Assuming this route exists
-                    'customers' => '/admin/buyers',
-                    'inventory' => '/admin/inventory',
-                    'staff_management' => '/admin/staff'
+                    'dashboard'          => '/admin/dashboard',
+                    'all_orders'         => '/admin/orders',
+                    'pending_payments'   => '/admin/orders/pending',
+                    'bill_modifications' => '/admin/order-modifications',
+                    'products'           => '/admin/catalog/products',
+                    'categories'         => '/admin/catalog/categories',
+                    'subcategories'      => '/admin/catalog/subcategories',
+                    'attributes'         => '/admin/catalog/attributes',
+                    'inventory'          => '/admin/inventory',
+                    'all_buyers'         => '/admin/buyers',
+                    'pending_buyers'     => '/admin/buyers/pending',
+                    'all_cancellations'  => '/admin/cancellations',
+                    'refunds'            => '/admin/cancellations/refunds',
+                    'cancellation_rules' => '/admin/cancellations/rules',
+                    'reviews'            => '/admin/reviews',
+                    'all_vendors'        => '/admin/vendors',
+                    'pending_vendors'    => '/admin/vendors/pending',
+                    'vendor_analytics'   => '/admin/vendors/dashboard',
+                    'payments'           => '/admin/finance/payments',
+                    'withdrawals'        => '/admin/finance/withdrawals',
+                    'commissions'        => '/admin/finance/commissions',
+                    'transactions'       => '/admin/finance/transactions',
+                    'order_rules'        => '/admin/order-rules',
+                    'fee_rules'          => '/admin/fee-rules',
+                    'fabric_customizations' => '/admin/fabric-customizations',
+                    'custom_orders'      => '/admin/customize/orders',
+                    'staff_management'   => '/admin/staff',
+                    'roles'              => '/admin/staff/roles',
+                    'media_manager'      => '/admin/media',
+                    'support'            => '/admin/support',
+                    'settings'           => '/admin/settings'
                 ];
                 
                 foreach ($fallbackRoutes as $mod => $route) {
-                    if ($this->hasPermission($mod, 'view') && $currentUri !== $route) {
+                    if (($this->hasPermission($mod, 'view') || $this->hasAnyPermission($mod)) && $currentUri !== $route) {
                         $this->redirect($route);
                     }
                 }
