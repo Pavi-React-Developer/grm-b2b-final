@@ -463,10 +463,22 @@ function cartPageAddVariant(productId, variantId, quantity, btnEl) {
 }
 
 // ── AJAX Stepper for Cart Page (Ultra Fast & Debounced) ───────────────────
+function formatCartPrice(num) {
+    if (num === null || num === undefined) return '0';
+    num = parseFloat(num);
+    if (isNaN(num)) return '0';
+    return Number.isInteger(num) ? num.toLocaleString('en-IN') : num.toFixed(2).replace(/\.00$/, '');
+}
+
 window.cartPageItemsMap = {
 <?php foreach ($cartItems as $ci): ?>
+    <?php
+        $basePrice = (!empty($ci['base_price']) && (float)$ci['base_price'] > 0) ? (float)$ci['base_price'] : ((!empty($ci['variant_price']) && (float)$ci['variant_price'] > 0) ? (float)$ci['variant_price'] : (float)($ci['wholesale_price'] ?? 0));
+        $discountPrice = (!empty($ci['discount_price']) && (float)$ci['discount_price'] > 0) ? (float)$ci['discount_price'] : ((!empty($ci['variant_discount_price']) && (float)$ci['variant_discount_price'] > 0) ? (float)$ci['variant_discount_price'] : null);
+        $effPrice = (float)($discountPrice ?? $basePrice);
+    ?>
     <?= (int)$ci['cart_item_id'] ?>: {
-        price: <?= (float)(!empty($ci['discount_price']) && (float)$ci['discount_price'] > 0 ? $ci['discount_price'] : ($ci['unit_price'] ?? 0)) ?>,
+        price: <?= $effPrice ?>,
         qty: <?= (int)$ci['quantity'] ?>,
         moq: <?= (int)($ci['moq_override'] ?? (!empty($ci['category_moq']) ? $ci['category_moq'] : 1)) ?>,
         maxStock: <?= (int)($ci['available_stock'] ?? 0) ?>
@@ -474,14 +486,15 @@ window.cartPageItemsMap = {
 <?php endforeach; ?>
 };
 const cartPageUpdateTimers = {};
+const cartPageRequestSeq = {};
 
 function calculateCartPageSubtotalInstant() {
     let sum = 0;
     for (const id in window.cartPageItemsMap) {
         const it = window.cartPageItemsMap[id];
-        sum += (it.price * it.qty);
+        sum += ((parseFloat(it.price) || 0) * (parseInt(it.qty) || 0));
     }
-    const formatted = '₹' + formatJsPrice(sum);
+    const formatted = '₹' + formatCartPrice(sum);
     const subtotalEl = document.getElementById('cart-page-subtotal');
     const totalEl = document.getElementById('cart-page-total');
     const mobileTotalEl = document.getElementById('cart-page-mobile-total');
@@ -491,7 +504,7 @@ function calculateCartPageSubtotalInstant() {
 }
 
 function cartPageUpdateQty(cartItemId, delta, moq, maxStock, btnEl) {
-    const span  = document.getElementById('cart-qty-' + cartItemId);
+    const span = document.getElementById('cart-qty-' + cartItemId);
     const stepper = document.getElementById('cart-stepper-' + cartItemId);
     if (!span) return;
 
@@ -516,7 +529,7 @@ function cartPageUpdateQty(cartItemId, delta, moq, maxStock, btnEl) {
     span.textContent = newQty;
     cartPagePendingQty[cartItemId] = newQty;
 
-    // Update button states immediately
+    // Update stepper button disabled states immediately
     if (stepper) {
         const minusBtn = stepper.querySelector('button:first-child');
         const plusBtn  = stepper.querySelector('button:last-child');
@@ -524,16 +537,19 @@ function cartPageUpdateQty(cartItemId, delta, moq, maxStock, btnEl) {
         if (plusBtn)  plusBtn.disabled  = (maxStock > 0 && newQty >= maxStock);
     }
 
-    // 0ms Instant subtotal calculation on page
+    // 0ms Instant subtotal calculation on page (no waiting for server)
     calculateCartPageSubtotalInstant();
 
     if (cartPageUpdateTimers[cartItemId]) {
         clearTimeout(cartPageUpdateTimers[cartItemId]);
     }
 
-    // Debounce server call by 200ms so rapid clicks are bundled together
+    // Debounce server call by 150ms so rapid clicks are bundled together
     cartPageUpdateTimers[cartItemId] = setTimeout(() => {
         const sendQty = cartPagePendingQty[cartItemId] !== undefined ? cartPagePendingQty[cartItemId] : newQty;
+        const seq = (cartPageRequestSeq[cartItemId] || 0) + 1;
+        cartPageRequestSeq[cartItemId] = seq;
+
         fetch(cartBaseUrl + '/cart/ajax-update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -542,10 +558,16 @@ function cartPageUpdateQty(cartItemId, delta, moq, maxStock, btnEl) {
         })
         .then(r => r.json())
         .then(data => {
+            // If user clicked more since this request was sent, discard stale server response
+            if (seq !== cartPageRequestSeq[cartItemId]) {
+                return;
+            }
+
             if (cartPagePendingQty[cartItemId] === sendQty) {
                 delete cartPagePendingQty[cartItemId];
             }
             delete cartPageUpdateTimers[cartItemId];
+
             if (data.success && data.cart_data) {
                 cartPageUpdateSummary(data.cart_data);
             }
@@ -556,7 +578,7 @@ function cartPageUpdateQty(cartItemId, delta, moq, maxStock, btnEl) {
             }
             delete cartPageUpdateTimers[cartItemId];
         });
-    }, 200);
+    }, 150);
 }
 
 // ── AJAX Remove for Cart Page ────────────────────────────────────────────
@@ -567,6 +589,7 @@ function cartPageRemoveItem(cartItemId, btnEl) {
 
     if (window.cartPageItemsMap) {
         delete window.cartPageItemsMap[cartItemId];
+        delete cartPagePendingQty[cartItemId];
         calculateCartPageSubtotalInstant();
     }
 
@@ -604,6 +627,8 @@ function cartPageUpdateSummary(cartData) {
     const checkoutBtn    = document.getElementById('cart-page-checkout-btn');
     const mobileBtn      = document.getElementById('cart-page-mobile-checkout-btn');
 
+    const hasPendingClicks = Object.keys(cartPagePendingQty).length > 0;
+
     if (cartData.items && window.cartPageItemsMap) {
         cartData.items.forEach(it => {
             if (window.cartPageItemsMap[it.cart_item_id]) {
@@ -614,10 +639,16 @@ function cartPageUpdateSummary(cartData) {
         });
     }
 
-    if (subtotalEl && cartData.subtotal)    subtotalEl.textContent    = cartData.subtotal;
-    if (totalEl && cartData.subtotal)       totalEl.textContent       = cartData.subtotal;
-    if (mobileTotalEl && cartData.subtotal) mobileTotalEl.textContent = cartData.subtotal;
-    if (countEl && cartData.count !== undefined) countEl.textContent  = cartData.count;
+    // If there are pending clicks, calculate instantly rather than taking older server subtotal
+    if (hasPendingClicks) {
+        calculateCartPageSubtotalInstant();
+    } else {
+        if (subtotalEl && cartData.subtotal)    subtotalEl.textContent    = cartData.subtotal;
+        if (totalEl && cartData.subtotal)       totalEl.textContent       = cartData.subtotal;
+        if (mobileTotalEl && cartData.subtotal) mobileTotalEl.textContent = cartData.subtotal;
+    }
+
+    if (countEl && cartData.count !== undefined) countEl.textContent = cartData.count;
 
     const hasErrors = (cartData.moqErrors && cartData.moqErrors.length > 0) || cartData.hasItemErrors || cartData.count === 0;
 
