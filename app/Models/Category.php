@@ -108,6 +108,11 @@ class Category extends Model
         return $stmt->fetch();
     }
 
+    public function getById($id)
+    {
+        return $this->findById($id);
+    }
+
     public function update(int $id, array $data)
     {
         $slug = !empty($data['slug']) ? $data['slug'] : $data['name'];

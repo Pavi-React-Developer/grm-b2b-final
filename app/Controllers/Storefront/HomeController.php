@@ -150,7 +150,7 @@ class HomeController extends Controller
 
         // 1. If product_id is given, resolve product-specific size_chart_id and category/subcategory
         if ($productId > 0) {
-            $productModel = new \App\Models\Product();
+            $productModel = new Product();
             $product = $productModel->findById($productId);
             if ($product) {
                 if (empty($chartId) && !empty($product['size_chart_id'])) {

@@ -271,7 +271,7 @@ class CatalogController extends Controller
             $activeRules = $ruleModel->getActiveRules();
             foreach ($activeRules as $r) {
                 if ($r['category_id'] == $product['category_id']) {
-                    $categoryModel = new \App\Models\Category();
+                    $categoryModel = new Category();
                     $allCats = $categoryModel->getAll();
                     $catsById = [];
                     foreach ($allCats as $ac) {

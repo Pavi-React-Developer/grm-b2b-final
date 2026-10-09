@@ -263,7 +263,7 @@ class DashboardController extends Controller
             $stmt->execute([$orderId]);
             
             // Restore inventory stock
-            $orderModel = new \App\Models\Order();
+            $orderModel = new Order();
             $orderModel->restoreStockForOrderId($orderId);
             
             Session::setFlash('success', 'Order cancelled successfully.');

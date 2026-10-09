@@ -555,7 +555,7 @@ class CheckoutController extends Controller
             $stmt->execute([$razorpayPaymentId, $razorpayOrderId, $finalOrderNumber, $orderNumber]);
             
             // Reduce stock
-            $orderModel = new \App\Models\Order();
+            $orderModel = new Order();
             $orderModel->reduceStockForOrder($finalOrderNumber);
             
             // Clear the cart here upon successful payment
