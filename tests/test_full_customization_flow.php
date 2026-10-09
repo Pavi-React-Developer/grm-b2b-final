@@ -135,10 +135,10 @@ $counts = $orderModel->getCustomOrderStatusCounts();
 assertTest(isset($counts['all']) && isset($counts['placed']), "OrderModel: getCustomOrderStatusCounts returns status tallies");
 
 // 12. Test Razorpay Order Signature Verification
-$razorpayService = new \App\Services\RazorpayService('rzp_test_sample', 'secret123456');
+$razorpayService = new \App\Services\RazorpayService('sample_key_id', 'sample_secret_key');
 $testOrderId = 'order_mock_12345';
 $testPaymentId = 'pay_mock_98765';
-$expectedSig = hash_hmac('sha256', $testOrderId . '|' . $testPaymentId, 'secret123456');
+$expectedSig = hash_hmac('sha256', $testOrderId . '|' . $testPaymentId, 'sample_secret_key');
 $sigVerified = $razorpayService->verifySignature($testOrderId, $testPaymentId, $expectedSig);
 assertTest($sigVerified === true, "RazorpayService: HMAC SHA256 signature verification passes for valid signature");
 

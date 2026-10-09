@@ -294,10 +294,17 @@ class FabricCustomization
                        ) as wholesale_price, 
                        p.stock_quantity, p.category_id, p.sub_category_id 
                 FROM products p 
-                WHERE p.status = 'active'";
+                WHERE p.status = 'active' AND p.is_customizable = 1";
         
+        $params = [];
+        if ($excludeCustomizationId !== null) {
+            $sql .= " AND (p.id NOT IN (SELECT fabric_id FROM fabric_customizations WHERE id != ?) OR p.id = (SELECT fabric_id FROM fabric_customizations WHERE id = ?))";
+            $params[] = (int)$excludeCustomizationId;
+            $params[] = (int)$excludeCustomizationId;
+        }
+
         $stmt = $this->db->prepare($sql);
-        $stmt->execute();
+        $stmt->execute($params);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
