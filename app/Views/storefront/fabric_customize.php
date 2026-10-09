@@ -189,12 +189,8 @@
                                         <!-- Base & Max Info -->
                                         <div class="text-[10.5px] text-gray-500 space-y-0.5 border-t border-gray-100 pt-1.5 mt-1">
                                             <div class="flex items-center justify-between">
-                                                <span>Base:</span>
-                                                <strong class="text-gray-800" id="btn_base_label_<?= htmlspecialchars($sz['size_name']) ?>"><?= $baseQty ?> pcs</strong>
-                                            </div>
-                                            <div class="flex items-center justify-between">
-                                                <span>Max Allowed:</span>
-                                                <strong class="text-[#F25996]" id="btn_max_label_<?= htmlspecialchars($sz['size_name']) ?>"><?= $maxQty ?> pcs</strong>
+                                                <span>Allowed:</span>
+                                                <strong class="text-[#F25996] font-bold" id="btn_range_label_<?= htmlspecialchars($sz['size_name']) ?>"><?= $baseQty ?> – <?= $maxQty ?> pcs</strong>
                                             </div>
                                         </div>
                                     </button>
@@ -238,8 +234,8 @@
                                             <div>
                                                 <div class="font-bold text-sm text-gray-900 flex items-center gap-2">
                                                     <span>Size <?= htmlspecialchars($sz['size_name']) ?></span>
-                                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-50 text-[#F25996] border border-pink-200" id="max_label_<?= htmlspecialchars($sz['size_name']) ?>">
-                                                        Max Allowed: <?= $maxQty ?> pcs
+                                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-50 text-[#F25996] border border-pink-200" id="range_label_<?= htmlspecialchars($sz['size_name']) ?>">
+                                                        Allowed: <?= $baseQty ?> – <?= $maxQty ?> pcs
                                                     </span>
                                                 </div>
                                                 <div class="text-[11px] text-gray-500 mt-0.5">
@@ -248,14 +244,14 @@
                                             </div>
                                         </div>
 
-                                        <!-- Stepper & Subtotal -->
-                                        <div class="flex items-center gap-4">
+                                        <!-- Stepper & Subtotal & Delete Action -->
+                                        <div class="flex items-center gap-3 sm:gap-4">
                                             <div class="inline-flex items-center border-2 border-[#F25996] rounded-full bg-white px-2 py-0.5 shadow-xs">
                                                 <button type="button" onclick="adjustQty('<?= htmlspecialchars($sz['size_name']) ?>', -1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-lg text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
                                                     -
                                                 </button>
                                                 <div class="h-4 w-px bg-pink-200 mx-1"></div>
-                                                <input type="number" id="qty_<?= htmlspecialchars($sz['size_name']) ?>" data-size="<?= htmlspecialchars($sz['size_name']) ?>" data-rate="<?= (float)$sz['fabric_consumption'] ?>" data-price-per-pc="<?= $pricePerPiece ?>" data-base-qty="<?= $baseQty ?>" data-base-max="<?= $maxQty ?>" data-max="<?= $maxQty ?>" value="0" min="0" max="<?= $maxQty ?>" oninput="validateAndRecalc(this)" class="size-qty-input w-12 h-7 sm:h-8 text-center font-black text-sm sm:text-base text-[#F25996] bg-transparent focus:outline-none">
+                                                <input type="number" id="qty_<?= htmlspecialchars($sz['size_name']) ?>" data-size="<?= htmlspecialchars($sz['size_name']) ?>" data-rate="<?= (float)$sz['fabric_consumption'] ?>" data-price-per-pc="<?= $pricePerPiece ?>" data-base-qty="<?= $baseQty ?>" data-base-max="<?= $maxQty ?>" data-min="<?= $baseQty ?>" data-max="<?= $maxQty ?>" value="0" min="<?= $baseQty ?>" max="<?= $maxQty ?>" oninput="validateAndRecalc(this)" class="size-qty-input w-12 h-7 sm:h-8 text-center font-black text-sm sm:text-base text-[#F25996] bg-transparent focus:outline-none">
                                                 <div class="h-4 w-px bg-pink-200 mx-1"></div>
                                                 <button type="button" onclick="adjustQty('<?= htmlspecialchars($sz['size_name']) ?>', 1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-lg text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
                                                     +
@@ -272,6 +268,16 @@
                                                     ₹0.00
                                                 </span>
                                             </div>
+
+                                            <!-- Delete / Remove Size Button -->
+                                            <button type="button" 
+                                                    onclick="removeSizeVariant('<?= htmlspecialchars($sz['size_name']) ?>')" 
+                                                    title="Remove size <?= htmlspecialchars($sz['size_name']) ?>"
+                                                    class="w-8 h-8 rounded-xl bg-gray-50 hover:bg-rose-50 text-gray-400 hover:text-rose-600 flex items-center justify-center transition-all cursor-pointer border border-gray-200 hover:border-rose-200 group/del shrink-0">
+                                                <svg class="w-4 h-4 transition-transform group-hover/del:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
                                         </div>
 
                                     </div>
@@ -368,8 +374,8 @@
                         </div>
 
                         <div class="flex items-center justify-between text-[11px] text-gray-500" id="pieceConstraintText">
-                            <span>Min Required: <?= (int)$customization['minimum_pieces'] ?> Pcs</span>
-                            <span>Max: <?= !empty($customization['maximum_pieces']) ? (int)$customization['maximum_pieces'] . ' Pcs' : 'Unlimited' ?></span>
+                            <span>Min to Enable Payment: <?= (int)$customization['minimum_pieces'] ?> Pcs</span>
+                            <span>Max Allowed: <?= (int)$customization['minimum_pieces'] ?> Pcs</span>
                         </div>
                     </div>
 
@@ -440,7 +446,7 @@
 const FABRIC_ID = <?= (int)$customization['fabric_id'] ?>;
 const CUSTOMIZATION_ID = <?= (int)$customization['id'] ?>;
 const MIN_PIECES = <?= (int)$customization['minimum_pieces'] ?>;
-const MAX_PIECES = <?= !empty($customization['maximum_pieces']) ? (int)$customization['maximum_pieces'] : 'null' ?>;
+const MAX_PIECES = <?= (int)$customization['minimum_pieces'] ?>;
 const FABRIC_STOCK = <?= (float)$customization['fabric_stock'] ?>;
 const UNIT = <?= json_encode($customization['unit'] ?? 'Qty') ?>;
 const BASE_URL = <?= json_encode(BASE_URL) ?>;
@@ -465,6 +471,19 @@ function adjustFabricMultiplier(delta) {
     onFabricMultiplierChange(inp);
 }
 
+function getSizeLimits(sizeName, mult) {
+    if (!mult) mult = getFabricQuantity();
+    const sObj = SIZES_CONFIG.find(s => s.size_name === sizeName);
+    const baseMin = sObj && parseInt(sObj.base_quantity) > 0 ? parseInt(sObj.base_quantity) : 2;
+    const baseMax = sObj && parseInt(sObj.max_quantity) > 0 ? parseInt(sObj.max_quantity) : 35;
+    return {
+        min: baseMin * mult,
+        max: baseMax * mult,
+        baseMin: baseMin,
+        baseMax: baseMax
+    };
+}
+
 function onFabricMultiplierChange(inp) {
     let mult = parseInt(inp.value) || 1;
     if (mult < 1) {
@@ -478,17 +497,31 @@ function onFabricMultiplierChange(inp) {
         badge.textContent = mult === 1 ? '1 Set (1x)' : `${mult} Sets (${mult}x)`;
     }
 
-    // Update button base & max label cards
+    // Update button & row labels and clamp input values
     SIZES_CONFIG.forEach(sz => {
-        const baseQty = parseInt(sz.base_quantity) || 2;
-        const baseMax = parseInt(sz.max_quantity) || 4;
         const sizeName = sz.size_name;
+        const limits = getSizeLimits(sizeName, mult);
 
-        const btnBase = document.getElementById('btn_base_label_' + sizeName);
-        if (btnBase) btnBase.textContent = `${baseQty * mult} pcs`;
+        const btnRange = document.getElementById('btn_range_label_' + sizeName);
+        if (btnRange) btnRange.textContent = `${limits.min} – ${limits.max} pcs`;
 
-        const btnMax = document.getElementById('btn_max_label_' + sizeName);
-        if (btnMax) btnMax.textContent = `${baseMax * mult} pcs`;
+        const rangeBadge = document.getElementById('range_label_' + sizeName);
+        if (rangeBadge) rangeBadge.textContent = `Allowed: ${limits.min} – ${limits.max} pcs`;
+
+        const input = document.getElementById('qty_' + sizeName);
+        if (input) {
+            input.setAttribute('data-min', limits.min);
+            input.setAttribute('data-max', limits.max);
+            input.min = limits.min;
+            input.max = limits.max;
+            if (selectedSizeNames.includes(sizeName)) {
+                let val = parseInt(input.value) || 0;
+                if (val < limits.min) input.value = limits.min;
+                else if (val > limits.max) input.value = limits.max;
+            } else {
+                input.value = 0;
+            }
+        }
     });
 
     // Reapply flow with scaled multiplier
@@ -497,51 +530,79 @@ function onFabricMultiplierChange(inp) {
 
 function toggleSizeVariant(sizeName) {
     const idx = selectedSizeNames.indexOf(sizeName);
+    const mult = getFabricQuantity();
+    const overallMax = MIN_PIECES * mult;
+    const limits = getSizeLimits(sizeName, mult);
+    const input = document.getElementById('qty_' + sizeName);
+
     if (idx >= 0) {
         selectedSizeNames.splice(idx, 1);
+        if (input) input.value = 0;
     } else {
         selectedSizeNames.push(sizeName);
+        if (input) {
+            let otherPieces = getTotalSelectedPieces(sizeName);
+            let remainingOverall = Math.max(0, overallMax - otherPieces);
+            let initialVal = Math.min(limits.min, remainingOverall);
+            input.value = initialVal;
+        }
+    }
+    applyVariantSelectionFlow();
+}
+
+function removeSizeVariant(sizeName) {
+    const idx = selectedSizeNames.indexOf(sizeName);
+    if (idx >= 0) {
+        selectedSizeNames.splice(idx, 1);
+    }
+    const input = document.getElementById('qty_' + sizeName);
+    if (input) {
+        input.value = 0;
     }
     applyVariantSelectionFlow();
 }
 
 function selectAllVariants() {
     selectedSizeNames = SIZES_CONFIG.map(s => s.size_name);
+    const mult = getFabricQuantity();
+    const overallMax = MIN_PIECES * mult;
+    let accumulated = 0;
+
+    SIZES_CONFIG.forEach(sz => {
+        const limits = getSizeLimits(sz.size_name, mult);
+        const input = document.getElementById('qty_' + sz.size_name);
+        if (input) {
+            let remaining = Math.max(0, overallMax - accumulated);
+            let val = Math.min(limits.min, remaining);
+            input.value = val;
+            accumulated += val;
+        }
+    });
     applyVariantSelectionFlow();
 }
 
 function clearAllVariants() {
     selectedSizeNames = [];
+    SIZES_CONFIG.forEach(sz => {
+        const input = document.getElementById('qty_' + sz.size_name);
+        if (input) input.value = 0;
+    });
     applyVariantSelectionFlow();
 }
 
 function applyVariantSelectionFlow() {
     const mult = getFabricQuantity();
-    let targetMaxAllowed = 0;
 
-    if (selectedSizeNames.length === 1) {
-        // CASE 1: Single variant selected (e.g. S only)
-        // That variant's configured max allowed pieces is taken
-        const singleName = selectedSizeNames[0];
-        const sObj = SIZES_CONFIG.find(s => s.size_name === singleName);
-        const configuredMax = sObj && parseInt(sObj.max_quantity) > 0 ? parseInt(sObj.max_quantity) : 4;
-        targetMaxAllowed = configuredMax * mult;
-    } else if (selectedSizeNames.length > 1) {
-        // CASE 2: Multiple variants selected (e.g. S, M, L, XL, XXL)
-        // The LAST selected variant's max allowed qty is applied to all selected variants
-        const lastName = selectedSizeNames[selectedSizeNames.length - 1];
-        const lastObj = SIZES_CONFIG.find(s => s.size_name === lastName);
-        const configuredMax = lastObj && parseInt(lastObj.max_quantity) > 0 ? parseInt(lastObj.max_quantity) : 4;
-        targetMaxAllowed = configuredMax * mult;
-    }
-
-    // Update UI elements for each configured size
+    // Update UI elements for each configured size independently
     SIZES_CONFIG.forEach(sz => {
         const sizeName = sz.size_name;
         const btn = document.getElementById('btn_size_' + sizeName);
         const row = document.getElementById('row_size_' + sizeName);
         const input = document.getElementById('qty_' + sizeName);
+        const rangeBadge = document.getElementById('range_label_' + sizeName);
+        const btnRange = document.getElementById('btn_range_label_' + sizeName);
         const isSelected = selectedSizeNames.includes(sizeName);
+        const limits = getSizeLimits(sizeName, mult);
 
         // Update button visual state
         if (btn) {
@@ -572,20 +633,28 @@ function applyVariantSelectionFlow() {
             }
         }
 
-        // Update input quantity and max limit
+        // Update bounds and values independently for this size
         if (input) {
+            input.setAttribute('data-min', limits.min);
+            input.setAttribute('data-max', limits.max);
+            input.min = limits.min;
+            input.max = limits.max;
+
             if (isSelected) {
-                input.setAttribute('data-max', targetMaxAllowed);
-                input.max = targetMaxAllowed;
-                input.value = targetMaxAllowed;
+                let val = parseInt(input.value) || 0;
+                if (val < limits.min) val = limits.min;
+                if (val > limits.max) val = limits.max;
+                input.value = val;
             } else {
                 input.value = 0;
             }
+        }
 
-            const maxBadge = document.getElementById('max_label_' + sizeName);
-            if (maxBadge) {
-                maxBadge.textContent = `Max: ${targetMaxAllowed} pcs`;
-            }
+        if (rangeBadge) {
+            rangeBadge.textContent = `Allowed: ${limits.min} – ${limits.max} pcs`;
+        }
+        if (btnRange) {
+            btnRange.textContent = `${limits.min} – ${limits.max} pcs`;
         }
     });
 
@@ -602,16 +671,99 @@ function applyVariantSelectionFlow() {
     // Update active notice banner
     const notice = document.getElementById('activeVariantNotice');
     if (notice) {
-        if (selectedSizeNames.length === 1) {
-            notice.textContent = `• Single variant (${selectedSizeNames[0]}) selected taking max allowed (${targetMaxAllowed} pcs)`;
-        } else if (selectedSizeNames.length > 1) {
-            const last = selectedSizeNames[selectedSizeNames.length - 1];
-            notice.textContent = `• Using last variant (${last}) limit: ${targetMaxAllowed} pcs each across all ${selectedSizeNames.length} selected variants`;
+        if (selectedSizeNames.length > 0) {
+            notice.textContent = `• ${selectedSizeNames.length} size(s) selected with independent allowed limits (${mult}x Sets)`;
         } else {
             notice.textContent = '• Please click one or more size buttons above to select variants';
         }
     }
 
+    triggerRecalc();
+}
+
+function getTotalSelectedPieces(excludeSizeName = null) {
+    const inputs = document.querySelectorAll('.size-qty-input');
+    let total = 0;
+    inputs.forEach(input => {
+        const sz = input.getAttribute('data-size');
+        if (sz !== excludeSizeName && selectedSizeNames.includes(sz)) {
+            total += parseInt(input.value) || 0;
+        }
+    });
+    return total;
+}
+
+function adjustQty(sizeName, delta) {
+    const input = document.getElementById('qty_' + sizeName);
+    if (!input) return;
+    const mult = getFabricQuantity();
+    const overallMax = MIN_PIECES * mult;
+    const limits = getSizeLimits(sizeName, mult);
+    const min = limits.min;
+    const sizeMax = limits.max;
+
+    let currentVal = parseInt(input.value) || 0;
+    let otherPieces = getTotalSelectedPieces(sizeName);
+    let remainingOverall = Math.max(0, overallMax - otherPieces);
+    let effectiveMaxForThisSize = Math.min(sizeMax, remainingOverall);
+
+    if (delta > 0) {
+        if (currentVal >= effectiveMaxForThisSize) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Max Limit Reached',
+                    text: currentVal >= sizeMax 
+                        ? `Maximum allowed pieces for size ${sizeName} is ${sizeMax} pcs.`
+                        : `Maximum total pieces allowed for ${mult} Set(s) is ${overallMax} pcs.`,
+                    confirmButtonColor: '#F25996',
+                    timer: 2500
+                });
+            }
+            return;
+        }
+        input.value = Math.min(effectiveMaxForThisSize, currentVal + delta);
+    } else {
+        let val = currentVal + delta;
+        if (val < min) val = min;
+        input.value = val;
+    }
+    triggerRecalc();
+}
+
+function validateAndRecalc(input) {
+    const sizeName = input.getAttribute('data-size');
+    const mult = getFabricQuantity();
+    const overallMax = MIN_PIECES * mult;
+    const limits = getSizeLimits(sizeName, mult);
+    const min = limits.min;
+    const sizeMax = limits.max;
+
+    let val = parseInt(input.value);
+    if (isNaN(val) || val < min) {
+        val = min;
+        input.value = min;
+    }
+
+    let otherPieces = getTotalSelectedPieces(sizeName);
+    let remainingOverall = Math.max(0, overallMax - otherPieces);
+    let effectiveMaxForThisSize = Math.min(sizeMax, remainingOverall);
+
+    if (val > effectiveMaxForThisSize) {
+        val = effectiveMaxForThisSize;
+        input.value = effectiveMaxForThisSize;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Max Limit Reached',
+                text: val >= sizeMax 
+                    ? `Maximum allowed pieces for size ${sizeName} is ${sizeMax} pcs.`
+                    : `Maximum total pieces allowed for ${mult} Set(s) is ${overallMax} pcs.`,
+                confirmButtonColor: '#F25996',
+                timer: 2500
+            });
+        }
+    }
     triggerRecalc();
 }
 
@@ -636,52 +788,6 @@ function onAddressSelectChange(sel) {
             input.focus();
         }
     }
-}
-
-function adjustQty(sizeName, delta) {
-    const input = document.getElementById('qty_' + sizeName);
-    if (!input) return;
-    const max = parseInt(input.getAttribute('data-max')) || 9999;
-    let val = (parseInt(input.value) || 0) + delta;
-    if (val < 0) val = 0;
-    if (val > max) {
-        val = max;
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'info',
-                title: 'Max Limit Reached',
-                text: `Maximum allowed pieces for size ${sizeName} is ${max} pcs.`,
-                confirmButtonColor: '#F25996',
-                timer: 2000
-            });
-        }
-    }
-    input.value = val;
-    triggerRecalc();
-}
-
-function validateAndRecalc(input) {
-    const sizeName = input.getAttribute('data-size');
-    const max = parseInt(input.getAttribute('data-max')) || 9999;
-    let val = parseInt(input.value) || 0;
-    if (val < 0) {
-        val = 0;
-        input.value = 0;
-    }
-    if (val > max) {
-        val = max;
-        input.value = max;
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'info',
-                title: 'Max Limit Reached',
-                text: `Maximum allowed pieces for size ${sizeName} is ${max} pcs.`,
-                confirmButtonColor: '#F25996',
-                timer: 2000
-            });
-        }
-    }
-    triggerRecalc();
 }
 
 function applyPreset(minQty) {
@@ -754,16 +860,17 @@ function triggerRecalc() {
 
 function renderCalculation(c, p) {
     const effectiveMin = c.minimum_pieces || (MIN_PIECES * getFabricQuantity());
+    const effectiveMax = c.maximum_pieces || effectiveMin;
     const totalPieces = c.total_pieces || 0;
 
     // Piece Tracker Text & Progress
-    document.getElementById('summaryTotalPieces').textContent = `${totalPieces} / ${effectiveMin} Pcs`;
+    document.getElementById('summaryTotalPieces').textContent = `${totalPieces} / ${effectiveMax} Pcs`;
     
     const constraintText = document.getElementById('pieceConstraintText');
     if (constraintText) {
         constraintText.innerHTML = `
             <span>Min to Enable Payment: <strong class="text-gray-900">${effectiveMin} Pcs</strong></span>
-            <span>Max: ${c.maximum_pieces ? c.maximum_pieces + ' Pcs' : 'Unlimited'}</span>
+            <span>Max Allowed: <strong class="text-gray-900">${effectiveMax} Pcs</strong></span>
         `;
     }
 
@@ -782,7 +889,7 @@ function renderCalculation(c, p) {
 
     // Progress bar for minimum pieces
     const bar = document.getElementById('pieceProgressBar');
-    const pct = effectiveMin > 0 ? Math.min(100, Math.round((totalPieces / effectiveMin) * 100)) : 100;
+    const pct = effectiveMax > 0 ? Math.min(100, Math.round((totalPieces / effectiveMax) * 100)) : 100;
     bar.style.width = pct + '%';
 
     if (isOverStock) {
@@ -804,6 +911,31 @@ function renderCalculation(c, p) {
         errorBox.classList.remove('hidden');
 
         // Disable Action Button
+        btnPay.disabled = true;
+        btnPay.classList.add('opacity-40', 'cursor-not-allowed');
+        btnPay.classList.remove('hover:opacity-95', 'cursor-pointer');
+
+    } else if (totalPieces > effectiveMax) {
+        // Exceeds Maximum allowed pieces for chosen sets
+        const excess = totalPieces - effectiveMax;
+        bar.className = 'h-full bg-rose-600 transition-all duration-300';
+        reqFabricContainer.className = 'flex items-center justify-between font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-rose-900';
+        statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shrink-0 whitespace-nowrap';
+        statusBadge.textContent = `❌ Exceeds Max (${totalPieces}/${effectiveMax} Pcs)`;
+
+        errorBox.innerHTML = `
+            <div class="flex items-start gap-2.5">
+                <span class="text-base">⚠️</span>
+                <div>
+                    <strong class="font-bold block mb-0.5 text-rose-900">Maximum ${effectiveMax} Pieces Allowed</strong>
+                    <span class="text-rose-800 text-xs leading-relaxed">
+                        You currently have <strong>${totalPieces} pcs</strong> selected (${excess} pcs in excess). Maximum allowed is <strong>${effectiveMax} pcs</strong> for ${getFabricQuantity()} Set(s). Please reduce variant quantities to enable payment.
+                    </span>
+                </div>
+            </div>
+        `;
+        errorBox.classList.remove('hidden');
+
         btnPay.disabled = true;
         btnPay.classList.add('opacity-40', 'cursor-not-allowed');
         btnPay.classList.remove('hover:opacity-95', 'cursor-pointer');
@@ -833,7 +965,7 @@ function renderCalculation(c, p) {
         btnPay.classList.add('opacity-40', 'cursor-not-allowed');
         btnPay.classList.remove('hover:opacity-95', 'cursor-pointer');
 
-    } else if (c.is_valid && totalPieces >= effectiveMin) {
+    } else if (c.is_valid && totalPieces >= effectiveMin && totalPieces <= effectiveMax) {
         // Valid & Ready
         bar.className = 'h-full bg-emerald-500 transition-all duration-300';
         reqFabricContainer.className = 'flex items-center justify-between font-bold bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-emerald-950';
