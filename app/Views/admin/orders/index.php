@@ -1,0 +1,840 @@
+<?php
+/**
+ * @var string $title
+ * @var array $orders
+ * @var bool $isPendingView
+ */
+?>
+
+<div class="w-full">
+    <!-- Header Section -->
+    <div class="mb-8 relative z-10">
+        <!-- Breadcrumbs -->
+        <div class="text-sm font-medium text-gray-400 mb-2 font-serif tracking-wide">
+            Dashboard <span class="mx-1 text-gray-300">›</span> Order Management <span class="mx-1 text-gray-300">›</span> <span class="text-brand-700">Orders</span>
+        </div>
+        
+        <div class="flex justify-between items-center mb-8 w-full">
+            <h2 class="text-5xl font-display font-extrabold text-gray-900 tracking-tight">Orders Management</h2>
+            
+            <div class="flex items-center space-x-3 ml-auto">
+                <button onclick="location.reload()" class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold uppercase tracking-wider px-5 py-2.5 rounded-full flex items-center gap-2 shadow-xs transition active:scale-95 group">
+                    <svg class="w-3.5 h-3.5 text-slate-500 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>REFRESH</span>
+                </button>
+                <form action="<?= BASE_URL ?>/admin/orders/export" method="GET" class="bg-white border border-slate-200 rounded-full flex items-center p-1 pl-4 shadow-xs gap-3">
+                    <div class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                        <input type="date" name="start_date" value="<?= date('Y-m-01') ?>" required title="Start Date" class="border-none bg-transparent text-xs text-gray-700 focus:ring-0 p-0 cursor-pointer font-mono font-medium outline-none">
+                        <span class="text-slate-300 font-normal">-</span>
+                        <input type="date" name="end_date" value="<?= date('Y-m-t') ?>" required title="End Date" class="border-none bg-transparent text-xs text-gray-700 focus:ring-0 p-0 cursor-pointer font-mono font-medium outline-none">
+                    </div>
+                    <button type="submit" class="bg-[#F25996] hover:bg-[#d94480] text-white text-xs font-bold uppercase tracking-wider px-5 py-2 rounded-full flex items-center gap-1.5 shadow-xs transition active:scale-95 cursor-pointer">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span>EXPORT</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Search Bar with Actions -->
+        <div class="bg-white rounded-full shadow-sm border border-gray-100 p-1.5 flex items-center">
+            <div class="flex-grow flex items-center pl-5">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <input type="text" id="searchInput" oninput="filterOrders()" placeholder="Search by Order ID, Name..." class="w-full pl-3 pr-4 py-2.5 bg-transparent border-none focus:ring-0 text-gray-700 placeholder-gray-400 outline-none font-medium">
+            </div>
+            
+            <div class="flex items-center space-x-2 pr-2 border-l border-gray-200 pl-4 py-1">
+                <a href="<?= BASE_URL ?>/admin/orders/print" target="_blank" class="bg-[#fdf2f7] text-[#F25996] hover:bg-[#fce7f1] px-5 py-2.5 rounded-full font-bold text-sm transition-all flex items-center tracking-widest border border-[#FDBFDD]">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    Packing Slip
+                </a>
+                <a href="<?= BASE_URL ?>/admin/orders/print" target="_blank" class="bg-[#F25996] text-white hover:bg-[#e04481] px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all flex items-center tracking-widest">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Print
+                </a>
+            </div>
+        </div>
+    </div>
+    
+<?php if (!$isPendingView): ?>
+<!-- Charts Section -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+    <!-- Top Selling Products Chart -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <h3 class="text-xl font-bold text-gray-900">Top Selling Products</h3>
+        <p class="text-sm text-gray-500 mb-6">Based on successful orders</p>
+        <div class="relative h-64 w-full">
+            <canvas id="topProductsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Orders by Status Chart -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-start mb-6">
+            <div>
+                <h3 class="text-xl font-bold text-gray-900">Orders by Status</h3>
+                <p class="text-sm text-gray-500">Distribution of order statuses</p>
+            </div>
+        </div>
+        <div class="relative h-64 w-full flex justify-center">
+            <canvas id="statusChart"></canvas>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Status Filter Tabs -->
+<?php
+    $curStatus = $currentStatus ?? ($_GET['status'] ?? 'all');
+    $tabs = [
+        'all' => ['label' => 'All Orders', 'icon' => '🌐', 'count' => $statusCounts['all'] ?? count($orders)],
+        'placed' => ['label' => 'Placed / New', 'icon' => '⏳', 'count' => $statusCounts['placed'] ?? 0],
+        'packed' => ['label' => 'Packed', 'icon' => '📦', 'count' => $statusCounts['packed'] ?? 0],
+        'shipped' => ['label' => 'Shipped', 'icon' => '🚚', 'count' => $statusCounts['shipped'] ?? 0],
+        'delivered' => ['label' => 'Delivered', 'icon' => '✅', 'count' => $statusCounts['delivered'] ?? 0],
+        'pending' => ['label' => 'Pending Payment', 'icon' => '💳', 'count' => $statusCounts['pending'] ?? 0],
+        'cancelled' => ['label' => 'Cancelled', 'icon' => '❌', 'count' => $statusCounts['cancelled'] ?? 0],
+    ];
+?>
+<div class="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-thin">
+    <?php foreach ($tabs as $key => $tab): 
+        $isActive = ($curStatus === $key);
+    ?>
+        <a href="<?= BASE_URL ?>/admin/orders?status=<?= $key ?>" 
+           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold transition-all whitespace-nowrap border <?= $isActive ? 'bg-[#F25996] text-white border-[#F25996] shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-50 border-gray-200 shadow-xs' ?>">
+            <span><?= $tab['icon'] ?></span>
+            <span><?= $tab['label'] ?></span>
+            <span class="px-2 py-0.5 rounded-full text-[10.5px] font-black <?= $isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700' ?>">
+                <?= (int)$tab['count'] ?>
+            </span>
+        </a>
+    <?php endforeach; ?>
+</div>
+
+<!-- Visible Horizontal & Vertical Scrollbars for Admin Orders Table -->
+<!-- Table Container with Clean List Style (No inside vertical scrollbar) -->
+<div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 mb-6">
+    <div class="overflow-x-auto relative rounded-2xl">
+        <table class="w-full text-left border-collapse min-w-[1100px]">
+            <thead class="sticky top-0 z-20 bg-gray-50 shadow-2xs">
+                <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
+                    <th class="px-5 py-4 border-b border-gray-200">Order ID</th>
+                    <th class="px-5 py-4 border-b border-gray-200">Customer</th>
+                    <th class="px-5 py-4 border-b border-gray-200">Date</th>
+                    <th class="px-5 py-4 border-b border-gray-200"><?= !empty($isVendor) ? 'Your Subtotal' : 'Total' ?></th>
+                    <th class="px-5 py-4 border-b border-gray-200">Payment</th>
+                    <th class="px-5 py-4 border-b border-gray-200">Status</th>
+                    <th class="px-5 py-4 border-b border-gray-200 text-right min-w-[140px]">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                <?php if(empty($orders)): ?>
+                    <tr>
+                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                            No orders found.
+                        </td>
+                    </tr>
+                <?php else: ?>
+                    <?php foreach($orders as $order): 
+                        // Customer Initial
+                        $initial = strtoupper(substr($order['user_name'], 0, 1));
+                        
+                        // Pick pink palette colors to match brand theme
+                        $colors = [
+                            'bg-[#fdf2f7] text-[#F25996] border border-[#fbaed2]',
+                            'bg-pink-100 text-[#e04481] border border-pink-200',
+                            'bg-rose-100 text-[#F25996] border border-rose-200',
+                            'bg-pink-50 text-[#c72e6b] border border-pink-200',
+                            'bg-fuchsia-50 text-[#F25996] border border-fuchsia-200'
+                        ];
+                        $colorIndex = ord($initial) % count($colors);
+                        $avatarClass = $colors[$colorIndex];
+                    ?>
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-4">
+                            <span class="font-bold text-gray-900 block"><?= htmlspecialchars($order['order_number']) ?></span>
+                            <?php if (!empty($order['has_modification'])): ?>
+                                <span class="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200" title="This order has been modified by an admin.">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                    Modified
+                                </span>
+                                <form method="POST" action="<?= BASE_URL ?>/admin/orders/delete-modification" class="inline" onsubmit="return confirm('Clear the Modified badge for <?= htmlspecialchars($order['order_number']) ?>? This only removes the badge — it does not undo any actual order changes.')">
+                                    <input type="hidden" name="order_number" value="<?= htmlspecialchars($order['order_number']) ?>">
+                                    <button type="submit" class="inline-flex items-center gap-0.5 mt-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-500 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors" title="Clear this Modified badge">
+                                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        Clear
+                                    </button>
+                                </form>
+                            <?php endif; ?>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-3">
+                                <div class="relative">
+                                    <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold <?= $avatarClass ?>">
+                                        <?= $initial ?>
+                                    </div>
+                                    <?php if($order['repeat_count'] > 0): ?>
+                                    <div class="absolute -top-1 -right-1 bg-yellow-400 text-yellow-900 text-[10px] font-bold px-1.5 py-0.5 rounded-full border border-white">
+                                        <?= $order['repeat_count'] ?>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                <div>
+                                    <div class="font-semibold text-gray-800 flex items-center space-x-2">
+                                        <span><?= htmlspecialchars($order['user_name']) ?></span>
+                                        <?php if($order['repeat_count'] > 0): ?>
+                                            <span class="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm leading-none">Repeat</span>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="text-xs text-gray-400"><?= htmlspecialchars($order['user_email']) ?></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 font-medium">
+                            <?= date('n/j/Y', strtotime($order['created_at'])) ?>
+                        </td>
+                        <td class="px-6 py-4">
+                            <?php 
+                            if (!empty($isVendor) && isset($order['vendor_subtotal'])) {
+                                $displayTotal = (float)$order['vendor_subtotal'];
+                            } else {
+                                $displayTotal = ($order['grand_total'] ?? 0) > 0 ? $order['grand_total'] : $order['total_amount'];
+                            }
+                            ?>
+                            <span class="font-bold text-gray-900">₹<?= number_format($displayTotal, 2) ?></span>
+                            <?php if (!empty($isVendor) && isset($order['vendor_item_qty'])): ?>
+                                <span class="block text-[11px] text-gray-400"><?= (int)$order['vendor_item_qty'] ?> pcs (Your items)</span>
+                            <?php elseif (!empty($order['vendor_names'])): ?>
+                                <span class="inline-flex items-center gap-1 text-[10px] font-semibold bg-indigo-50 text-indigo-700 px-1.5 py-0.2 rounded border border-indigo-100 mt-0.5 block truncate max-w-[150px]" title="Vendor: <?= htmlspecialchars($order['vendor_names']) ?>">
+                                    <svg class="w-2.5 h-2.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                    <?= htmlspecialchars($order['vendor_names']) ?>
+                                </span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="flex items-center space-x-2">
+                                <!-- <span class="font-semibold text-gray-800">Cashfree</span> -->
+                                <span class="font-semibold text-gray-800">Razorpay</span>
+                                <?php if($order['payment_status'] === 'paid'): ?>
+                                    <span class="bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Paid</span>
+                                <?php else: ?>
+                                    <span class="bg-orange-100 text-orange-700 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase">Pending</span>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4">
+                            <?php if ($isPendingView): ?>
+                                <span class="bg-orange-50 text-orange-700 text-xs font-semibold px-3 py-1.5 rounded-lg border border-orange-200">
+                                    Pending
+                                </span>
+                            <?php else: ?>
+                                <?php
+                                    $refundStatuses = ['refund_pending', 'refund_processing', 'refund_completed', 'refund_failed'];
+                                    $isRefundStatus = in_array($order['status'], $refundStatuses);
+                                    
+                                    $nextTransitions = [
+                                        'placed'           => ['packed' => 'Packed'],
+                                        'packed'           => ['shipped' => 'Shipped'],
+                                        'shipped'          => ['out_for_delivery' => 'Out for Delivery'],
+                                        'out_for_delivery' => ['delivered' => 'Delivered']
+                                    ];
+                                    $currentStatus = $order['status'];
+                                    $allowedNext = $nextTransitions[$currentStatus] ?? [];
+
+                                    $statusPillStyles = [
+                                        'placed'           => 'bg-amber-50 hover:bg-amber-100/80 text-amber-900 border-amber-300',
+                                        'packed'           => 'bg-purple-50 hover:bg-purple-100/80 text-purple-900 border-purple-300',
+                                        'shipped'          => 'bg-blue-50 hover:bg-blue-100/80 text-blue-900 border-blue-300',
+                                        'out_for_delivery' => 'bg-indigo-50 hover:bg-indigo-100/80 text-indigo-900 border-indigo-300',
+                                        'delivered'        => 'bg-emerald-50 text-emerald-900 border-emerald-300',
+                                        'cancelled'        => 'bg-rose-50 text-rose-900 border-rose-200'
+                                    ];
+                                    $btnStyle = $statusPillStyles[$currentStatus] ?? 'bg-gray-100 text-gray-800 border-gray-200';
+                                    $label = ucwords(str_replace('_', ' ', $currentStatus));
+                                ?>
+                                <?php if ($this->hasPermission('all_orders', 'edit') && !empty($allowedNext) && !$isRefundStatus): ?>
+                                <div class="flex flex-col items-start space-y-1.5">
+                                    <div class="relative inline-block text-left status-menu-container">
+                                        <button type="button" 
+                                                onclick="toggleStatusMenu(event, '<?= $order['order_number'] ?>')" 
+                                                class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border shadow-2xs transition-all active:scale-95 cursor-pointer <?= $btnStyle ?>"
+                                                id="status-btn-<?= $order['order_number'] ?>">
+                                            <span><?= $label ?></span>
+                                            <svg class="w-3.5 h-3.5 opacity-70 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                        </button>
+                                        <div id="status-menu-<?= $order['order_number'] ?>" 
+                                             class="hidden absolute left-0 top-full mt-1.5 w-48 rounded-2xl bg-white shadow-xl border border-gray-100 p-1.5 z-50 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150">
+                                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-1">Advance Status</div>
+                                            <?php foreach ($allowedNext as $nextVal => $nextLabel): ?>
+                                                <button type="button" 
+                                                        onclick="applyStatusTransition('<?= $order['order_number'] ?>', '<?= $currentStatus ?>', '<?= $nextVal ?>')" 
+                                                        class="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-gray-800 hover:bg-pink-50 hover:text-pink-700 flex items-center justify-between transition-colors group">
+                                                    <span class="flex items-center gap-2">
+                                                        <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                                                        <?= $nextLabel ?>
+                                                    </span>
+                                                    <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-pink-600 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                                </button>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                    <?php if (!empty($order['has_modification'])): ?>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                            Bill Modified
+                                        </span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($order['courier_name'])): ?>
+                                        <span class="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
+                                            <?= htmlspecialchars($order['courier_name']) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                <?php else: ?>
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold border shadow-2xs <?= $btnStyle ?>">
+                                            <?php if ($order['status'] === 'delivered'): ?>
+                                                <svg class="w-3.5 h-3.5 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                            <?php elseif ($order['status'] === 'cancelled'): ?>
+                                                <svg class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                                            <?php endif; ?>
+                                            <?= $label ?>
+                                        </span>
+                                    </div>
+                                    <?php if ($order['status'] === 'cancelled' && !empty($order['cancelled_by_role'])): ?>
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold <?= $order['cancelled_by_role'] === 'buyer' ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-red-50 text-red-700 border border-red-200' ?>">
+                                            <?= $order['cancelled_by_role'] === 'buyer' ? '🙍 Buyer Cancelled' : '🛡 Admin Cancelled' ?>
+                                        </span>
+                                    <?php endif; ?>
+                                </div>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex justify-end space-x-3">
+                                <a href="<?= BASE_URL ?>/admin/orders/invoice?order=<?= $order['order_number'] ?>" target="_blank" class="text-slate-600 hover:text-slate-900 transition-colors" title="Download Invoice PDF">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                </a>
+                                <?php if ($this->hasPermission('all_orders', 'edit') && in_array($order['status'], ['placed', 'packed'])): ?>
+                                <button type="button" onclick="openPackingModal('<?= $order['order_number'] ?>', document.querySelector('select[data-id=\'<?= $order['order_number'] ?>\']'))" class="text-purple-600 hover:text-purple-800 transition-colors" title="<?= $order['status'] === 'packed' ? 'Update Packing Videos & Email Invoice' : 'Pack Order & Upload Videos' ?>">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                </button>
+                                <?php endif; ?>
+                                <?php if ($this->hasPermission('all_orders', 'edit') && empty($isVendor)): ?>
+                                <a href="<?= BASE_URL ?>/admin/order-modifications/create?order=<?= $order['order_number'] ?>" class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit / Modify Order">
+                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                </a>
+                                <?php endif; ?>
+                                <a href="<?= BASE_URL ?>/admin/orders/view?id=<?= $order['order_number'] ?>" class="text-[#F25996] hover:text-[#e04481] transition-colors p-1" title="View Order">
+                                    <svg class="w-5 h-5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Packing Videos Modal -->
+<div id="packingModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity backdrop-blur-sm" onclick="closePackingModal()"></div>
+    
+    <!-- Modal Content -->
+    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 transform transition-all max-h-[92vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                </div>
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Upload Order Packing Videos</h3>
+                    <p class="text-xs text-gray-500">Order: <span id="packOrderNumberBadge" class="font-mono font-bold text-purple-700"></span></p>
+                </div>
+            </div>
+            <button type="button" onclick="closePackingModal()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="bg-purple-50 border border-purple-200 rounded-xl p-3.5 mb-4 text-xs text-purple-900 flex items-start gap-2.5">
+            <svg class="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div>
+                <strong>Automated Invoice & Video Workflow:</strong>
+                <p class="text-[11.5px] text-purple-800 mt-0.5">Uploading packing videos marks this order as <strong>Packed</strong>, attaches the generated <strong>Tax Invoice PDF</strong>, and emails it directly to the customer. Packing videos remain available to the customer for <strong>30 days after delivery</strong>.</p>
+            </div>
+        </div>
+        
+        <form id="packingForm" onsubmit="submitPackingDetails(event)" enctype="multipart/form-data">
+            <input type="hidden" id="packOrderId" name="order_id">
+            
+            <!-- Video 1 -->
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                    Packing Video 1 <span class="normal-case font-normal text-gray-500">(Item Verification &amp; Box Packing - Max 3MB)</span>
+                </label>
+                <div class="border-2 border-dashed border-gray-300 rounded-xl p-3 hover:border-purple-500 transition-colors bg-gray-50">
+                    <input type="file" id="packingVideo1" name="packing_video_1" accept="video/*,.mp4,.webm,.mov" onchange="validateVideoSize(this, 'Packing Video 1')" class="w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer">
+                    <p class="text-[11px] text-gray-400 mt-1">MP4, WebM, MOV (Max 3MB limit)</p>
+                </div>
+            </div>
+            
+            <!-- Video 2 -->
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">
+                    Packing Video 2 <span class="normal-case font-normal text-gray-500">(Box Sealing &amp; Label Verification - Max 3MB)</span>
+                </label>
+                <div class="border-2 border-dashed border-gray-300 rounded-xl p-3 hover:border-purple-500 transition-colors bg-gray-50">
+                    <input type="file" id="packingVideo2" name="packing_video_2" accept="video/*,.mp4,.webm,.mov" onchange="validateVideoSize(this, 'Packing Video 2')" class="w-full text-xs text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-100 file:text-purple-700 hover:file:bg-purple-200 cursor-pointer">
+                    <p class="text-[11px] text-gray-400 mt-1">MP4, WebM, MOV (Max 3MB limit)</p>
+                </div>
+            </div>
+            
+            <div id="packingUploadStatus" class="hidden mb-4 p-3 bg-purple-100 border border-purple-300 rounded-xl text-center text-xs font-semibold text-purple-900">
+                <div class="inline-block animate-spin rounded-full h-4 w-4 border-2 border-purple-700 border-t-transparent mr-2 align-middle"></div>
+                Uploading packing videos &amp; emailing dynamic Tax Invoice PDF...
+            </div>
+
+            <div class="flex space-x-4" style="display: flex; gap: 1rem; width: 100%;">
+                <button type="button" onclick="closePackingModal()" id="packingCancelBtn" class="font-bold transition-colors" style="flex: 1; padding: 0.625rem 0; background-color: #f3f4f6; color: #111827; border-radius: 9999px; text-align: center; border: 1px solid #e5e7eb;">Cancel</button>
+                <button type="submit" id="packingSubmitBtn" class="font-bold transition-colors shadow-sm" style="flex: 1; padding: 0.625rem 0; background-color: #F25996; color: #ffffff; border-radius: 9999px; text-align: center; border: 1px solid #F25996;">Confirm &amp; Send Invoice</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Tracking Details Modal -->
+<div id="trackingModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity backdrop-blur-sm" onclick="closeTrackingModal()"></div>
+    
+    <!-- Modal Content -->
+    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 transform transition-all">
+        <div class="flex items-center space-x-2 mb-6">
+            <svg class="w-6 h-6 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+            <h3 class="text-xl font-bold text-gray-900">Enter Tracking Details</h3>
+        </div>
+        
+        <form id="trackingForm" onsubmit="submitTrackingDetails(event)">
+            <input type="hidden" id="trackOrderId">
+            
+            <div class="mb-4">
+                <div class="flex justify-between items-end mb-1">
+                    <label class="block text-sm font-bold text-gray-700">Courier Service</label>
+                    <a href="#" class="text-xs font-bold text-brand-600 hover:underline">+ Add / Manage</a>
+                </div>
+                <select id="trackCourier" required class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <option value="" disabled selected>Select Courier Service</option>
+                    <option value="ST Courier">ST Courier</option>
+                    <option value="A1">A1</option>
+                    <option value="MSS">MSS</option>
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-bold text-gray-700 mb-1">Tracking ID</label>
+                <input type="text" id="trackId" placeholder="e.g. TRK123456789" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-brand-500">
+            </div>
+            
+            <div class="mb-6">
+                <label class="block text-sm font-bold text-gray-700 mb-1">Tracking URL</label>
+                <input type="url" id="trackUrl" placeholder="https://tracker.com/TRK123" class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-brand-500">
+            </div>
+            
+            <div class="flex space-x-4" style="display: flex; gap: 1rem; width: 100%;">
+                <button type="button" onclick="closeTrackingModal()" class="font-bold transition-colors" style="flex: 1; padding: 0.625rem 0; background-color: #f3f4f6; color: #111827; border-radius: 9999px; text-align: center; border: 1px solid #e5e7eb;">Cancel</button>
+                <button type="submit" class="font-bold transition-colors shadow-sm" style="flex: 1; padding: 0.625rem 0; background-color: #F25996; color: #ffffff; border-radius: 9999px; text-align: center; border: 1px solid #F25996;">Save</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<?php if (!$isPendingView): ?>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    window.toggleStatusMenu = function(e, orderNumber) {
+        e.stopPropagation();
+        const menu = document.getElementById('status-menu-' + orderNumber);
+        if (!menu) return;
+        const isHidden = menu.classList.contains('hidden');
+        
+        // Close all other menus
+        document.querySelectorAll('[id^="status-menu-"]').forEach(el => el.classList.add('hidden'));
+        
+        if (isHidden) {
+            menu.classList.remove('hidden');
+        }
+    };
+
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.status-menu-container')) {
+            document.querySelectorAll('[id^="status-menu-"]').forEach(el => el.classList.add('hidden'));
+        }
+    });
+
+    window.applyStatusTransition = function(orderId, currentStatus, newStatus) {
+        // Close menus
+        document.querySelectorAll('[id^="status-menu-"]').forEach(el => el.classList.add('hidden'));
+
+        if (newStatus === 'packed') {
+            openPackingModal(orderId, null);
+            return;
+        }
+
+        if (newStatus === 'shipped') {
+            openTrackingModal(orderId, null);
+            return;
+        }
+
+        const formatCurrent = currentStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const formatTarget = newStatus.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+
+        Swal.fire({
+            title: 'Update Order Status?',
+            html: `Are you sure you want to transition Order <b>#${orderId}</b> from <span class="text-gray-600 font-semibold">${formatCurrent}</span> to <span class="text-pink-600 font-bold">${formatTarget}</span>?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#F25996',
+            cancelButtonColor: '#f3f4f6',
+            confirmButtonText: 'Yes, Update Status',
+            cancelButtonText: '<span style="color: #F25996; font-weight: bold;">Cancel</span>',
+            reverseButtons: true,
+            customClass: {
+                popup: 'rounded-2xl shadow-xl border border-gray-100',
+                confirmButton: 'font-bold rounded-full px-6 py-2.5 text-xs tracking-wider uppercase shadow-xs',
+                cancelButton: 'font-bold rounded-full px-6 py-2.5 text-xs tracking-wider uppercase'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                updateStatusAjax(orderId, newStatus, null);
+            }
+        });
+    };
+
+    let currentTrackingSelect = null;
+    let currentTrackingOrderId = null;
+
+    window.openTrackingModal = function(orderId, selectEl) {
+        currentTrackingOrderId = orderId;
+        currentTrackingSelect = selectEl;
+        
+        document.getElementById('trackOrderId').value = orderId;
+        document.getElementById('trackCourier').value = '';
+        document.getElementById('trackId').value = '';
+        document.getElementById('trackUrl').value = '';
+        
+        const modal = document.getElementById('trackingModal');
+        modal.classList.remove('hidden');
+    };
+
+    window.closeTrackingModal = function() {
+        const modal = document.getElementById('trackingModal');
+        modal.classList.add('hidden');
+        if (currentTrackingSelect) {
+            currentTrackingSelect.value = currentTrackingSelect.getAttribute('data-original');
+            updateDropdownStyle(currentTrackingSelect);
+        }
+        currentTrackingSelect = null;
+        currentTrackingOrderId = null;
+    };
+
+    window.submitTrackingDetails = function(e) {
+        e.preventDefault();
+        
+        const orderId = currentTrackingOrderId;
+        const selectEl = currentTrackingSelect;
+        const courier = document.getElementById('trackCourier').value;
+        const trackingNum = document.getElementById('trackId').value;
+        
+        if (!courier) {
+            alert("Please select a Courier Service.");
+            return;
+        }
+
+        fetch('<?= BASE_URL ?>/admin/orders/update-courier', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: orderId, courier_name: courier, tracking_number: trackingNum })
+        }).then(r => r.json()).then(res => {
+            if(res.success) {
+                // Hide modal and update status
+                document.getElementById('trackingModal').classList.add('hidden');
+                updateStatusAjax(orderId, 'shipped', selectEl);
+            } else {
+                alert(res.message);
+                closeTrackingModal();
+            }
+        }).catch(err => {
+            console.error(err);
+            alert("Failed to save tracking details.");
+            closeTrackingModal();
+        });
+    };
+
+    // --- Packing Videos Modal Handlers ---
+    let currentPackingSelect = null;
+    let currentPackingOrderId = null;
+
+    window.openPackingModal = function(orderId, selectEl) {
+        currentPackingOrderId = orderId;
+        currentPackingSelect = selectEl;
+
+        document.getElementById('packOrderId').value = orderId;
+        document.getElementById('packOrderNumberBadge').textContent = '#' + orderId;
+        document.getElementById('packingVideo1').value = '';
+        document.getElementById('packingVideo2').value = '';
+        document.getElementById('packingUploadStatus').classList.add('hidden');
+        document.getElementById('packingSubmitBtn').disabled = false;
+        document.getElementById('packingCancelBtn').disabled = false;
+
+        const modal = document.getElementById('packingModal');
+        modal.classList.remove('hidden');
+    };
+
+    window.closePackingModal = function() {
+        const modal = document.getElementById('packingModal');
+        modal.classList.add('hidden');
+        if (currentPackingSelect) {
+            currentPackingSelect.value = currentPackingSelect.getAttribute('data-original');
+            updateDropdownStyle(currentPackingSelect);
+        }
+        currentPackingSelect = null;
+        currentPackingOrderId = null;
+    };
+
+    window.validateVideoSize = function(input, labelName) {
+        const maxBytes = 3 * 1024 * 1024;
+        if (input.files && input.files[0]) {
+            if (input.files[0].size > maxBytes) {
+                const mb = (input.files[0].size / (1024 * 1024)).toFixed(2);
+                Swal.fire({
+                    title: 'File Too Large (Max 3MB)',
+                    text: `${labelName} is ${mb}MB. Maximum allowed file size is 3MB. Please select a smaller video file.`,
+                    icon: 'warning',
+                    confirmButtonColor: '#7c3aed'
+                });
+                input.value = '';
+                return false;
+            }
+        }
+        return true;
+    };
+
+    window.submitPackingDetails = function(e) {
+        e.preventDefault();
+
+        const maxBytes = 3 * 1024 * 1024;
+        const v1Input = document.getElementById('packingVideo1');
+        const v2Input = document.getElementById('packingVideo2');
+
+        if (v1Input && v1Input.files && v1Input.files[0] && v1Input.files[0].size > maxBytes) {
+            const mb = (v1Input.files[0].size / (1024 * 1024)).toFixed(2);
+            Swal.fire({
+                title: 'File Too Large (Max 3MB)',
+                text: `Packing Video 1 is ${mb}MB. Maximum allowed file size is 3MB. Please select a smaller video file.`,
+                icon: 'warning',
+                confirmButtonColor: '#7c3aed'
+            });
+            return false;
+        }
+
+        if (v2Input && v2Input.files && v2Input.files[0] && v2Input.files[0].size > maxBytes) {
+            const mb = (v2Input.files[0].size / (1024 * 1024)).toFixed(2);
+            Swal.fire({
+                title: 'File Too Large (Max 3MB)',
+                text: `Packing Video 2 is ${mb}MB. Maximum allowed file size is 3MB. Please select a smaller video file.`,
+                icon: 'warning',
+                confirmButtonColor: '#7c3aed'
+            });
+            return false;
+        }
+
+        const form = document.getElementById('packingForm');
+        const formData = new FormData(form);
+        const orderId = currentPackingOrderId;
+        const selectEl = currentPackingSelect;
+
+        document.getElementById('packingUploadStatus').classList.remove('hidden');
+        document.getElementById('packingSubmitBtn').disabled = true;
+        document.getElementById('packingCancelBtn').disabled = true;
+
+        fetch('<?= BASE_URL ?>/admin/orders/update-packed', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(res => {
+            document.getElementById('packingUploadStatus').classList.add('hidden');
+            document.getElementById('packingSubmitBtn').disabled = false;
+            document.getElementById('packingCancelBtn').disabled = false;
+
+            if (res.success) {
+                document.getElementById('packingModal').classList.add('hidden');
+                if (selectEl) {
+                    selectEl.setAttribute('data-original', 'packed');
+                    selectEl.value = 'packed';
+                    updateDropdownStyle(selectEl);
+                    updateDropdownOptions(selectEl, 'packed');
+                }
+                Swal.fire({
+                    title: 'Packed & Invoice Dispatched!',
+                    text: res.message,
+                    icon: 'success',
+                    confirmButtonColor: '#7c3aed'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                alert('Error: ' + res.message);
+                closePackingModal();
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('packingUploadStatus').classList.add('hidden');
+            document.getElementById('packingSubmitBtn').disabled = false;
+            document.getElementById('packingCancelBtn').disabled = false;
+            alert('Failed to upload packing videos or update status.');
+            closePackingModal();
+        });
+    };
+
+    function updateStatusAjax(orderId, status, selectEl) {
+        fetch('<?= BASE_URL ?>/admin/orders/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: orderId, status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+                if (selectEl) {
+                    selectEl.value = selectEl.getAttribute('data-original');
+                }
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('Failed to update status.');
+            if (selectEl) {
+                selectEl.value = selectEl.getAttribute('data-original');
+            }
+        });
+    }
+});
+
+function filterOrders() {
+    let input = document.getElementById('searchInput');
+    let filter = input.value.toLowerCase();
+    let table = document.querySelector("table tbody");
+    if(!table) return;
+    let tr = table.getElementsByTagName('tr');
+
+    for (let i = 0; i < tr.length; i++) {
+        let textContent = tr[i].textContent || tr[i].innerText;
+        if (textContent.toLowerCase().indexOf(filter) > -1) {
+            tr[i].style.display = "";
+        } else {
+            tr[i].style.display = "none";
+        }
+    }
+}
+</script>
+
+<!-- Chart.js for rendering the charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const topProductsData = <?= $topProducts ?? '[]' ?>;
+    const statusDistributionData = <?= $statusDistribution ?? '[]' ?>;
+
+    if (topProductsData && topProductsData.length > 0) {
+        const productLabels = topProductsData.map(item => item.name);
+        const productValues = topProductsData.map(item => item.total_sold);
+
+        const ctxBar = document.getElementById('topProductsChart').getContext('2d');
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: productLabels,
+                datasets: [{
+                    label: 'Units Sold',
+                    data: productValues,
+                    backgroundColor: '#10b981', // green-500
+                    borderRadius: 4,
+                    barThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 0.5 },
+                        grid: { borderDash: [4, 4], display: true, color: '#f3f4f6' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    if (statusDistributionData && statusDistributionData.length > 0) {
+        const statusColors = {
+            'placed': '#f59e0b', // amber-500
+            'packed': '#10b981', // green-500
+            'shipped': '#F25996', // pink-500
+            'out_for_delivery': '#db2777', // pink-600
+            'delivered': '#14b8a6', // teal-500
+            'cancelled': '#ef4444' // red-500
+        };
+
+        const statusLabels = statusDistributionData.map(item => item.status.charAt(0).toUpperCase() + item.status.slice(1));
+        const statusValues = statusDistributionData.map(item => item.count);
+        const bgColors = statusDistributionData.map(item => statusColors[item.status] || '#9ca3af');
+
+        const ctxPie = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctxPie, {
+            type: 'pie',
+            data: {
+                labels: statusLabels,
+                datasets: [{
+                    data: statusValues,
+                    backgroundColor: bgColors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+<?php endif; ?>
+</div>

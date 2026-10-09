@@ -1,0 +1,75 @@
+// GRM B2B Main JS
+document.addEventListener('DOMContentLoaded', () => {
+    // Add logic for dynamic interactions here
+    // e.g., Modal toggling, Form validation, Image previews
+});
+
+// GLOBAL CLIENT-SIDE IMAGE COMPRESSION (10/10 Upload Speed Optimization)
+// Intercepts ANY file input selection. Only processes actual image files.
+document.addEventListener('change', async function(e) {
+    if (e.target && e.target.matches('input[type="file"]')) {
+        const input = e.target;
+        if (!input.files || input.files.length === 0) return;
+
+        // Skip if browser-image-compression is not loaded yet
+        if (typeof imageCompression === 'undefined') {
+            console.warn('browser-image-compression not loaded yet');
+            return;
+        }
+
+        // Show loading state on the input's label or parent element if possible
+        const originalParentStyle = input.parentElement ? input.parentElement.style.opacity : null;
+        if (input.parentElement) {
+            input.parentElement.style.opacity = '0.5';
+            input.parentElement.style.pointerEvents = 'none';
+        }
+
+        try {
+            const dataTransfer = new DataTransfer();
+            const options = {
+                maxSizeMB: 0.5, // 500KB max per image
+                maxWidthOrHeight: 1920,
+                useWebWorker: true
+            };
+
+            for (let i = 0; i < input.files.length; i++) {
+                let file = input.files[i];
+                // Only compress images (skip PDFs or other files if accepted by mistake)
+                if (file.type.startsWith('image/')) {
+                    console.log(`Compressing ${file.name}: Original size ${Math.round(file.size / 1024)} KB`);
+                    
+                    try {
+                        let compressedFile = await imageCompression(file, options);
+                        console.log(`Compressed ${file.name}: New size ${Math.round(compressedFile.size / 1024)} KB`);
+                        
+                        // Overwrite file name to retain original name
+                        let finalFile = new File([compressedFile], file.name, {
+                            type: compressedFile.type,
+                            lastModified: Date.now()
+                        });
+                        dataTransfer.items.add(finalFile);
+                    } catch (error) {
+                        console.error('Compression error:', error);
+                        // Fallback to original file if compression fails
+                        dataTransfer.items.add(file);
+                    }
+                } else {
+                    dataTransfer.items.add(file);
+                }
+            }
+
+            // Replace the input's files with the compressed files
+            input.files = dataTransfer.files;
+            console.log('Successfully swapped input files with compressed versions.');
+
+        } catch (error) {
+            console.error('Global compression failed:', error);
+        } finally {
+            // Restore visual state
+            if (input.parentElement) {
+                input.parentElement.style.opacity = originalParentStyle || '1';
+                input.parentElement.style.pointerEvents = 'auto';
+            }
+        }
+    }
+});
