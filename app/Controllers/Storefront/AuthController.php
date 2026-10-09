@@ -1,0 +1,613 @@
+<?php
+namespace App\Controllers\Storefront;
+
+use Core\Controller;
+use Core\Session;
+use App\Models\User;
+use App\Models\BusinessProfile;
+use App\Models\RegistrationRequest;
+use App\Models\Media;
+use App\Models\MediaUpload;
+use App\Core\CloudinaryUploader;
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+class AuthController extends Controller
+{
+    public function showLogin()
+    {
+        if (Session::get('user_id')) {
+            $this->redirect('/');
+        }
+        $this->render('storefront/login', ['title' => 'Login']);
+    }
+
+    public function login()
+    {
+        $loginInput = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+
+        if (empty($loginInput) || empty($password)) {
+            Session::setFlash('error', 'Please fill in all fields.');
+            $this->redirect('/login');
+            return;
+        }
+
+        $userModel = new User();
+        // Check by lowercased email, exact email, or phone number
+        $user = $userModel->findByEmail(strtolower($loginInput));
+        if (!$user) {
+            $user = $userModel->findByEmail($loginInput);
+        }
+        if (!$user) {
+            $user = $userModel->findByPhone($loginInput);
+        }
+
+        if ($user && password_verify($password, $user['password_hash'])) {
+            if ($user['status'] === 'blocked' || $user['status'] === 'inactive' || $user['status'] === 'deactivated') {
+                Session::setFlash('error', 'Your account has been deactivated or blocked by the administrator.');
+                $this->redirect('/login');
+                return;
+            }
+
+            if ($user['status'] === 'rejected') {
+                // Fetch rejection reason
+                $db = \Core\Database::getInstance();
+                $stmt = $db->prepare("SELECT rejection_reason FROM registration_requests WHERE user_id = :uid ORDER BY reviewed_at DESC LIMIT 1");
+                $stmt->execute(['uid' => $user['id']]);
+                $reason = $stmt->fetchColumn();
+
+                $msg = 'Your registration has been rejected by the admin. ';
+                if ($reason) {
+                    $msg .= 'Reason: ' . htmlspecialchars($reason) . ' ';
+                }
+                $msg .= 'Please re-register with corrected details.';
+                Session::setFlash('rejected_reason', $msg);
+                $this->redirect('/register');
+                return;
+            }
+
+            if ($user['status'] === 'pending') {
+                Session::setFlash('error', 'Your registration is pending admin approval. Please check back later.');
+                $this->redirect('/login');
+                return;
+            }
+
+            if ($user['role'] === 'vendor' && !is_vendor_module_enabled()) {
+                Session::setFlash('error', 'Vendor access and operations are currently disabled by platform administration.');
+                $this->redirect('/login');
+                return;
+            }
+            
+            Session::set('user_id', $user['id']);
+            Session::set('user_role', $user['role']);
+            Session::set('user_status', $user['status']);
+            Session::set('user_name', $user['name']);
+            
+            // If they are admin/manager/vendor, redirect to admin panel
+            if (in_array($user['role'], ['super_admin', 'manager', 'staff', 'vendor'])) {
+                $this->redirect('/admin/dashboard');
+                return;
+            }
+
+            Session::setFlash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
+            $this->redirect('/');
+            return;
+        } else {
+            Session::setFlash('error', 'Invalid email/phone or password. Please try again.');
+            $this->redirect('/login');
+            return;
+        }
+    }
+
+    public function showRegister()
+    {
+        if (Session::get('user_id')) {
+            $this->redirect('/');
+        }
+        $this->render('storefront/register', ['title' => 'Register as Buyer']);
+    }
+
+    public function register()
+    {
+        // 1. Gather Data
+        $name = trim($_POST['name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $businessName = strtoupper(trim($_POST['business_name'] ?? ''));
+        
+        $shopLocationRaw = trim($_POST['shop_location'] ?? '');
+        $state = trim($_POST['state'] ?? '');
+        if ($state === 'Others') {
+            $state = trim($_POST['other_state_name'] ?? '');
+        }
+        $district = trim($_POST['district'] ?? '');
+        $pincode = trim($_POST['pincode'] ?? '');
+        
+        $shopLocation = $shopLocationRaw;
+        if ($district) $shopLocation .= ', ' . $district;
+        if ($state) $shopLocation .= ', ' . $state;
+        if ($pincode) $shopLocation .= ' - ' . $pincode;
+
+        $hasGst = isset($_POST['has_gst']) ? (bool)$_POST['has_gst'] : false;
+        $gstNumber = trim($_POST['gst_number'] ?? '');
+        $panNumber = trim($_POST['pan_number'] ?? '');
+        $noGstReason = trim($_POST['no_gst_reason'] ?? '');
+        if ($noGstReason === 'Other') {
+            $otherGstReason = trim($_POST['other_gst_reason'] ?? '');
+            if (!empty($otherGstReason)) {
+                $noGstReason = $otherGstReason;
+            }
+        }
+        $instagramLink = trim($_POST['instagram_link'] ?? '');
+        
+        // 2. Validation
+        if (empty($name) || empty($email) || empty($phone) || empty($password) || empty($businessName) || empty($shopLocationRaw) || empty($state) || empty($district) || empty($pincode) || empty($instagramLink)) {
+            Session::setFlash('error', 'All core fields including full address and Instagram link are required.');
+            $this->redirect('/register');
+        }
+
+        if (strlen($businessName) < 4) {
+            Session::setFlash('error', 'Business Name must be at least 4 characters long.');
+            $this->redirect('/register');
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Session::setFlash('error', 'Please provide a valid email address.');
+            $this->redirect('/register');
+        }
+
+        // Prevent common email typos like .kom
+        if (preg_match('/\.kom$/i', $email)) {
+            Session::setFlash('error', 'Invalid email domain format (e.g. .kom is not allowed).');
+            $this->redirect('/register');
+        }
+
+        // Password validation: minimum 8 characters, at least one uppercase, one lowercase, and one number
+        if (strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password)) {
+            Session::setFlash('error', 'Password must be at least 8 characters long and contain an uppercase letter, a lowercase letter, and a number.');
+            $this->redirect('/register');
+        }
+
+        if (!preg_match('/^[0-9]{10}$/', $phone)) {
+            Session::setFlash('error', 'Please provide a valid 10-digit phone number.');
+            $this->redirect('/register');
+        }
+
+        if ($hasGst) {
+            if (empty($gstNumber)) {
+                Session::setFlash('error', 'GST Number is required if you select that you have one.');
+                $this->redirect('/register');
+            }
+            if (!preg_match('/^(?=.*[0-9])(?=.*[A-Z])[A-Z0-9]{15}$/i', $gstNumber)) {
+                Session::setFlash('error', 'Please enter a valid 15-character GST number containing both letters and numbers.');
+                $this->redirect('/register');
+            }
+        }
+
+        if (!$hasGst) {
+            if (empty($panNumber)) {
+                Session::setFlash('error', 'PAN Number is required for Non-GST verification.');
+                $this->redirect('/register');
+            }
+            if (!preg_match('/^[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}$/', $panNumber)) {
+                Session::setFlash('error', 'Please enter a valid PAN format (e.g., ABCDE1234F).');
+                $this->redirect('/register');
+            }
+            if (empty($noGstReason)) {
+                Session::setFlash('error', 'Please provide a reason for not having GST.');
+                $this->redirect('/register');
+            }
+            if (strpos($noGstReason, 'Other: ') === 0) {
+                $otherReasonText = substr($noGstReason, 7);
+                if (strlen($otherReasonText) < 5 || !preg_match('/^[A-Za-z\s]+$/', $otherReasonText)) {
+                    Session::setFlash('error', 'The specific other reason must be at least 5 characters long and contain only letters.');
+                    $this->redirect('/register');
+                }
+            }
+        }
+
+        // Validate photos (at least 2 required)
+        if (!isset($_FILES['shop_photos']) || count($_FILES['shop_photos']['name']) < 2 || $_FILES['shop_photos']['error'][0] === UPLOAD_ERR_NO_FILE) {
+            Session::setFlash('error', 'Please upload at least 2 shop photos for verification.');
+            $this->redirect('/register');
+        }
+
+        // Check uniqueness — but allow re-registration for rejected accounts
+        $userModel = new User();
+        $existingByEmail = $userModel->findByEmail($email);
+        if ($existingByEmail) {
+            if ($existingByEmail['status'] === 'rejected') {
+                // Delete old rejected account so they can re-register
+                $db = \Core\Database::getInstance();
+                $db->prepare("DELETE FROM users WHERE id = :id")->execute(['id' => $existingByEmail['id']]);
+            } else {
+                Session::setFlash('error', 'Email address is already registered.');
+                $this->redirect('/register');
+            }
+        }
+        
+        $existingByPhone = $userModel->findByPhone($phone);
+        if ($existingByPhone) {
+            if ($existingByPhone['status'] === 'rejected') {
+                // Delete old rejected account so they can re-register
+                $db = $db ?? \Core\Database::getInstance();
+                $db->prepare("DELETE FROM users WHERE id = :id")->execute(['id' => $existingByPhone['id']]);
+            } else {
+                Session::setFlash('error', 'Phone number is already registered.');
+                $this->redirect('/register');
+            }
+        }
+
+        $tempFiles = [];
+        $uploader = new CloudinaryUploader();
+
+        foreach ($_FILES['shop_photos']['tmp_name'] as $key => $tmpName) {
+            if ($_FILES['shop_photos']['error'][$key] === UPLOAD_ERR_OK) {
+                $ext = strtolower(pathinfo($_FILES['shop_photos']['name'][$key], PATHINFO_EXTENSION));
+                if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) continue;
+
+                $cloudinaryResponse = $uploader->uploadMedia($tmpName);
+                
+                if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
+                    $tempFiles[] = [
+                        'path' => $cloudinaryResponse['secure_url'],
+                        'type' => 'image/webp'
+                    ];
+                }
+            }
+        }
+
+        // Handle GST / PAN document upload (max 3MB)
+        $gstDocUrl  = null;
+        $panDocUrl  = null;
+        $allowedDocExts = ['pdf', 'jpg', 'jpeg', 'png'];
+        $maxDocBytes    = 3 * 1024 * 1024; // 3MB
+
+        if ($hasGst && isset($_FILES['gst_document']) && $_FILES['gst_document']['error'] === UPLOAD_ERR_OK) {
+            $docSize = $_FILES['gst_document']['size'];
+            $docExt  = strtolower(pathinfo($_FILES['gst_document']['name'], PATHINFO_EXTENSION));
+            if ($docSize > $maxDocBytes) {
+                Session::setFlash('error', 'GST document must be under 3MB.');
+                $this->redirect('/register');
+            }
+            if (!in_array($docExt, $allowedDocExts)) {
+                Session::setFlash('error', 'GST document must be a PDF, JPG, or PNG file.');
+                $this->redirect('/register');
+            }
+            $cloudinaryResponse = $uploader->uploadMedia($_FILES['gst_document']['tmp_name']);
+            if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
+                $gstDocUrl = $cloudinaryResponse['secure_url'];
+            }
+        }
+
+        if (!$hasGst && isset($_FILES['pan_document']) && $_FILES['pan_document']['error'] === UPLOAD_ERR_OK) {
+            $docSize = $_FILES['pan_document']['size'];
+            $docExt  = strtolower(pathinfo($_FILES['pan_document']['name'], PATHINFO_EXTENSION));
+            if ($docSize > $maxDocBytes) {
+                Session::setFlash('error', 'PAN document must be under 3MB.');
+                $this->redirect('/register');
+            }
+            if (!in_array($docExt, $allowedDocExts)) {
+                Session::setFlash('error', 'PAN document must be a PDF, JPG, or PNG file.');
+                $this->redirect('/register');
+            }
+            $cloudinaryResponse = $uploader->uploadMedia($_FILES['pan_document']['tmp_name']);
+            if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
+                $panDocUrl = $cloudinaryResponse['secure_url'];
+            }
+        }
+
+        // Generate OTP
+        $otp = sprintf("%06d", mt_rand(1, 999999));
+        
+        // Store all data in session for the next step
+        Session::set('pending_registration', [
+            'name'          => $name,
+            'email'         => $email,
+            'phone'         => $phone,
+            'password'      => $password, // Plaintext, will be hashed upon final save
+            'business_name' => $businessName,
+            'shop_location' => $shopLocation,
+            'has_gst'       => $hasGst,
+            'gst_number'    => $gstNumber,
+            'gst_doc_url'   => $gstDocUrl,
+            'pan_number'    => $panNumber,
+            'pan_doc_url'   => $panDocUrl,
+            'no_gst_reason' => $noGstReason,
+            'instagram_link'=> $instagramLink,
+            'temp_files'    => $tempFiles
+        ]);
+        Session::set('registration_otp', $otp);
+        Session::set('otp_generated_at', time());
+
+        // Send OTP via EmailService
+        try {
+            $emailService = new \App\Services\EmailService();
+            $emailService->sendOtpEmail($email, $otp, $name);
+        } catch (\Throwable $e) {
+            error_log("[Register OTP Email Error] " . $e->getMessage());
+        }
+
+        Session::setFlash('success', "OTP has been sent to your email address!");
+        $this->redirect('/register/verify');
+    }
+
+    public function checkUserExists()
+    {
+        header('Content-Type: application/json');
+        
+        $data = json_decode(file_get_contents('php://input'), true);
+        $email = trim($data['email'] ?? '');
+        $phone = trim($data['phone'] ?? '');
+        $businessName = trim($data['business_name'] ?? '');
+
+        if (empty($email) && empty($phone) && empty($businessName)) {
+            echo json_encode(['exists' => false]);
+            return;
+        }
+
+        $userModel = new User();
+        
+        if (!empty($phone) && $userModel->findByPhone($phone)) {
+            echo json_encode([
+                'exists' => true,
+                'field' => 'phone',
+                'message' => 'This phone number is already registered.'
+            ]);
+            return;
+        }
+
+        if (!empty($email) && $userModel->findByEmail($email)) {
+            echo json_encode([
+                'exists' => true,
+                'field' => 'email',
+                'message' => 'This email address is already registered.'
+            ]);
+            return;
+        }
+
+        if (!empty($businessName)) {
+            $db = \Core\Database::getInstance();
+            $stmt = $db->prepare("SELECT id FROM business_profiles WHERE LOWER(business_name) = LOWER(?)");
+            $stmt->execute([$businessName]);
+            if ($stmt->fetch()) {
+                echo json_encode([
+                    'exists' => true,
+                    'field' => 'business',
+                    'message' => 'This business name is already registered.'
+                ]);
+                return;
+            }
+        }
+
+        echo json_encode(['exists' => false]);
+        return;
+    }
+
+    public function showVerifyOtp()
+    {
+        if (!Session::get('pending_registration')) {
+            $this->redirect('/register');
+        }
+
+        $lastWrong = Session::get('otp_last_wrong_time') ?? 0;
+        $lockoutRemaining = 0;
+        if (time() - $lastWrong < 60) {
+            $lockoutRemaining = 60 - (time() - $lastWrong);
+        }
+
+        $otpGeneratedAt = Session::get('otp_generated_at') ?? 0;
+        $otpExpirationRemaining = 120 - (time() - $otpGeneratedAt);
+        if ($otpExpirationRemaining < 0) {
+            $otpExpirationRemaining = 0;
+        }
+
+        $devOtp = (defined('APP_ENV') && APP_ENV === 'development') ? (Session::get('registration_otp') ?? Session::get('reset_otp') ?? '') : '';
+
+        $this->render('storefront/verify_otp', [
+            'title' => 'Verify Email',
+            'lockoutRemaining' => $lockoutRemaining,
+            'otpExpirationRemaining' => $otpExpirationRemaining,
+            'formAction' => '/register/verify',
+            'resendAction' => '/register/resend-otp',
+            'isRegistration' => true,
+            'devOtp' => $devOtp
+        ]);
+    }
+
+    public function resendOtp()
+    {
+        $regData = Session::get('pending_registration');
+        if (!$regData) {
+            Session::setFlash('error', 'Session expired. Please register again.');
+            $this->redirect('/register');
+        }
+
+        // Check 8-hour lockout
+        $resendLockoutTime = Session::get('otp_resend_lockout_time') ?? 0;
+        if ($resendLockoutTime > 0) {
+            if (time() - $resendLockoutTime < (8 * 3600)) {
+                $hoursLeft = ceil(((8 * 3600) - (time() - $resendLockoutTime)) / 3600);
+                Session::setFlash('error', "Maximum OTP resend attempts reached. Please try again after {$hoursLeft} hours.");
+                $this->redirect('/register/verify');
+            } else {
+                // Lockout expired, reset the count
+                Session::remove('otp_resend_lockout_time');
+                Session::set('otp_resend_count', 0);
+            }
+        }
+
+        // Rate limit: Max 5 resends
+        $resendCount = Session::get('otp_resend_count') ?? 0;
+        if ($resendCount >= 5) {
+            Session::set('otp_resend_lockout_time', time());
+            Session::setFlash('error', 'Maximum OTP resend attempts reached. Please try again after 8 hours.');
+            $this->redirect('/register/verify');
+        }
+
+        // Rate limit: 1-minute cooldown between resends
+        $lastResend = Session::get('otp_last_resend_time') ?? 0;
+        if (time() - $lastResend < 60) {
+            $wait = 60 - (time() - $lastResend);
+            Session::setFlash('error', "Please wait {$wait} seconds before requesting a new OTP.");
+            $this->redirect('/register/verify');
+        }
+
+        // Generate a NEW OTP
+        $newOtp = sprintf("%06d", mt_rand(1, 999999));
+        Session::set('registration_otp', $newOtp);
+        Session::set('otp_generated_at', time());
+
+        $name = $regData['name'] ?? 'User';
+        $email = $regData['email'] ?? '';
+
+        // Send new OTP via EmailService
+        try {
+            $emailService = new \App\Services\EmailService();
+            $emailService->sendOtpEmail($email, $newOtp, $name);
+        } catch (\Throwable $e) {
+            error_log("[Resend OTP Email Error] " . $e->getMessage());
+        }
+
+        Session::set('otp_resend_count', $resendCount + 1);
+        Session::set('otp_last_resend_time', time());
+        Session::setFlash('success', "A new OTP has been sent to your email!");
+        $this->redirect('/register/verify');
+    }
+
+    public function verifyOtp()
+    {
+        $submittedOtp = $_POST['otp'] ?? '';
+        $sessionOtp = Session::get('registration_otp');
+        $regData = Session::get('pending_registration');
+
+        if (!$sessionOtp || !$regData) {
+            Session::setFlash('error', 'Session expired. Please register again.');
+            $this->redirect('/register');
+        }
+
+        // Lockout removed based on user request
+
+        // Expiration check (2 minutes)
+        $otpGeneratedAt = Session::get('otp_generated_at') ?? 0;
+        if (time() - $otpGeneratedAt > 120) {
+            Session::setFlash('error', 'This OTP has expired. Please request a new one.');
+            $this->redirect('/register/verify');
+        }
+
+        if ($submittedOtp !== $sessionOtp) {
+            $wrongCount = (Session::get('otp_wrong_count') ?? 0) + 1;
+            Session::set('otp_wrong_count', $wrongCount);
+            
+            if ($wrongCount >= 5) {
+                Session::remove('pending_registration');
+                Session::remove('registration_otp');
+                Session::remove('otp_wrong_count');
+                Session::setFlash('error', 'Maximum invalid attempts reached. For your security, please register again.');
+                $this->redirect('/register');
+            } else {
+                Session::setFlash('Invalid OTP', 'Invalid OTP. Please enter the correct OTP.');
+                $this->redirect('/register/verify');
+            }
+        }
+
+        // OTP IS CORRECT! Now do the DB inserts.
+        try {
+            $db = \Core\Database::getInstance();
+            $db->beginTransaction();
+
+            $uniqueBuyerId = '';
+            $isUnique = false;
+            while (!$isUnique) {
+                $uniqueBuyerId = 'BUY-' . mt_rand(100000, 999999);
+                $stmt = $db->prepare("SELECT id FROM users WHERE unique_buyer_id = ?");
+                $stmt->execute([$uniqueBuyerId]);
+                if (!$stmt->fetch()) {
+                    $isUnique = true;
+                }
+            }
+
+            $userModel = new User();
+            $userId = $userModel->create([
+                'unique_buyer_id' => $uniqueBuyerId,
+                'name' => $regData['name'],
+                'email' => $regData['email'],
+                'phone' => $regData['phone'],
+                'password' => $regData['password'],
+                'role' => 'buyer',
+                'status' => 'pending'
+            ]);
+
+            $profileModel = new BusinessProfile();
+            $profileModel->create([
+                'user_id' => $userId,
+                'business_name' => $regData['business_name'],
+                'shop_location' => $regData['shop_location'],
+                'gst_number' => $regData['has_gst'] ? $regData['gst_number'] : null,
+                'gst_document' => $regData['has_gst'] ? ($regData['gst_doc_url'] ?? null) : null,
+                'pan_number' => !$regData['has_gst'] ? $regData['pan_number'] : null,
+                'pan_document' => !$regData['has_gst'] ? ($regData['pan_doc_url'] ?? null) : null,
+                'no_gst_reason' => !$regData['has_gst'] ? $regData['no_gst_reason'] : null,
+                'instagram_link' => $regData['instagram_link'] ?? null,
+            ]);
+
+            $requestModel = new RegistrationRequest();
+            $requestModel->create([
+                'user_id' => $userId,
+                'gst_flag' => $regData['has_gst'] ? 1 : 0
+            ]);
+
+            // Handle saving files from session
+            $mediaModel = new Media();
+
+            foreach ($regData['temp_files'] as $tempFile) {
+                $mediaModel->create([
+                    'user_id' => $userId,
+                    'file_path' => $tempFile['path'], // Cloudinary URL
+                    'file_type' => $tempFile['type'],
+                    'purpose' => 'shop_verification'
+                ]);
+            }
+
+            if (!empty($regData['gst_doc_url'])) {
+                $mediaModel->create([
+                    'user_id' => $userId,
+                    'file_path' => $regData['gst_doc_url'],
+                    'file_type' => 'document',
+                    'purpose' => 'gst_document'
+                ]);
+            }
+
+            if (!empty($regData['pan_doc_url'])) {
+                $mediaModel->create([
+                    'user_id' => $userId,
+                    'file_path' => $regData['pan_doc_url'],
+                    'file_type' => 'document',
+                    'purpose' => 'pan_document'
+                ]);
+            }
+
+            $db->commit();
+
+            // Clear session data
+            Session::remove('pending_registration');
+            Session::remove('registration_otp');
+
+            Session::setFlash('success', 'Email verified and registration submitted successfully! Your account is pending admin approval.');
+            $this->redirect('/');
+
+        } catch (\Exception $e) {
+            $db->rollBack();
+            Session::setFlash('error', 'An error occurred during final registration: ' . $e->getMessage());
+            $this->redirect('/register');
+        }
+    }
+
+    public function logout()
+    {
+        Session::destroy();
+        $this->redirect('/login');
+    }
+}

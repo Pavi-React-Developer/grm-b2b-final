@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+    <defs>
+        <linearGradient id="grmBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#06b6d4" />
+            <stop offset="50%" stop-color="#0891b2" />
+            <stop offset="100%" stop-color="#0e7490" />
+        </linearGradient>
+        <linearGradient id="grmGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff" />
+            <stop offset="100%" stop-color="#ecfeff" />
+        </linearGradient>
+    </defs>
+    <rect width="64" height="64" rx="16" fill="url(#grmBg)"/>
+    <path d="M16 44 L16 20 L28 20 C34 20 38 23 38 28 C38 33 34 36 28 36 L22 36 L22 44 Z M22 25 L22 31 L27 31 C29.5 31 31.5 30 31.5 28 C31.5 26 29.5 25 27 25 Z" fill="url(#grmGold)"/>
+    <circle cx="45" cy="38" r="4.5" fill="#f43f5e"/>
+</svg>

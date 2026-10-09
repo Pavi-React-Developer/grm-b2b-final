@@ -1,0 +1,43 @@
+/vendor/
+/node_modules/
+
+# Logs and databases
+*.log
+*.sqlite
+*.sqlite3
+
+# Environment variables
+.env
+.env.*
+env
+env.*
+.env.example
+.env.backup
+.env.local
+
+# Scratch and temporary files
+/scratch/
+/storage/
+*.tmp
+*.bak
+*.swp
+composer.phar
+composer-setup.php
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
