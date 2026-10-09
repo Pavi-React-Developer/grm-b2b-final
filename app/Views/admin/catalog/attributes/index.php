@@ -3,11 +3,14 @@
     <div class="mb-8 relative z-10">
         <!-- Breadcrumbs -->
         <div class="text-sm font-medium text-gray-400 mb-2 font-serif tracking-wide">
-            Dashboard <span class="mx-1 text-gray-300">›</span> Catalog Management <span class="mx-1 text-gray-300">›</span> <span class="text-brand-700">Attributes</span>
+            Dashboard <span class="mx-1 text-gray-300">›</span> <?= !empty($isCustomize) ? 'Customization Management' : 'Catalog Management' ?> <span class="mx-1 text-gray-300">›</span> <span class="text-brand-700"><?= !empty($isCustomize) ? 'Customize Attributes' : 'Attributes' ?></span>
         </div>
         
         <div class="flex justify-between items-center mb-8">
-            <h2 class="text-5xl font-display font-extrabold text-gray-900 tracking-tight">Attributes</h2>
+            <div>
+                <h2 class="text-5xl font-display font-extrabold text-gray-900 tracking-tight"><?= !empty($isCustomize) ? 'Customize Attributes' : 'Attributes' ?></h2>
+                <p class="text-sm text-gray-500 mt-1"><?= !empty($isCustomize) ? 'Manage attributes configured for customizable workshop garments and fabrics.' : 'Manage general product attributes and options.' ?></p>
+            </div>
             
             <div class="flex items-center space-x-3">
                 <button onclick="window.location.reload()" class="bg-white hover:bg-gray-50 text-gray-700 px-5 py-2.5 rounded-full font-bold text-xs shadow-sm border border-gray-200 transition-all flex items-center uppercase tracking-wider">
@@ -19,9 +22,9 @@
                     Export Excel
                 </button>
                 <?php if ($this->hasPermission('attributes', 'create')): ?>
-                <a href="<?= BASE_URL ?>/admin/catalog/attributes/create" class="bg-[#F25996] hover:bg-[#e04481] text-white px-6 py-2.5 rounded-full font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center uppercase tracking-wider">
+                <a href="<?= BASE_URL ?>/admin/catalog/attributes/create<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="bg-[#F25996] hover:bg-[#e04481] text-white px-6 py-2.5 rounded-full font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center uppercase tracking-wider">
                     <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    Add Attribute
+                    <?= !empty($isCustomize) ? 'Add Customize Attribute' : 'Add Attribute' ?>
                 </a>
                 <?php endif; ?>
             </div>
@@ -50,6 +53,23 @@
 
     <!-- Background Decoration -->
     <div class="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-brand-50/40 to-transparent pointer-events-none -z-10"></div>
+
+    <?php 
+    $flashSuccess = \Core\Session::getFlash('success');
+    $flashError = \Core\Session::getFlash('error');
+    ?>
+    <?php if ($flashSuccess): ?>
+    <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center justify-between shadow-sm">
+        <span>✅ <?= htmlspecialchars($flashSuccess) ?></span>
+        <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700 font-bold text-lg">&times;</button>
+    </div>
+    <?php endif; ?>
+    <?php if ($flashError): ?>
+    <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm font-semibold flex items-center justify-between shadow-sm">
+        <span>❌ <?= htmlspecialchars($flashError) ?></span>
+        <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+    </div>
+    <?php endif; ?>
 
     <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-brand-900/5 border border-white/60 overflow-hidden ring-1 ring-gray-900/5">
         <?php if(empty($attributes)): ?>
@@ -132,6 +152,7 @@
                                                 <?php if ($this->hasPermission('attributes', 'delete')): ?>
                                                 <form action="<?= BASE_URL ?>/admin/catalog/attributes/delete-value" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to remove this value?');">
                                                     <input type="hidden" name="id" value="<?= $val['id'] ?>">
+                                                    <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
                                                     <button type="submit" class="text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full p-0.5 transition-colors focus:outline-none" title="Remove value">
                                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                                     </button>
@@ -163,7 +184,7 @@
                             <td class="px-6 py-5 text-right">
                                 <div class="flex justify-end space-x-2">
                                     <?php if ($this->hasPermission('attributes', 'edit')): ?>
-                                    <a href="<?= BASE_URL ?>/admin/catalog/attributes/edit?id=<?= $attr['id'] ?>" class="p-2 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all duration-200 group/btn" title="Edit">
+                                    <a href="<?= BASE_URL ?>/admin/catalog/attributes/edit?id=<?= $attr['id'] ?><?= !empty($isCustomize) ? '&module=customize' : '' ?>" class="p-2 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all duration-200 group/btn" title="Edit">
                                         <svg class="w-5 h-5 group-hover/btn:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                     </a>
                                     <?php endif; ?>
@@ -201,6 +222,7 @@
 </div>
 
 <form id="add-value-form" action="<?= BASE_URL ?>/admin/catalog/attributes/store-value" method="POST" class="hidden">
+    <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
     <input type="hidden" name="attribute_id" id="add-value-attr-id">
     <input type="hidden" name="value" id="add-value-text">
 </form>
@@ -212,11 +234,13 @@
             <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
         </div>
         <h3 class="text-lg font-medium text-gray-900 mb-2">Delete Attribute</h3>
-        <p class="text-sm text-gray-500 mb-6">Are you sure you want to delete this attribute and all its values? This action cannot be undone.</p>
-        <form action="<?= BASE_URL ?>/admin/catalog/attributes/delete" method="POST" class="flex space-x-3">
+        <p class="text-sm text-gray-500 mb-4">Are you sure you want to delete this attribute and all its values? This action cannot be undone.</p>
+        <div id="delete-error-msg" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-left"></div>
+        <form id="attribute-delete-form" action="<?= BASE_URL ?>/admin/catalog/attributes/delete" method="POST" class="flex space-x-3">
             <input type="hidden" name="id" id="delete-id">
+            <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
             <button type="button" onclick="document.getElementById('delete-modal').classList.add('hidden')" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-            <button type="submit" class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">Delete</button>
+            <button type="submit" id="btn-confirm-delete-attr" class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">Delete</button>
         </form>
     </div>
 </div>
@@ -251,6 +275,54 @@ document.addEventListener('DOMContentLoaded', () => {
             opt.value = s.toLowerCase();
             opt.textContent = s;
             subSelect.appendChild(opt);
+        });
+    }
+
+    const deleteForm = document.getElementById('attribute-delete-form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-confirm-delete-attr');
+            const errDiv = document.getElementById('delete-error-msg');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Deleting...';
+            
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(res => {
+                const contentType = res.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return res.json();
+                }
+                window.location.reload();
+                return { success: true };
+            })
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('delete-modal').classList.add('hidden');
+                    window.location.reload();
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Delete';
+                    if (errDiv) {
+                        errDiv.innerText = data.message || 'Error deleting attribute.';
+                        errDiv.classList.remove('hidden');
+                    } else {
+                        alert(data.message || 'Error deleting attribute.');
+                    }
+                }
+            })
+            .catch(err => {
+                this.submit();
+            });
         });
     }
 });
@@ -327,8 +399,13 @@ function addValue(attrId) {
         document.getElementById('add-value-form').submit();
     }
 }
+
 function openDeleteModal(id) {
     document.getElementById('delete-id').value = id;
+    const errDiv = document.getElementById('delete-error-msg');
+    if (errDiv) { errDiv.classList.add('hidden'); errDiv.innerText = ''; }
+    const btn = document.getElementById('btn-confirm-delete-attr');
+    if (btn) { btn.disabled = false; btn.innerHTML = 'Delete'; }
     document.getElementById('delete-modal').classList.remove('hidden');
 }
 </script>

@@ -3,11 +3,14 @@
     <div class="mb-8 relative z-10">
         <!-- Breadcrumbs -->
         <div class="text-sm font-medium text-gray-400 mb-2 font-serif tracking-wide">
-            Dashboard <span class="mx-1 text-gray-300">›</span> Catalog Management <span class="mx-1 text-gray-300">›</span> <span class="text-brand-700">Sub-Categories</span>
+            Dashboard <span class="mx-1 text-gray-300">›</span> <?= !empty($isCustomize) ? 'Customization Management' : 'Catalog Management' ?> <span class="mx-1 text-gray-300">›</span> <span class="text-brand-700"><?= !empty($isCustomize) ? 'Customize Sub-Categories' : 'Sub-Categories' ?></span>
         </div>
         
         <div class="flex justify-between items-center mb-8">
-            <h2 class="text-5xl font-display font-extrabold text-gray-900 tracking-tight">Sub-Categories</h2>
+            <div>
+                <h2 class="text-5xl font-display font-extrabold text-gray-900 tracking-tight"><?= !empty($isCustomize) ? 'Customize Sub-Categories' : 'Sub-Categories' ?></h2>
+                <p class="text-sm text-gray-500 mt-1"><?= !empty($isCustomize) ? 'Manage subcategories specifically for custom workshop and fabric offerings.' : 'Manage general ready-made subcategories.' ?></p>
+            </div>
             
             <div class="flex items-center space-x-3">
                 <button onclick="window.location.reload()" class="bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-full font-bold text-sm shadow-sm border border-gray-200 transition-all flex items-center uppercase tracking-widest">
@@ -21,7 +24,7 @@
                 <?php if ($this->hasPermission('subcategories', 'create')): ?>
                 <button onclick="document.getElementById('add-modal').classList.remove('hidden')" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-full font-bold text-sm shadow-md transition-all flex items-center uppercase tracking-widest">
                     <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    Add Sub-Category
+                    <?= !empty($isCustomize) ? 'Add Customize Sub-Category' : 'Add Sub-Category' ?>
                 </button>
                 <?php endif; ?>
             </div>
@@ -46,6 +49,23 @@
 
     <!-- Background Decoration -->
     <div class="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-brand-50/40 to-transparent pointer-events-none -z-10"></div>
+
+    <?php 
+    $flashSuccess = \Core\Session::getFlash('success');
+    $flashError = \Core\Session::getFlash('error');
+    ?>
+    <?php if ($flashSuccess): ?>
+    <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center justify-between shadow-sm">
+        <span>✅ <?= htmlspecialchars($flashSuccess) ?></span>
+        <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700 font-bold text-lg">&times;</button>
+    </div>
+    <?php endif; ?>
+    <?php if ($flashError): ?>
+    <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm font-semibold flex items-center justify-between shadow-sm">
+        <span>❌ <?= htmlspecialchars($flashError) ?></span>
+        <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+    </div>
+    <?php endif; ?>
 
     <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-brand-900/5 border border-white/60 overflow-hidden ring-1 ring-gray-900/5">
         <div class="overflow-x-auto">
@@ -125,6 +145,8 @@
             </button>
         </div>
         <form action="<?= BASE_URL ?>/admin/catalog/subcategories/store" method="POST" class="p-8 space-y-5">
+            <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
+            <input type="hidden" name="is_customizable" value="<?= !empty($isCustomize) ? 1 : 0 ?>">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Parent Category *</label>
                 <select name="category_id" required class="w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-4 py-2.5 transition-all bg-white font-medium">
@@ -168,6 +190,8 @@
         </div>
         <form action="<?= BASE_URL ?>/admin/catalog/subcategories/update" method="POST" class="p-8 space-y-5">
             <input type="hidden" name="id" id="edit-id">
+            <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
+            <input type="hidden" name="is_customizable" id="edit-is-customizable" value="<?= !empty($isCustomize) ? 1 : 0 ?>">
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1.5">Parent Category *</label>
                 <select name="category_id" id="edit-category_id" required class="w-full border border-gray-300 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-4 py-2.5 transition-all bg-white font-medium">
@@ -207,11 +231,13 @@
             <div class="absolute -right-1 -top-1 w-4 h-4 bg-red-500 rounded-full animate-ping opacity-75"></div>
         </div>
         <h3 class="text-xl font-display font-bold text-gray-900 mb-2">Delete Subcategory?</h3>
-        <p class="text-sm text-gray-500 mb-8 font-medium">Are you sure you want to delete this subcategory? This action <strong class="text-gray-900">cannot be undone</strong>.</p>
-        <form action="<?= BASE_URL ?>/admin/catalog/subcategories/delete" method="POST" class="flex space-x-3">
+        <p class="text-sm text-gray-500 mb-6 font-medium">Are you sure you want to delete this subcategory? This action <strong class="text-gray-900">cannot be undone</strong>.</p>
+        <div id="delete-error-msg" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-left"></div>
+        <form id="subcategory-delete-form" action="<?= BASE_URL ?>/admin/catalog/subcategories/delete" method="POST" class="flex space-x-3">
             <input type="hidden" name="id" id="delete-id">
+            <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
             <button type="button" onclick="document.getElementById('delete-modal').classList.add('hidden')" class="flex-1 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">Cancel</button>
-            <button type="submit" class="flex-1 px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl text-sm font-semibold shadow-lg shadow-red-500/30 transform hover:-translate-y-0.5 transition-all">Yes, Delete</button>
+            <button type="submit" id="btn-confirm-delete-sub" class="flex-1 px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl text-sm font-semibold shadow-lg shadow-red-500/30 transform hover:-translate-y-0.5 transition-all">Yes, Delete</button>
         </form>
     </div>
 </div>
@@ -277,6 +303,60 @@ function openEditModal(sub) {
 
 function openDeleteModal(id) {
     document.getElementById('delete-id').value = id;
+    const errDiv = document.getElementById('delete-error-msg');
+    if (errDiv) { errDiv.classList.add('hidden'); errDiv.innerText = ''; }
+    const btn = document.getElementById('btn-confirm-delete-sub');
+    if (btn) { btn.disabled = false; btn.innerHTML = 'Yes, Delete'; }
     document.getElementById('delete-modal').classList.remove('hidden');
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const deleteForm = document.getElementById('subcategory-delete-form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-confirm-delete-sub');
+            const errDiv = document.getElementById('delete-error-msg');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Deleting...';
+            
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(res => {
+                const contentType = res.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return res.json();
+                }
+                window.location.reload();
+                return { success: true };
+            })
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('delete-modal').classList.add('hidden');
+                    window.location.reload();
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Yes, Delete';
+                    if (errDiv) {
+                        errDiv.innerText = data.message || 'Error deleting subcategory.';
+                        errDiv.classList.remove('hidden');
+                    } else {
+                        alert(data.message || 'Error deleting subcategory.');
+                    }
+                }
+            })
+            .catch(err => {
+                this.submit();
+            });
+        });
+    }
+});
 </script>

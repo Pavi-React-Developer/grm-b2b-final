@@ -74,7 +74,12 @@ class AttributeValue extends Model
 
     public function delete(int $id)
     {
+        $this->db->exec("SET FOREIGN_KEY_CHECKS=0");
+        $this->db->prepare("DELETE FROM product_variant_attributes WHERE attribute_value_id = :id")->execute(['id' => $id]);
+        $this->db->prepare("DELETE FROM product_attribute_values WHERE attribute_value_id = :id")->execute(['id' => $id]);
         $stmt = $this->db->prepare("DELETE FROM attribute_values WHERE id = :id");
-        return $stmt->execute(['id' => $id]);
+        $res = $stmt->execute(['id' => $id]);
+        $this->db->exec("SET FOREIGN_KEY_CHECKS=1");
+        return $res;
     }
 }

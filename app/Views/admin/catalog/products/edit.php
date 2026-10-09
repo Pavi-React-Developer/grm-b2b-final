@@ -26,48 +26,86 @@
         
         <!-- Categorization and Base Image -->
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <div class="sm:col-span-2 bg-white p-6 rounded-2xl border border-cream shadow-sm">
-                <h3 class="text-lg font-bold text-[#4A3C31] font-serif mb-4 flex items-center">
-                    Categorization
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label class="block text-sm font-bold text-[#4A3C31]">Category <span class="text-red-500">*</span></label>
-                            <button type="button" onclick="openCategoryRequestModal('category')" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-2 py-0.5 rounded-md border border-brand-200 transition-colors flex items-center gap-1">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                Request New
-                            </button>
-                        </div>
-                        <select name="category_id" id="category_id" required class="w-full border border-gray-200 rounded-xl focus:ring-brown focus:border-brown px-4 py-2 text-sm text-gray-700 bg-gray-50/50">
-                            <option value="">Select Category...</option>
-                            <?php foreach($categories as $category): ?>
-                                <option value="<?= $category['id'] ?>" data-sgst="<?= htmlspecialchars($category['sgst'] ?? '0.00') ?>" data-cgst="<?= htmlspecialchars($category['cgst'] ?? '0.00') ?>" data-hsn="<?= htmlspecialchars($category['hsn_code'] ?? '') ?>" <?= $product['category_id'] == $category['id'] ? 'selected' : '' ?>><?= htmlspecialchars($category['name']) ?><?= !empty($category['hsn_code']) ? ' (HSN: ' . htmlspecialchars($category['hsn_code']) . ')' : '' ?></option>
-                            <?php endforeach; ?>
-                        </select>
+            <div class="sm:col-span-2 bg-white p-6 rounded-2xl border border-gray-100 flex flex-col justify-between shadow-2xs">
+                <div>
+                    <div class="border-b border-gray-200 pb-3 mb-5">
+                        <h3 class="text-lg font-bold text-gray-900">Categorization</h3>
+                        <p class="text-xs text-gray-500 mt-0.5">Organize your product hierarchy and assign size charts.</p>
                     </div>
-                    <div>
-                        <div class="flex items-center justify-between mb-1">
-                            <label class="block text-sm font-bold text-[#4A3C31]">Subcategory</label>
-                            <button type="button" onclick="openCategoryRequestModal('subcategory')" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2 py-0.5 rounded-md border border-indigo-200 transition-colors flex items-center gap-1">
-                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                Request New
-                            </button>
-                        </div>
-                        <select name="sub_category_id" id="sub_category_id" class="w-full border border-gray-200 rounded-xl focus:ring-brown focus:border-brown px-4 py-2 text-sm text-gray-700 bg-gray-50/50 <?= empty($subCategories) ? 'opacity-50' : '' ?>" <?= empty($subCategories) ? 'disabled' : '' ?>>
-                            <option value="">Select Category first...</option>
-                            <?php if (!empty($subCategories)): ?>
-                                <?php foreach($subCategories as $subCategory): ?>
-                                    <option value="<?= $subCategory['id'] ?>" <?= $product['sub_category_id'] == $subCategory['id'] ? 'selected' : '' ?>><?= htmlspecialchars($subCategory['name']) ?></option>
+
+                    <!-- Row 1: Category & Subcategory (2 Columns with generous room) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-1.5">
+                                <label class="block text-sm font-bold text-gray-800">Category <span class="text-red-500">*</span></label>
+                                <button type="button" onclick="openCategoryRequestModal('category')" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-lg border border-brand-200 transition-colors shrink-0 flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    <span>Request New</span>
+                                </button>
+                            </div>
+                            <select name="category_id" id="category_id" required class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
+                                <option value="">Select Category...</option>
+                                <?php foreach($categories as $category): ?>
+                                    <option value="<?= $category['id'] ?>" data-sgst="<?= htmlspecialchars($category['sgst'] ?? '0.00') ?>" data-cgst="<?= htmlspecialchars($category['cgst'] ?? '0.00') ?>" data-hsn="<?= htmlspecialchars($category['hsn_code'] ?? '') ?>" <?= $product['category_id'] == $category['id'] ? 'selected' : '' ?>><?= htmlspecialchars($category['name']) ?><?= !empty($category['hsn_code']) ? ' (HSN: ' . htmlspecialchars($category['hsn_code']) . ')' : '' ?></option>
                                 <?php endforeach; ?>
-                            <?php endif; ?>
-                        </select>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between gap-2 mb-1.5">
+                                <label class="block text-sm font-bold text-gray-800">Subcategory</label>
+                                <button type="button" onclick="openCategoryRequestModal('subcategory')" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors shrink-0 flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    <span>Request New</span>
+                                </button>
+                            </div>
+                            <select name="sub_category_id" id="sub_category_id" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs <?= empty($subCategories) ? 'opacity-50' : '' ?>" <?= empty($subCategories) ? 'disabled' : '' ?>>
+                                <option value="">Select Category first...</option>
+                                <?php if (!empty($subCategories)): ?>
+                                    <?php foreach($subCategories as $subCategory): ?>
+                                        <option value="<?= $subCategory['id'] ?>" <?= $product['sub_category_id'] == $subCategory['id'] ? 'selected' : '' ?>><?= htmlspecialchars($subCategory['name']) ?></option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Size Chart (Placed cleanly below with ample spacing) -->
+                    <div class="mt-5 pt-4 border-t border-gray-200/80">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div class="sm:col-span-2">
+                                <div class="flex items-center justify-between gap-2 mb-1.5">
+                                    <div class="flex items-center gap-2">
+                                        <label class="block text-sm font-bold text-gray-800">Size Chart</label>
+                                        <span class="text-[11px] font-semibold text-gray-400 bg-gray-200/60 px-2 py-0.5 rounded-full">Optional</span>
+                                    </div>
+                                    <a href="<?= BASE_URL ?>/admin/cms/size-charts/create" target="_blank" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors shrink-0 flex items-center gap-1" title="Open Size Chart Creator in new tab">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                        <span>Add New Chart</span>
+                                    </a>
+                                </div>
+                                <select name="size_chart_id" id="size_chart_id" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
+                                    <option value="">Default (Auto from Category / Subcategory / General)</option>
+                                    <?php if (!empty($sizeCharts)): ?>
+                                        <?php foreach($sizeCharts as $sc): ?>
+                                            <option value="<?= $sc['id'] ?>" 
+                                                    data-category-id="<?= (int)($sc['category_id'] ?? 0) ?>"
+                                                    data-subcategory-id="<?= (int)($sc['sub_category_id'] ?? 0) ?>"
+                                                    <?= (!empty($product['size_chart_id']) && (int)$product['size_chart_id'] === (int)$sc['id']) ? 'selected' : '' ?>>
+                                                <?= htmlspecialchars($sc['title']) ?><?= !empty($sc['sub_category_name']) ? ' [' . htmlspecialchars($sc['sub_category_name']) . ']' : (!empty($sc['category_name']) ? ' (' . htmlspecialchars($sc['category_name']) . ')' : '') ?><?= !empty($sc['dress_type']) ? ' - ' . htmlspecialchars($sc['dress_type']) : '' ?>
+                                            </option>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1.5" id="size_chart_hint">Auto-filters to match selected Category and Subcategory.</p>
+                            </div>
+                        </div>
                     </div>
 
                     <?php if (!empty($vendors)): ?>
-                    <div class="md:col-span-2 pt-2 border-t border-gray-100">
-                        <label class="block text-sm font-bold text-[#4A3C31] mb-1">Assigned Vendor (Optional)</label>
-                        <select name="vendor_id" id="vendor_id" class="w-full border border-gray-200 rounded-xl focus:ring-brown focus:border-brown px-4 py-2 text-sm text-gray-700 bg-gray-50/50">
+                    <!-- Row 3: Assigned Vendor -->
+                    <div class="mt-5 pt-4 border-t border-gray-200/80">
+                        <label class="block text-sm font-bold text-gray-800 mb-1.5">Assigned Vendor (Optional)</label>
+                        <select name="vendor_id" id="vendor_id" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
                             <option value="">In-House / Admin Product (Default)</option>
                             <?php foreach($vendors as $v): ?>
                                 <option value="<?= $v['id'] ?>" <?= (isset($product['vendor_id']) && (int)$product['vendor_id'] === (int)$v['id']) ? 'selected' : '' ?>>
@@ -160,15 +198,56 @@
         </div>
 
         <!-- Description -->
-        <div class="bg-white p-6 rounded-2xl border border-cream shadow-sm">
-            <div class="flex justify-between items-center mb-4">
+        <?php 
+        $rawCustomFields = $product['custom_fields'] ?? [];
+        if (is_string($rawCustomFields)) {
+            $existingCustomFields = json_decode($rawCustomFields, true) ?: [];
+        } elseif (is_array($rawCustomFields)) {
+            $existingCustomFields = $rawCustomFields;
+        } else {
+            $existingCustomFields = [];
+        }
+        ?>
+        <div class="bg-white p-6 rounded-2xl border border-cream shadow-sm space-y-4">
+            <div class="flex justify-between items-center">
                 <label class="block text-sm font-bold text-[#4A3C31]"><?= !empty($isCustomize) ? 'Fabric Description' : 'Description' ?> <span class="text-red-500">*</span></label>
-                <button type="button" class="text-xs font-semibold text-brown bg-cream border border-cream px-3 py-1.5 rounded-lg flex items-center hover:bg-[#F5F0E6] transition-colors">
-                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    Add Field
+                <button type="button" onclick="addCustomField()" class="text-xs font-semibold text-brown bg-cream border border-cream px-3 py-1.5 rounded-lg flex items-center hover:bg-[#F5F0E6] transition-colors shadow-2xs">
+                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    + Add Field
                 </button>
             </div>
-            <textarea name="description" rows="5" required class="w-full border border-gray-200 rounded-xl focus:ring-brown focus:border-brown px-4 py-3 text-sm text-gray-700 bg-gray-50/50"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
+            <textarea name="description" rows="5" required placeholder="Detailed description of the product features, benefits..." class="w-full border border-gray-200 rounded-xl focus:ring-brown focus:border-brown px-4 py-3 text-sm text-gray-700 bg-gray-50/50"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
+
+            <!-- 2. How to Use / How to Play -->
+            <div>
+                <label class="block text-sm font-bold text-[#4A3C31] mb-1"><?= !empty($isCustomize) ? 'How to Customize / Use' : 'How to Use / How to Play' ?></label>
+                <textarea name="how_to_use" rows="3" placeholder="Enter instructions on how to use or play with this product..." class="w-full border border-gray-200 rounded-xl focus:ring-brown focus:border-brown px-4 py-2.5 text-sm text-gray-700 bg-gray-50/50"><?= htmlspecialchars($product['how_to_use'] ?? '') ?></textarea>
+            </div>
+
+            <!-- 3. Why Choose -->
+            <div>
+                <label class="block text-sm font-bold text-[#4A3C31] mb-1">Why Choose</label>
+                <textarea name="why_choose" rows="3" placeholder="Enter why customers should choose this product..." class="w-full border border-gray-200 rounded-xl focus:ring-brown focus:border-brown px-4 py-2.5 text-sm text-gray-700 bg-gray-50/50"><?= htmlspecialchars($product['why_choose'] ?? '') ?></textarea>
+            </div>
+
+            <!-- Dynamic Custom Fields Container -->
+            <div id="custom-fields-container" class="space-y-3 pt-2">
+                <?php if (!empty($existingCustomFields)): ?>
+                    <?php foreach ($existingCustomFields as $cfIdx => $cf): ?>
+                        <div class="custom-field-row flex items-start gap-3 p-3.5 bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:border-gray-300 shadow-2xs" id="custom-field-<?= $cfIdx ?>">
+                            <div class="w-1/3 min-w-[140px]">
+                                <input type="text" name="custom_fields[<?= $cfIdx ?>][name]" value="<?= htmlspecialchars($cf['name'] ?? '') ?>" placeholder="Field Name" class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-2 text-sm bg-white font-medium text-gray-800">
+                            </div>
+                            <div class="flex-1">
+                                <textarea name="custom_fields[<?= $cfIdx ?>][value]" rows="2" placeholder="Field details / content..." class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-2 text-sm bg-white text-gray-800 resize-y"><?= htmlspecialchars($cf['value'] ?? '') ?></textarea>
+                            </div>
+                            <button type="button" onclick="this.closest('.custom-field-row').remove()" class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors mt-0.5" title="Delete Field">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
         </div>
 
         <!-- Custom Specifications (Attributes) -->
@@ -219,15 +298,16 @@
                         <tr class="text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50/30">
                             <th class="px-6 py-4 border-b border-gray-100">Variant</th>
                             <th class="px-6 py-4 border-b border-gray-100">SKU</th>
-                            <th class="px-6 py-4 border-b border-gray-100">Price ($)</th>
+                            <th class="px-6 py-4 border-b border-gray-100">Price (₹)</th>
+                            <th class="px-6 py-4 border-b border-gray-100 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="variant-table-body" class="divide-y divide-gray-100">
                         <?php if (empty($variants)): ?>
-                        <tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">No variants exist for this product.</td></tr>
+                        <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No variants exist for this product.</td></tr>
                         <?php else: ?>
                             <?php foreach ($variants as $index => $variant): ?>
-                            <tr class="hover:bg-gray-50/50 transition-colors">
+                            <tr class="hover:bg-gray-50/50 transition-colors variant-table-row">
                                 <td class="px-6 py-4">
                                     <div class="flex items-center">
                                         <svg class="w-4 h-4 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
@@ -242,6 +322,11 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <input type="text" step="any" min="0.01" data-sync="variants[<?= $variant['id'] ?>][base_price]" value="<?= htmlspecialchars($variant['base_price']) ?>" class="w-32 text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-600 focus:ring-brown focus:border-brown bg-white shadow-sm sync-input">
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <button type="button" onclick="if(confirm('Remove this variant? It will be deleted when you update the product.')){ this.closest('.variant-table-row').remove(); const card = document.getElementById('variant-card-<?= $variant['id'] ?>'); if(card) card.remove(); }" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete variant">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -259,7 +344,7 @@
                 <?php else: ?>
                     <div class="space-y-6">
                         <?php foreach ($variants as $index => $variant): ?>
-                        <div class="bg-white rounded-2xl border border-cream shadow-sm overflow-hidden">
+                        <div id="variant-card-<?= $variant['id'] ?>" class="bg-white rounded-2xl border border-cream shadow-sm overflow-hidden variant-card-item">
                             <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
                                 <div class="flex items-center space-x-3">
                                     <span class="font-bold text-gray-900 font-serif text-lg">Variant #<?= $variant['id'] ?></span>
@@ -268,8 +353,11 @@
                                     <?php endif; ?>
                                     <div class="text-xs text-gray-400 mt-1 font-mono hidden md:block ml-2"><?= htmlspecialchars($variant['sku']) ?></div>
                                 </div>
-                                <div>
+                                <div class="flex items-center space-x-2">
                                     <span class="px-3 py-1 text-xs font-bold text-green-700 bg-green-100 rounded-full"><?= ucfirst(htmlspecialchars($variant['status'] ?? 'active')) ?></span>
+                                    <button type="button" onclick="if(confirm('Remove this variant? It will be deleted when you update the product.')){ this.closest('.variant-card-item').remove(); }" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete variant">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    </button>
                                 </div>
                             </div>
                             
@@ -433,15 +521,71 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    const sizeChartSelect = document.getElementById('size_chart_id');
+    const sizeChartHint = document.getElementById('size_chart_hint');
+
+    function filterSizeCharts(catId, subCatId) {
+        if (!sizeChartSelect) return;
+
+        const options = sizeChartSelect.querySelectorAll('option[data-category-id]');
+        let matchCount = 0;
+        let subMatchCount = 0;
+
+        options.forEach(opt => {
+            const chartCatId = opt.getAttribute('data-category-id');
+            const chartSubCatId = opt.getAttribute('data-subcategory-id') || '0';
+
+            const matchesSub = subCatId && (chartSubCatId === String(subCatId));
+            const matchesCat = catId && (chartCatId === String(catId));
+            const isGlobal = !chartCatId || chartCatId === '0';
+
+            if (matchesSub) {
+                opt.style.display = '';
+                subMatchCount++;
+                matchCount++;
+            } else if (matchesCat || isGlobal) {
+                opt.style.display = '';
+                if (matchesCat) matchCount++;
+            } else {
+                opt.style.display = 'none';
+            }
+        });
+
+        if (subCatId && subMatchCount > 0) {
+            const currentSelected = sizeChartSelect.querySelector(`option[value="${sizeChartSelect.value}"]`);
+            if (!sizeChartSelect.value || (currentSelected && currentSelected.style.display === 'none')) {
+                const matchedSubOpt = sizeChartSelect.querySelector(`option[data-subcategory-id="${subCatId}"]`);
+                if (matchedSubOpt) {
+                    sizeChartSelect.value = matchedSubOpt.value;
+                }
+            }
+        }
+
+        if (sizeChartHint) {
+            if (subCatId && subMatchCount > 0) {
+                sizeChartHint.innerHTML = `<span class="text-emerald-600 font-semibold">✓ ${subMatchCount} size chart(s) specifically tailored for this subcategory.</span>`;
+            } else if (catId && matchCount > 0) {
+                sizeChartHint.innerHTML = `<span class="text-blue-600 font-semibold">✓ ${matchCount} size chart(s) available for this category.</span>`;
+            } else {
+                sizeChartHint.innerHTML = `<span class="text-gray-500">Auto-filters to match selected Category and Subcategory.</span>`;
+            }
+        }
+    }
+
     if (noAttributesCheckbox) {
         noAttributesCheckbox.addEventListener('change', toggleNoAttributes);
     }
     
     toggleNoAttributes(); // Initial state
 
+    // Initial filter for size charts based on currently selected values
+    filterSizeCharts(categoryIdInput ? categoryIdInput.value : '', subCategorySelect ? subCategorySelect.value : '');
+
     if (categoryIdInput) {
         categoryIdInput.addEventListener('change', function() {
             const catId = this.value;
+            filterSizeCharts(catId, subCategorySelect ? subCategorySelect.value : '');
+
             if (!catId) {
                 if (subCategorySelect) {
                     subCategorySelect.innerHTML = '<option value="">Select Category first...</option>';
@@ -467,6 +611,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                         subCategorySelect.disabled = false;
                         fetchAttributes();
+                        filterSizeCharts(catId, subCategorySelect.value);
                     })
                     .catch(err => {
                         console.error(err);
@@ -479,7 +624,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (subCategorySelect) {
-        subCategorySelect.addEventListener('change', fetchAttributes);
+        subCategorySelect.addEventListener('change', function() {
+            fetchAttributes();
+            filterSizeCharts(categoryIdInput ? categoryIdInput.value : '', this.value);
+        });
     }
 
     const selectedAttributes = <?= json_encode($selectedAttributes ?? []) ?>;
@@ -1087,6 +1235,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const preview = document.getElementById('preview_' + inputId);
         if (input) input.remove();
         if (preview) preview.remove();
+    };
+
+    // Custom Dynamic Description Fields
+    let customFieldCount = <?= !empty($existingCustomFields) ? count($existingCustomFields) : 0 ?>;
+    window.addCustomField = function(fieldName = '', fieldValue = '') {
+        const container = document.getElementById('custom-fields-container');
+        if (!container) return;
+        const index = customFieldCount++;
+        const row = document.createElement('div');
+        row.className = 'custom-field-row flex items-start gap-3 p-3.5 bg-gray-50/80 border border-gray-200 rounded-xl transition-all duration-200 hover:border-gray-300 shadow-2xs';
+        row.id = `custom-field-${index}`;
+        row.innerHTML = `
+            <div class="w-1/3 min-w-[140px]">
+                <input type="text" name="custom_fields[${index}][name]" value="${fieldName.replace(/"/g, '&quot;')}" placeholder="Field Name" class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-2 text-sm bg-white font-medium text-gray-800">
+            </div>
+            <div class="flex-1">
+                <textarea name="custom_fields[${index}][value]" rows="2" placeholder="Field details / content..." class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-2 text-sm bg-white text-gray-800 resize-y">${fieldValue}</textarea>
+            </div>
+            <button type="button" onclick="this.closest('.custom-field-row').remove()" class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors mt-0.5" title="Delete Field">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        `;
+        container.appendChild(row);
+        const nameInput = row.querySelector('input');
+        if (nameInput && !fieldName) {
+            nameInput.focus();
+        }
     };
 
     window.removeExistingVariantImage = function(btn) {

@@ -25,12 +25,17 @@ class CategoryController extends Controller
     {
         $this->requirePermission('categories', 'view');
         
+        $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
+
         $categoryModel = new Category();
-        $categories = $categoryModel->getAll();
+        $categories = $categoryModel->getAll($isCustomize ? 1 : 0);
         
         $this->render('admin/catalog/categories/index', [
-            'title' => 'Manage Categories',
-            'categories' => $categories
+            'title' => $isCustomize ? 'Customize Categories' : 'Manage Categories',
+            'categories' => $categories,
+            'module' => $module,
+            'isCustomize' => $isCustomize
         ], 'admin');
     }
 
@@ -38,20 +43,31 @@ class CategoryController extends Controller
     {
         $this->requirePermission('categories', 'create');
 
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize') || (!empty($_POST['is_customizable']) && (int)$_POST['is_customizable'] === 1);
+        $redirectUrl = '/admin/catalog/categories' . ($isCustomize ? '?module=customize' : '');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/categories');
+            $this->redirect($redirectUrl);
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        $slug = trim($_POST['slug'] ?? '');
+        if (empty($slug)) {
+            $slug = $name;
         }
 
         $data = [
-            'name' => trim($_POST['name'] ?? ''),
-            'slug' => trim($_POST['slug'] ?? ''),
+            'name' => $name,
+            'slug' => $slug,
             'hsn_code' => !empty($_POST['hsn_code']) ? trim($_POST['hsn_code']) : null,
             'description' => trim($_POST['description'] ?? ''),
             'image_path' => '',
             'min_order_value' => !empty($_POST['min_order_value']) ? (float)$_POST['min_order_value'] : null,
             'sgst' => isset($_POST['sgst']) && $_POST['sgst'] !== '' ? (float)$_POST['sgst'] : 0.00,
             'cgst' => isset($_POST['cgst']) && $_POST['cgst'] !== '' ? (float)$_POST['cgst'] : 0.00,
-            'status' => $_POST['status'] ?? 'active'
+            'status' => $_POST['status'] ?? 'active',
+            'is_customizable' => $isCustomize ? 1 : 0
         ];
 
         // Handle image upload via Cloudinary
@@ -67,40 +83,51 @@ class CategoryController extends Controller
             $data['image_path'] = $_POST['image_path'];
         }
 
-        if (empty($data['name']) || empty($data['slug'])) {
-            Session::setFlash('error', 'Name and Slug are required.');
-            $this->redirect('/admin/catalog/categories');
+        if (empty($data['name'])) {
+            Session::setFlash('error', 'Name is required.');
+            $this->redirect($redirectUrl);
         }
 
         try {
             $categoryModel = new Category();
             $categoryModel->create($data);
-            Session::setFlash('success', 'Category created successfully.');
+            Session::setFlash('success', ($isCustomize ? 'Customize Category' : 'Category') . ' created successfully.');
         } catch (\Exception $e) {
             Session::setFlash('error', 'Error creating category: ' . $e->getMessage());
         }
 
-        $this->redirect('/admin/catalog/categories');
+        $this->redirect($redirectUrl);
     }
 
     public function update()
     {
         $this->requirePermission('categories', 'edit');
 
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize') || (!empty($_POST['is_customizable']) && (int)$_POST['is_customizable'] === 1);
+        $redirectUrl = '/admin/catalog/categories' . ($isCustomize ? '?module=customize' : '');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/categories');
+            $this->redirect($redirectUrl);
         }
 
         $id = (int)($_POST['id'] ?? 0);
+        $name = trim($_POST['name'] ?? '');
+        $slug = trim($_POST['slug'] ?? '');
+        if (empty($slug)) {
+            $slug = $name;
+        }
+
         $data = [
-            'name' => trim($_POST['name'] ?? ''),
-            'slug' => trim($_POST['slug'] ?? ''),
+            'name' => $name,
+            'slug' => $slug,
             'hsn_code' => !empty($_POST['hsn_code']) ? trim($_POST['hsn_code']) : null,
             'description' => trim($_POST['description'] ?? ''),
             'min_order_value' => !empty($_POST['min_order_value']) ? (float)$_POST['min_order_value'] : null,
             'sgst' => isset($_POST['sgst']) && $_POST['sgst'] !== '' ? (float)$_POST['sgst'] : 0.00,
             'cgst' => isset($_POST['cgst']) && $_POST['cgst'] !== '' ? (float)$_POST['cgst'] : 0.00,
-            'status' => $_POST['status'] ?? 'active'
+            'status' => $_POST['status'] ?? 'active',
+            'is_customizable' => $isCustomize ? 1 : 0
         ];
 
         // Handle image upload via Cloudinary (fallback for traditional file upload)
@@ -120,11 +147,14 @@ class CategoryController extends Controller
             $categoryModel = new Category();
             $existing = $categoryModel->findById($id);
             $data['image_path'] = $existing['image_path'] ?? '';
+            if (!isset($_POST['is_customizable']) && isset($existing['is_customizable'])) {
+                $data['is_customizable'] = (int)$existing['is_customizable'];
+            }
         }
 
         if ($id <= 0 || empty($data['name']) || empty($data['slug'])) {
             Session::setFlash('error', 'Invalid input.');
-            $this->redirect('/admin/catalog/categories');
+            $this->redirect($redirectUrl);
         }
 
         try {
@@ -164,30 +194,50 @@ class CategoryController extends Controller
             Session::setFlash('error', 'Error updating category: ' . $e->getMessage());
         }
 
-        $this->redirect('/admin/catalog/categories');
+        $this->redirect($redirectUrl);
     }
 
     public function delete()
     {
         $this->requirePermission('categories', 'delete');
 
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $redirectUrl = '/admin/catalog/categories' . ($isCustomize ? '?module=customize' : '');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/categories');
+            if ($this->isJsonRequest()) {
+                $this->json(['success' => false, 'message' => 'Invalid request method.']);
+            }
+            $this->redirect($redirectUrl);
         }
 
         $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $jsonInput = json_decode(file_get_contents('php://input'), true);
+            $id = (int)($jsonInput['id'] ?? 0);
+        }
         
         if ($id > 0) {
             try {
                 $categoryModel = new Category();
                 $categoryModel->delete($id);
-                Session::setFlash('success', 'Category deleted successfully.');
+                if (class_exists('\Core\Cache')) {
+                    \Core\Cache::delete('catalog_active');
+                }
+                if ($this->isJsonRequest()) {
+                    $this->json(['success' => true, 'message' => ($isCustomize ? 'Customize Category' : 'Category') . ' deleted successfully.']);
+                }
+                Session::setFlash('success', ($isCustomize ? 'Customize Category' : 'Category') . ' deleted successfully.');
             } catch (\Exception $e) {
+                if ($this->isJsonRequest()) {
+                    $this->json(['success' => false, 'message' => $e->getMessage() ?: 'Cannot delete category.']);
+                }
                 Session::setFlash('error', $e->getMessage() ?: 'Cannot delete category.');
             }
         }
 
-        $this->redirect('/admin/catalog/categories');
+        $this->redirect($redirectUrl);
     }
 
     public function checkDelete()
@@ -195,16 +245,23 @@ class CategoryController extends Controller
         $this->requirePermission('categories', 'delete');
         $id = (int)($_GET['id'] ?? 0);
         
+        if (ob_get_length()) ob_clean();
+        header('Content-Type: application/json');
+        
         if ($id > 0) {
             $categoryModel = new Category();
             $count = $categoryModel->getProductCount($id);
-            header('Content-Type: application/json');
             echo json_encode(['success' => true, 'count' => $count]);
             exit;
         }
         
-        header('Content-Type: application/json');
         echo json_encode(['success' => false]);
         exit;
+    }
+
+    private function isJsonRequest(): bool
+    {
+        return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+            || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
     }
 }

@@ -184,11 +184,13 @@ $safeProducts = array_map(function($p) {
             <div class="absolute -right-1 -top-1 w-4 h-4 bg-red-500 rounded-full animate-ping opacity-75"></div>
         </div>
         <h3 class="text-xl font-display font-bold text-gray-900 mb-2">Delete <?= !empty($isCustomize) ? 'Fabric' : 'Product' ?>?</h3>
-        <p class="text-sm text-gray-500 mb-8 font-medium">Are you sure you want to delete this <?= !empty($isCustomize) ? 'fabric' : 'product' ?>? This action <strong class="text-gray-900">cannot be undone</strong>.</p>
-        <form action="<?= BASE_URL ?>/admin/catalog/products/delete" method="POST" class="flex space-x-3">
+        <p class="text-sm text-gray-500 mb-6 font-medium">Are you sure you want to delete this <?= !empty($isCustomize) ? 'fabric' : 'product' ?>? This action <strong class="text-gray-900">cannot be undone</strong>.</p>
+        <div id="delete-error-msg" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-left"></div>
+        <form id="product-delete-form" action="<?= BASE_URL ?>/admin/catalog/products/delete" method="POST" class="flex space-x-3">
             <input type="hidden" name="id" id="delete-id">
+            <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
             <button type="button" onclick="document.getElementById('delete-modal').classList.add('hidden')" class="flex-1 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">Cancel</button>
-            <button type="submit" class="flex-1 px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl text-sm font-semibold shadow-lg shadow-red-500/30 transform hover:-translate-y-0.5 transition-all">Yes, Delete</button>
+            <button type="submit" id="btn-confirm-delete-prod" class="flex-1 px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl text-sm font-semibold shadow-lg shadow-red-500/30 transform hover:-translate-y-0.5 transition-all">Yes, Delete</button>
         </form>
     </div>
 </div>
@@ -196,8 +198,62 @@ $safeProducts = array_map(function($p) {
 <script>
 function openDeleteModal(id) {
     document.getElementById('delete-id').value = id;
+    const errDiv = document.getElementById('delete-error-msg');
+    if (errDiv) { errDiv.classList.add('hidden'); errDiv.innerText = ''; }
+    const btn = document.getElementById('btn-confirm-delete-prod');
+    if (btn) { btn.disabled = false; btn.innerHTML = 'Yes, Delete'; }
     document.getElementById('delete-modal').classList.remove('hidden');
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const deleteForm = document.getElementById('product-delete-form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-confirm-delete-prod');
+            const errDiv = document.getElementById('delete-error-msg');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Deleting...';
+            
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(res => {
+                const contentType = res.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return res.json();
+                }
+                window.location.reload();
+                return { success: true };
+            })
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('delete-modal').classList.add('hidden');
+                    window.location.reload();
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Yes, Delete';
+                    if (errDiv) {
+                        errDiv.innerText = data.message || 'Error deleting product.';
+                        errDiv.classList.remove('hidden');
+                    } else {
+                        alert(data.message || 'Error deleting product.');
+                    }
+                }
+            })
+            .catch(err => {
+                this.submit();
+            });
+        });
+    }
+});
 
 // Client-Side Caching & Pagination Logic
 const allProducts = <?= json_encode($safeProducts, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
@@ -496,7 +552,7 @@ function renderTable() {
                 <div class="flex items-center justify-end space-x-2">
                     ${approvalActions}
                     <?php if ($this->hasPermission('products', 'view')): ?>
-                    <a href="${baseUrl}/admin/catalog/products/view?id=${prod.id}" class="p-2 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all duration-200 group/btn" title="View">
+                    <a href="${baseUrl}/admin/catalog/products/view?id=${prod.id}<?= !empty($isCustomize) ? '&module=customize' : '' ?>" class="p-2 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all duration-200 group/btn" title="View">
                         <svg class="w-5 h-5 group-hover/btn:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                     </a>
                     <?php endif; ?>

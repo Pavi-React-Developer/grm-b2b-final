@@ -38,16 +38,21 @@ class SubCategoryController extends Controller
     {
         $this->requirePermission('subcategories', 'view');
         
+        $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
+
         $subCategoryModel = new SubCategory();
-        $subCategories = $subCategoryModel->getAll();
+        $subCategories = $subCategoryModel->getAll($isCustomize ? 1 : 0);
         
         $categoryModel = new Category();
-        $categories = $categoryModel->getAllActive();
+        $categories = $categoryModel->getAllActive(null, $isCustomize ? 1 : 0);
 
         $this->render('admin/catalog/subcategories/index', [
-            'title' => 'Manage Subcategories',
+            'title' => $isCustomize ? 'Customize Subcategories' : 'Manage Subcategories',
             'subCategories' => $subCategories,
-            'categories' => $categories
+            'categories' => $categories,
+            'module' => $module,
+            'isCustomize' => $isCustomize
         ], 'admin');
     }
 
@@ -55,52 +60,74 @@ class SubCategoryController extends Controller
     {
         $this->requirePermission('subcategories', 'create');
 
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize') || (!empty($_POST['is_customizable']) && (int)$_POST['is_customizable'] === 1);
+        $redirectUrl = '/admin/catalog/subcategories' . ($isCustomize ? '?module=customize' : '');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/subcategories');
+            $this->redirect($redirectUrl);
+        }
+
+        $name = trim($_POST['name'] ?? '');
+        $slug = trim($_POST['slug'] ?? '');
+        if (empty($slug)) {
+            $slug = $name;
         }
 
         $data = [
             'category_id' => (int)($_POST['category_id'] ?? 0),
-            'name' => trim($_POST['name'] ?? ''),
-            'slug' => trim($_POST['slug'] ?? ''),
-            'status' => $_POST['status'] ?? 'active'
+            'name' => $name,
+            'slug' => $slug,
+            'status' => $_POST['status'] ?? 'active',
+            'is_customizable' => $isCustomize ? 1 : 0
         ];
 
-        if ($data['category_id'] <= 0 || empty($data['name']) || empty($data['slug'])) {
-            Session::setFlash('error', 'Category, Name, and Slug are required.');
-            $this->redirect('/admin/catalog/subcategories');
+        if ($data['category_id'] <= 0 || empty($data['name'])) {
+            Session::setFlash('error', 'Parent Category and Name are required.');
+            $this->redirect($redirectUrl);
         }
 
         try {
             $subCategoryModel = new SubCategory();
             $subCategoryModel->create($data);
-            Session::setFlash('success', 'Subcategory created successfully.');
+            Session::setFlash('success', ($isCustomize ? 'Customize Subcategory' : 'Subcategory') . ' created successfully.');
         } catch (\Exception $e) {
             Session::setFlash('error', 'Error creating subcategory: ' . $e->getMessage());
         }
 
-        $this->redirect('/admin/catalog/subcategories');
+        $this->redirect($redirectUrl);
     }
 
     public function update()
     {
         $this->requirePermission('subcategories', 'edit');
 
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize') || (!empty($_POST['is_customizable']) && (int)$_POST['is_customizable'] === 1);
+        $redirectUrl = '/admin/catalog/subcategories' . ($isCustomize ? '?module=customize' : '');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/subcategories');
+            $this->redirect($redirectUrl);
         }
 
         $id = (int)($_POST['id'] ?? 0);
+        $name = trim($_POST['name'] ?? '');
+        $slug = trim($_POST['slug'] ?? '');
+        if (empty($slug)) {
+            $slug = $name;
+        }
+
         $data = [
             'category_id' => (int)($_POST['category_id'] ?? 0),
-            'name' => trim($_POST['name'] ?? ''),
-            'slug' => trim($_POST['slug'] ?? ''),
-            'status' => $_POST['status'] ?? 'active'
+            'name' => $name,
+            'slug' => $slug,
+            'status' => $_POST['status'] ?? 'active',
+            'is_customizable' => $isCustomize ? 1 : 0
         ];
 
-        if ($id <= 0 || $data['category_id'] <= 0 || empty($data['name']) || empty($data['slug'])) {
+        if ($id <= 0 || $data['category_id'] <= 0 || empty($data['name'])) {
             Session::setFlash('error', 'Invalid input.');
-            $this->redirect('/admin/catalog/subcategories');
+            $this->redirect($redirectUrl);
         }
 
         try {
@@ -111,29 +138,55 @@ class SubCategoryController extends Controller
             Session::setFlash('error', 'Error updating subcategory: ' . $e->getMessage());
         }
 
-        $this->redirect('/admin/catalog/subcategories');
+        $this->redirect($redirectUrl);
     }
 
     public function delete()
     {
         $this->requirePermission('subcategories', 'delete');
 
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $redirectUrl = '/admin/catalog/subcategories' . ($isCustomize ? '?module=customize' : '');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/subcategories');
+            if ($this->isJsonRequest()) {
+                $this->json(['success' => false, 'message' => 'Invalid request method.']);
+            }
+            $this->redirect($redirectUrl);
         }
 
         $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $jsonInput = json_decode(file_get_contents('php://input'), true);
+            $id = (int)($jsonInput['id'] ?? 0);
+        }
         
         if ($id > 0) {
             try {
                 $subCategoryModel = new SubCategory();
                 $subCategoryModel->delete($id);
-                Session::setFlash('success', 'Subcategory deleted successfully.');
+                if (class_exists('\Core\Cache')) {
+                    \Core\Cache::delete('catalog_active');
+                }
+                if ($this->isJsonRequest()) {
+                    $this->json(['success' => true, 'message' => ($isCustomize ? 'Customize Subcategory' : 'Subcategory') . ' deleted successfully.']);
+                }
+                Session::setFlash('success', ($isCustomize ? 'Customize Subcategory' : 'Subcategory') . ' deleted successfully.');
             } catch (\Exception $e) {
+                if ($this->isJsonRequest()) {
+                    $this->json(['success' => false, 'message' => $e->getMessage() ?: 'Cannot delete subcategory because it is in use.']);
+                }
                 Session::setFlash('error', $e->getMessage() ?: 'Cannot delete subcategory because it is in use.');
             }
         }
 
-        $this->redirect('/admin/catalog/subcategories');
+        $this->redirect($redirectUrl);
+    }
+
+    private function isJsonRequest(): bool
+    {
+        return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+            || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
     }
 }

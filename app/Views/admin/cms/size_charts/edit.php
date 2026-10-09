@@ -53,13 +53,29 @@
                             <span>+ Add Category</span>
                         </button>
                     </div>
-                    <select name="category_id" id="categoryIdSelect" onchange="updateCategoryName()" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white">
+                    <select name="category_id" id="categoryIdSelect" onchange="handleCategoryChange()" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white">
                         <option value="0" data-name="All Categories" <?= (int)$chart['category_id'] === 0 ? 'selected' : '' ?>>All Categories / General</option>
                         <?php foreach ($categories as $cat): ?>
                             <option value="<?= $cat['id'] ?>" data-name="<?= htmlspecialchars($cat['name']) ?>" <?= (int)$chart['category_id'] === (int)$cat['id'] ? 'selected' : '' ?>><?= htmlspecialchars($cat['name']) ?></option>
                         <?php endforeach; ?>
                     </select>
                     <input type="hidden" name="category_name" id="categoryNameHidden" value="<?= htmlspecialchars($chart['category_name'] ?? 'All Categories') ?>">
+                </div>
+
+                <!-- Applicable Subcategory -->
+                <div>
+                    <label class="block text-xs font-black text-gray-700 uppercase tracking-wider mb-2">Target Subcategory (Optional)</label>
+                    <select name="sub_category_id" id="subCategoryIdSelect" onchange="updateSubCategoryName()" class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none bg-white">
+                        <option value="0" data-name="" <?= empty($chart['sub_category_id']) ? 'selected' : '' ?>>All Subcategories / General</option>
+                        <?php if (!empty($subCategories)): ?>
+                            <?php foreach ($subCategories as $sub): ?>
+                                <option value="<?= $sub['id'] ?>" data-cat-id="<?= $sub['category_id'] ?>" data-name="<?= htmlspecialchars($sub['name']) ?>" <?= (!empty($chart['sub_category_id']) && (int)$chart['sub_category_id'] === (int)$sub['id']) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($sub['name']) ?> (<?= htmlspecialchars($sub['category_name'] ?? '') ?>)
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                    <input type="hidden" name="sub_category_name" id="subCategoryNameHidden" value="<?= htmlspecialchars($chart['sub_category_name'] ?? '') ?>">
                 </div>
 
                 <!-- Dress Type -->
@@ -346,10 +362,53 @@ function deleteRow(idx) {
     renderBuilder();
 }
 
+function handleCategoryChange() {
+    updateCategoryName();
+    filterSubCategories();
+}
+
 function updateCategoryName() {
     const sel = document.getElementById('categoryIdSelect');
     const opt = sel.options[sel.selectedIndex];
     document.getElementById('categoryNameHidden').value = opt.getAttribute('data-name') || 'All Categories';
+}
+
+function updateSubCategoryName() {
+    const sel = document.getElementById('subCategoryIdSelect');
+    if (!sel) return;
+    const opt = sel.options[sel.selectedIndex];
+    document.getElementById('subCategoryNameHidden').value = opt ? (opt.getAttribute('data-name') || '') : '';
+}
+
+function filterSubCategories() {
+    const catId = document.getElementById('categoryIdSelect').value;
+    const subSel = document.getElementById('subCategoryIdSelect');
+    if (!subSel) return;
+
+    const options = subSel.querySelectorAll('option');
+    let hasMatch = false;
+
+    options.forEach(opt => {
+        const optCatId = opt.getAttribute('data-cat-id');
+        if (!optCatId) {
+            opt.style.display = '';
+            return;
+        }
+        if (!catId || catId === '0' || optCatId === String(catId)) {
+            opt.style.display = '';
+            if (optCatId === String(catId)) hasMatch = true;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+
+    if (catId && catId !== '0') {
+        const currentOpt = subSel.options[subSel.selectedIndex];
+        if (currentOpt && currentOpt.getAttribute('data-cat-id') && currentOpt.getAttribute('data-cat-id') !== String(catId)) {
+            subSel.value = '0';
+        }
+    }
+    updateSubCategoryName();
 }
 
 function openAddCategoryModal() {

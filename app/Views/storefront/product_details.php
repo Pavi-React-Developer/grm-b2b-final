@@ -113,18 +113,18 @@ if (!empty($variants)) {
                     <?php 
                     $initialDiscPct = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                     ?>
-                    <div id="mainImageDiscountBadge" class="<?= ($canAddToCart && $initialDiscPct > 0) ? '' : 'hidden' ?> absolute top-3.5 left-3.5 z-20 w-16 sm:w-20 md:w-22 drop-shadow-lg pointer-events-none">
+                    <div id="mainImageDiscountBadge" class="<?= ($canAddToCart && $initialDiscPct > 0) ? '' : 'hidden' ?> absolute top-3 left-3 z-20 w-14 sm:w-16 drop-shadow-lg pointer-events-none">
                         <?= render_discount_starburst($initialDiscPct > 0 ? $initialDiscPct : 1, 'w-full h-full') ?>
                     </div>
                     <!-- Zoom Lens -->
                     <div id="zoomLens" class="absolute hidden border border-gray-300 bg-white/40 pointer-events-none" style="width: 150px; height: 150px; z-index: 10;"></div>
                     
-                    <div class="w-full overflow-hidden flex items-center justify-center bg-gray-50 rounded-xl" style="aspect-ratio: 3 / 4; min-height: 450px; max-height: 620px; width: 100%;">
+                    <div class="w-full overflow-hidden flex items-center justify-center bg-gray-50" style="aspect-ratio: 1 / 1; max-height: 520px;">
                         <img id="mainImage" 
                              src="<?= $initialMainImage ?>" 
                              alt="<?= htmlspecialchars($product['name']) ?>" 
-                             class="w-full h-full object-contain p-1" 
-                             style="width: 100%; height: 100%; object-fit: contain; max-height: 620px; display: block; transition: opacity 0.2s ease;"
+                             class="w-full h-full object-cover" 
+                             style="width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s ease;"
                              loading="eager" decoding="async"
                              onerror="this.src='https://placehold.co/800x800/f9fafb/9ca3af?text=No+Image'">
                     </div>
@@ -143,15 +143,7 @@ if (!empty($variants)) {
                     <!-- Populated by JS -->
                 </div>
 
-                <!-- Description â€” desktop only below gallery -->
-                <?php if (!empty($product['description'])): ?>
-                <div class="hidden lg:block mt-5 bg-gray-50 rounded-xl p-5 border border-gray-100">
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">Product Description</h3>
-                    <p class="text-gray-600 leading-relaxed text-sm">
-                        <?= nl2br(htmlspecialchars($product['description'])) ?>
-                    </p>
                 </div>
-                <?php endif; ?>
             </div>
 
             <!-- ===== RIGHT: Details Panel ===== -->
@@ -299,8 +291,8 @@ if (!empty($variants)) {
                         <p class="text-sm font-black text-gray-900"><?= $moq ?> units</p>
                     </div>
                     <div class="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Weight / Unit</p>
-                        <p class="text-sm font-black text-gray-900"><?= !empty($product['weight']) ? htmlspecialchars($product['weight']) . ' kg / unit' : '-' ?></p>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Weight</p>
+                        <p class="text-sm font-black text-gray-900"><?= !empty($product['weight']) ? htmlspecialchars($product['weight']) . ' kg' : '-' ?></p>
                     </div>
                 </div>
                 <?php else: ?>
@@ -333,25 +325,25 @@ if (!empty($variants)) {
                 </div>
                 <?php endif; ?>
 
-                <!-- B2B Category-to-Subcategory Offer Callout (Pink Theme) -->
+                <!-- B2B Category-to-Subcategory Offer Callout -->
                 <?php if (!empty($categoryOfferRule)): ?>
-                <div class="mb-5 bg-gradient-to-br from-pink-500/10 via-pink-500/5 to-pink-50/70 border border-pink-200/80 rounded-2xl p-4 shadow-sm">
+                <div class="mb-5 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-50 border border-amber-300/80 rounded-2xl p-4 shadow-sm">
                     <div class="flex items-start gap-2.5">
                         <span class="text-xl flex-shrink-0">🎁</span>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2">
-                                <h4 class="text-xs font-black text-pink-950 uppercase tracking-wider">B2B Combo Offer Available</h4>
-                                <span class="text-[10px] font-bold text-pink-700 bg-pink-100 px-2 py-0.5 rounded-full border border-pink-200/60">Tier ₹<?= number_format($categoryOfferRule['min_amount']) ?></span>
+                                <h4 class="text-xs font-black text-amber-950 uppercase tracking-wider">B2B Combo Offer Available</h4>
+                                <span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">Tier ₹<?= number_format($categoryOfferRule['min_amount']) ?></span>
                             </div>
-                            <p class="text-xs text-pink-900 leading-snug mt-1">
+                            <p class="text-xs text-amber-900 leading-snug mt-1">
                                 Order <strong>₹<?= number_format($categoryOfferRule['min_amount']) ?></strong> or more from <em><?= htmlspecialchars($categoryOfferRule['main_category_name']) ?></em> to unlock special low order minimums on:
                             </p>
                             <?php if (!empty($categoryOfferRule['secondary_offers'])): ?>
                             <div class="mt-2.5 flex flex-wrap gap-1.5">
                                 <?php foreach($categoryOfferRule['secondary_offers'] as $so): ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-pink-900 rounded-lg text-[11px] font-bold border border-pink-200 shadow-2xs">
-                                        <span class="text-pink-600">✨ <?= htmlspecialchars($so['name']) ?></span>
-                                        <span class="text-pink-700 font-semibold">(Min ₹<?= number_format($so['min_amount']) ?>)</span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-amber-900 rounded-lg text-[11px] font-bold border border-amber-200 shadow-2xs">
+                                        <span>✨ <?= htmlspecialchars($so['name']) ?></span>
+                                        <span class="text-amber-700 font-semibold">(Min ₹<?= number_format($so['min_amount']) ?>)</span>
                                     </span>
                                 <?php endforeach; ?>
                             </div>
@@ -371,7 +363,7 @@ if (!empty($variants)) {
                         <div class="flex items-center justify-between mb-2.5">
                             <span class="text-sm font-bold text-gray-900">Select Variant</span>
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="openProductSizeChartModal(<?= (int)($product['category_id'] ?? ($category['id'] ?? 0)) ?>)" class="inline-flex items-center gap-1 text-xs font-bold text-[#f25996] hover:text-[#d94883] bg-[#fdf2f7] hover:bg-[#fce7f1] border border-[#fbaed2] px-2.5 py-1 rounded-lg transition-all shadow-2xs">
+                                <button type="button" onclick="openProductSizeChartModal(<?= (int)($product['category_id'] ?? ($category['id'] ?? 0)) ?>, <?= (int)($product['size_chart_id'] ?? 0) ?>, <?= (int)($product['id'] ?? 0) ?>)" class="inline-flex items-center gap-1 text-xs font-bold text-[#f25996] hover:text-[#d94883] bg-[#fdf2f7] hover:bg-[#fce7f1] border border-[#fbaed2] px-2.5 py-1 rounded-lg transition-all shadow-2xs">
                                     <svg class="w-3.5 h-3.5 text-[#f25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M3 12h18M3 18h18M7 6v3m4-3v2m4-2v3m4-3v2M7 12v3m4-3v2m4-3v3m4-3v2"></path></svg>
                                     <span>Size Guide</span>
                                 </button>
@@ -528,6 +520,212 @@ if (!empty($variants)) {
             </div>
         </div>
 
+        <?php
+        $rawCustomFields = $product['custom_fields'] ?? [];
+        if (is_string($rawCustomFields)) {
+            $productCustomTabs = json_decode($rawCustomFields, true) ?: [];
+        } elseif (is_array($rawCustomFields)) {
+            $productCustomTabs = $rawCustomFields;
+        } else {
+            $productCustomTabs = [];
+        }
+
+        // Determine title for Tab 2 ("How to play" for toys/games/kids/wooden products or "How to use")
+        $catName = strtolower($category['name'] ?? $product['category_name'] ?? '');
+        $subCatName = strtolower($subCategory['name'] ?? $product['sub_category_name'] ?? '');
+        $prodName = strtolower($product['name'] ?? '');
+        
+        $isToyContext = (
+            strpos($catName, 'toy') !== false ||
+            strpos($catName, 'play') !== false ||
+            strpos($catName, 'kid') !== false ||
+            strpos($catName, 'game') !== false ||
+            strpos($catName, 'wood') !== false ||
+            strpos($subCatName, 'toy') !== false ||
+            strpos($subCatName, 'play') !== false ||
+            strpos($subCatName, 'kid') !== false ||
+            strpos($prodName, 'toy') !== false ||
+            strpos($prodName, 'play') !== false ||
+            strpos($prodName, 'puzzle') !== false ||
+            strpos($prodName, 'alphabet') !== false ||
+            strpos($prodName, 'board') !== false ||
+            strpos($prodName, 'game') !== false
+        );
+
+        $howToUseTabTitle = $isToyContext ? 'How to play' : 'How to use';
+
+        // Filter custom fields to avoid duplicating standard tab names
+        $filteredCustomTabs = [];
+        if (!empty($productCustomTabs)) {
+            foreach ($productCustomTabs as $cf) {
+                $cfName = trim($cf['name'] ?? '');
+                $cfNameLower = strtolower($cfName);
+                if (empty($cfName)) continue;
+                if (in_array($cfNameLower, ['description', 'how to use', 'how to play', 'why choose', 'why choose us'])) {
+                    continue;
+                }
+                $filteredCustomTabs[] = $cf;
+            }
+        }
+        ?>
+        <!-- ===== PRODUCT INFORMATION TABS (Description, How to play, Why Choose, etc.) ===== -->
+        <div class="mt-8 mb-12 bg-[#FAF8F5] rounded-3xl border border-[#EFE9DF] p-6 sm:p-10 shadow-xs">
+            
+            <!-- Tab Navigation Header -->
+            <div class="border-b border-[#E5DFD5] pb-0 mb-8 overflow-x-auto no-scrollbar">
+                <nav class="flex space-x-6 sm:space-x-10 min-w-max" aria-label="Product Information Tabs">
+                    <!-- 1. Description Tab (Default Active) -->
+                    <button type="button" 
+                            onclick="switchProductInfoTab('tab-description', this)" 
+                            class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-[#1A1A1A] text-[#1A1A1A] font-bold text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                        <span class="w-4 h-4 rounded-full border border-current flex items-center justify-center text-[10px] font-serif font-bold italic shrink-0">i</span>
+                        <span>Description</span>
+                    </button>
+
+                    <!-- 2. How to play / How to use Tab -->
+                    <button type="button" 
+                            onclick="switchProductInfoTab('tab-how-to-use', this)" 
+                            class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-gray-700 flex items-center justify-center text-[10px] font-serif font-bold italic shrink-0">i</span>
+                        <span><?= htmlspecialchars($howToUseTabTitle) ?></span>
+                    </button>
+
+                    <!-- 3. Why choose Tab -->
+                    <button type="button" 
+                            onclick="switchProductInfoTab('tab-why-choose', this)" 
+                            class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-gray-700 flex items-center justify-center text-[10px] font-serif font-bold italic shrink-0">i</span>
+                        <span>Why choose</span>
+                    </button>
+
+                    <!-- 4. Dynamic Additional Custom Field Tabs -->
+                    <?php if (!empty($filteredCustomTabs)): ?>
+                        <?php foreach ($filteredCustomTabs as $idx => $tab): ?>
+                            <button type="button" 
+                                    onclick="switchProductInfoTab('tab-custom-<?= $idx ?>', this)" 
+                                    class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                                <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-gray-700 flex items-center justify-center text-[10px] font-serif font-bold italic shrink-0">i</span>
+                                <span><?= htmlspecialchars($tab['name']) ?></span>
+                            </button>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </nav>
+            </div>
+
+            <!-- Tab Content Panels -->
+            <div class="product-info-panels min-h-[140px]">
+                
+                <!-- 1. Description Panel (Default Active) -->
+                <div id="tab-description" class="product-info-panel block transition-opacity duration-300">
+                    <h3 class="text-lg sm:text-xl font-bold font-serif text-[#9C6228] mb-4 tracking-tight">
+                        About <?= htmlspecialchars($product['name']) ?>
+                    </h3>
+                    <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
+                        <?php 
+                        $descText = trim($product['description'] ?? '');
+                        if (!empty($descText)) {
+                            $paragraphs = explode("\n", $descText);
+                            foreach ($paragraphs as $p) {
+                                $p = trim($p);
+                                if ($p !== '') {
+                                    echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($p) . '</p>';
+                                }
+                            }
+                        } else {
+                            echo '<p class="text-gray-400 italic">No description provided for this product.</p>';
+                        }
+                        ?>
+                    </div>
+                </div>
+
+                <!-- 2. How to use / How to play Panel -->
+                <div id="tab-how-to-use" class="product-info-panel hidden transition-opacity duration-300">
+                    <h3 class="text-lg sm:text-xl font-bold font-serif text-[#9C6228] mb-4 tracking-tight">
+                        <?= htmlspecialchars($howToUseTabTitle) ?>
+                    </h3>
+                    <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
+                        <?php 
+                        $howText = trim($product['how_to_use'] ?? '');
+                        if (!empty($howText)) {
+                            $howParagraphs = explode("\n", $howText);
+                            foreach ($howParagraphs as $hp) {
+                                $hp = trim($hp);
+                                if ($hp !== '') {
+                                    echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($hp) . '</p>';
+                                }
+                            }
+                        } else {
+                            echo '<div class="space-y-2 text-gray-700">';
+                            if ($isToyContext) {
+                                echo '<p class="leading-relaxed">1. Unpack all components safely on a clean, flat surface.</p>';
+                                echo '<p class="leading-relaxed">2. Guide children through hands-on discovery, letter recognition, and creative problem-solving.</p>';
+                                echo '<p class="leading-relaxed">3. Store safely in a dry place after playtime to maintain wood finish and longevity.</p>';
+                            } else {
+                                echo '<p class="leading-relaxed">Follow product care instructions and handle with care. For detailed usage assistance or bulk customization guidelines, please contact our support team.</p>';
+                            }
+                            echo '</div>';
+                        }
+                        ?>
+                    </div>
+                </div>
+
+                <!-- 3. Why choose Panel -->
+                <div id="tab-why-choose" class="product-info-panel hidden transition-opacity duration-300">
+                    <h3 class="text-lg sm:text-xl font-bold font-serif text-[#9C6228] mb-4 tracking-tight">
+                        Why choose
+                    </h3>
+                    <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
+                        <?php 
+                        $whyText = trim($product['why_choose'] ?? '');
+                        if (!empty($whyText)) {
+                            $whyParagraphs = explode("\n", $whyText);
+                            foreach ($whyParagraphs as $wp) {
+                                $wp = trim($wp);
+                                if ($wp !== '') {
+                                    echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($wp) . '</p>';
+                                }
+                            }
+                        } else {
+                            echo '<div class="space-y-3 text-gray-700">';
+                            echo '<div class="flex items-start gap-3"><span class="text-[#9C6228] font-bold text-lg">•</span><p class="leading-relaxed"><strong>Premium Quality Craftsmanship:</strong> Made with top-grade, eco-friendly materials engineered for longevity.</p></div>';
+                            echo '<div class="flex items-start gap-3"><span class="text-[#9C6228] font-bold text-lg">•</span><p class="leading-relaxed"><strong>Safe & Non-Toxic:</strong> Smooth child-safe finish with rounded corners and non-toxic food-grade coating.</p></div>';
+                            echo '<div class="flex items-start gap-3"><span class="text-[#9C6228] font-bold text-lg">•</span><p class="leading-relaxed"><strong>Direct B2B Pricing:</strong> Factory-direct wholesale rates with flexible MOQ and reliable dispatch.</p></div>';
+                            echo '</div>';
+                        }
+                        ?>
+                    </div>
+                </div>
+
+                <!-- 4. Dynamic Custom Field Panels -->
+                <?php if (!empty($filteredCustomTabs)): ?>
+                    <?php foreach ($filteredCustomTabs as $idx => $tab): ?>
+                        <div id="tab-custom-<?= $idx ?>" class="product-info-panel hidden transition-opacity duration-300">
+                            <h3 class="text-lg sm:text-xl font-bold font-serif text-[#9C6228] mb-4 tracking-tight">
+                                <?= htmlspecialchars($tab['name']) ?>
+                            </h3>
+                            <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
+                                <?php 
+                                $valText = trim($tab['value'] ?? '');
+                                if (!empty($valText)) {
+                                    $valParagraphs = explode("\n", $valText);
+                                    foreach ($valParagraphs as $vp) {
+                                        $vp = trim($vp);
+                                        if ($vp !== '') {
+                                            echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($vp) . '</p>';
+                                        }
+                                    }
+                                } else {
+                                    echo '<p class="text-gray-400 italic">No content available for this section.</p>';
+                                }
+                                ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+
+            </div>
+        </div>
+
         <!-- ===== MOBILE STICKY ADD TO CART BAR ===== -->
         <div class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-xl px-3 py-2.5 safe-area-pb">
             <div class="flex items-center justify-between gap-2.5">
@@ -591,7 +789,7 @@ if (!empty($variants)) {
                             <?php 
                             $relDiscPct = ($relDiscountPrice && $relBasePrice > $relDiscountPrice) ? round((($relBasePrice - $relDiscountPrice) / $relBasePrice) * 100) : 0;
                             if ($canAddToCart && $relDiscPct > 0) {
-                                echo render_discount_starburst($relDiscPct, 'absolute top-1.5 left-1.5 z-10 w-16 sm:w-18 md:w-20 transition-transform duration-300 group-hover:scale-110');
+                                echo render_discount_starburst($relDiscPct, 'absolute top-2 left-2 z-10 w-9 h-9 sm:w-11 sm:h-11 transition-transform duration-300 group-hover:scale-110');
                             }
                             ?>
                             <img src="<?= htmlspecialchars($relPrimaryImage) ?>" alt="<?= htmlspecialchars($relProduct['name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: cover; width: 100%; height: 100%; display: block;">
@@ -1503,7 +1701,7 @@ if (!empty($variants)) {
                 };
                 const img = document.createElement('img');
                 img.src = url;
-                img.className = 'w-full h-full object-contain p-0.5';
+                img.className = 'w-full h-full object-cover';
                 img.alt = 'Thumbnail ' + (idx + 1);
                 btn.appendChild(img);
                 gallery.appendChild(btn);
@@ -1683,7 +1881,7 @@ if (!empty($variants)) {
     // Product Size Guide Modal Logic
     let productSizeChartsCache = null;
 
-    function openProductSizeChartModal(categoryId) {
+    function openProductSizeChartModal(categoryId, chartId = 0, productId = 0) {
         const modal = document.getElementById('productSizeGuideModal');
         const container = document.getElementById('productSizeGuideContent');
         const loader = document.getElementById('productSizeGuideLoader');
@@ -1700,7 +1898,11 @@ if (!empty($variants)) {
         loader.classList.remove('hidden');
         container.innerHTML = '';
 
-        fetch(`<?= BASE_URL ?>/api/size-chart?category_id=${categoryId || 0}`)
+        let apiUrl = `<?= BASE_URL ?>/api/size-chart?category_id=${categoryId || 0}`;
+        if (chartId) apiUrl += `&chart_id=${chartId}`;
+        if (productId) apiUrl += `&product_id=${productId}`;
+
+        fetch(apiUrl)
             .then(res => res.json())
             .then(data => {
                 loader.classList.add('hidden');
@@ -1728,6 +1930,46 @@ if (!empty($variants)) {
                 container.innerHTML = '<div class="text-center py-8 text-sm text-red-500">Failed to load size guide. Please try again.</div>';
             });
     }
+
+    // Interactive Product Information Tab Switcher (Description, How to play/use, Why choose, Custom fields)
+    window.switchProductInfoTab = function(targetPanelId, btn) {
+        // Hide all tab panels
+        const panels = document.querySelectorAll('.product-info-panel');
+        panels.forEach(panel => {
+            panel.classList.add('hidden');
+            panel.classList.remove('block');
+        });
+
+        // Reset all tab buttons
+        const tabBtns = document.querySelectorAll('.product-info-tab-btn');
+        tabBtns.forEach(tabBtn => {
+            tabBtn.classList.remove('border-[#1A1A1A]', 'text-[#1A1A1A]', 'font-bold');
+            tabBtn.classList.add('border-transparent', 'text-gray-500', 'font-medium');
+            const icon = tabBtn.querySelector('span:first-child');
+            if (icon) {
+                icon.classList.remove('border-current');
+                icon.classList.add('border-gray-400');
+            }
+        });
+
+        // Activate clicked tab button
+        if (btn) {
+            btn.classList.add('border-[#1A1A1A]', 'text-[#1A1A1A]', 'font-bold');
+            btn.classList.remove('border-transparent', 'text-gray-500', 'font-medium');
+            const activeIcon = btn.querySelector('span:first-child');
+            if (activeIcon) {
+                activeIcon.classList.add('border-current');
+                activeIcon.classList.remove('border-gray-400');
+            }
+        }
+
+        // Show target panel
+        const targetPanel = document.getElementById(targetPanelId);
+        if (targetPanel) {
+            targetPanel.classList.remove('hidden');
+            targetPanel.classList.add('block');
+        }
+    };
 
     function closeProductSizeChartModal() {
         const modal = document.getElementById('productSizeGuideModal');
@@ -1860,11 +2102,11 @@ if (!empty($variants)) {
 
         <!-- Modal Footer -->
         <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs">
-            <a href="<?= BASE_URL ?>/size-chart" class="font-bold text-[#f25996] hover:underline inline-flex items-center gap-1">
-                <span>View Full Size Guide Catalog</span>
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-            </a>
-            <button type="button" onclick="closeProductSizeChartModal()" class="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 rounded-lg transition-colors">
+            <span class="text-gray-400 font-medium flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-[#f25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Accurate sizing specifications for this garment
+            </span>
+            <button type="button" onclick="closeProductSizeChartModal()" class="px-5 py-2 bg-gray-900 hover:bg-black font-bold text-white rounded-lg transition-colors shadow-xs">
                 Close
             </button>
         </div>

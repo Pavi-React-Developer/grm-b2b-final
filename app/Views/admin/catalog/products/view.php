@@ -53,6 +53,12 @@ $prodMaxAmount = round($wholesalePrice + $prodTaxAmount, 2);
                         HSN: <?= htmlspecialchars($category['hsn_code']) ?>
                     </span>
                     <?php endif; ?>
+                    <?php if (!empty($sizeChart) || !empty($product['size_chart_title'])): ?>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-purple-50 text-purple-700 border border-purple-200">
+                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M3 12h18M3 18h18M7 6v3m4-3v2m4-2v3m4-3v2M7 12v3m4-3v2m4-3v3m4-3v2"></path></svg>
+                        Size Chart: <?= htmlspecialchars($sizeChart['title'] ?? ($product['size_chart_title'] ?? '')) ?>
+                    </span>
+                    <?php endif; ?>
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold <?= $product['status'] === 'active' ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-700' ?>">
                         <?= ucfirst($product['status']) ?>
                     </span>
@@ -70,12 +76,42 @@ $prodMaxAmount = round($wholesalePrice + $prodTaxAmount, 2);
         </div>
 
         <!-- Description Section -->
-        <?php if (!empty($product['description'])): ?>
-        <div class="p-8 border-b border-gray-100 bg-gray-50">
-            <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Description</h3>
-            <div class="prose prose-sm max-w-none text-gray-700">
-                <?= nl2br(htmlspecialchars($product['description'])) ?>
+        <?php 
+        $rawCustomFields = $product['custom_fields'] ?? [];
+        if (is_string($rawCustomFields)) {
+            $viewCustomFields = json_decode($rawCustomFields, true) ?: [];
+        } elseif (is_array($rawCustomFields)) {
+            $viewCustomFields = $rawCustomFields;
+        } else {
+            $viewCustomFields = [];
+        }
+        ?>
+        <?php if (!empty($product['description']) || !empty($viewCustomFields)): ?>
+        <div class="p-8 border-b border-gray-100 bg-gray-50 space-y-6">
+            <?php if (!empty($product['description'])): ?>
+            <div>
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Description</h3>
+                <div class="prose prose-sm max-w-none text-gray-700 leading-relaxed">
+                    <?= nl2br(htmlspecialchars($product['description'])) ?>
+                </div>
             </div>
+            <?php endif; ?>
+
+            <?php if (!empty($viewCustomFields)): ?>
+            <div class="pt-4 border-t border-gray-200">
+                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Custom Specifications / Fields</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <?php foreach ($viewCustomFields as $cf): ?>
+                        <?php if (!empty($cf['name']) || !empty($cf['value'])): ?>
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-2xs">
+                            <h4 class="text-xs font-bold text-[#9C6228] uppercase tracking-wider mb-1"><?= htmlspecialchars($cf['name'] ?? 'Field') ?></h4>
+                            <div class="text-sm text-gray-700 leading-relaxed"><?= nl2br(htmlspecialchars($cf['value'] ?? '')) ?></div>
+                        </div>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php endif; ?>
         </div>
         <?php endif; ?>
 
