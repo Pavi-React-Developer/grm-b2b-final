@@ -30,13 +30,70 @@ class CategoryController extends Controller
 
         $categoryModel = new Category();
         $categories = $categoryModel->getAll($isCustomize ? 1 : 0);
+
+        // Fetch global minimum order cart value setting
+        $globalMinCartValue = 0.0;
+        try {
+            $db = \Core\Database::getInstance();
+            $db->exec("CREATE TABLE IF NOT EXISTS settings (
+                setting_key VARCHAR(100) PRIMARY KEY,
+                setting_value TEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )");
+            $stmt = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'min_order_cart_value' LIMIT 1");
+            if ($stmt && ($row = $stmt->fetch(\PDO::FETCH_ASSOC))) {
+                $globalMinCartValue = (float)($row['setting_value'] ?? 0);
+            }
+        } catch (\Throwable $e) {}
         
         $this->render('admin/catalog/categories/index', [
             'title' => $isCustomize ? 'Customize Categories' : 'Manage Categories',
             'categories' => $categories,
             'module' => $module,
-            'isCustomize' => $isCustomize
+            'isCustomize' => $isCustomize,
+            'globalMinCartValue' => $globalMinCartValue
         ], 'admin');
+    }
+
+    public function updateGlobalCartLimit()
+    {
+        $this->requirePermission('categories', 'edit');
+
+        $module = $_POST['module'] ?? '';
+        $isCustomize = ($module === 'customize');
+        $redirectUrl = '/admin/catalog/categories' . ($isCustomize ? '?module=customize' : '');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect($redirectUrl);
+        }
+
+        $rawVal = trim($_POST['min_order_cart_value'] ?? '');
+        $limit = ($rawVal !== '' && is_numeric($rawVal) && (float)$rawVal >= 0) ? (float)$rawVal : 0.0;
+
+        try {
+            $db = \Core\Database::getInstance();
+            $db->exec("CREATE TABLE IF NOT EXISTS settings (
+                setting_key VARCHAR(100) PRIMARY KEY,
+                setting_value TEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )");
+            
+            $valStr = (string)$limit;
+            $stmt = $db->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('min_order_cart_value', :val) ON DUPLICATE KEY UPDATE setting_value = :val2");
+            $stmt->execute([':val' => $valStr, ':val2' => $valStr]);
+
+            if ($limit > 0) {
+                Session::setFlash('success', 'Global minimum order cart value set to ₹' . number_format($limit, 2) . ' successfully.');
+            } else {
+                Session::setFlash('success', 'Global minimum order cart value requirement removed.');
+            }
+        } catch (\Throwable $e) {
+            Session::setFlash('error', 'Failed to update global cart limit: ' . $e->getMessage());
+        }
+
+        $this->redirect($redirectUrl);
     }
 
     public function store()
@@ -64,6 +121,7 @@ class CategoryController extends Controller
             'description' => trim($_POST['description'] ?? ''),
             'image_path' => '',
             'min_order_value' => !empty($_POST['min_order_value']) ? (float)$_POST['min_order_value'] : null,
+            'min_cart_value' => !empty($_POST['min_cart_value']) ? (float)$_POST['min_cart_value'] : null,
             'sgst' => isset($_POST['sgst']) && $_POST['sgst'] !== '' ? (float)$_POST['sgst'] : 0.00,
             'cgst' => isset($_POST['cgst']) && $_POST['cgst'] !== '' ? (float)$_POST['cgst'] : 0.00,
             'status' => $_POST['status'] ?? 'active',
@@ -124,6 +182,7 @@ class CategoryController extends Controller
             'hsn_code' => !empty($_POST['hsn_code']) ? trim($_POST['hsn_code']) : null,
             'description' => trim($_POST['description'] ?? ''),
             'min_order_value' => !empty($_POST['min_order_value']) ? (float)$_POST['min_order_value'] : null,
+            'min_cart_value' => !empty($_POST['min_cart_value']) ? (float)$_POST['min_cart_value'] : null,
             'sgst' => isset($_POST['sgst']) && $_POST['sgst'] !== '' ? (float)$_POST['sgst'] : 0.00,
             'cgst' => isset($_POST['cgst']) && $_POST['cgst'] !== '' ? (float)$_POST['cgst'] : 0.00,
             'status' => $_POST['status'] ?? 'active',

@@ -317,6 +317,7 @@ $router->get('/admin/catalog/categories/check-delete', 'App\Controllers\Admin\Ca
 $router->post('/admin/catalog/categories/store', 'App\Controllers\Admin\CategoryController@store');
 $router->post('/admin/catalog/categories/update', 'App\Controllers\Admin\CategoryController@update');
 $router->post('/admin/catalog/categories/delete', 'App\Controllers\Admin\CategoryController@delete');
+$router->post('/admin/catalog/categories/global-cart-limit', 'App\Controllers\Admin\CategoryController@updateGlobalCartLimit');
 
 // Admin & Vendor Category Requests
 $router->get('/admin/catalog/category-requests', 'App\Controllers\Admin\CategoryRequestController@index');

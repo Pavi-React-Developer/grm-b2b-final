@@ -43,6 +43,74 @@
             </div>
         </div>
 
+        <!-- Global Cart Value / Overall Order Limit Card -->
+        <?php if (empty($isCustomize)): ?>
+        <div class="mb-6 bg-gradient-to-r from-brand-900 via-brand-800 to-indigo-900 rounded-2xl p-6 text-white shadow-xl shadow-brand-900/10 border border-brand-700/40 relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-brand-500/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+                <div class="max-w-xl">
+                    <div class="flex items-center gap-2 mb-1.5">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-500/30 text-brand-200 border border-brand-400/30">Global Cart Requirement</span>
+                        <?php if (!empty($globalMinCartValue) && $globalMinCartValue > 0): ?>
+                            <span class="inline-flex items-center text-xs font-bold text-emerald-300 bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-400/30">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+                                Active: ₹<?= number_format($globalMinCartValue, 2) ?>
+                            </span>
+                        <?php else: ?>
+                            <span class="text-xs font-medium text-gray-300 bg-white/10 px-2.5 py-0.5 rounded-full">No Global Limit (₹0.00)</span>
+                        <?php endif; ?>
+                    </div>
+                    <h3 class="text-xl font-display font-extrabold tracking-tight text-white flex items-center gap-2">
+                        <svg class="w-6 h-6 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                        Overall Order Cart Value
+                    </h3>
+                    <p class="text-xs text-brand-200/80 mt-1 leading-relaxed">
+                        This amount applies to the overall cart limit across <strong>all categories combined</strong>. If a category order rule is not mentioned or if category amounts are reached, the customer's total cart amount must reach at least this value to place an order.
+                    </p>
+                </div>
+
+                <!-- Saved Display View (Default) -->
+                <div id="global-cart-limit-view" class="flex items-center gap-4 shrink-0 bg-white/10 p-3 sm:px-5 sm:py-3 rounded-2xl border border-white/10 backdrop-blur-md">
+                    <div class="text-left mr-1">
+                        <div class="text-[10px] uppercase font-bold tracking-wider text-brand-200/70">Current Limit</div>
+                        <div class="text-xl sm:text-2xl font-display font-black text-white">
+                            <?php if (!empty($globalMinCartValue) && $globalMinCartValue > 0): ?>
+                                ₹<?= number_format($globalMinCartValue, 2) ?>
+                            <?php else: ?>
+                                <span class="text-sm font-semibold text-gray-300">₹0.00 (No Limit)</span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                    <?php if ($this->hasPermission('categories', 'edit')): ?>
+                    <button type="button" onclick="toggleCartLimitEdit(true)" class="bg-white hover:bg-gray-100 text-brand-900 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-md transition-all flex items-center gap-1.5 transform hover:-translate-y-0.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        Edit
+                    </button>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Editable Form View (Hidden by default, shown on Edit) -->
+                <form id="global-cart-limit-edit" action="<?= BASE_URL ?>/admin/catalog/categories/global-cart-limit" method="POST" class="hidden flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 bg-white/15 p-2 sm:p-2.5 rounded-2xl border border-white/20 backdrop-blur-md">
+                    <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
+                    <div class="relative flex-1 sm:w-56">
+                        <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                            <span class="text-brand-300 font-bold text-sm">₹</span>
+                        </div>
+                        <input type="number" step="0.01" min="0" id="min_order_cart_value_input" name="min_order_cart_value" value="<?= !empty($globalMinCartValue) && $globalMinCartValue > 0 ? (float)$globalMinCartValue : '' ?>" placeholder="0.00 (No Limit)" class="w-full pl-8 pr-4 py-2.5 bg-black/30 hover:bg-black/40 focus:bg-black/50 border border-white/30 focus:border-brand-300 rounded-xl text-white placeholder-white/40 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-400/40 transition-all">
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button type="submit" class="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-brand-900/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap">
+                            Save
+                        </button>
+                        <button type="button" onclick="toggleCartLimitEdit(false)" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3.5 py-2.5 rounded-xl font-semibold text-xs transition-all">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- Search Bar -->
         <div class="bg-white rounded-full shadow-sm border border-gray-100 p-1.5 flex items-center">
             <div class="flex-grow flex items-center pl-5">
@@ -88,7 +156,7 @@
                         <th class="px-6 py-5 font-semibold text-gray-500 w-16">ID</th>
                         <th class="px-6 py-5 font-semibold text-gray-500 w-24">Image</th>
                         <th class="px-6 py-5 font-semibold text-gray-500">Details</th>
-                        <th class="px-6 py-5 font-semibold text-gray-500">MOV</th>
+                        <th class="px-6 py-5 font-semibold text-gray-500">MOV / Cart Limit</th>
                         <th class="px-6 py-5 font-semibold text-gray-500">Status</th>
                         <th class="px-6 py-5 font-semibold text-gray-500 text-right">Actions</th>
                     </tr>
@@ -133,11 +201,19 @@
                                 </div>
                             </td>
                             <td class="px-6 py-5">
-                                <div class="flex items-center">
+                                <div class="flex flex-col space-y-1.5 items-start">
                                     <?php if(!empty($cat['min_order_value'])): ?>
-                                        <span class="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-100 shadow-sm">MOV: ₹<?= number_format($cat['min_order_value'], 2) ?></span>
-                                    <?php else: ?>
-                                        <span class="text-gray-400 text-xs font-medium italic">No MOV</span>
+                                        <span class="px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-100 shadow-sm inline-flex items-center">
+                                            MOV: ₹<?= number_format($cat['min_order_value'], 2) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                    <?php if(!empty($cat['min_cart_value'])): ?>
+                                        <span class="px-2.5 py-0.5 bg-purple-50 text-purple-700 rounded-lg text-xs font-semibold border border-purple-100 shadow-sm inline-flex items-center">
+                                            Cart Limit: ₹<?= number_format($cat['min_cart_value'], 2) ?>
+                                        </span>
+                                    <?php endif; ?>
+                                    <?php if(empty($cat['min_order_value']) && empty($cat['min_cart_value'])): ?>
+                                        <span class="text-gray-400 text-xs font-medium italic">No Limits</span>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -209,9 +285,14 @@
                     <input type="text" name="hsn_code" maxlength="8" pattern="[0-9]{4,8}" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 transition-all bg-white font-mono text-xs" placeholder="e.g. 610910">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Min Order Value (₹)</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Min Order Value (₹) <span class="text-[10px] text-gray-400 font-normal">(Category MOV)</span></label>
                     <input type="text" name="min_order_value" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 text-sm transition-all" placeholder="0.00">
                 </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Order Cart Value (₹) <span class="text-[10px] text-gray-400 font-normal">(Overall Cart Limit required for this category)</span></label>
+                <input type="text" name="min_cart_value" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 text-sm transition-all" placeholder="e.g. 5000.00">
             </div>
             
             <div>
@@ -298,9 +379,14 @@
                     <input type="text" name="hsn_code" id="edit-hsn-code" maxlength="8" pattern="[0-9]{4,8}" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 transition-all bg-white font-mono text-xs" placeholder="e.g. 610910">
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">Min Order Value (₹)</label>
+                    <label class="block text-xs font-bold text-gray-700 mb-1">Min Order Value (₹) <span class="text-[10px] text-gray-400 font-normal">(Category MOV)</span></label>
                     <input type="text" name="min_order_value" id="edit-min-value" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 text-sm transition-all">
                 </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-700 mb-1">Order Cart Value (₹) <span class="text-[10px] text-gray-400 font-normal">(Overall Cart Limit required for this category)</span></label>
+                <input type="text" name="min_cart_value" id="edit-min-cart-value" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 text-sm transition-all" placeholder="e.g. 5000.00">
             </div>
             
             <div>
@@ -378,12 +464,33 @@
 <script>
 const allCategories = <?= json_encode($categories ?? [], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
 
+function toggleCartLimitEdit(showEdit) {
+    const viewEl = document.getElementById('global-cart-limit-view');
+    const editEl = document.getElementById('global-cart-limit-edit');
+    if (!viewEl || !editEl) return;
+    
+    if (showEdit) {
+        viewEl.classList.add('hidden');
+        editEl.classList.remove('hidden');
+        editEl.classList.add('flex');
+        const input = document.getElementById('min_order_cart_value_input');
+        if (input) {
+            input.focus();
+            input.select();
+        }
+    } else {
+        editEl.classList.add('hidden');
+        editEl.classList.remove('flex');
+        viewEl.classList.remove('hidden');
+    }
+}
+
 function exportCategories() {
     if (allCategories.length === 0) {
         alert('No categories to export.');
         return;
     }
-    const headers = ['ID', 'Name', 'Slug', 'HSN Code', 'Min Order Value', 'Status', 'Product Count'];
+    const headers = ['ID', 'Name', 'Slug', 'HSN Code', 'Min Order Value', 'Min Cart Value', 'Status', 'Product Count'];
     let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
     allCategories.forEach(c => {
         const row = [
@@ -392,6 +499,7 @@ function exportCategories() {
             c.slug,
             c.hsn_code || '',
             c.min_order_value || '',
+            c.min_cart_value || '',
             c.status,
             c.product_count || 0
         ];
@@ -438,6 +546,7 @@ function openEditModal(cat) {
     document.getElementById('edit-hsn-code').value = cat.hsn_code || '';
     document.getElementById('edit-description').value = cat.description || '';
     document.getElementById('edit-min-value').value = cat.min_order_value || '';
+    document.getElementById('edit-min-cart-value').value = cat.min_cart_value || '';
     document.getElementById('edit-sgst').value = cat.sgst !== null && cat.sgst !== undefined ? cat.sgst : '0.00';
     document.getElementById('edit-cgst').value = cat.cgst !== null && cat.cgst !== undefined ? cat.cgst : '0.00';
     document.getElementById('edit-status').value = cat.status;

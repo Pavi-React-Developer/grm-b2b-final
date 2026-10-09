@@ -107,7 +107,7 @@ class OrderRule
         return $stmt->fetch() !== false;
     }
 
-    public static function validateCartRules(array $categoryTotals): array
+    public static function validateCartRules(array $categoryTotals, float $cartSubtotal = 0): array
     {
         $db = Database::getInstance();
         $errors = [];
@@ -117,8 +117,16 @@ class OrderRule
             $ruleModel = new self();
             $rules = $ruleModel->getActiveRules();
 
-            // Fetch category details map (name, min_order_value)
-            $catStmt = $db->query("SELECT id, name, min_order_value FROM categories");
+            // Calculate overall cart total
+            $overallCartSubtotal = $cartSubtotal > 0 ? $cartSubtotal : 0;
+            if ($overallCartSubtotal <= 0) {
+                foreach ($categoryTotals as $catData) {
+                    $overallCartSubtotal += (float)($catData['total'] ?? 0);
+                }
+            }
+
+            // Fetch category details map (name, min_order_value, min_cart_value)
+            $catStmt = $db->query("SELECT id, name, min_order_value, min_cart_value FROM categories");
             $categories = $catStmt ? $catStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
             $catMap = [];
             foreach ($categories as $c) {
@@ -140,6 +148,7 @@ class OrderRule
                 $catInfo = $catMap[$catId] ?? null;
                 $catName = $data['name'] ?? ($catInfo['name'] ?? "Category #$catId");
                 $catMov = !empty($catInfo['min_order_value']) ? (float)$catInfo['min_order_value'] : 0;
+                $catCartMin = !empty($catInfo['min_cart_value']) ? (float)$catInfo['min_cart_value'] : 0;
 
                 // Priority 1: If an active Order Rule exists for this main category
                 if (isset($mainRulesByCat[$catId])) {
@@ -180,13 +189,22 @@ class OrderRule
                         }
                     }
                 } else {
-                    // Priority 2: No Order Rule set -> Fallback to Category MOV from Catalog -> Categories
+                    // Priority 2: No Order Rule set -> Fallback to Category MOV (Category specific minimum)
                     if ($catMov > 0 && $catTotal < $catMov) {
                         $shortfall = $catMov - $catTotal;
                         $errors[] = "Minimum order value for <strong>" . htmlspecialchars($catName) . "</strong> is <strong>₹" . number_format($catMov) . "</strong>. (Currently: ₹" . number_format($catTotal) . ", add ₹" . number_format($shortfall) . " more).";
                         if (!in_array($catId, $failingCategories)) {
                             $failingCategories[] = $catId;
                         }
+                    }
+                }
+
+                // Overall Cart Limit Amount Check: If Category requires a minimum total order cart value
+                if ($catCartMin > 0 && $overallCartSubtotal < $catCartMin) {
+                    $cartShortfall = $catCartMin - $overallCartSubtotal;
+                    $errors[] = "Overall order cart value for orders containing <strong>" . htmlspecialchars($catName) . "</strong> must be at least <strong>₹" . number_format($catCartMin) . "</strong>. (Current Cart Total: ₹" . number_format($overallCartSubtotal) . ", add ₹" . number_format($cartShortfall) . " more).";
+                    if (!in_array($catId, $failingCategories)) {
+                        $failingCategories[] = $catId;
                     }
                 }
             }
@@ -212,6 +230,18 @@ class OrderRule
                         }
                     }
                 }
+            }
+
+            // 3. Overall Global Cart Minimum Limit across all categories
+            $globalCartMin = 0.0;
+            $settStmt = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'min_order_cart_value' LIMIT 1");
+            if ($settStmt && ($settRow = $settStmt->fetch(\PDO::FETCH_ASSOC))) {
+                $globalCartMin = (float)($settRow['setting_value'] ?? 0);
+            }
+
+            if ($globalCartMin > 0 && $overallCartSubtotal > 0 && $overallCartSubtotal < $globalCartMin) {
+                $globalShortfall = $globalCartMin - $overallCartSubtotal;
+                $errors[] = "Overall order cart value across all categories must be at least <strong>₹" . number_format($globalCartMin, 2) . "</strong>. (Current Cart Total: ₹" . number_format($overallCartSubtotal, 2) . ", add ₹" . number_format($globalShortfall, 2) . " more).";
             }
 
         } catch (\Throwable $e) {
