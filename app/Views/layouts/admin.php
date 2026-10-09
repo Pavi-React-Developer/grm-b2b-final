@@ -153,90 +153,91 @@ if ($currentUserRole === 'super_admin') {
         svg.w-12 { width: 48px !important; height: 48px !important; }
         svg.w-16 { width: 64px !important; height: 64px !important; }
 
-        /* ===== ADMIN SIDEBAR: Pink #F25996 Theme ===== */
+        /* ===== ADMIN SIDEBAR: Soft Pink #fdbfdd Theme ===== */
         body > aside {
-            background: linear-gradient(180deg, #F25996 0%, #e04481 100%) !important;
-            background-color: #F25996 !important;
-            border-right: none !important;
-            box-shadow: 2px 0 15px rgba(242, 89, 150, 0.15) !important;
+            background: #fdbfdd !important;
+            background-color: #fdbfdd !important;
+            border-right: 1px solid #f9a8d4 !important;
+            box-shadow: 2px 0 15px rgba(253, 191, 221, 0.25) !important;
         }
         /* Section labels (System, Sales, Management, Catalog) */
         body > aside p {
-            color: rgba(255,255,255,0.7) !important;
+            color: rgb(232, 0, 89) !important;
             font-weight: 700 !important;
             letter-spacing: 0.05em !important;
         }
         /* All nav links & dropdown triggers – default state */
         body > aside nav a,
         body > aside nav > div > div:first-child {
-            color: rgba(255,255,255,0.92) !important;
+            color: rgb(232, 0, 89) !important;
+            font-weight: 600 !important;
             border-radius: 0.75rem !important;
         }
         /* All icons – default state */
         body > aside nav svg {
-            color: rgba(255,255,255,0.85) !important;
+            color: rgb(232, 0, 89) !important;
         }
         /* Hover state for nav items */
         body > aside nav a:hover,
         body > aside nav > div > div:first-child:hover {
-            background-color: rgba(255,255,255,0.2) !important;
-            color: #ffffff !important;
+            background-color: rgba(255,255,255,0.6) !important;
+            color: rgb(232, 0, 89) !important;
         }
         body > aside nav a:hover svg,
         body > aside nav > div > div:first-child:hover svg {
-            color: #ffffff !important;
+            color: rgb(232, 0, 89) !important;
         }
         /* Active / current page state */
         body > aside nav a.bg-brand-50,
         body > aside nav a[class*="bg-brand-50"] {
-            background-color: rgba(255,255,255,0.28) !important;
-            color: #ffffff !important;
+            background-color: #ffffff !important;
+            color: rgb(232, 0, 89) !important;
             font-weight: 700 !important;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+            box-shadow: 0 2px 8px rgba(232, 0, 89, 0.12) !important;
         }
         body > aside nav a.text-brand-700,
         body > aside nav a[class*="text-brand-700"] {
-            color: #ffffff !important;
+            color: rgb(232, 0, 89) !important;
         }
         body > aside nav a.text-brand-600,
         body > aside nav a[class*="text-brand-600"],
         body > aside nav svg.text-brand-600,
         body > aside nav div svg.text-brand-600 {
-            color: #ffffff !important;
+            color: rgb(232, 0, 89) !important;
         }
         /* Active icon */
         body > aside nav a.bg-brand-50 svg,
         body > aside nav a[class*="bg-brand-50"] svg {
-            color: #ffffff !important;
+            color: rgb(232, 0, 89) !important;
         }
         /* Dropdown sub-border lines */
         body > aside nav .border-l {
-            border-left-color: rgba(255,255,255,0.25) !important;
+            border-left-color: rgba(232, 0, 89, 0.25) !important;
         }
         /* Bottom section (Storefront + Logout) */
         body > aside > div:last-of-type {
-            border-top-color: rgba(255,255,255,0.2) !important;
+            border-top-color: rgba(232, 0, 89, 0.15) !important;
         }
         body > aside > div:last-of-type a,
         body > aside > div:last-of-type button {
-            color: rgba(255,255,255,0.9) !important;
+            color: rgb(232, 0, 89) !important;
             border-radius: 0.75rem !important;
         }
         body > aside > div:last-of-type a svg,
         body > aside > div:last-of-type button svg {
-            color: rgba(255,255,255,0.8) !important;
+            color: rgb(232, 0, 89) !important;
         }
         body > aside > div:last-of-type a:hover,
         body > aside > div:last-of-type button:hover {
-            background-color: rgba(255,255,255,0.2) !important;
-            color: #ffffff !important;
+            background-color: rgba(255,255,255,0.6) !important;
+            color: rgb(232, 0, 89) !important;
         }
         body > aside > div:last-of-type a:hover svg,
         body > aside > div:last-of-type button:hover svg {
-            color: #ffffff !important;
+            color: rgb(232, 0, 89) !important;
         }
         /* Logo area text */
-        body > aside .text-gray-900 { color: #ffffff !important; }
+        body > aside .text-gray-900 { color: rgb(232, 0, 89) !important; }
         /* =========================================================
            GLOBAL PILL BUTTON DESIGN (MATCHING PRINT / BRAND PILL)
            Enforces uniform #F25996 Pill Style for Form Submit Buttons
@@ -944,6 +945,7 @@ if ($currentUserRole === 'super_admin') {
                     <a href="<?= BASE_URL ?>/admin/catalog/categories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/categories') === 0 && !$isCustParam) ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Categories</span>
                     </a>
+                    <?php if (is_vendor_module_enabled()): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/category-requests" class="flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/category-requests') === 0 ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center justify-between w-full">
                             Category Requests
@@ -952,6 +954,7 @@ if ($currentUserRole === 'super_admin') {
                             <?php endif; ?>
                         </span>
                     </a>
+                    <?php endif; ?>
                     <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('subcategories', 'view') || $this->hasAnyPermission('subcategories')): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/subcategories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/subcategories') === 0 && !$isCustParam) ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
@@ -1240,7 +1243,7 @@ if ($currentUserRole === 'super_admin') {
             </div>
             <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('payments') || $this->hasAnyPermission('withdrawals') || $this->hasAnyPermission('commissions') || $this->hasAnyPermission('transactions')): ?>
+            <?php if (is_vendor_module_enabled() && (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('payments') || $this->hasAnyPermission('withdrawals') || $this->hasAnyPermission('commissions') || $this->hasAnyPermission('transactions'))): ?>
             <style>
                 .finance-dropdown {
                     display: none;
@@ -1295,7 +1298,7 @@ if ($currentUserRole === 'super_admin') {
             </div>
             <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('support', 'view') || $this->hasAnyPermission('support')): ?>
+            <?php if (is_vendor_module_enabled() && (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('support', 'view') || $this->hasAnyPermission('support'))): ?>
             <?php $adminOpenTicketsCount = (new \App\Models\SupportTicket())->getCounts()['open']; ?>
             <a href="<?= BASE_URL ?>/admin/support" class="flex items-center justify-between px-3 py-3 mt-1 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/support') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' ?>">
                 <div class="flex items-center">

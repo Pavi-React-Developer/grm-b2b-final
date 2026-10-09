@@ -14,6 +14,13 @@ class CategoryRequestController extends Controller
         $role = Session::get('user_role');
         if (!$role) {
             $this->redirect('/login');
+            return;
+        }
+
+        if (!is_vendor_module_enabled()) {
+            Session::setFlash('error', 'Category requests are disabled because the Vendor module is currently turned off.');
+            $this->redirect('/admin/dashboard');
+            return;
         }
     }
 
