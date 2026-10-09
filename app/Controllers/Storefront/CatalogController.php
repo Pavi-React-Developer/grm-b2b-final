@@ -30,10 +30,10 @@ class CatalogController extends Controller
         }
         
         $categoryModel = new Category();
-        $categories = $categoryModel->getAllActive();
+        $categories = $categoryModel->getAllActive(null, 0);
 
         $subCategoryModel = new SubCategory();
-        $subCategories = $subCategoryModel->getAll();
+        $subCategories = $subCategoryModel->getAll(0);
         
         // Fetch Attributes if subcategory is selected
         $filterableAttributes = [];
@@ -98,11 +98,11 @@ class CatalogController extends Controller
         $searchQuery = $_GET['q'] ?? '';
         
         $categoryModel = new Category();
-        $categories = $categoryModel->getAllActive($searchQuery);
+        $categories = $categoryModel->getAllActive($searchQuery, 0);
         $categories = array_slice($categories, 0, 5); // Limit to 5 categories
 
         $productModel = new Product();
-        $products = $productModel->getAllActive($searchQuery);
+        $products = $productModel->getAllActive($searchQuery, null, null, [], 'newest', 0);
         $products = array_slice($products, 0, 10); // Limit to 10 products
         
         $isLoggedIn = Session::get('user_id') ? true : false;

@@ -53,8 +53,8 @@ class ProductCarouselController extends Controller
 
     public function create()
     {
-        $categories = $this->categoryModel->getAll();
-        $products = $this->productModel->getAllActive();
+        $categories = $this->categoryModel->getAll(0);
+        $products = $this->productModel->getAllActive(null, null, null, [], 'newest', 0);
         $vendors = is_vendor_module_enabled() ? $this->userModel->getActiveVendors() : [];
 
         $this->render('admin/cms/product_carousels/create', [
@@ -141,8 +141,8 @@ class ProductCarouselController extends Controller
 
         $carousel['content'] = json_decode($carousel['content_data'], true) ?: [];
         
-        $categories = $this->categoryModel->getAll();
-        $products = $this->productModel->getAllActive();
+        $categories = $this->categoryModel->getAll(0);
+        $products = $this->productModel->getAllActive(null, null, null, [], 'newest', 0);
         $vendors = is_vendor_module_enabled() ? $this->userModel->getActiveVendors() : [];
 
         $this->render('admin/cms/product_carousels/edit', [

@@ -182,6 +182,20 @@
                     </div>
                 </div>
 
+                <!-- Required Pieces to Enable Payment -->
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                        Required Pieces to Enable Payment <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="number" name="minimum_pieces" value="<?= isset($rule['minimum_pieces']) ? (int)$rule['minimum_pieces'] : 10 ?>" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
+                        <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-1">
+                        Minimum total stitch pieces buyer must select before the online payment button is enabled on storefront.
+                    </p>
+                </div>
+
                 <!-- Status -->
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">

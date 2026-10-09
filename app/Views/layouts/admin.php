@@ -924,10 +924,11 @@ if ($currentUserRole === 'super_admin') {
             </style>
             <div class="relative catalog-menu">
                 <!-- Parent Menu Item -->
-                <div class="flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors min-w-max text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer <?= strpos($currentUri, '/admin/catalog/') === 0 ? 'text-brand-600' : '' ?>">
-                    <svg class="w-6 h-6 flex-shrink-0 <?= strpos($currentUri, '/admin/catalog/') === 0 ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                <?php $isCatalogActive = strpos($currentUri, '/admin/catalog/') === 0 && (!isset($_GET['module']) || $_GET['module'] !== 'customize'); ?>
+                <div class="flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors min-w-max text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer <?= $isCatalogActive ? 'text-brand-600 font-bold' : '' ?>">
+                    <svg class="w-6 h-6 flex-shrink-0 <?= $isCatalogActive ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
                     <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex-1 flex items-center justify-between">
-                        Catalog
+                        <span>Catalog</span>
                         <svg class="w-4 h-4 ml-2 transition-transform duration-200 catalog-chevron text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </span>
                 </div>
@@ -937,12 +938,13 @@ if ($currentUserRole === 'super_admin') {
                     <?php
                     $sidebarCatReqCount = (new \App\Models\CategoryRequest())->getPendingCount();
                     $sidebarProdPendingCount = is_vendor_module_enabled() ? (new \App\Models\Product())->getPendingApprovalCount() : 0;
+                    $isCustParam = (isset($_GET['module']) && $_GET['module'] === 'customize');
                     ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('categories', 'view') || $this->hasAnyPermission('categories')): ?>
-                    <a href="<?= BASE_URL ?>/admin/catalog/categories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/categories') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                    <a href="<?= BASE_URL ?>/admin/catalog/categories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/categories') === 0 && !$isCustParam) ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Categories</span>
                     </a>
-                    <a href="<?= BASE_URL ?>/admin/catalog/category-requests" class="flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/category-requests') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                    <a href="<?= BASE_URL ?>/admin/catalog/category-requests" class="flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/category-requests') === 0 ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center justify-between w-full">
                             Category Requests
                             <?php if ($sidebarCatReqCount > 0): ?>
@@ -952,17 +954,17 @@ if ($currentUserRole === 'super_admin') {
                     </a>
                     <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('subcategories', 'view') || $this->hasAnyPermission('subcategories')): ?>
-                    <a href="<?= BASE_URL ?>/admin/catalog/subcategories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/subcategories') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                    <a href="<?= BASE_URL ?>/admin/catalog/subcategories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/subcategories') === 0 && !$isCustParam) ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Sub Categories</span>
                     </a>
                     <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('attributes', 'view') || $this->hasAnyPermission('attributes')): ?>
-                    <a href="<?= BASE_URL ?>/admin/catalog/attributes" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/attributes') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                    <a href="<?= BASE_URL ?>/admin/catalog/attributes" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/attributes') === 0 && !$isCustParam) ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Attributes</span>
                     </a>
                     <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('products', 'view') || $this->hasAnyPermission('products')): ?>
-                    <a href="<?= BASE_URL ?>/admin/catalog/products" class="flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/products') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                    <a href="<?= BASE_URL ?>/admin/catalog/products" class="flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/products') === 0 && !$isCustParam) ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center justify-between w-full">
                             Products
                             <?php if (is_vendor_module_enabled() && $sidebarProdPendingCount > 0): ?>
@@ -988,9 +990,12 @@ if ($currentUserRole === 'super_admin') {
                     transform: rotate(180deg);
                 }
             </style>
+            <?php 
+            $isCustomizeActive = (isset($_GET['module']) && $_GET['module'] === 'customize') || strpos($currentUri, '/admin/customize') === 0 || strpos($currentUri, '/admin/fabric-customizations') === 0;
+            ?>
             <div class="relative customize-menu mt-1">
-                <div class="flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors min-w-max text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer <?= (strpos($currentUri, '/admin/customize') === 0 || strpos($currentUri, '/admin/fabric-customizations') === 0) ? 'text-amber-600 font-bold' : '' ?>">
-                    <svg class="w-6 h-6 flex-shrink-0 <?= (strpos($currentUri, '/admin/customize') === 0 || strpos($currentUri, '/admin/fabric-customizations') === 0) ? 'text-amber-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L11.758 4.758a3 3 0 114.242 4.242L12 12z"/></svg>
+                <div class="flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors min-w-max text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer <?= $isCustomizeActive ? 'text-amber-600 font-bold' : '' ?>">
+                    <svg class="w-6 h-6 flex-shrink-0 <?= $isCustomizeActive ? 'text-amber-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L11.758 4.758a3 3 0 114.242 4.242L12 12z"/></svg>
                     <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex-1 flex items-center justify-between">
                         <span>Customize</span>
                         <svg class="w-4 h-4 ml-2 transition-transform duration-200 customize-chevron text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -999,33 +1004,51 @@ if ($currentUserRole === 'super_admin') {
                 
                 <div class="customize-dropdown ml-4 pl-4 border-l border-pink-200 space-y-1 mt-1">
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('categories', 'view') || $this->hasAnyPermission('categories')): ?>
-                    <a href="<?= BASE_URL ?>/admin/catalog/categories" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/categories') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📁 Category</span>
+                    <a href="<?= BASE_URL ?>/admin/catalog/categories?module=customize" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/categories') === 0 && (isset($_GET['module']) && $_GET['module'] === 'customize')) ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
+                            <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                            Category
+                        </span>
                     </a>
                     <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('subcategories', 'view') || $this->hasAnyPermission('subcategories')): ?>
-                    <a href="<?= BASE_URL ?>/admin/catalog/subcategories" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/subcategories') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">🏷️ Sub Category</span>
+                    <a href="<?= BASE_URL ?>/admin/catalog/subcategories?module=customize" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/subcategories') === 0 && (isset($_GET['module']) && $_GET['module'] === 'customize')) ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
+                            <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            Sub Category
+                        </span>
                     </a>
                     <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('attributes', 'view') || $this->hasAnyPermission('attributes')): ?>
-                    <a href="<?= BASE_URL ?>/admin/catalog/attributes" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/attributes') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📏 Attributes</span>
+                    <a href="<?= BASE_URL ?>/admin/catalog/attributes?module=customize" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/attributes') === 0 && (isset($_GET['module']) && $_GET['module'] === 'customize')) ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
+                            <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                            Attributes
+                        </span>
                     </a>
                     <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('products', 'view') || $this->hasAnyPermission('products')): ?>
-                    <a href="<?= BASE_URL ?>/admin/catalog/products" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/products') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">🧵 Products / Fabrics</span>
+                    <a href="<?= BASE_URL ?>/admin/catalog/products?module=customize" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/products') === 0 && (isset($_GET['module']) && $_GET['module'] === 'customize')) ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
+                            <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                            Products / Fabrics
+                        </span>
                     </a>
                     <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('fabric_customizations', 'view') || $this->hasAnyPermission('fabric_customizations')): ?>
                     <a href="<?= BASE_URL ?>/admin/fabric-customizations" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/fabric-customizations') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">✂️ Fabric Rules</span>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
+                            <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L11.758 4.758a3 3 0 114.242 4.242L12 12z"/></svg>
+                            Fabric Rules
+                        </span>
                     </a>
                     <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('custom_orders', 'view') || $this->hasAnyPermission('custom_orders')): ?>
                     <a href="<?= BASE_URL ?>/admin/customize/orders" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/customize/orders') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
-                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📦 Custom Orders</span>
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
+                            <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                            Custom Orders
+                        </span>
                     </a>
                     <?php endif; ?>
                 </div>
