@@ -6,6 +6,7 @@ use App\Models\SizeChart;
 use App\Models\Category;
 use App\Models\SubCategory;
 use Core\Session;
+use App\Core\CloudinaryUploader;
 
 class SizeChartController extends Controller
 {
@@ -146,6 +147,18 @@ class SizeChartController extends Controller
             }
         }
 
+        // Handle image upload via Cloudinary
+        $imageUrl = null;
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $uploader = new CloudinaryUploader();
+            $cloudinaryResponse = $uploader->uploadImage($_FILES['image']['tmp_name']);
+            if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
+                $imageUrl = $cloudinaryResponse['secure_url'];
+            } else {
+                Session::setFlash('error', 'Failed to upload size chart image to Cloudinary.');
+            }
+        }
+
         $this->sizeChartModel->create([
             'title' => $title,
             'category_id' => $categoryId,
@@ -153,6 +166,7 @@ class SizeChartController extends Controller
             'sub_category_id' => $subCategoryId,
             'sub_category_name' => $subCategoryName,
             'dress_type' => $dressType,
+            'image_url' => $imageUrl,
             'tolerance_note' => $toleranceNote,
             'columns_json' => json_encode($columns, JSON_UNESCAPED_UNICODE),
             'rows_json' => json_encode($rowsData, JSON_UNESCAPED_UNICODE),
@@ -280,6 +294,21 @@ class SizeChartController extends Controller
             }
         }
 
+        // Handle image upload / removal via Cloudinary
+        $imageUrl = $chart['image_url'] ?? null;
+        if (isset($_POST['remove_image']) && (int)$_POST['remove_image'] === 1) {
+            $imageUrl = null;
+        }
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $uploader = new CloudinaryUploader();
+            $cloudinaryResponse = $uploader->uploadImage($_FILES['image']['tmp_name']);
+            if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
+                $imageUrl = $cloudinaryResponse['secure_url'];
+            } else {
+                Session::setFlash('error', 'Failed to upload size chart image to Cloudinary.');
+            }
+        }
+
         $this->sizeChartModel->update($id, [
             'title' => $title,
             'category_id' => $categoryId,
@@ -287,6 +316,7 @@ class SizeChartController extends Controller
             'sub_category_id' => $subCategoryId,
             'sub_category_name' => $subCategoryName,
             'dress_type' => $dressType,
+            'image_url' => $imageUrl,
             'tolerance_note' => $toleranceNote,
             'columns_json' => json_encode($columns, JSON_UNESCAPED_UNICODE),
             'rows_json' => json_encode($rowsData, JSON_UNESCAPED_UNICODE),

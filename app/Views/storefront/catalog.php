@@ -369,7 +369,7 @@
                                 <?php 
                                 $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                                 if ($canAddToCart && $discPercent > 0 && function_exists('render_discount_starburst')) {
-                                    echo render_discount_starburst($discPercent, 'absolute top-1.5 left-1.5 z-10 w-16 sm:w-18 md:w-20 transition-transform duration-300 group-hover:scale-110');
+                                    echo render_discount_starburst($discPercent, 'absolute top-1.5 left-1.5 z-10 w-9 h-9 sm:w-11 sm:h-11 transition-transform duration-300 group-hover:scale-105');
                                 }
                                 ?>
                                 <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async">

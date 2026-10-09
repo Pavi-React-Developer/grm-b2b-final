@@ -108,9 +108,15 @@
                             <tr class="chart-row hover:bg-gray-50/80 transition-colors" data-category="<?= htmlspecialchars($catAttr) ?>" data-title="<?= htmlspecialchars(strtolower($chart['title'])) ?>">
                                 <td class="py-4 px-6">
                                     <div class="flex items-center gap-3">
-                                        <span class="w-9 h-9 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/60 font-black text-xs flex items-center justify-center shrink-0">
-                                            📏
-                                        </span>
+                                        <?php if (!empty($chart['image_url'])): ?>
+                                            <div class="w-10 h-10 rounded-xl border border-gray-200 bg-white overflow-hidden shrink-0 shadow-2xs">
+                                                <img src="<?= htmlspecialchars($chart['image_url']) ?>" alt="Thumbnail" class="w-full h-full object-contain">
+                                            </div>
+                                        <?php else: ?>
+                                            <span class="w-10 h-10 rounded-xl bg-amber-50 text-amber-800 border border-amber-200/60 font-black text-xs flex items-center justify-center shrink-0">
+                                                📏
+                                            </span>
+                                        <?php endif; ?>
                                         <div>
                                             <p class="font-bold text-gray-900 leading-snug"><?= htmlspecialchars($chart['title']) ?></p>
                                             <?php if (!empty($chart['dress_type'])): ?>
@@ -201,16 +207,24 @@
             </div>
         </div>
 
-        <!-- Preview Table -->
-        <div class="overflow-x-auto rounded-xl border border-gray-100">
-            <table class="w-full text-center border-collapse">
-                <thead id="modalTableHead" class="bg-white text-[#5a3e2b] font-bold text-xs sm:text-sm border-b-2 border-gray-200">
-                    <!-- Column Headers Dynamically Injected -->
-                </thead>
-                <tbody id="modalTableBody" class="divide-y divide-gray-100 text-xs sm:text-sm font-semibold text-gray-800">
-                    <!-- Row Data Dynamically Injected -->
-                </tbody>
-            </table>
+        <!-- Preview Table + Image -->
+        <div class="grid grid-cols-1 gap-5 items-start" id="modalGridWrap">
+            <div id="modalTableWrap">
+                <div class="overflow-x-auto rounded-xl border border-gray-100">
+                    <table class="w-full text-center border-collapse min-w-[360px]">
+                        <thead id="modalTableHead" class="bg-white text-[#5a3e2b] font-bold text-xs sm:text-sm border-b-2 border-gray-200">
+                            <!-- Column Headers Dynamically Injected -->
+                        </thead>
+                        <tbody id="modalTableBody" class="divide-y divide-gray-100 text-xs sm:text-sm font-semibold text-gray-800">
+                            <!-- Row Data Dynamically Injected -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div id="modalImageWrap" class="hidden text-center bg-gray-50 p-3 rounded-xl border border-gray-200">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Measurement Diagram</span>
+                <img id="modalImg" src="" alt="Size Chart Diagram" class="max-h-56 mx-auto rounded-lg object-contain">
+            </div>
         </div>
 
         <div class="mt-6 flex justify-end">
@@ -273,16 +287,26 @@ function openPreviewModal(chart) {
     // Build Body
     let bodyHtml = '';
     rows.forEach((r, idx) => {
-        const isSizeCol = cols[0] || 'Size';
         bodyHtml += `<tr class="hover:bg-gray-50/60 transition-colors">`;
-        cols.forEach(c => {
+        cols.forEach((c, cIdx) => {
             const val = r[c] ?? (r[c.toLowerCase()] ?? '-');
-            const isBold = (c.toLowerCase() === 'size');
+            const isBold = (cIdx === 0 || c.toLowerCase() === 'size');
             bodyHtml += `<td class="py-3 px-3 sm:px-4 ${isBold ? 'font-black text-gray-900' : 'font-medium text-gray-700'}">${val}</td>`;
         });
         bodyHtml += `</tr>`;
     });
     document.getElementById('modalTableBody').innerHTML = bodyHtml;
+
+    // Image
+    const imgWrap = document.getElementById('modalImageWrap');
+    const modalImg = document.getElementById('modalImg');
+    if (chart.image_url) {
+        modalImg.src = chart.image_url;
+        imgWrap.classList.remove('hidden');
+    } else {
+        modalImg.src = '';
+        imgWrap.classList.add('hidden');
+    }
 
     document.getElementById('previewModal').classList.remove('hidden');
 }

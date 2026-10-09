@@ -8,7 +8,7 @@
                 </a>
                 <div>
                     <h1 class="text-2xl font-black text-gray-900 tracking-tight">Add New Size Chart</h1>
-                    <p class="text-sm text-gray-500 font-medium">Build custom dynamic size charts for Baby & Kids, Women's Wear, Kurtis, Coords, and all categories.</p>
+                    <p class="text-sm text-gray-500 font-medium">Build custom dynamic size charts for all categories, garments, and custom measurements.</p>
                 </div>
             </div>
         </div>
@@ -23,46 +23,13 @@
         </div>
     </div>
 
-    <!-- Quick Preset Template Loader (Optional Starter) -->
-    <div class="bg-gradient-to-r from-blue-500/10 via-blue-50 to-indigo-50/20 border border-blue-200/80 p-5 rounded-2xl shadow-2xs">
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
-            <div class="flex items-center gap-2">
-                <span class="text-xl">✨</span>
-                <div>
-                    <h3 class="text-sm font-black text-blue-950 uppercase tracking-wider">Quick Fill from Preset Templates (Optional)</h3>
-                    <p class="text-xs text-blue-800 font-medium">Click any template below to quickly pre-populate standard measurements, or build your own custom table below.</p>
-                </div>
-            </div>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            <button type="button" onclick="loadPreset('feeding_calf_length')" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white border border-brand-600 rounded-full text-xs font-bold transition-all shadow-xs flex items-center gap-1.5">
-                🍼 Feeding Calf Length
-            </button>
-            <button type="button" onclick="loadPreset('peplum_maxi')" class="px-3.5 py-1.5 bg-white hover:bg-blue-100 text-blue-900 border border-blue-300 rounded-full text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5">
-                👗 Curvy Peplum Maxi
-            </button>
-            <button type="button" onclick="loadPreset('palazzo_coords')" class="px-3.5 py-1.5 bg-white hover:bg-blue-100 text-blue-900 border border-blue-300 rounded-full text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5">
-                👖 3/4th Palazzo Coords Set
-            </button>
-            <button type="button" onclick="loadPreset('curvy_peplum_coords')" class="px-3.5 py-1.5 bg-white hover:bg-blue-100 text-blue-900 border border-blue-300 rounded-full text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5">
-                ✨ Curvy Peplum Coords Set
-            </button>
-            <button type="button" onclick="loadPreset('lounge_kurta')" class="px-3.5 py-1.5 bg-white hover:bg-blue-100 text-blue-900 border border-blue-300 rounded-full text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5">
-                👚 Lounge Kurtaas
-            </button>
-            <button type="button" onclick="loadPreset('kids_dress')" class="px-3.5 py-1.5 bg-white hover:bg-blue-100 text-blue-900 border border-blue-300 rounded-full text-xs font-bold transition-all shadow-2xs flex items-center gap-1.5">
-                🧸 Baby & Kids Frock / Dress
-            </button>
-        </div>
-    </div>
-
     <!-- Main Form -->
-    <form action="<?= BASE_URL ?>/admin/cms/size-charts/store" method="POST" id="sizeChartForm" class="space-y-6">
+    <form action="<?= BASE_URL ?>/admin/cms/size-charts/store" method="POST" enctype="multipart/form-data" id="sizeChartForm" class="space-y-6">
         <!-- Hidden JSON Payloads -->
         <input type="hidden" name="columns_json_payload" id="columnsJsonPayload">
         <input type="hidden" name="rows_json_payload" id="rowsJsonPayload">
 
-        <!-- Chart Settings Card -->
+        <!-- Basic Information & Category Card -->
         <div class="bg-white p-6 sm:p-8 rounded-[1.5rem] shadow-custom border border-gray-100 space-y-6">
             <h2 class="text-base font-black text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-3 flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-brand-600"></span>
@@ -120,6 +87,28 @@
                     <input type="text" name="tolerance_note" id="toleranceNoteInput" oninput="updateLivePreview()" value='Size in inches (+ or - 0.5")' placeholder='e.g. Size in inches (+ or - 0.5")' class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none">
                 </div>
 
+                <!-- Size Guide Image Upload (Cloudinary) -->
+                <div class="lg:col-span-2">
+                    <label class="block text-xs font-black text-gray-700 uppercase tracking-wider mb-2">
+                        Measurement Diagram / Reference Image (Optional)
+                        <span class="text-xs text-gray-400 font-normal lowercase">(saved on Cloudinary)</span>
+                    </label>
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border-2 border-dashed border-gray-200 hover:border-brand-300 rounded-2xl bg-gray-50/50 transition-all">
+                        <div class="w-24 h-24 rounded-xl border border-gray-200 bg-white flex items-center justify-center overflow-hidden shrink-0 shadow-2xs" id="imagePreviewBox">
+                            <span class="text-gray-400 text-xs text-center p-2 font-medium" id="previewPlaceholder">No Image</span>
+                            <img id="imagePreviewEl" src="" alt="Size Chart Diagram Preview" class="w-full h-full object-contain hidden">
+                        </div>
+                        <div class="flex-1 space-y-1.5">
+                            <input type="file" name="image" id="chartImageInput" accept="image/*" onchange="previewSelectedImage(this)" class="block w-full text-xs text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-brand-50 file:text-brand-700 hover:file:bg-brand-100 cursor-pointer">
+                            <p class="text-[11px] text-gray-500 font-medium">Upload a visual measurement illustration, dress diagram, or size guide model image (JPG, PNG, WebP up to 10MB).</p>
+                            <button type="button" id="clearImageBtn" onclick="clearSelectedImage()" class="text-xs text-red-500 hover:text-red-700 font-bold hidden items-center gap-1 pt-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                <span>Remove Image</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Status & Sort -->
                 <div class="flex items-center gap-4 pt-4">
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -143,7 +132,7 @@
                         <span class="w-2 h-2 rounded-full bg-brand-600"></span>
                         Measurement Table Columns & Rows
                     </h2>
-                    <p class="text-xs text-gray-400 font-medium mt-0.5">Add custom columns and any custom size rows (S, M, L, XL, 0-3M, 28, 30, etc.) without any restrictions.</p>
+                    <p class="text-xs text-gray-400 font-medium mt-0.5">Customize columns and size rows dynamically (S, M, L, XL, 0-3M, 28, 30, Free Size, etc.). Click any column name or size cell to edit.</p>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap">
                     <button type="button" onclick="addNewColumnModal()" class="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-full text-xs font-bold transition-colors flex items-center gap-1.5 border border-blue-200">
@@ -181,11 +170,11 @@
             </div>
 
             <!-- Preview Card Box -->
-            <div class="bg-[#faf9f8] p-6 sm:p-10 rounded-[1.75rem] border border-gray-200/80 max-w-3xl mx-auto shadow-sm">
+            <div class="bg-[#faf9f8] p-6 sm:p-10 rounded-[1.75rem] border border-gray-200/80 max-w-4xl mx-auto shadow-sm">
                 <!-- Preview Title & Tolerance Pill -->
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-2">
                     <div>
-                        <h3 id="previewTitle" class="text-2xl font-black text-gray-900 uppercase tracking-tight font-serif inline-block pb-1" style="border-bottom: 4px solid #5a3e2b;">
+                        <h3 id="previewTitle" class="text-2xl font-black text-gray-900 uppercase tracking-tight font-serif inline-block pb-1" style="border-bottom: 4px solid #f25996;">
                             SIZE CHART TITLE
                         </h3>
                     </div>
@@ -196,16 +185,27 @@
                     </div>
                 </div>
 
-                <!-- Preview Table -->
-                <div class="overflow-x-auto rounded-xl bg-white shadow-2xs border border-gray-100">
-                    <table class="w-full text-center border-collapse">
-                        <thead id="previewTableHead" class="bg-white text-[#5a3e2b] font-bold text-xs sm:text-sm border-b-2 border-gray-200">
-                            <!-- Preview columns -->
-                        </thead>
-                        <tbody id="previewTableBody" class="divide-y divide-gray-100 text-xs sm:text-sm font-semibold text-gray-800">
-                            <!-- Preview rows -->
-                        </tbody>
-                    </table>
+                <!-- Preview Content (Table + Optional Diagram Image) -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start" id="previewLayoutGrid">
+                    <div class="lg:col-span-12" id="previewTableCol">
+                        <div class="overflow-x-auto rounded-xl bg-white shadow-2xs border border-gray-100">
+                            <table class="w-full text-center border-collapse">
+                                <thead id="previewTableHead" class="bg-white text-gray-900 font-bold text-xs sm:text-sm border-b-2 border-gray-200">
+                                    <!-- Preview columns -->
+                                </thead>
+                                <tbody id="previewTableBody" class="divide-y divide-gray-100 text-xs sm:text-sm font-semibold text-gray-800">
+                                    <!-- Preview rows -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!-- Diagram image preview (shown if image uploaded) -->
+                    <div class="hidden lg:col-span-4" id="previewImageCol">
+                        <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-2xs flex flex-col items-center">
+                            <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2">Guide Illustration</span>
+                            <img id="previewDiagramImg" src="" alt="Size Chart Visual" class="w-full h-auto max-h-56 object-contain rounded-lg">
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -224,103 +224,12 @@
 </div>
 
 <script>
-// Dynamic State (Blank / customizable start by default)
-let columns = ['Size', 'Bust', 'Full Length', 'Sleeve length'];
+// Dynamic State (Clean starting state: Only what Admin creates)
+let columns = ['Size', 'Chest', 'Length'];
 let rows = [
-    { 'Size': 'S', 'Bust': '', 'Full Length': '', 'Sleeve length': '' },
-    { 'Size': 'M', 'Bust': '', 'Full Length': '', 'Sleeve length': '' },
-    { 'Size': 'L', 'Bust': '', 'Full Length': '', 'Sleeve length': '' },
-    { 'Size': 'XL', 'Bust': '', 'Full Length': '', 'Sleeve length': '' },
+    { 'Size': '', 'Chest': '', 'Length': '' }
 ];
-
-const presets = {
-    feeding_calf_length: {
-        title: 'Feeding Calf Length Size Chart',
-        dressType: 'Feeding Calf Length',
-        tolerance: 'Size in inches (+ or - 0.5")',
-        columns: ['Size', 'Bust', 'Sleeve', 'Length'],
-        rows: [
-            { 'Size': 'M',   'Bust': '37', 'Sleeve': '8',   'Length': '39' },
-            { 'Size': 'L',   'Bust': '40', 'Sleeve': '8',   'Length': '39.5' },
-            { 'Size': 'XL',  'Bust': '41', 'Sleeve': '8.5', 'Length': '41' },
-            { 'Size': 'XXL', 'Bust': '42', 'Sleeve': '9.5', 'Length': '41.5' }
-        ]
-    },
-    peplum_maxi: {
-        title: 'CURVY PEPLUM MAXI',
-        dressType: 'Maxi Dress',
-        tolerance: 'Size in inches (+ or - 0.5")',
-        columns: ['Size', 'Full Length', 'Bust', 'Peplum cut Top portion', 'Sleeve length'],
-        rows: [
-            { 'Size': 'S',   'Full Length': '48"', 'Bust': '36"', 'Peplum cut Top portion': '11.25"', 'Sleeve length': '14"' },
-            { 'Size': 'M',   'Full Length': '48"', 'Bust': '38"', 'Peplum cut Top portion': '11.25"', 'Sleeve length': '14"' },
-            { 'Size': 'L',   'Full Length': '49"', 'Bust': '40"', 'Peplum cut Top portion': '11.75"', 'Sleeve length': '15"' },
-            { 'Size': 'XL',  'Full Length': '49"', 'Bust': '42"', 'Peplum cut Top portion': '11.75"', 'Sleeve length': '15"' },
-            { 'Size': '2XL', 'Full Length': '50"', 'Bust': '44"', 'Peplum cut Top portion': '12"',    'Sleeve length': '16"' },
-            { 'Size': '3XL', 'Full Length': '50"', 'Bust': '46"', 'Peplum cut Top portion': '12.5"',  'Sleeve length': '16"' },
-            { 'Size': '4XL', 'Full Length': '50"', 'Bust': '48-50"', 'Peplum cut Top portion': '12.5"', 'Sleeve length': '16"' }
-        ]
-    },
-    palazzo_coords: {
-        title: "Women's 3/4th palazzo coords set",
-        dressType: 'Coords Set',
-        tolerance: 'Size in inches (+ or - 0.5")',
-        columns: ['Size', 'Top Length', 'Chest', 'Pant hip', 'Pant Length'],
-        rows: [
-            { 'Size': 'S',   'Top Length': '25"', 'Chest': '36"', 'Pant hip': '36"',   'Pant Length': '29"' },
-            { 'Size': 'M',   'Top Length': '26"', 'Chest': '38"', 'Pant hip': '37.5"', 'Pant Length': '29"' },
-            { 'Size': 'L',   'Top Length': '27"', 'Chest': '40"', 'Pant hip': '39"',   'Pant Length': '29.5"' },
-            { 'Size': 'XL',  'Top Length': '28"', 'Chest': '42"', 'Pant hip': '40.5"', 'Pant Length': '29.5"' },
-            { 'Size': '2XL', 'Top Length': '29"', 'Chest': '44"', 'Pant hip': '42"',   'Pant Length': '30"' },
-            { 'Size': '3XL', 'Top Length': '30"', 'Chest': '46"', 'Pant hip': '43"',   'Pant Length': '30"' },
-            { 'Size': '4XL', 'Top Length': '31"', 'Chest': '48"', 'Pant hip': '44"',   'Pant Length': '30.5"' }
-        ]
-    },
-    curvy_peplum_coords: {
-        title: "Women's Curvy peplum coords set",
-        dressType: 'Coords Set',
-        tolerance: 'Size in inches (+ or - 0.5")',
-        columns: ['Size', 'Top Length', 'Chest', 'Pant hip', 'Pant Length'],
-        rows: [
-            { 'Size': 'S',   'Top Length': '29"', 'Chest': '36"', 'Pant hip': '36"',   'Pant Length': '35"' },
-            { 'Size': 'M',   'Top Length': '29"', 'Chest': '38"', 'Pant hip': '37.5"', 'Pant Length': '35"' },
-            { 'Size': 'L',   'Top Length': '30"', 'Chest': '40"', 'Pant hip': '39"',   'Pant Length': '35.5"' },
-            { 'Size': 'XL',  'Top Length': '30"', 'Chest': '42"', 'Pant hip': '40.5"', 'Pant Length': '35.5"' },
-            { 'Size': '2XL', 'Top Length': '31"', 'Chest': '44"', 'Pant hip': '42"',   'Pant Length': '36"' },
-            { 'Size': '3XL', 'Top Length': '31"', 'Chest': '46"', 'Pant hip': '43"',   'Pant Length': '36"' },
-            { 'Size': '4XL', 'Top Length': '31"', 'Chest': '48"', 'Pant hip': '44"',   'Pant Length': '36.5"' }
-        ]
-    },
-    lounge_kurta: {
-        title: "Women's LOUNGE KURTAAS",
-        dressType: 'Kurta / Kurti',
-        tolerance: 'In inches (+ or - 1")',
-        columns: ['Size', 'Bust', 'Length', 'Sleeve Length'],
-        rows: [
-            { 'Size': 'S',   'Bust': '34"', 'Length': '40"', 'Sleeve Length': '10"' },
-            { 'Size': 'M',   'Bust': '36"', 'Length': '40"', 'Sleeve Length': '10"' },
-            { 'Size': 'L',   'Bust': '38"', 'Length': '41"', 'Sleeve Length': '10.5"' },
-            { 'Size': 'XL',  'Bust': '40"', 'Length': '41"', 'Sleeve Length': '10.5"' },
-            { 'Size': '2XL', 'Bust': '42"', 'Length': '42"', 'Sleeve Length': '11"' },
-            { 'Size': '3XL', 'Bust': '44"', 'Length': '42"', 'Sleeve Length': '11"' },
-            { 'Size': '4XL', 'Bust': '46"', 'Length': '42"', 'Sleeve Length': '11"' }
-        ]
-    },
-    kids_dress: {
-        title: "Baby & Kids Dress / Frock",
-        dressType: 'Frock / Dress',
-        tolerance: 'In inches (+ or - 0.5")',
-        columns: ['Size', 'Age Group', 'Chest', 'Dress Length', 'Shoulder'],
-        rows: [
-            { 'Size': '0-3M',  'Age Group': '0-3 Months',  'Chest': '18"', 'Dress Length': '14"', 'Shoulder': '7"' },
-            { 'Size': '3-6M',  'Age Group': '3-6 Months',  'Chest': '19"', 'Dress Length': '15"', 'Shoulder': '7.5"' },
-            { 'Size': '6-12M', 'Age Group': '6-12 Months', 'Chest': '20"', 'Dress Length': '16"', 'Shoulder': '8"' },
-            { 'Size': '1-2Y',  'Age Group': '1-2 Years',   'Chest': '21"', 'Dress Length': '18"', 'Shoulder': '8.5"' },
-            { 'Size': '2-3Y',  'Age Group': '2-3 Years',   'Chest': '22"', 'Dress Length': '20"', 'Shoulder': '9"' },
-            { 'Size': '3-4Y',  'Age Group': '3-4 Years',   'Chest': '23"', 'Dress Length': '22"', 'Shoulder': '9.5"' }
-        ]
-    }
-};
+let currentUploadedImageDataUrl = null;
 
 function renderBuilder() {
     // 1. Render Header
@@ -330,12 +239,12 @@ function renderBuilder() {
         headHtml += `<th class="py-3 px-3 min-w-[130px]">
             <div class="flex items-center justify-between gap-1 bg-gray-100 px-2.5 py-1.5 rounded-lg border border-gray-200">
                 <input type="text" value="${c}" onchange="renameColumn(${idx}, this.value)" class="bg-transparent font-black text-xs text-gray-800 outline-none w-full" title="Click to rename column">
-                ${idx > 0 ? `<button type="button" onclick="deleteColumn(${idx})" class="text-red-400 hover:text-red-600 font-bold ml-1 text-sm p-0.5" title="Delete Column">×</button>` : ''}
+                ${columns.length > 1 ? `<button type="button" onclick="deleteColumn(${idx})" class="text-red-400 hover:text-red-600 font-bold ml-1 text-sm p-0.5" title="Delete Column">×</button>` : ''}
             </div>
         </th>`;
     });
     headHtml += `<th class="py-3 px-3 w-28 text-center">
-        <button type="button" onclick="addNewColumnModal()" class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-md border border-blue-200 transition-colors">
+        <button type="button" onclick="addNewColumnModal()" class="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-md border border-blue-200 transition-colors">
             + Column
         </button>
     </th></tr>`;
@@ -344,21 +253,29 @@ function renderBuilder() {
     // 2. Render Body
     const body = document.getElementById('builderTableBody');
     let bodyHtml = '';
-    rows.forEach((r, rIdx) => {
-        bodyHtml += `<tr class="bg-white hover:bg-gray-50/50 transition-colors">`;
-        columns.forEach(c => {
-            const isSize = (c.toLowerCase() === 'size');
-            const val = r[c] ?? '';
-            bodyHtml += `<td class="py-2.5 px-3">
-                <input type="text" value="${val}" oninput="updateCellValue(${rIdx}, '${c}', this.value)" placeholder="${isSize ? 'e.g. S, M, XL, 28' : 'e.g. 36&quot;'}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs ${isSize ? 'font-black text-gray-900 bg-amber-50/40' : 'font-semibold text-gray-700'} focus:ring-2 focus:ring-brand-500 outline-none">
-            </td>`;
+    if (rows.length === 0) {
+        bodyHtml = `<tr>
+            <td colspan="${columns.length + 1}" class="py-8 text-center bg-white text-xs font-semibold text-gray-400">
+                No size rows yet. Click <button type="button" onclick="addNewRow()" class="text-brand-600 font-bold hover:underline">+ Add Size Row</button> to add your first size.
+            </td>
+        </tr>`;
+    } else {
+        rows.forEach((r, rIdx) => {
+            bodyHtml += `<tr class="bg-white hover:bg-gray-50/50 transition-colors">`;
+            columns.forEach((c, cIdx) => {
+                const isSize = (cIdx === 0 || c.toLowerCase() === 'size');
+                const val = r[c] ?? '';
+                bodyHtml += `<td class="py-2.5 px-3">
+                    <input type="text" value="${val}" oninput="updateCellValue(${rIdx}, '${c}', this.value)" placeholder="${isSize ? 'e.g. S, M, 28, 0-3M' : 'e.g. 36&quot;'}" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs ${isSize ? 'font-black text-gray-900 bg-amber-50/40' : 'font-semibold text-gray-700'} focus:ring-2 focus:ring-brand-500 outline-none">
+                </td>`;
+            });
+            bodyHtml += `<td class="py-2.5 px-3 text-center">
+                <button type="button" onclick="deleteRow(${rIdx})" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete Row">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+            </td></tr>`;
         });
-        bodyHtml += `<td class="py-2.5 px-3 text-center">
-            <button type="button" onclick="deleteRow(${rIdx})" class="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete Row">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-            </button>
-        </td></tr>`;
-    });
+    }
     body.innerHTML = bodyHtml;
 
     updateLivePreview();
@@ -478,23 +395,48 @@ function addNewRow() {
 }
 
 function deleteRow(idx) {
-    if (rows.length <= 1) {
-        alert('At least one size row is required.');
-        return;
-    }
     rows.splice(idx, 1);
     renderBuilder();
 }
 
-function loadPreset(presetKey) {
-    const p = presets[presetKey];
-    if (!p) return;
-    document.getElementById('chartTitleInput').value = p.title;
-    document.getElementById('dressTypeInput').value = p.dressType;
-    document.getElementById('toleranceNoteInput').value = p.tolerance;
-    columns = JSON.parse(JSON.stringify(p.columns));
-    rows = JSON.parse(JSON.stringify(p.rows));
-    renderBuilder();
+// Image upload handling & live preview
+function previewSelectedImage(input) {
+    if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            currentUploadedImageDataUrl = e.target.result;
+            const imgEl = document.getElementById('imagePreviewEl');
+            const placeholder = document.getElementById('previewPlaceholder');
+            const clearBtn = document.getElementById('clearImageBtn');
+            
+            imgEl.src = currentUploadedImageDataUrl;
+            imgEl.classList.remove('hidden');
+            if (placeholder) placeholder.classList.add('hidden');
+            if (clearBtn) clearBtn.classList.remove('hidden');
+
+            updateLivePreview();
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+function clearSelectedImage() {
+    const input = document.getElementById('chartImageInput');
+    if (input) input.value = '';
+    currentUploadedImageDataUrl = null;
+    
+    const imgEl = document.getElementById('imagePreviewEl');
+    const placeholder = document.getElementById('previewPlaceholder');
+    const clearBtn = document.getElementById('clearImageBtn');
+    
+    if (imgEl) {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+    }
+    if (placeholder) placeholder.classList.remove('hidden');
+    if (clearBtn) clearBtn.classList.add('hidden');
+
+    updateLivePreview();
 }
 
 function handleCategoryChange() {
@@ -607,7 +549,6 @@ function createCategoryAjax(categoryName) {
             const select = document.getElementById('categoryIdSelect');
             const cat = data.category;
             
-            // Check if option already exists
             let existingOpt = select.querySelector(`option[value="${cat.id}"]`);
             if (!existingOpt) {
                 const newOpt = document.createElement('option');
@@ -618,7 +559,6 @@ function createCategoryAjax(categoryName) {
                 existingOpt = newOpt;
             }
             
-            // Select the new category
             select.value = cat.id;
             updateCategoryName();
 
@@ -663,14 +603,31 @@ function updateLivePreview() {
     let bodyHtml = '';
     rows.forEach(r => {
         bodyHtml += `<tr class="hover:bg-gray-50/60 transition-colors">`;
-        columns.forEach(c => {
+        columns.forEach((c, cIdx) => {
             const val = r[c] || '-';
-            const isBold = (c.toLowerCase() === 'size');
+            const isBold = (cIdx === 0 || c.toLowerCase() === 'size');
             bodyHtml += `<td class="py-3 px-3 sm:px-4 ${isBold ? 'font-black text-gray-900' : 'font-medium text-gray-700'}">${val}</td>`;
         });
         bodyHtml += `</tr>`;
     });
     document.getElementById('previewTableBody').innerHTML = bodyHtml;
+
+    // Image preview in Live Storefront
+    const imgCol = document.getElementById('previewImageCol');
+    const tableCol = document.getElementById('previewTableCol');
+    const diagramImg = document.getElementById('previewDiagramImg');
+
+    if (currentUploadedImageDataUrl) {
+        diagramImg.src = currentUploadedImageDataUrl;
+        imgCol.classList.remove('hidden');
+        tableCol.classList.remove('lg:col-span-12');
+        tableCol.classList.add('lg:col-span-8');
+    } else {
+        diagramImg.src = '';
+        imgCol.classList.add('hidden');
+        tableCol.classList.remove('lg:col-span-8');
+        tableCol.classList.add('lg:col-span-12');
+    }
 
     // Sync Hidden Inputs for form submit
     document.getElementById('columnsJsonPayload').value = JSON.stringify(columns);

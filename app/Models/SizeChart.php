@@ -24,6 +24,7 @@ class SizeChart extends Model
             sub_category_id INT NULL DEFAULT 0,
             sub_category_name VARCHAR(255) NULL,
             dress_type VARCHAR(100) NULL,
+            image_url VARCHAR(500) NULL,
             tolerance_note VARCHAR(255) DEFAULT 'Size in inches (+ or - 0.5\")',
             columns_json TEXT NOT NULL,
             rows_json LONGTEXT NOT NULL,
@@ -33,6 +34,14 @@ class SizeChart extends Model
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
         $this->db->exec($sql);
+
+        // Auto-alter column if missing
+        try {
+            $check = $this->db->query("SHOW COLUMNS FROM size_charts LIKE 'image_url'")->fetch();
+            if (!$check) {
+                $this->db->exec("ALTER TABLE size_charts ADD COLUMN image_url VARCHAR(500) NULL AFTER dress_type");
+            }
+        } catch (\Exception $e) {}
     }
 
     public function getAll(): array
@@ -90,7 +99,7 @@ class SizeChart extends Model
 
     public function create(array $data): int
     {
-        $stmt = $this->db->prepare("INSERT INTO size_charts (title, category_id, category_name, sub_category_id, sub_category_name, dress_type, tolerance_note, columns_json, rows_json, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt = $this->db->prepare("INSERT INTO size_charts (title, category_id, category_name, sub_category_id, sub_category_name, dress_type, image_url, tolerance_note, columns_json, rows_json, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
         $stmt->execute([
             $data['title'] ?? '',
             (int)($data['category_id'] ?? 0),
@@ -98,6 +107,7 @@ class SizeChart extends Model
             !empty($data['sub_category_id']) ? (int)$data['sub_category_id'] : null,
             $data['sub_category_name'] ?? null,
             $data['dress_type'] ?? '',
+            $data['image_url'] ?? null,
             $data['tolerance_note'] ?? 'Size in inches (+ or - 0.5")',
             $data['columns_json'] ?? '[]',
             $data['rows_json'] ?? '[]',
@@ -109,7 +119,7 @@ class SizeChart extends Model
 
     public function update(int $id, array $data): bool
     {
-        $stmt = $this->db->prepare("UPDATE size_charts SET title = ?, category_id = ?, category_name = ?, sub_category_id = ?, sub_category_name = ?, dress_type = ?, tolerance_note = ?, columns_json = ?, rows_json = ?, is_active = ?, sort_order = ? WHERE id = ?");
+        $stmt = $this->db->prepare("UPDATE size_charts SET title = ?, category_id = ?, category_name = ?, sub_category_id = ?, sub_category_name = ?, dress_type = ?, image_url = ?, tolerance_note = ?, columns_json = ?, rows_json = ?, is_active = ?, sort_order = ? WHERE id = ?");
         return $stmt->execute([
             $data['title'] ?? '',
             (int)($data['category_id'] ?? 0),
@@ -117,6 +127,7 @@ class SizeChart extends Model
             !empty($data['sub_category_id']) ? (int)$data['sub_category_id'] : null,
             $data['sub_category_name'] ?? null,
             $data['dress_type'] ?? '',
+            $data['image_url'] ?? null,
             $data['tolerance_note'] ?? 'Size in inches (+ or - 0.5")',
             $data['columns_json'] ?? '[]',
             $data['rows_json'] ?? '[]',

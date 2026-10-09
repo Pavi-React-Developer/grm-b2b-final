@@ -33,28 +33,39 @@
     .about-features {
         background-color: <?= htmlspecialchars($theme['feature_bg_color'] ?? '#ffffff') ?> !important;
     }
-    .no-scrollbar::-webkit-scrollbar {
-        display: none;
+    .no-scrollbar::-webkit-scrollbar,
+    .hide-scrollbar::-webkit-scrollbar,
+    .scrollbar-none::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
     }
-    .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-    }
-    .custom-features-scrollbar::-webkit-scrollbar {
-        height: 6px;
-    }
-    .custom-features-scrollbar::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.05);
-        border-radius: 9999px;
-    }
-    .custom-features-scrollbar::-webkit-scrollbar-thumb {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 9999px;
-    }
-    .custom-features-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgba(0, 0, 0, 0.35);
+    .no-scrollbar,
+    .hide-scrollbar,
+    .scrollbar-none {
+        -ms-overflow-style: none !important;
+        scrollbar-width: none !important;
     }
 </style>
+
+<!-- ── Breadcrumb Section ── -->
+<div class="bg-white border-b border-gray-200/80">
+    <div class="w-full max-w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5">
+        <nav class="grm-breadcrumb-nav hide-scrollbar no-scrollbar flex flex-wrap items-center gap-1 sm:gap-1.5 text-xs sm:text-sm font-medium" aria-label="Breadcrumb">
+            <a href="<?= BASE_URL ?>/" class="inline-flex items-center gap-1.5 text-[#F25996] hover:text-[#d8407d] font-semibold transition-colors shrink-0">
+                <svg class="w-4 h-4 shrink-0 text-[#F25996]" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                <span>Home</span>
+            </a>
+            <svg class="w-4 h-4 text-[#F25996] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+            </svg>
+            <span class="text-[#F25996] font-bold shrink-0">About Us</span>
+        </nav>
+    </div>
+</div>
+
 <div class="cms-section pb-6" data-cms-id="<?= htmlspecialchars($aboutUs['id'] ?? '') ?>" style="display: <?= ($aboutUs['is_active'] ?? 1) ? 'block' : 'none' ?>; background-color: <?= htmlspecialchars($theme['bg_color'] ?? '#ffffff') ?>;">
     
     <!-- Hero Section -->
@@ -122,167 +133,43 @@
             </div>
             <?php endif; ?>
 
-            <!-- Slider row: [prev] [viewport] [next] -->
-            <div class="flex items-center gap-2 sm:gap-4">
-
-                <?php if($featuresCount > 1): ?>
-                <!-- Prev Arrow -->
-                <button type="button" id="featureArrowPrev" aria-label="Previous Feature"
-                    class="hidden sm:flex flex-shrink-0 w-10 h-10 rounded-full bg-white shadow-lg border border-gray-100 items-center justify-center text-[#F25996] hover:text-[#d9427e] hover:scale-105 active:scale-95 transition-all cursor-pointer">
-                    <svg class="w-4 h-4 text-[#F25996]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                </button>
-                <?php endif; ?>
-
-                <!-- Overflow viewport — clips the sliding track -->
-                <div class="flex-1 overflow-hidden py-2 pb-4">
-                    <div id="featureSliderTrack" class="flex flex-nowrap w-full items-stretch transition-all duration-300">
-                        <?php foreach($c['features'] as $idx => $f): 
-                            $rawSvg = $f['icon'] ?? '';
-                            $cleanSvg = preg_replace('/\s*(width|height)=["\'][^"\']*["\']/i', '', $rawSvg);
-                            if (strpos($cleanSvg, '<svg') !== false) {
-                                $cleanSvg = preg_replace('/<svg\b([^>]*)>/i', '<svg $1 class="w-full h-full" fill="currentColor">', $cleanSvg);
-                            }
-                        ?>
-                        <div class="w-full flex-shrink-0" style="min-width:100%;">
-                            <div class="about-feature-card rounded-2xl p-4 sm:p-6 md:p-8 text-center flex flex-col items-center justify-start relative h-full" style="background-color: <?= htmlspecialchars($f['bg_color'] ?? '#ffffff') ?>;" data-feature-card>
-                                
-                                <!-- Card Step Badge -->
-                                <div class="absolute top-3.5 right-4 sm:top-4 sm:right-5 text-xs font-bold uppercase tracking-widest opacity-40" style="color: <?= htmlspecialchars($f['text_color'] ?? $theme['feature_text_color'] ?? '#111827') ?>;">
-                                    <?= sprintf('%02d', $idx + 1) ?> / <?= sprintf('%02d', $featuresCount) ?>
-                                </div>
-
-                                <?php if(!empty($cleanSvg)): ?>
-                                <div class="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 flex items-center justify-center" style="color: <?= htmlspecialchars($theme['feature_icon_color'] ?? '#059669') ?>;">
-                                    <?= $cleanSvg ?>
-                                </div>
-                                <?php endif; ?>
-
-                                <h3 class="font-bold text-xl sm:text-2xl mb-3 uppercase tracking-wide" style="color: <?= htmlspecialchars($f['text_color'] ?? $theme['feature_text_color'] ?? '#111827') ?>;">
-                                    <?= htmlspecialchars($f['title'] ?? '') ?>
-                                </h3>
-
-                                <div class="text-base sm:text-lg opacity-90 leading-relaxed font-normal text-left w-full space-y-4" style="color: <?= htmlspecialchars($f['text_color'] ?? $theme['feature_text_color'] ?? '#111827') ?>;">
-                                    <?= nl2br(htmlspecialchars($f['description'] ?? '')) ?>
-                                </div>
-                            </div>
+            <!-- Horizontal Scrollable Row (No Arrows, No Dots, Desktop Mouse Drag & Wheel enabled) -->
+            <div id="featuresScroller" class="about-features-scroller flex flex-nowrap overflow-x-auto gap-4 sm:gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none py-2 pb-4 cursor-grab select-none" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
+                <?php foreach($c['features'] as $idx => $f): 
+                    $rawSvg = $f['icon'] ?? '';
+                    $cleanSvg = preg_replace('/\s*(width|height)=["\'][^"\']*["\']/i', '', $rawSvg);
+                    if (strpos($cleanSvg, '<svg') !== false) {
+                        $cleanSvg = preg_replace('/<svg\b([^>]*)>/i', '<svg $1 class="w-full h-full" fill="currentColor">', $cleanSvg);
+                    }
+                ?>
+                <div class="w-full min-w-full flex-shrink-0 snap-start">
+                    <div class="about-feature-card rounded-2xl p-6 sm:p-8 md:p-10 text-center flex flex-col items-center justify-start relative h-full max-w-4xl mx-auto shadow-sm" style="background-color: <?= htmlspecialchars($f['bg_color'] ?? '#ffffff') ?>;" data-feature-card>
+                        
+                        <!-- Card Step Badge -->
+                        <div class="absolute top-3.5 right-4 sm:top-4 sm:right-5 text-xs font-bold uppercase tracking-widest opacity-40" style="color: <?= htmlspecialchars($f['text_color'] ?? $theme['feature_text_color'] ?? '#111827') ?>;">
+                            <?= sprintf('%02d', $idx + 1) ?> / <?= sprintf('%02d', $featuresCount) ?>
                         </div>
-                        <?php endforeach; ?>
+
+                        <?php if(!empty($cleanSvg)): ?>
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 flex items-center justify-center" style="color: <?= htmlspecialchars($theme['feature_icon_color'] ?? '#059669') ?>;">
+                            <?= $cleanSvg ?>
+                        </div>
+                        <?php endif; ?>
+
+                        <h3 class="font-bold text-xl sm:text-2xl mb-3 uppercase tracking-wide" style="color: <?= htmlspecialchars($f['text_color'] ?? $theme['feature_text_color'] ?? '#111827') ?>;">
+                            <?= htmlspecialchars($f['title'] ?? '') ?>
+                        </h3>
+
+                        <div class="text-base sm:text-lg opacity-90 leading-relaxed font-normal text-left w-full space-y-4" style="color: <?= htmlspecialchars($f['text_color'] ?? $theme['feature_text_color'] ?? '#111827') ?>;">
+                            <?= nl2br(htmlspecialchars($f['description'] ?? '')) ?>
+                        </div>
                     </div>
                 </div>
-
-                <?php if($featuresCount > 1): ?>
-                <!-- Next Arrow -->
-                <button type="button" id="featureArrowNext" aria-label="Next Feature"
-                    class="hidden sm:flex flex-shrink-0 w-10 h-10 rounded-full bg-white shadow-lg border border-gray-100 items-center justify-center text-[#F25996] hover:text-[#d9427e] hover:scale-105 active:scale-95 transition-all cursor-pointer">
-                    <svg class="w-4 h-4 text-[#F25996]" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                </button>
-                <?php endif; ?>
-
-            </div>
-
-            <!-- Pagination Dots -->
-            <?php if($featuresCount > 1): ?>
-            <div class="flex justify-center items-center gap-3 mt-4 sm:mt-6">
-                <?php foreach($c['features'] as $idx => $f): ?>
-                <button type="button" onclick="goToFeatureSlide(<?= $idx ?>)" id="feature-dot-<?= $idx ?>" class="feature-slide-dot transition-all duration-300 <?= $idx === 0 ? 'w-8 h-3 rounded-full bg-white shadow-md' : 'w-3 h-3 rounded-full bg-white/40 hover:bg-white/70' ?>" style="<?= $idx === 0 ? 'background-color: #ffffff;' : 'background-color: rgba(255, 255, 255, 0.4);' ?>" title="<?= htmlspecialchars($f['title'] ?? '') ?>"></button>
                 <?php endforeach; ?>
             </div>
-            <?php endif; ?>
 
         </div>
     </div>
-
-    <script>
-    (function() {
-        const track = document.getElementById('featureSliderTrack');
-        if (!track) return;
-        const totalSlides = <?= (int)$featuresCount ?>;
-        let currentSlide = 0;
-
-        // Move to a slide using CSS transform (works with overflow:hidden)
-        window.goToFeatureSlide = function(index) {
-            if (index < 0) index = 0;
-            if (index >= totalSlides) index = totalSlides - 1;
-            currentSlide = index;
-            track.style.transform = 'translateX(-' + (index * 100) + '%)';
-            track.style.transition = 'transform 0.4s cubic-bezier(0.4,0,0.2,1)';
-            updateFeatureDots(index);
-        };
-
-        window.slideFeature = function(direction) {
-            goToFeatureSlide(currentSlide + direction);
-        };
-
-        // Wire arrow buttons
-        const prevBtn = document.getElementById('featureArrowPrev');
-        const nextBtn = document.getElementById('featureArrowNext');
-        if (prevBtn) prevBtn.addEventListener('click', function() { goToFeatureSlide(currentSlide - 1); });
-        if (nextBtn) nextBtn.addEventListener('click', function() { goToFeatureSlide(currentSlide + 1); });
-
-        // Equalize all card heights to tallest so content is 100% visible on all devices
-        function equalizeSlideHeights() {
-            const cards = track.querySelectorAll('[data-feature-card]');
-            if (!cards.length) return;
-            let maxH = 0;
-            cards.forEach(card => {
-                card.style.minHeight = '0px';
-                card.style.height = 'auto';
-                const h = Math.max(card.scrollHeight || 0, card.offsetHeight || 0);
-                if (h > maxH) maxH = h;
-            });
-            if (maxH > 0) {
-                const finalH = maxH + 28;
-                cards.forEach(card => { 
-                    card.style.minHeight = finalH + 'px'; 
-                    card.style.height = 'auto';
-                });
-                track.style.minHeight = finalH + 'px';
-                track.style.height = 'auto';
-            }
-        }
-
-        if (document.readyState === 'complete') {
-            equalizeSlideHeights();
-        } else {
-            window.addEventListener('load', equalizeSlideHeights);
-            document.addEventListener('DOMContentLoaded', equalizeSlideHeights);
-        }
-
-        if (document.fonts && document.fonts.ready) {
-            document.fonts.ready.then(equalizeSlideHeights);
-        }
-
-        let resizeTimer;
-        function handleResize() {
-            clearTimeout(resizeTimer);
-            resizeTimer = setTimeout(equalizeSlideHeights, 80);
-        }
-        window.addEventListener('resize', handleResize);
-        window.addEventListener('orientationchange', handleResize);
-
-        // Touch swipe support
-        let touchStartX = 0;
-        track.addEventListener('touchstart', function(e) { touchStartX = e.touches[0].clientX; }, { passive: true });
-        track.addEventListener('touchend', function(e) {
-            const diff = touchStartX - e.changedTouches[0].clientX;
-            if (Math.abs(diff) > 50) goToFeatureSlide(currentSlide + (diff > 0 ? 1 : -1));
-        }, { passive: true });
-
-        function updateFeatureDots(activeIndex) {
-            for (let i = 0; i < totalSlides; i++) {
-                const dot = document.getElementById('feature-dot-' + i);
-                if (!dot) continue;
-                if (i === activeIndex) {
-                    dot.className = 'feature-slide-dot transition-all duration-300 w-8 h-3 rounded-full bg-white shadow-md';
-                    dot.style.backgroundColor = '#ffffff';
-                } else {
-                    dot.className = 'feature-slide-dot transition-all duration-300 w-3 h-3 rounded-full bg-white/40 hover:bg-white/70';
-                    dot.style.backgroundColor = 'rgba(255, 255, 255, 0.4)';
-                }
-            }
-        }
-    })();
-    </script>
     <?php endif; ?>
 
     <!-- Why Choose Section -->
@@ -294,9 +181,9 @@
                     <?= htmlspecialchars(!empty($c['why_choose_heading']) ? $c['why_choose_heading'] : (!empty($c['why_choose_title']) ? $c['why_choose_title'] : 'Why Choose Us')) ?>
                 </h2>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            <div id="whyChooseScroller" class="flex flex-nowrap overflow-x-auto gap-4 snap-x snap-mandatory pb-2 md:gap-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0 scroll-smooth no-scrollbar hide-scrollbar scrollbar-none cursor-grab select-none" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
                 <?php foreach($c['why_choose'] as $w): ?>
-                <div class="rounded-2xl p-6 sm:p-8 text-center shadow-sm border border-white hover:shadow-md transition-shadow" style="background-color: <?= htmlspecialchars($w['bg_color'] ?? '#ffffff') ?>;">
+                <div class="w-full min-w-full flex-shrink-0 snap-start md:w-[calc(50%-0.75rem)] md:min-w-[calc(50%-0.75rem)] lg:w-auto lg:min-w-0 lg:flex-shrink rounded-2xl p-6 sm:p-8 text-center shadow-sm border border-white hover:shadow-md transition-shadow" style="background-color: <?= htmlspecialchars($w['bg_color'] ?? '#ffffff') ?>;">
                     <?php if(!empty($w['icon'])): ?>
                     <div class="w-12 h-12 mx-auto mb-4" style="color: <?= htmlspecialchars($theme['why_choose_icon_color'] ?? '#059669') ?>;">
                         <?= str_replace('<svg ', '<svg fill="currentColor" ', $w['icon']) ?>
@@ -813,6 +700,65 @@
 
 <?php if (!isset($skipAboutJsListener)): ?>
 <script>
+// Enable Desktop Mouse Drag & Wheel Horizontal Scrolling for Row 2 & Row 3
+function initDesktopHorizontalScroll(container) {
+    if (!container) return;
+    
+    // Mouse wheel horizontal scroll on hover
+    container.addEventListener('wheel', function(e) {
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && container.scrollWidth > container.clientWidth) {
+            e.preventDefault();
+            container.scrollBy({ left: e.deltaY * 1.2, behavior: 'smooth' });
+        }
+    }, { passive: false });
+
+    // Click & Drag support for desktop mouse
+    let isDown = false;
+    let startX = 0;
+    let scrollLeft = 0;
+    let isDragging = false;
+
+    container.addEventListener('mousedown', function(e) {
+        if (e.button !== 0) return;
+        isDown = true;
+        isDragging = false;
+        startX = e.pageX - container.offsetLeft;
+        scrollLeft = container.scrollLeft;
+        container.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mouseup', function() {
+        if (isDown) {
+            isDown = false;
+            container.style.cursor = 'grab';
+            setTimeout(function() { isDragging = false; }, 50);
+        }
+    });
+
+    container.addEventListener('mousemove', function(e) {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - container.offsetLeft;
+        const walk = (x - startX) * 1.5;
+        if (Math.abs(x - startX) > 5) {
+            isDragging = true;
+        }
+        container.scrollLeft = scrollLeft - walk;
+    });
+
+    container.addEventListener('click', function(e) {
+        if (isDragging) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    initDesktopHorizontalScroll(document.getElementById('featuresScroller'));
+    initDesktopHorizontalScroll(document.getElementById('whyChooseScroller'));
+});
+
 // Listen for live preview messages from the CMS Layout Builder
 window.addEventListener('message', function(event) {
     if (event.data.action === 'toggle') {

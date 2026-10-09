@@ -1,3 +1,89 @@
+<style>
+    /* ── Custom Pink Select (Address Forms) ── */
+    .reg-cs-wrapper {
+        position: relative;
+        width: 100%;
+    }
+    .reg-cs-trigger {
+        width: 100%;
+        border-radius: 0.75rem;
+        border: 1px solid #e5e7eb;
+        background-color: #ffffff;
+        padding: 0.625rem 0.875rem;
+        font-size: 0.875rem;
+        color: #111827;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s ease-in-out;
+        outline: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        user-select: none;
+        font-weight: 500;
+    }
+    .reg-cs-trigger.placeholder { color: #9ca3af; font-weight: 400; }
+    .reg-cs-trigger:focus,
+    .reg-cs-trigger.open {
+        border-color: #F25996 !important;
+        box-shadow: 0 0 0 3px rgba(242, 89, 150, 0.2) !important;
+    }
+    .reg-cs-trigger.error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+    }
+    .reg-cs-arrow {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        color: #9ca3af;
+        transition: transform 0.2s ease;
+        pointer-events: none;
+    }
+    .reg-cs-trigger.open .reg-cs-arrow { transform: rotate(180deg); color: #F25996; }
+    .reg-cs-list {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        z-index: 50;
+        max-height: 200px;
+        overflow-y: auto;
+        display: none;
+        padding: 4px;
+    }
+    .reg-cs-list.open { display: block; }
+    .reg-cs-list::-webkit-scrollbar { width: 4px; }
+    .reg-cs-list::-webkit-scrollbar-track { background: transparent; }
+    .reg-cs-list::-webkit-scrollbar-thumb { background: #F25996; border-radius: 4px; }
+    .reg-cs-option {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        color: #374151;
+        transition: background 0.15s, color 0.15s;
+    }
+    .reg-cs-option:hover {
+        background: #fce7f3;
+        color: #F25996;
+    }
+    .reg-cs-option.selected {
+        background: #F25996;
+        color: #ffffff;
+        font-weight: 600;
+    }
+    .reg-cs-option.disabled {
+        color: #9ca3af;
+        cursor: default;
+        pointer-events: none;
+    }
+</style>
+
 <div class="bg-[#fafafa] min-h-screen flex flex-col md:flex-row relative">
 
     <?php include __DIR__ . '/_sidebar.php'; ?>
@@ -373,6 +459,137 @@ const TN_DISTRICTS = [
     "Viluppuram", "Virudhunagar"
 ];
 
+/* ─────────────────────────────────────────────────
+   Custom Pink Select for Address Modals
+───────────────────────────────────────────────── */
+function initAddrCustomSelect(sel) {
+    if (!sel || sel.dataset.addrCsInit) return;
+    sel.dataset.addrCsInit = '1';
+
+    sel.style.display = 'none';
+
+    var wrapper = document.createElement('div');
+    wrapper.className = 'reg-cs-wrapper';
+    if (sel.classList.contains('hidden')) wrapper.classList.add('hidden');
+    sel.parentNode.insertBefore(wrapper, sel);
+    wrapper.appendChild(sel);
+
+    var trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.className = 'reg-cs-trigger placeholder';
+
+    var label = document.createElement('span');
+    label.className = 'reg-cs-label truncate';
+    label.textContent = sel.options[0] ? sel.options[0].text : 'Select';
+    trigger.appendChild(label);
+
+    var arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    arrow.setAttribute('class', 'reg-cs-arrow');
+    arrow.setAttribute('viewBox', '0 0 20 20');
+    arrow.setAttribute('fill', 'none');
+    arrow.setAttribute('stroke', 'currentColor');
+    arrow.setAttribute('stroke-width', '2');
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('d', 'M5 7l5 5 5-5');
+    arrow.appendChild(path);
+    trigger.appendChild(arrow);
+    wrapper.appendChild(trigger);
+
+    var list = document.createElement('div');
+    list.className = 'reg-cs-list';
+    wrapper.appendChild(list);
+
+    function buildOptions() {
+        list.innerHTML = '';
+        Array.from(sel.options).forEach(function(opt) {
+            var item = document.createElement('div');
+            item.className = 'reg-cs-option' +
+                (opt.value === '' ? ' disabled' : '') +
+                (opt.selected || sel.value === opt.value ? ' selected' : '');
+            item.textContent = opt.text;
+            if (opt.value !== '') {
+                item.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    sel.value = opt.value;
+                    label.textContent = opt.text;
+                    trigger.classList.remove('placeholder');
+                    list.querySelectorAll('.reg-cs-option').forEach(function(o) { o.classList.remove('selected'); });
+                    item.classList.add('selected');
+                    closeList();
+                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                });
+            }
+            list.appendChild(item);
+        });
+    }
+
+    function syncTrigger() {
+        var cur = sel.options[sel.selectedIndex];
+        if (cur && cur.value !== '') {
+            label.textContent = cur.text;
+            trigger.classList.remove('placeholder');
+        } else {
+            label.textContent = sel.options[0] ? sel.options[0].text : 'Select';
+            trigger.classList.add('placeholder');
+        }
+        list.querySelectorAll('.reg-cs-option').forEach(function(o) {
+            if (cur && o.textContent.trim() === cur.text.trim() && cur.value !== '') {
+                o.classList.add('selected');
+            } else {
+                o.classList.remove('selected');
+            }
+        });
+    }
+
+    sel.refreshCustomSelect = function() {
+        buildOptions();
+        syncTrigger();
+        if (sel.classList.contains('hidden')) {
+            wrapper.classList.add('hidden');
+        } else {
+            wrapper.classList.remove('hidden');
+        }
+    };
+
+    syncTrigger();
+    buildOptions();
+
+    function openList() {
+        document.querySelectorAll('.reg-cs-trigger.open').forEach(function(t) {
+            if (t !== trigger) {
+                t.classList.remove('open');
+                var sib = t.parentElement && t.parentElement.querySelector('.reg-cs-list');
+                if (sib) sib.classList.remove('open');
+            }
+        });
+        trigger.classList.add('open');
+        list.classList.add('open');
+    }
+    function closeList() {
+        trigger.classList.remove('open');
+        list.classList.remove('open');
+    }
+
+    trigger.addEventListener('click', function(e) {
+        e.stopPropagation();
+        list.classList.contains('open') ? closeList() : openList();
+    });
+
+    new MutationObserver(function() {
+        if (sel.classList.contains('hidden')) {
+            wrapper.classList.add('hidden');
+        } else {
+            wrapper.classList.remove('hidden');
+        }
+        buildOptions();
+        syncTrigger();
+    }).observe(sel, { attributes: true, attributeFilter: ['class'], childList: true, subtree: true });
+
+    sel.addEventListener('change', syncTrigger);
+}
+
 function toggleAddDistrictFields() {
     const stateVal = document.getElementById('add_state').value;
     const selectEl = document.getElementById('add_district_select');
@@ -416,6 +633,8 @@ function toggleAddDistrictFields() {
         if (otherContainer) otherContainer.classList.add('hidden');
         if (otherInput) { otherInput.disabled = true; otherInput.required = false; }
     }
+
+    if (selectEl.refreshCustomSelect) selectEl.refreshCustomSelect();
 }
 
 function toggleEditDistrictFields() {
@@ -461,14 +680,21 @@ function toggleEditDistrictFields() {
         if (otherContainer) otherContainer.classList.add('hidden');
         if (otherInput) { otherInput.disabled = true; otherInput.required = false; }
     }
+
+    if (selectEl.refreshCustomSelect) selectEl.refreshCustomSelect();
 }
 
 function openAddModal() {
     const modal = document.getElementById('add-address-modal');
-    document.getElementById('add_state').value = '';
+    const stateSelect = document.getElementById('add_state');
+    const distSelect = document.getElementById('add_district_select');
+    stateSelect.value = '';
+    distSelect.value = '';
     const otherInput = document.getElementById('add_other_state_name');
     if (otherInput) otherInput.value = '';
     toggleAddDistrictFields();
+    if (stateSelect.refreshCustomSelect) stateSelect.refreshCustomSelect();
+    if (distSelect.refreshCustomSelect) distSelect.refreshCustomSelect();
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
@@ -496,12 +722,12 @@ function openEditModal(addr) {
     const isTnState = (rawState.toLowerCase() === 'tamil nadu' || isTnDistrict);
 
     const stateSelect = document.getElementById('edit_state');
+    const distSelect = document.getElementById('edit_district_select');
     const otherStateInput = document.getElementById('edit_other_state_name');
 
     if (isTnState) {
         stateSelect.value = 'Tamil Nadu';
         toggleEditDistrictFields();
-        const distSelect = document.getElementById('edit_district_select');
         let matched = false;
         for (let opt of distSelect.options) {
             if (opt.value.toLowerCase() === rawCity.toLowerCase()) {
@@ -523,6 +749,9 @@ function openEditModal(addr) {
         }
     }
 
+    if (stateSelect.refreshCustomSelect) stateSelect.refreshCustomSelect();
+    if (distSelect.refreshCustomSelect) distSelect.refreshCustomSelect();
+
     const modal = document.getElementById('edit-address-modal');
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -533,6 +762,18 @@ function closeEditModal() {
     modal.classList.add('hidden');
     document.body.style.overflow = '';
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    initAddrCustomSelect(document.getElementById('add_state'));
+    initAddrCustomSelect(document.getElementById('add_district_select'));
+    initAddrCustomSelect(document.getElementById('edit_state'));
+    initAddrCustomSelect(document.getElementById('edit_district_select'));
+
+    document.addEventListener('click', function() {
+        document.querySelectorAll('.reg-cs-trigger.open').forEach(function(t) { t.classList.remove('open'); });
+        document.querySelectorAll('.reg-cs-list.open').forEach(function(l) { l.classList.remove('open'); });
+    });
+});
 
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') { closeAddModal(); closeEditModal(); }
