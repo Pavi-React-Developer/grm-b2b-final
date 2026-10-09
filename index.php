@@ -112,6 +112,7 @@ $router = new Core\Router();
 // Home Route
 $router->get('/', 'App\Controllers\Storefront\HomeController@index');
 $router->get('/about', 'App\Controllers\Storefront\HomeController@about');
+$router->get('/about-us', 'App\Controllers\Storefront\HomeController@about');
 $router->get('/terms', 'App\Controllers\Storefront\HomeController@terms');
 $router->get('/terms-and-conditions', 'App\Controllers\Storefront\HomeController@terms');
 $router->get('/term-and-condition', 'App\Controllers\Storefront\HomeController@terms');

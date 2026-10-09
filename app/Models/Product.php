@@ -5,10 +5,11 @@ use Core\Model;
 
 class Product extends Model
 {
-    public function getAllActive($search = null, $categoryId = null, $subCategoryId = null, $attributeFilters = [], $sort = 'newest')
+    public function getAllActive($search = null, $categoryId = null, $subCategoryId = null, $attributeFilters = [], $sort = 'newest', ?int $isCustomizable = 0)
     {
         $sql = "
             SELECT p.*, c.name AS category_name, c.moq AS category_moq, c.sgst AS category_sgst, c.cgst AS category_cgst, c.hsn_code AS category_hsn_code,
+                   sc_chart.title AS size_chart_title,
                    vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name, vp.unique_vendor_id,
                    u_v.name AS vendor_name,
                    COALESCE(
@@ -31,6 +32,7 @@ class Product extends Model
                    pv_agg.cgst AS variant_cgst
             FROM products p
             JOIN categories c ON p.category_id = c.id
+            LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
             LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
             LEFT JOIN users u_v ON p.vendor_id = u_v.id
             LEFT JOIN (
@@ -52,6 +54,14 @@ class Product extends Model
         }
         
         $params = [];
+
+        if ($isCustomizable !== null) {
+            if ($isCustomizable === 1) {
+                $sql .= " AND p.is_customizable = 1";
+            } else {
+                $sql .= " AND (p.is_customizable = 0 OR p.is_customizable IS NULL)";
+            }
+        }
         
         if ($categoryId) {
             $sql .= " AND p.category_id = :cat_id";
@@ -146,7 +156,8 @@ class Product extends Model
             FROM products p
             LEFT JOIN product_variants pv ON p.id = pv.product_id
             LEFT JOIN categories c ON p.category_id = c.id
-            WHERE p.status = 'active' AND (p.approval_status = 'approved' OR p.approval_status IS NULL) " . (!is_vendor_module_enabled() ? " AND (p.vendor_id IS NULL OR p.vendor_id = 0) " : "") . "
+            WHERE p.status = 'active' AND (p.approval_status = 'approved' OR p.approval_status IS NULL)
+              AND (p.is_customizable = 0 OR p.is_customizable IS NULL) " . (!is_vendor_module_enabled() ? " AND (p.vendor_id IS NULL OR p.vendor_id = 0) " : "") . "
               AND (p.name LIKE :query1 OR pv.sku LIKE :query2 OR c.name LIKE :query3)
             ORDER BY p.created_at DESC
             LIMIT 10
@@ -160,10 +171,11 @@ class Product extends Model
         return $stmt->fetchAll();
     }
     
-    public function getAllAdmin(?int $vendorId = null, ?string $approvalStatus = null)
+    public function getAllAdmin(?int $vendorId = null, ?string $approvalStatus = null, ?int $isCustomizable = null)
     {
         $sql = "
             SELECT p.*, c.name as category_name, c.moq as category_moq, c.sgst as category_sgst, c.cgst as category_cgst, c.hsn_code as category_hsn_code, sc.name as sub_category_name,
+                   sc_chart.title AS size_chart_title,
                    vp.store_name as vendor_store_name, vp.unique_vendor_id,
                    u_rev.name as reviewer_name,
                    COALESCE(
@@ -179,6 +191,7 @@ class Product extends Model
             FROM products p
             JOIN categories c ON p.category_id = c.id
             LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
+            LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
             LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
             LEFT JOIN users u_rev ON p.approved_by = u_rev.id
             WHERE 1=1
@@ -188,6 +201,14 @@ class Product extends Model
         if ($vendorId !== null) {
             $sql .= " AND p.vendor_id = :vendor_id";
             $params['vendor_id'] = $vendorId;
+        }
+
+        if ($isCustomizable !== null) {
+            if ($isCustomizable === 1) {
+                $sql .= " AND p.is_customizable = 1";
+            } else {
+                $sql .= " AND (p.is_customizable = 0 OR p.is_customizable IS NULL)";
+            }
         }
 
         if ($approvalStatus !== null && $approvalStatus !== 'all' && $approvalStatus !== '') {
@@ -207,20 +228,51 @@ class Product extends Model
         return $stmt->fetchAll();
     }
 
+    public function generateUniqueSlug(string $nameOrSlug, ?int $excludeId = null): string
+    {
+        $baseSlug = preg_replace('/[^a-z0-9]+/i', '-', trim($nameOrSlug));
+        $baseSlug = trim(strtolower($baseSlug), '-');
+        if (empty($baseSlug)) {
+            $baseSlug = 'product';
+        }
+
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (true) {
+            $sql = "SELECT id FROM products WHERE slug = :slug";
+            $params = ['slug' => $slug];
+            if ($excludeId !== null) {
+                $sql .= " AND id != :exclude_id";
+                $params['exclude_id'] = $excludeId;
+            }
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            if (!$stmt->fetch()) {
+                return $slug;
+            }
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+    }
+
     public function create(array $data)
     {
+        $slug = !empty($data['slug']) ? $data['slug'] : $data['name'];
+        $uniqueSlug = $this->generateUniqueSlug($slug);
+
         $stmt = $this->db->prepare("
             INSERT INTO products (
-                vendor_id, category_id, sub_category_id, name, slug, description, 
+                vendor_id, category_id, sub_category_id, size_chart_id, name, slug, description, how_to_use, why_choose, custom_fields,
                 wholesale_price, retail_price, weight, stock_quantity, moq_override, status, 
                 approval_status, rejection_reason, approved_by, approved_at,
-                max_amount, sgst, cgst, total_gst
+                max_amount, sgst, cgst, total_gst, is_customizable
             )
             VALUES (
-                :vendor_id, :category_id, :sub_category_id, :name, :slug, :description, 
+                :vendor_id, :category_id, :sub_category_id, :size_chart_id, :name, :slug, :description, :how_to_use, :why_choose, :custom_fields,
                 :wholesale_price, :retail_price, :weight, :stock_quantity, :moq_override, :status, 
                 :approval_status, :rejection_reason, :approved_by, :approved_at,
-                :max_amount, :sgst, :cgst, :total_gst
+                :max_amount, :sgst, :cgst, :total_gst, :is_customizable
             )
         ");
         
@@ -233,9 +285,13 @@ class Product extends Model
             'vendor_id' => $data['vendor_id'] ?? null,
             'category_id' => $data['category_id'],
             'sub_category_id' => $data['sub_category_id'] ?? null,
+            'size_chart_id' => !empty($data['size_chart_id']) ? (int)$data['size_chart_id'] : null,
             'name' => $data['name'],
-            'slug' => $data['slug'],
+            'slug' => $uniqueSlug,
             'description' => $data['description'] ?? null,
+            'how_to_use' => $data['how_to_use'] ?? null,
+            'why_choose' => $data['why_choose'] ?? null,
+            'custom_fields' => $data['custom_fields'] ?? null,
             'wholesale_price' => $data['wholesale_price'],
             'retail_price' => $data['retail_price'] ?? $data['wholesale_price'],
             'weight' => $data['weight'] ?? null,
@@ -249,7 +305,8 @@ class Product extends Model
             'max_amount' => $maxAmount,
             'sgst' => $sgst,
             'cgst' => $cgst,
-            'total_gst' => $totalGst
+            'total_gst' => $totalGst,
+            'is_customizable' => isset($data['is_customizable']) ? (int)$data['is_customizable'] : 0
         ]);
         
         return $this->db->lastInsertId();
@@ -259,6 +316,7 @@ class Product extends Model
     {
         $stmt = $this->db->prepare("
             SELECT p.*, c.name AS category_name, c.moq AS category_moq, c.sgst AS category_sgst, c.cgst AS category_cgst,
+                   sc_chart.title AS size_chart_title,
                    vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name, vp.unique_vendor_id,
                    u_v.name AS vendor_name,
                    COALESCE(
@@ -269,6 +327,7 @@ class Product extends Model
                    (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS total_stock_quantity
             FROM products p 
             JOIN categories c ON p.category_id = c.id
+            LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
             LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
             LEFT JOIN users u_v ON p.vendor_id = u_v.id
             WHERE p.id = :id
@@ -281,6 +340,7 @@ class Product extends Model
     {
         $stmt = $this->db->prepare("
             SELECT p.*, c.name AS category_name, c.moq AS category_moq, c.sgst AS category_sgst, c.cgst AS category_cgst,
+                   sc_chart.title AS size_chart_title,
                    vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name, vp.unique_vendor_id,
                    u_v.name AS vendor_name,
                    COALESCE(
@@ -291,6 +351,7 @@ class Product extends Model
                    (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS total_stock_quantity
             FROM products p 
             JOIN categories c ON p.category_id = c.id
+            LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
             LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
             LEFT JOIN users u_v ON p.vendor_id = u_v.id
             WHERE p.slug = :slug
@@ -301,6 +362,9 @@ class Product extends Model
 
     public function update(int $id, array $data)
     {
+        $slug = !empty($data['slug']) ? $data['slug'] : $data['name'];
+        $uniqueSlug = $this->generateUniqueSlug($slug, $id);
+
         $sgst = isset($data['sgst']) && $data['sgst'] !== '' ? (float)$data['sgst'] : 0.00;
         $cgst = isset($data['cgst']) && $data['cgst'] !== '' ? (float)$data['cgst'] : 0.00;
         $totalGst = isset($data['total_gst']) && $data['total_gst'] !== '' ? (float)$data['total_gst'] : ($sgst + $cgst);
@@ -310,9 +374,13 @@ class Product extends Model
             UPDATE products 
             SET category_id = :category_id, 
                 sub_category_id = :sub_category_id, 
+                size_chart_id = :size_chart_id,
                 name = :name, 
                 slug = :slug, 
                 description = :description, 
+                how_to_use = :how_to_use,
+                why_choose = :why_choose,
+                custom_fields = :custom_fields,
                 wholesale_price = :wholesale_price, 
                 retail_price = :retail_price, 
                 weight = :weight,
@@ -328,9 +396,13 @@ class Product extends Model
             'id' => $id,
             'category_id' => $data['category_id'],
             'sub_category_id' => $data['sub_category_id'] ?? null,
+            'size_chart_id' => !empty($data['size_chart_id']) ? (int)$data['size_chart_id'] : null,
             'name' => $data['name'],
-            'slug' => $data['slug'],
+            'slug' => $uniqueSlug,
             'description' => $data['description'] ?? null,
+            'how_to_use' => $data['how_to_use'] ?? null,
+            'why_choose' => $data['why_choose'] ?? null,
+            'custom_fields' => $data['custom_fields'] ?? null,
             'wholesale_price' => $data['wholesale_price'],
             'retail_price' => $data['retail_price'] ?? $data['wholesale_price'],
             'weight' => $data['weight'] ?? null,
@@ -343,6 +415,10 @@ class Product extends Model
             'total_gst' => $totalGst
         ];
 
+        if (array_key_exists('is_customizable', $data)) {
+            $sql .= ", is_customizable = :is_customizable";
+            $params['is_customizable'] = (int)$data['is_customizable'];
+        }
         if (array_key_exists('vendor_id', $data)) {
             $sql .= ", vendor_id = :vendor_id";
             $params['vendor_id'] = $data['vendor_id'];
@@ -447,9 +523,14 @@ class Product extends Model
             // 4. Delete product variants
             $this->db->prepare("DELETE FROM product_variants WHERE product_id = :id")->execute(['id' => $id]);
             
-            // 5. Clean up cart items & wishlists
+            // 5. Clean up cart items, wishlists, reviews, volume tiers, fabric customizations
             $this->db->prepare("DELETE FROM cart_items WHERE product_id = :id")->execute(['id' => $id]);
             $this->db->prepare("DELETE FROM wishlists WHERE product_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("DELETE FROM reviews WHERE product_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("DELETE FROM product_volume_tiers WHERE product_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("DELETE FROM fabric_customizations WHERE fabric_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("UPDATE order_items SET product_id = NULL, variant_id = NULL WHERE product_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("UPDATE order_modification_items SET product_id = NULL, variant_id = NULL WHERE product_id = :id")->execute(['id' => $id]);
             
             // 6. Delete product
             $stmt = $this->db->prepare("DELETE FROM products WHERE id = :id");
@@ -822,4 +903,6 @@ class Product extends Model
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 }
+
+
 

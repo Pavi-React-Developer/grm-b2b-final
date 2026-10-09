@@ -368,7 +368,7 @@ if ($hasDynamicNavbar) {
                         ?>
                         <div class="relative group">
                             <button class="flex items-center space-x-2 hover:opacity-80 transition-opacity focus:outline-none">
-                                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm" style="background-color: #5a6448; color: #ffffff;">
+                                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-white/60 bg-white text-[#F25996]">
                                     <?= $initial ?>
                                 </div>
                                 <span class="font-semibold text-[15px] hidden md:block" style="color: #5a6448;">
@@ -818,102 +818,14 @@ if ($hasDynamicNavbar) {
         window.renderDiscountStarburstJs = function(pct, extraClass = '', uid = '') {
             pct = parseInt(pct) || 0;
             if (pct <= 0) return '';
-            uid = uid || ('lux_js_' + Math.random().toString(36).substring(2, 9));
-            const fontSize = pct >= 100 ? '28' : '34';
-            return `<div class="luxury-discount-badge ${extraClass} pointer-events-none select-none" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3)) drop-shadow(0 2px 8px rgba(0,168,204,0.35)); aspect-ratio: 160/210;">
-                <svg viewBox="0 0 160 210" class="w-full h-full block" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
-                    <defs>
-                        <linearGradient id="bodyGrad_${uid}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#026d88" />
-                            <stop offset="35%" stop-color="#035d75" />
-                            <stop offset="70%" stop-color="#02475a" />
-                            <stop offset="100%" stop-color="#01313f" />
-                        </linearGradient>
-                        <linearGradient id="rodGrad_${uid}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#22d3ee" />
-                            <stop offset="30%" stop-color="#00a8cc" />
-                            <stop offset="70%" stop-color="#026982" />
-                            <stop offset="100%" stop-color="#013b4a" />
-                        </linearGradient>
-                        <linearGradient id="ribbonGrad_${uid}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#00b4d8" />
-                            <stop offset="30%" stop-color="#0096c7" />
-                            <stop offset="75%" stop-color="#0077b6" />
-                            <stop offset="100%" stop-color="#023e8a" />
-                        </linearGradient>
-                        <linearGradient id="tailGrad_${uid}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#025368" />
-                            <stop offset="50%" stop-color="#013d4d" />
-                            <stop offset="100%" stop-color="#01242e" />
-                        </linearGradient>
-                        <linearGradient id="shadowGrad_${uid}" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#01202a" />
-                            <stop offset="100%" stop-color="#000e13" />
-                        </linearGradient>
-                        <linearGradient id="whiteGrad_${uid}" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stop-color="#ffffff" />
-                            <stop offset="50%" stop-color="#f0fdff" />
-                            <stop offset="100%" stop-color="#ffffff" />
-                        </linearGradient>
-                    </defs>
-                    <g>
-                        <rect x="22" y="11" width="116" height="15" rx="7.5" fill="none" stroke="url(#whiteGrad_${uid})" stroke-width="2.2" />
-                        <rect x="23" y="12" width="114" height="13" rx="6.5" fill="url(#rodGrad_${uid})" />
-                        <path d="M 32,14.5 L 128,14.5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-opacity="0.85" />
-                        <polygon points="17,18.5 24,14 22,18.5 24,23" fill="url(#whiteGrad_${uid})" />
-                        <circle cx="15" cy="18.5" r="1.2" fill="url(#whiteGrad_${uid})" />
-                        <polygon points="143,18.5 136,14 138,18.5 136,23" fill="url(#whiteGrad_${uid})" />
-                        <circle cx="145" cy="18.5" r="1.2" fill="url(#whiteGrad_${uid})" />
-                        <ellipse cx="26" cy="18.5" rx="2.5" ry="4.8" fill="url(#shadowGrad_${uid})" stroke="url(#whiteGrad_${uid})" stroke-width="0.8" />
-                        <ellipse cx="134" cy="18.5" rx="2.5" ry="4.8" fill="url(#shadowGrad_${uid})" stroke="url(#whiteGrad_${uid})" stroke-width="0.8" />
+            const scallopPath = "M 100 22 A 26.5 26.5 0 0 1 145.85 36.9 A 26.5 26.5 0 0 1 174.18 75.9 A 26.5 26.5 0 0 1 174.18 124.1 A 26.5 26.5 0 0 1 145.85 163.1 A 26.5 26.5 0 0 1 100 178 A 26.5 26.5 0 0 1 54.15 163.1 A 26.5 26.5 0 0 1 25.82 124.1 A 26.5 26.5 0 0 1 25.82 75.9 A 26.5 26.5 0 0 1 54.15 36.9 A 26.5 26.5 0 0 1 100 22 Z";
+            return `<div class="scallop-discount-badge ${extraClass} pointer-events-none select-none" style="aspect-ratio: 1/1; filter: drop-shadow(0 4px 8px rgba(0, 168, 204, 0.35));">
+                <svg viewBox="0 0 200 200" class="w-full h-full block" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+                    <path d="${scallopPath}" fill="#00A8CC" />
+                    <g fill="#ffffff" text-anchor="middle">
+                        <text x="100" y="98" class="badge-pct-text" font-family="'Montserrat', 'Arial Black', 'Impact', 'Inter', sans-serif" font-weight="900" font-size="56" letter-spacing="0.5">${pct}%</text>
+                        <text x="100" y="142" font-family="'Montserrat', 'Arial Black', 'Impact', 'Inter', sans-serif" font-weight="900" font-size="28" letter-spacing="2">OFF</text>
                     </g>
-                    <g>
-                        <path d="M 32,106 C 20,107 13,114 9,132 L 20,123 L 11,111 C 16,102 24,98 34,98 Z" fill="url(#tailGrad_${uid})" stroke="url(#whiteGrad_${uid})" stroke-width="1.3" stroke-linejoin="round" />
-                        <path d="M 30,103 C 21,104 15,108 12,116 L 17,121 L 12,126" fill="none" stroke="url(#whiteGrad_${uid})" stroke-width="0.7" stroke-opacity="0.8" />
-                        <path d="M 128,106 C 140,107 147,114 151,132 L 140,123 L 149,111 C 144,102 136,98 126,98 Z" fill="url(#tailGrad_${uid})" stroke="url(#whiteGrad_${uid})" stroke-width="1.3" stroke-linejoin="round" />
-                        <path d="M 130,103 C 139,104 145,108 148,116 L 143,121 L 148,126" fill="none" stroke="url(#whiteGrad_${uid})" stroke-width="0.7" stroke-opacity="0.8" />
-                    </g>
-                    <path d="M 34,22 L 126,22 L 126,146 L 80,195 L 34,146 Z" fill="url(#bodyGrad_${uid})" stroke="url(#whiteGrad_${uid})" stroke-width="2.2" stroke-linejoin="round" />
-                    <path d="M 40,28 L 120,28 L 120,143 L 80,186 L 40,143 Z" fill="none" stroke="url(#whiteGrad_${uid})" stroke-width="1.2" stroke-opacity="0.95" />
-                    <g fill="none" stroke="url(#whiteGrad_${uid})" stroke-width="1.2" stroke-linecap="round">
-                        <path d="M 68,42 C 60,37 50,38 52,44 C 54,49 63,48 69,42 C 73,38 77,40 80,43" />
-                        <path d="M 92,42 C 100,37 110,38 108,44 C 106,49 97,48 91,42 C 87,38 83,40 80,43" />
-                        <polygon points="80,37 83,41 80,45 77,41" fill="url(#whiteGrad_${uid})" stroke="none" />
-                        <path d="M 72,40 Q 80,36 88,40" stroke-width="0.9" />
-                    </g>
-                    <text x="80" y="70" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="${fontSize}" fill="url(#whiteGrad_${uid})" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">${pct}%</text>
-                    <g>
-                        <path d="M 22,122 L 34,122 L 34,132 Z" fill="url(#shadowGrad_${uid})" />
-                        <path d="M 138,122 L 126,122 L 126,132 Z" fill="url(#shadowGrad_${uid})" />
-                        <path d="M 22,96 Q 80,105 138,96 L 138,122 Q 80,131 22,122 Z" fill="url(#ribbonGrad_${uid})" stroke="url(#whiteGrad_${uid})" stroke-width="1.8" stroke-linejoin="round" />
-                        <path d="M 24,100 Q 80,109 136,100" fill="none" stroke="url(#whiteGrad_${uid})" stroke-width="0.9" stroke-opacity="0.95" />
-                        <path d="M 24,118 Q 80,127 136,118" fill="none" stroke="url(#whiteGrad_${uid})" stroke-width="0.9" stroke-opacity="0.95" />
-                        <text x="80" y="114" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="13" fill="url(#whiteGrad_${uid})" text-anchor="middle" dominant-baseline="central" letter-spacing="4">O F F</text>
-                    </g>
-                    <g fill="url(#whiteGrad_${uid})">
-                        <circle cx="68" cy="144" r="1.3" />
-                        <circle cx="74" cy="144" r="1.6" />
-                        <circle cx="80" cy="144" r="2.2" />
-                        <circle cx="86" cy="144" r="1.6" />
-                        <circle cx="92" cy="144" r="1.3" />
-                    </g>
-                    <g fill="url(#whiteGrad_${uid})" stroke="url(#whiteGrad_${uid})">
-                        <path d="M 46,151 Q 54,164 68,175" fill="none" stroke-width="0.8" stroke-opacity="0.6" />
-                        <circle cx="47" cy="151" r="1.6" />
-                        <circle cx="51" cy="157" r="1.8" />
-                        <circle cx="56" cy="163" r="2.0" />
-                        <circle cx="62" cy="169" r="2.2" />
-                        <circle cx="69" cy="175" r="2.3" />
-                    </g>
-                    <g fill="url(#whiteGrad_${uid})" stroke="url(#whiteGrad_${uid})">
-                        <path d="M 114,151 Q 106,164 92,175" fill="none" stroke-width="0.8" stroke-opacity="0.6" />
-                        <circle cx="113" cy="151" r="1.6" />
-                        <circle cx="109" cy="157" r="1.8" />
-                        <circle cx="104" cy="163" r="2.0" />
-                        <circle cx="98" cy="169" r="2.2" />
-                        <circle cx="91" cy="175" r="2.3" />
-                    </g>
-                    <polygon points="80,175 82.2,180.2 87.5,180.5 83.4,184 84.8,189.2 80,186.2 75.2,189.2 76.6,184 72.5,180.5 77.8,180.2" fill="url(#whiteGrad_${uid})" stroke="url(#whiteGrad_${uid})" stroke-width="0.5" stroke-linejoin="round" />
                 </svg>
             </div>`;
         };
@@ -1221,42 +1133,74 @@ if ($hasDynamicNavbar) {
         }
 
         let cartUpdateTimers = {};
-        // Track pending (unsaved) quantities so renderCart doesn't wipe them out
+        // Track pending (unsaved) quantities so background syncs don't overwrite faster taps
         let cartPendingQty = {}; // { cartItemId: { qty, moq, maxVal } }
+        window.cartDrawerItemsMap = {}; // { [cartItemId]: { price, qty, moq, maxVal } }
+
+        function calculateDrawerSubtotalInstant() {
+            if (!subtotalEl) return;
+            let sum = 0;
+            for (const id in window.cartDrawerItemsMap) {
+                const it = window.cartDrawerItemsMap[id];
+                sum += (it.price * it.qty);
+            }
+            subtotalEl.innerText = '₹' + formatJsPrice(sum);
+        }
 
         function updateCartItem(cartItemId, delta, moq, btnElement = null, maxVal = null) {
-            let newQty = delta; 
             let container = null;
+            let span = null;
             
             if (btnElement) {
                 container = btnElement.parentElement;
-                const span = container.querySelector('span');
-                // Use pending qty if it exists (user clicked multiple times before server responded)
-                let currentQty = (cartPendingQty[cartItemId] !== undefined)
-                    ? cartPendingQty[cartItemId].qty
-                    : (parseInt(span.innerText) || moq);
-                newQty = currentQty + delta;
-                
-                if (newQty < moq) return; 
-                
-                if (maxVal !== null && maxVal > 0 && newQty > maxVal) {
-                    newQty = maxVal;
-                    span.innerText = newQty;
+                span = container ? container.querySelector('span') : null;
+            } else {
+                span = document.getElementById('cart-drawer-qty-' + cartItemId);
+                if (span) container = span.parentElement;
+            }
+            if (!span) return;
+
+            if (!window.cartDrawerItemsMap[cartItemId]) {
+                const itemEl = document.getElementById('cart-drawer-item-' + cartItemId);
+                const price = itemEl ? parseFloat(itemEl.dataset.unitPrice || 0) : 0;
+                window.cartDrawerItemsMap[cartItemId] = {
+                    price: price,
+                    qty: parseInt(span.innerText) || moq,
+                    moq: moq,
+                    maxVal: maxVal
+                };
+            }
+
+            const item = window.cartDrawerItemsMap[cartItemId];
+            let currentQty = item.qty;
+            let newQty = currentQty + delta;
+            
+            if (newQty < moq) return; 
+            
+            if (maxVal !== null && maxVal > 0 && newQty > maxVal) {
+                newQty = maxVal;
+                item.qty = newQty;
+                span.innerText = newQty;
+                if (container) {
                     const plusBtn = container.querySelector('button:last-child');
                     if (plusBtn) plusBtn.disabled = true;
-                    
-                    const errContainer = document.getElementById('cart-drawer-errors');
-                    if (errContainer) {
-                        errContainer.innerHTML = `<div class="flex items-start gap-2 p-3 bg-pink-50 text-[#F25996] text-xs rounded-xl border border-pink-200 shadow-2xs font-semibold"><svg class="w-4 h-4 flex-shrink-0 mt-0.5 text-[#F25996]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg><span>Maximum available inventory reached (${maxVal} units).</span></div>`;
-                        setTimeout(() => { if (errContainer) errContainer.innerHTML = ''; }, 3500);
-                    }
-                    // Still save the clamped value as pending
-                    cartPendingQty[cartItemId] = { qty: newQty, moq: moq, maxVal: maxVal };
-                    return;
                 }
                 
-                span.innerText = newQty;
-                
+                const errContainer = document.getElementById('cart-drawer-errors');
+                if (errContainer) {
+                    errContainer.innerHTML = `<div class="flex items-start gap-2 p-3 bg-pink-50 text-[#F25996] text-xs rounded-xl border border-pink-200 shadow-2xs font-semibold"><svg class="w-4 h-4 flex-shrink-0 mt-0.5 text-[#F25996]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg><span>Maximum available inventory reached (${maxVal} units).</span></div>`;
+                    setTimeout(() => { if (errContainer) errContainer.innerHTML = ''; }, 3500);
+                }
+                cartPendingQty[cartItemId] = { qty: newQty, moq: moq, maxVal: maxVal };
+                calculateDrawerSubtotalInstant();
+                return;
+            }
+            
+            // 0ms Instant update in pure memory and instant DOM write
+            item.qty = newQty;
+            span.innerText = newQty;
+            
+            if (container) {
                 const minusBtn = container.querySelector('button:first-child');
                 if (minusBtn) {
                     minusBtn.disabled = (newQty <= moq);
@@ -1267,36 +1211,43 @@ if ($hasDynamicNavbar) {
                 }
             }
 
-            // Save the pending quantity — renderCart will restore this if it fires before AJAX completes
+            // Save the pending quantity
             cartPendingQty[cartItemId] = { qty: newQty, moq: moq, maxVal: maxVal };
+
+            // 0ms Instant subtotal calculation in drawer from memory
+            calculateDrawerSubtotalInstant();
 
             if (cartUpdateTimers[cartItemId]) {
                 clearTimeout(cartUpdateTimers[cartItemId]);
             }
 
+            // Debounce the network request by 200ms so rapid consecutive taps are bundled into one smooth server call
             cartUpdateTimers[cartItemId] = setTimeout(() => {
-                if (container) container.style.opacity = '0.5';
-                flushCartUpdate(cartItemId, newQty)
+                const sendQty = cartPendingQty[cartItemId] ? cartPendingQty[cartItemId].qty : newQty;
+                flushCartUpdate(cartItemId, sendQty)
                 .then(res => res.json())
                 .then(data => {
-                    // Clear pending once server confirms
-                    delete cartPendingQty[cartItemId];
+                    // Only clear pending if user hasn't clicked newer taps while this was in flight
+                    if (cartPendingQty[cartItemId] && cartPendingQty[cartItemId].qty === sendQty) {
+                        delete cartPendingQty[cartItemId];
+                    }
                     delete cartUpdateTimers[cartItemId];
-                    if (container) container.style.opacity = '1';
                     const cData = data.cart_data || data;
                     if (data.success && cData && cData.items) {
-                        renderCart(cData);
+                        renderCart(cData, true); // update subtotals/errors in place without re-creating DOM
                         if (cData.items.length === 0) closeCartDrawer();
                     } else if (data.success) {
                         fetchCart(true);
                     }
                 })
                 .catch(err => {
-                    delete cartPendingQty[cartItemId];
-                    if (container) container.style.opacity = '1';
+                    if (cartPendingQty[cartItemId] && cartPendingQty[cartItemId].qty === sendQty) {
+                        delete cartPendingQty[cartItemId];
+                    }
+                    delete cartUpdateTimers[cartItemId];
                     console.error('Error updating cart:', err);
                 });
-            }, 0);  // Fire immediately — no debounce delay so refresh never loses the change
+            }, 200);
         }
 
         // Send a cart update to the server (keepalive: request survives page navigation/refresh)
@@ -1330,6 +1281,10 @@ if ($hasDynamicNavbar) {
                     container.style.opacity = '0.5';
                     container.style.pointerEvents = 'none';
                 }
+            }
+            if (window.cartDrawerItemsMap) {
+                delete window.cartDrawerItemsMap[cartItemId];
+                calculateDrawerSubtotalInstant();
             }
             fetch(baseUrl + '/cart/ajax-remove', {
                 method: 'POST',
@@ -1447,15 +1402,37 @@ if ($hasDynamicNavbar) {
             });
         }
 
-        function renderCart(data) {
-            subtotalEl.innerText = data.subtotal;
+        function renderCart(data, skipItemsRerender = false) {
+            if (subtotalEl && data.subtotal) subtotalEl.innerText = data.subtotal;
             
+            // Sync in-memory drawer map
+            if (data.items) {
+                if (!skipItemsRerender) window.cartDrawerItemsMap = {};
+                data.items.forEach(item => {
+                    const itemBasePrice = parseFloat(item.base_price || 0);
+                    const itemUnitPrice = parseFloat(item.unit_price || 0);
+                    const itemDiscPrice = item.discount_price ? parseFloat(item.discount_price) : (itemUnitPrice < itemBasePrice ? itemUnitPrice : 0);
+                    const effectivePrice = itemDiscPrice > 0 ? itemDiscPrice : itemUnitPrice;
+                    const availStock = parseInt(item.available_stock || 0);
+                    const currentQty = (cartPendingQty[item.cart_item_id] !== undefined)
+                        ? cartPendingQty[item.cart_item_id].qty
+                        : (parseInt(item.quantity) || 1);
+
+                    window.cartDrawerItemsMap[item.cart_item_id] = {
+                        price: effectivePrice,
+                        qty: currentQty,
+                        moq: parseInt(item.moq) || 1,
+                        maxVal: availStock
+                    };
+                });
+            }
+
             const cartTitle = document.getElementById('cart-drawer-title');
-            if (cartTitle) {
+            if (cartTitle && data.items) {
                 cartTitle.innerText = `Shopping Cart (${data.items.length})`;
             }
 
-            if (badge) {
+            if (badge && data.items) {
                 badge.innerText = data.items.length;
                 if (data.items.length > 0) {
                     badge.classList.remove('hidden');
@@ -1464,9 +1441,26 @@ if ($hasDynamicNavbar) {
                 }
             }
 
-            if (data.items.length === 0) {
-                itemsContainer.innerHTML = '<div class="text-center text-gray-500 py-8">Your cart is empty</div>';
-            } else {
+            if (!data.items || data.items.length === 0) {
+                window.cartDrawerItemsMap = {};
+                if (itemsContainer) itemsContainer.innerHTML = '<div class="text-center text-gray-500 py-8">Your cart is empty</div>';
+            } else if (skipItemsRerender && itemsContainer && itemsContainer.children.length > 0) {
+                // In-place updates: Do NOT wipe or recreate DOM nodes while user might be tapping
+                data.items.forEach(item => {
+                    const span = document.getElementById('cart-drawer-qty-' + item.cart_item_id);
+                    if (span && cartPendingQty[item.cart_item_id] === undefined) {
+                        span.innerText = item.quantity;
+                        const stepperDiv = span.parentElement;
+                        if (stepperDiv) {
+                            const minusBtn = stepperDiv.querySelector('button:first-child');
+                            const plusBtn = stepperDiv.querySelector('button:last-child');
+                            const availStock = parseInt(item.available_stock || 0);
+                            if (minusBtn) minusBtn.disabled = (item.quantity <= (item.moq || 1));
+                            if (plusBtn && availStock > 0) plusBtn.disabled = (item.quantity >= availStock);
+                        }
+                    }
+                });
+            } else if (itemsContainer) {
                 let html = '';
                 const formatJsPrice = (num) => {
                     if (num === null || num === undefined) return '';
@@ -1506,7 +1500,7 @@ if ($hasDynamicNavbar) {
                                 ${item.is_out_of_stock ? 'In Stock Alternatives:' : 'Need more? Other Available Variants:'}
                             </span>
                             ${item.alternative_variants.map(alt => `
-                                <button type="button" onclick="quickAddVariantToCart(${item.product_id}, ${alt.id}, ${alt.moq || item.moq || 1}, this)" class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-pink-50 hover:bg-[#F25996] text-[#F25996] hover:text-white rounded-md text-[10px] font-bold border border-pink-200 transition-all active:scale-95 shadow-2xs cursor-pointer" title="Add this variant as a separate item below">
+                                <button type="button" onclick="quickAddVariantToCart(${item.product_id}, ${alt.id}, ${alt.moq || item.moq || 1}, this)" class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-pink-50 hover:bg-[#F25996] text-[#F25996] hover:text-white rounded-md text-[10px] font-bold border border-pink-200 transition-all active:scale-95 shadow-2xs cursor-pointer select-none" style="touch-action: manipulation;" title="Add this variant as a separate item below">
                                     <span>${alt.name}</span>
                                     <span class="font-normal">(₹${alt.formatted_price})</span>
                                     <span class="font-black">+ Add</span>
@@ -1516,7 +1510,7 @@ if ($hasDynamicNavbar) {
                     ` : '';
 
                     html += `
-                        <div class="bg-white border border-gray-100/90 rounded-[22px] p-2.5 sm:p-3 hover:shadow-md transition-all duration-300 group relative shadow-xs mb-2 sm:mb-2.5">
+                        <div id="cart-drawer-item-${item.cart_item_id}" data-cart-item-id="${item.cart_item_id}" data-unit-price="${itemDiscPrice || itemUnitPrice}" class="bg-white border border-gray-100/90 rounded-[22px] p-2.5 sm:p-3 hover:shadow-md transition-all duration-300 group relative shadow-xs mb-2 sm:mb-2.5">
                             <div class="flex items-start gap-2.5 sm:gap-3">
                                 <!-- Product Thumbnail Image (88px x 88px rounded-[16px]) -->
                                 <div class="rounded-[16px] overflow-hidden flex-shrink-0 relative block" style="width: 88px; height: 88px; min-width: 88px; min-height: 88px;">
@@ -1555,19 +1549,19 @@ if ($hasDynamicNavbar) {
                                     <!-- Right Action Column: Red Trash Icon on Top, Stepper Below (NO border line) -->
                                     <div class="flex flex-col justify-between items-end self-stretch shrink-0 pl-1">
                                         <!-- Top: Red Delete Button -->
-                                        <button onclick="removeCartItem(${item.cart_item_id}, this)" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-0.5 -mr-1 rounded-lg transition-colors flex-shrink-0" style="color: #ef4444;" title="Remove item">
+                                        <button type="button" onclick="removeCartItem(${item.cart_item_id}, this)" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-0.5 -mr-1 rounded-lg transition-colors flex-shrink-0 cursor-pointer select-none" style="color: #ef4444; touch-action: manipulation;" title="Remove item">
                                             <svg class="w-4 h-4 text-red-500" style="color: #ef4444; stroke: #ef4444;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                             </svg>
                                         </button>
 
                                         <!-- Bottom (Below Trash): Quantity Stepper with NO dividing line -->
-                                        <div class="inline-flex items-center border border-pink-200 rounded-xl bg-white p-0.5 shadow-2xs mt-auto">
-                                            <button onclick="updateCartItem(${item.cart_item_id}, -${item.moq || 1}, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold" ${item.quantity <= (item.moq || 1) ? 'disabled' : ''}>&minus;</button>
+                                        <div class="inline-flex items-center border border-pink-200 rounded-xl bg-white p-0.5 shadow-2xs mt-auto select-none" style="touch-action: manipulation;">
+                                            <button type="button" onclick="updateCartItem(${item.cart_item_id}, -1, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;" ${item.quantity <= (item.moq || 1) ? 'disabled' : ''}>&minus;</button>
                                             <div class="h-3 w-[1px] bg-pink-100"></div>
-                                            <span class="text-xs font-bold w-6 text-center text-[#F25996] select-none">${item.quantity}</span>
+                                            <span id="cart-drawer-qty-${item.cart_item_id}" class="text-xs font-bold w-6 text-center text-[#F25996] select-none pointer-events-none">${item.quantity}</span>
                                             <div class="h-3 w-[1px] bg-pink-100"></div>
-                                            <button onclick="updateCartItem(${item.cart_item_id}, ${item.moq || 1}, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold" ${isMaxStock ? 'disabled' : ''}>&plus;</button>
+                                            <button type="button" onclick="updateCartItem(${item.cart_item_id}, 1, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;" ${isMaxStock ? 'disabled' : ''}>&plus;</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1582,29 +1576,19 @@ if ($hasDynamicNavbar) {
                 // Restore any pending (unsaved) quantities so the user's input isn't wiped out
                 Object.keys(cartPendingQty).forEach(id => {
                     const pending = cartPendingQty[id];
-                    const stepperSpan = itemsContainer.querySelector(`button[onclick*="updateCartItem(${id},"] ~ div ~ span,
-                        button[onclick*="updateCartItem(${id}, "] ~ div ~ span`);
-                    // Simpler: find by data or span inside stepper that wraps these buttons
-                    // We identify the span by scanning all steppers
-                    const allBtns = itemsContainer.querySelectorAll('button[onclick]');
-                    allBtns.forEach(btn => {
-                        const oc = btn.getAttribute('onclick') || '';
-                        if (oc.includes(`updateCartItem(${id},`) || oc.includes(`updateCartItem(${id}, `)) {
-                            const stepperDiv = btn.parentElement;
-                            if (!stepperDiv) return;
-                            const span = stepperDiv.querySelector('span');
-                            if (span) {
-                                span.innerText = pending.qty;
-                                // Update button states
-                                const minusBtn = stepperDiv.querySelector('button:first-child');
-                                const plusBtn = stepperDiv.querySelector('button:last-child');
-                                if (minusBtn) minusBtn.disabled = (pending.qty <= (pending.moq || 1));
-                                if (plusBtn && pending.maxVal !== null && pending.maxVal > 0) {
-                                    plusBtn.disabled = (pending.qty >= pending.maxVal);
-                                }
+                    const span = document.getElementById('cart-drawer-qty-' + id);
+                    if (span) {
+                        span.innerText = pending.qty;
+                        const stepperDiv = span.parentElement;
+                        if (stepperDiv) {
+                            const minusBtn = stepperDiv.querySelector('button:first-child');
+                            const plusBtn = stepperDiv.querySelector('button:last-child');
+                            if (minusBtn) minusBtn.disabled = (pending.qty <= (pending.moq || 1));
+                            if (plusBtn && pending.maxVal !== null && pending.maxVal > 0) {
+                                plusBtn.disabled = (pending.qty >= pending.maxVal);
                             }
                         }
-                    });
+                    }
                 });
             }
 
@@ -1743,7 +1727,7 @@ if ($hasDynamicNavbar) {
                                 <svg class="w-3 h-3 text-gray-400 fill-none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                             </button>
                             <a href="${baseUrl}/product?id=${rp.id}" class="product-image-wrap block overflow-hidden shrink-0 bg-gray-100 h-28 sm:h-32 relative">
-                                ${discPct > 0 ? renderDiscountStarburstJs(discPct, 'absolute top-1 left-1.5 z-10 w-7 sm:w-8 md:w-9 transition-transform duration-300 group-hover:scale-110', 'dw_' + rp.id) : ''}
+                                ${discPct > 0 ? renderDiscountStarburstJs(discPct, 'absolute top-1 left-1.5 z-10 w-10 sm:w-11 md:w-12 transition-transform duration-300 group-hover:scale-110', 'dw_' + rp.id) : ''}
                                 <img src="${rpImg}" alt="${rp.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                             </a>
                             <div class="product-card-body p-2 sm:p-2.5 flex flex-col flex-1 bg-white relative z-10">

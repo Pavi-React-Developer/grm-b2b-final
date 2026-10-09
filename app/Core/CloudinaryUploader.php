@@ -45,6 +45,14 @@ class CloudinaryUploader
     }
 
     /**
+     * Alias for uploadMedia specifically for images.
+     */
+    public function uploadImage(string $filePath, ?string $publicId = null, ?string $originalFilename = null)
+    {
+        return $this->uploadMedia($filePath, $publicId, $originalFilename);
+    }
+
+    /**
      * Upload an image or video to Cloudinary. Images are forced to WebP.
      * 
      * @param string $filePath The local file path to upload
@@ -106,7 +114,6 @@ class CloudinaryUploader
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
 
         if ($curlError) {
             error_log("Cloudinary CURL Error: " . $curlError);
@@ -168,7 +175,6 @@ class CloudinaryUploader
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode >= 200 && $httpCode < 300) {
             return true;

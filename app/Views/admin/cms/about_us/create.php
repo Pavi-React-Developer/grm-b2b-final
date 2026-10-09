@@ -305,7 +305,7 @@
                 <div class="border border-gray-200 rounded-xl p-4 bg-gray-50 mb-6">
                     <h4 class="font-bold text-gray-700 text-sm mb-3">Theme Colors (FAQs)</h4>
                     <div class="theme-colors-grid">
-<div class="color-field-item">
+                        <div class="color-field-item">
                             <label>Background</label>
                             <div class="color-link-group">
                                 <input type="color" name="theme_faq_bg_color" id="clr_theme_faq_bg_color" value="#ffffff" oninput="syncColorLink(this)">
@@ -313,9 +313,29 @@
                                 <span class="color-link-preview" id="prev_theme_faq_bg_color" style="background:#ffffff;"></span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <label class="text-xs font-serif font-bold text-gray-500 uppercase tracking-wider w-24">Text Color</label>
-                            <input type="color" name="theme_faq_text_color" value="#111827" class="w-8 h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                        <div class="color-field-item">
+                            <label>Section Title Color</label>
+                            <div class="color-link-group">
+                                <input type="color" name="theme_faq_text_color" id="clr_theme_faq_text_color" value="#111827" oninput="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHex(this,'clr_theme_faq_text_color')" placeholder="#111827">
+                                <span class="color-link-preview" id="prev_theme_faq_text_color" style="background:#111827;"></span>
+                            </div>
+                        </div>
+                        <div class="color-field-item">
+                            <label>Question Color</label>
+                            <div class="color-link-group">
+                                <input type="color" name="theme_faq_question_color" id="clr_theme_faq_question_color" value="#111827" oninput="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHex(this,'clr_theme_faq_question_color')" placeholder="#111827">
+                                <span class="color-link-preview" id="prev_theme_faq_question_color" style="background:#111827;"></span>
+                            </div>
+                        </div>
+                        <div class="color-field-item">
+                            <label>Answer Color</label>
+                            <div class="color-link-group">
+                                <input type="color" name="theme_faq_answer_color" id="clr_theme_faq_answer_color" value="#4b5563" oninput="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#4b5563" oninput="syncColorHex(this,'clr_theme_faq_answer_color')" placeholder="#4b5563">
+                                <span class="color-link-preview" id="prev_theme_faq_answer_color" style="background:#4b5563;"></span>
+                            </div>
                         </div>
                     </div>
                 </div>

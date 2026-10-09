@@ -10,11 +10,8 @@ class CheckoutController extends Controller
 {
     public function __construct()
     {
-        $uri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?? '';
-        if (strpos($uri, '/checkout/verify') === false) {
-            if (!Session::get('user_id') || Session::get('user_status') !== 'active') {
-                $this->redirect('/login');
-            }
+        if (!Session::get('user_id') || Session::get('user_status') !== 'active') {
+            $this->redirect('/login');
         }
     }
 
@@ -71,54 +68,11 @@ class CheckoutController extends Controller
             $categoryTotals[$catId]['total'] += $itemTotal;
         }
         
-        // Validate against Order Rules using dynamic Main Category logic
-        if (!empty($categoryTotals)) {
-            $mainCatId = null;
-            $maxTotal = -1;
-            foreach ($categoryTotals as $catId => $data) {
-                if ($data['total'] > $maxTotal) {
-                    $maxTotal = $data['total'];
-                    $mainCatId = $catId;
-                }
-            }
-
-            if ($mainCatId) {
-                $ruleModel = new \App\Models\OrderRule();
-                $activeRules = $ruleModel->getActiveRules();
-                $mainRule = null;
-                foreach ($activeRules as $rule) {
-                    if ($rule['category_id'] == $mainCatId) {
-                        $mainRule = $rule;
-                        break;
-                    }
-                }
-
-                if ($mainRule) {
-                    $mainMinAmount = $mainRule['min_amount'];
-                    $secondCategoryRules = json_decode($mainRule['second_category_rules'], true) ?? [];
-                    $total = $categoryTotals[$mainCatId]['total'];
-
-                    // 1. Check main category minimum
-                    if ($total > 0 && $total < $mainMinAmount) {
-                        Session::setFlash('error', 'Please resolve minimum order requirements in your cart before checkout.');
-                        $this->redirect('/cart');
-                    }
-                    
-                    // 2. Check each second category minimum (only if they bought from it)
-                    if (!empty($secondCategoryRules)) {
-                        foreach ($secondCategoryRules as $scId => $secondMinAmount) {
-                            $secondTotal = 0;
-                            if (isset($categoryTotals[$scId])) {
-                                $secondTotal = $categoryTotals[$scId]['total'];
-                            }
-                            if ($secondTotal > 0 && $secondTotal < $secondMinAmount) {
-                                Session::setFlash('error', 'Please resolve minimum order requirements in your cart before checkout.');
-                                $this->redirect('/cart');
-                            }
-                        }
-                    }
-                }
-            }
+        // Validate against dynamic Order Rules and Category MOV
+        $ruleValidation = \App\Models\OrderRule::validateCartRules($categoryTotals);
+        if (!empty($ruleValidation['errors'])) {
+            Session::setFlash('error', $ruleValidation['errors'][0]);
+            $this->redirect('/cart');
         }
 
         $userModel = new \App\Models\User();
@@ -222,14 +176,18 @@ class CheckoutController extends Controller
             $itemTotal = round($unitPrice * $item['quantity'], 2);
             $totalAmount += $itemTotal;
             
-            $requiredMoq = $item['moq_override'] ?? $item['category_moq'] ?? 1;
-            if ($item['quantity'] < $requiredMoq) {
-                $this->redirect('/cart');
+            $catId = $item['category_id'];
+            if (!isset($categoryTotals[$catId])) {
+                $categoryTotals[$catId] = ['name' => $item['category_name'], 'total' => 0];
             }
-            if ($item['quantity'] > (int)$item['available_stock']) {
-                Session::setFlash('error', 'Sorry, some items in your cart are no longer available in the requested quantity. Please review your cart.');
-                $this->redirect('/cart');
-            }
+            $categoryTotals[$catId]['total'] += $itemTotal;
+        }
+
+        // Validate against dynamic Order Rules and Category MOV
+        $ruleValidation = \App\Models\OrderRule::validateCartRules($categoryTotals);
+        if (!empty($ruleValidation['errors'])) {
+            Session::setFlash('error', $ruleValidation['errors'][0]);
+            $this->redirect('/cart');
         }
 
         // Calculate checkout fees dynamically
@@ -243,7 +201,6 @@ class CheckoutController extends Controller
             $db = \Core\Database::getInstance();
             $stmt = $db->prepare("SELECT phone, name, email FROM users WHERE id = ?");
             $stmt->execute([$userId]);
-            $user = $stmt->fetch(\PDO::FETCH_ASSOC);
             
             // Handle saving new address
             if (($_POST['is_new_address'] ?? '0') === '1') {
@@ -498,45 +455,19 @@ class CheckoutController extends Controller
 
     public function verifyPayment()
     {
-        $orderNumber       = $_POST['order_id'] ?? $_GET['order_id'] ?? null;
-        $razorpayPaymentId = $_POST['razorpay_payment_id'] ?? $_GET['razorpay_payment_id'] ?? null;
-        $razorpayOrderId   = $_POST['razorpay_order_id'] ?? $_GET['razorpay_order_id'] ?? null;
-        $razorpaySignature = $_POST['razorpay_signature'] ?? $_GET['razorpay_signature'] ?? null;
-
+        $orderNumber = $_POST['order_id'] ?? $_GET['order_id'] ?? null;
+        if (!$orderNumber) {
+            $this->redirect('/dashboard/orders');
+        }
+        
         $db = \Core\Database::getInstance();
-        $order = null;
-
-        if (!empty($orderNumber)) {
-            $stmt = $db->prepare("SELECT * FROM orders WHERE order_number = ?");
-            $stmt->execute([$orderNumber]);
-            $order = $stmt->fetch();
-        }
-
-        if (!$order && !empty($razorpayOrderId)) {
-            $stmt = $db->prepare("SELECT * FROM orders WHERE razorpay_order_id = ?");
-            $stmt->execute([$razorpayOrderId]);
-            $order = $stmt->fetch();
-            if ($order) {
-                $orderNumber = $order['order_number'];
-            }
-        }
-
+        $stmt = $db->prepare("SELECT * FROM orders WHERE order_number = ?");
+        $stmt->execute([$orderNumber]);
+        $order = $stmt->fetch();
         if (!$order) {
             Session::setFlash('error', 'Order not found.');
             $this->redirect('/cart');
             return;
-        }
-
-        // Restore user session if dropped by browser cross-site cookie policy on bank redirect
-        if (!Session::get('user_id') && !empty($order['user_id'])) {
-            $uStmt = $db->prepare("SELECT id, status, role FROM users WHERE id = ?");
-            $uStmt->execute([$order['user_id']]);
-            $uData = $uStmt->fetch();
-            if ($uData) {
-                Session::set('user_id', $uData['id']);
-                Session::set('user_status', $uData['status']);
-                Session::set('user_role', $uData['role']);
-            }
         }
 
         // =========================================================================
@@ -627,10 +558,10 @@ class CheckoutController extends Controller
             $orderModel->reduceStockForOrder($finalOrderNumber);
             
             // Clear the cart here upon successful payment
-            $targetUserId = $order['user_id'] ?? Session::get('user_id');
-            if ($targetUserId) {
+            $userId = Session::get('user_id');
+            if ($userId) {
                 $stmtClear = $db->prepare("DELETE FROM cart_items WHERE user_id = ?");
-                $stmtClear->execute([$targetUserId]);
+                $stmtClear->execute([$userId]);
             }
 
             // Invalidate admin dashboard cached stats
@@ -869,13 +800,17 @@ class CheckoutController extends Controller
         if (empty($label)) $label = 'Saved Address';
         $line1 = trim($_POST['line1'] ?? '');
         $line2 = trim($_POST['line2'] ?? '');
-        $city  = trim($_POST['city'] ?? '');
+        $city  = trim($_POST['city'] ?? $_POST['city_text'] ?? $_POST['district'] ?? '');
         $state = trim($_POST['state'] ?? '');
+        $otherState = trim($_POST['other_state_name'] ?? '');
+        if ($state === 'Others' && !empty($otherState)) {
+            $state = $otherState;
+        }
         $postal= trim($_POST['postal_code'] ?? '');
         $country = 'India';
         $isDefault = !empty($_POST['is_default']) ? 1 : 0;
 
-        if (empty($line1) || empty($city) || empty($state) || empty($postal)) {
+        if (empty($line1) || empty($city) || empty($state) || $state === 'Others' || empty($postal)) {
             echo json_encode(['error' => 'Please fill in all required fields.']);
             exit;
         }
@@ -904,13 +839,17 @@ class CheckoutController extends Controller
         $label = trim($_POST['label'] ?? '');
         $line1 = trim($_POST['line1'] ?? '');
         $line2 = trim($_POST['line2'] ?? '');
-        $city  = trim($_POST['city'] ?? '');
+        $city  = trim($_POST['city'] ?? $_POST['city_text'] ?? $_POST['district'] ?? '');
         $state = trim($_POST['state'] ?? '');
+        $otherState = trim($_POST['other_state_name'] ?? '');
+        if ($state === 'Others' && !empty($otherState)) {
+            $state = $otherState;
+        }
         $postal= trim($_POST['postal_code'] ?? '');
         $country = 'India';
         $isDefault = !empty($_POST['is_default']) ? 1 : 0;
 
-        if (!$addressId || empty($line1) || empty($city) || empty($state) || empty($postal)) {
+        if (!$addressId || empty($line1) || empty($city) || empty($state) || $state === 'Others' || empty($postal)) {
             echo json_encode(['error' => 'Please fill in all required fields.']);
             exit;
         }

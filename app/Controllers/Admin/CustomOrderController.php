@@ -26,7 +26,7 @@ class CustomOrderController extends Controller
      */
     public function index()
     {
-        $this->requirePermission('custom_orders', 'view');
+        $this->requirePermission('all_orders', 'view');
 
         $status = $_GET['status'] ?? 'all';
         $orders = $this->orderModel->getCustomOrders($status);
@@ -45,7 +45,7 @@ class CustomOrderController extends Controller
      */
     public function updateStatus()
     {
-        $this->requirePermission('custom_orders', 'edit');
+        $this->requirePermission('all_orders', 'edit');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);

@@ -5,11 +5,19 @@ use Core\Model;
 
 class Category extends Model
 {
-    public function getAllActive($search = null)
+    public function getAllActive($search = null, ?int $isCustomizable = null)
     {
         $sql = "SELECT * FROM categories WHERE status = 'active'";
         $params = [];
         
+        if ($isCustomizable !== null) {
+            if ($isCustomizable === 1) {
+                $sql .= " AND is_customizable = 1";
+            } else {
+                $sql .= " AND (is_customizable = 0 OR is_customizable IS NULL)";
+            }
+        }
+
         if ($search) {
             $sql .= " AND name LIKE :search";
             $params['search'] = '%' . $search . '%';
@@ -22,30 +30,71 @@ class Category extends Model
         return $stmt->fetchAll();
     }
     
-    public function getAll()
+    public function getAll(?int $isCustomizable = null)
     {
-        $stmt = $this->db->prepare("SELECT * FROM categories ORDER BY name ASC");
+        $sql = "SELECT * FROM categories";
+        if ($isCustomizable !== null) {
+            if ($isCustomizable === 1) {
+                $sql .= " WHERE is_customizable = 1";
+            } else {
+                $sql .= " WHERE (is_customizable = 0 OR is_customizable IS NULL)";
+            }
+        }
+        $sql .= " ORDER BY name ASC";
+        $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
     }
 
+    public function generateUniqueSlug(string $nameOrSlug, ?int $excludeId = null): string
+    {
+        $baseSlug = preg_replace('/[^a-z0-9]+/i', '-', trim($nameOrSlug));
+        $baseSlug = trim(strtolower($baseSlug), '-');
+        if (empty($baseSlug)) {
+            $baseSlug = 'category';
+        }
+
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (true) {
+            $sql = "SELECT id FROM categories WHERE slug = :slug";
+            $params = ['slug' => $slug];
+            if ($excludeId !== null) {
+                $sql .= " AND id != :exclude_id";
+                $params['exclude_id'] = $excludeId;
+            }
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
+            if (!$stmt->fetch()) {
+                return $slug;
+            }
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+    }
+
     public function create(array $data)
     {
+        $slug = !empty($data['slug']) ? $data['slug'] : $data['name'];
+        $uniqueSlug = $this->generateUniqueSlug($slug);
+
         $stmt = $this->db->prepare("
-            INSERT INTO categories (name, slug, hsn_code, description, image_path, min_order_value, sgst, cgst, status)
-            VALUES (:name, :slug, :hsn_code, :description, :image_path, :min_order_value, :sgst, :cgst, :status)
+            INSERT INTO categories (name, slug, hsn_code, description, image_path, min_order_value, sgst, cgst, status, is_customizable)
+            VALUES (:name, :slug, :hsn_code, :description, :image_path, :min_order_value, :sgst, :cgst, :status, :is_customizable)
         ");
         
         $stmt->execute([
             'name' => $data['name'],
-            'slug' => $data['slug'],
+            'slug' => $uniqueSlug,
             'hsn_code' => !empty($data['hsn_code']) ? trim($data['hsn_code']) : null,
             'description' => $data['description'] ?? null,
             'image_path' => $data['image_path'] ?? null,
             'min_order_value' => !empty($data['min_order_value']) ? (float)$data['min_order_value'] : null,
             'sgst' => isset($data['sgst']) && $data['sgst'] !== '' ? (float)$data['sgst'] : 0.00,
             'cgst' => isset($data['cgst']) && $data['cgst'] !== '' ? (float)$data['cgst'] : 0.00,
-            'status' => $data['status'] ?? 'active'
+            'status' => $data['status'] ?? 'active',
+            'is_customizable' => !empty($data['is_customizable']) ? 1 : 0
         ]);
         
         return $this->db->lastInsertId();
@@ -60,6 +109,9 @@ class Category extends Model
 
     public function update(int $id, array $data)
     {
+        $slug = !empty($data['slug']) ? $data['slug'] : $data['name'];
+        $uniqueSlug = $this->generateUniqueSlug($slug, $id);
+
         $stmt = $this->db->prepare("
             UPDATE categories 
             SET name = :name, 
@@ -70,21 +122,23 @@ class Category extends Model
                 min_order_value = :min_order_value,
                 sgst = :sgst,
                 cgst = :cgst,
-                status = :status 
+                status = :status,
+                is_customizable = :is_customizable
             WHERE id = :id
         ");
         
         $stmt->execute([
             'id' => $id,
             'name' => $data['name'],
-            'slug' => $data['slug'],
+            'slug' => $uniqueSlug,
             'hsn_code' => !empty($data['hsn_code']) ? trim($data['hsn_code']) : null,
             'description' => $data['description'] ?? null,
             'image_path' => $data['image_path'] ?? null,
             'min_order_value' => !empty($data['min_order_value']) ? (float)$data['min_order_value'] : null,
             'sgst' => isset($data['sgst']) && $data['sgst'] !== '' ? (float)$data['sgst'] : 0.00,
             'cgst' => isset($data['cgst']) && $data['cgst'] !== '' ? (float)$data['cgst'] : 0.00,
-            'status' => $data['status'] ?? 'active'
+            'status' => $data['status'] ?? 'active',
+            'is_customizable' => !empty($data['is_customizable']) ? 1 : 0
         ]);
     }
 
@@ -146,9 +200,11 @@ class Category extends Model
             $stmtSub = $this->db->prepare("DELETE FROM sub_categories WHERE category_id = :id");
             $stmtSub->execute(['id' => $id]);
 
-            // 5. Delete associated order rules
-            $stmtRules = $this->db->prepare("DELETE FROM order_rules WHERE category_id = :id");
-            $stmtRules->execute(['id' => $id]);
+            // 5. Delete associated order rules, size charts, fabric customizations, category requests
+            $this->db->prepare("DELETE FROM order_rules WHERE category_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("DELETE FROM size_charts WHERE category_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("DELETE FROM fabric_customizations WHERE category_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("DELETE FROM category_requests WHERE parent_category_id = :id")->execute(['id' => $id]);
 
             // 6. Delete the category itself
             $stmtDel = $this->db->prepare("DELETE FROM categories WHERE id = :id");
@@ -160,7 +216,9 @@ class Category extends Model
                 $this->db->commit();
             }
 
-            \Core\Cache::delete('catalog_active');
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::delete('catalog_active');
+            }
             return $result;
         } catch (\Exception $e) {
             $this->db->exec("SET FOREIGN_KEY_CHECKS=1");

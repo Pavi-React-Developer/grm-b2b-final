@@ -3,11 +3,14 @@
     <div class="mb-8 relative z-10">
         <!-- Breadcrumbs -->
         <div class="text-sm font-medium text-gray-400 mb-2 font-serif tracking-wide">
-            Dashboard <span class="mx-1 text-gray-300">›</span> Catalog Management <span class="mx-1 text-gray-300">›</span> <span class="text-brand-700">Categories</span>
+            Dashboard <span class="mx-1 text-gray-300">›</span> <?= !empty($isCustomize) ? 'Customization Management' : 'Catalog Management' ?> <span class="mx-1 text-gray-300">›</span> <span class="text-brand-700"><?= !empty($isCustomize) ? 'Customize Categories' : 'Categories' ?></span>
         </div>
         
         <div class="flex justify-between items-center mb-8 w-full">
-            <h2 class="text-5xl font-display font-extrabold text-gray-900 tracking-tight">Categories</h2>
+            <div>
+                <h2 class="text-5xl font-display font-extrabold text-gray-900 tracking-tight"><?= !empty($isCustomize) ? 'Customize Categories' : 'Categories' ?></h2>
+                <p class="text-sm text-gray-500 mt-1"><?= !empty($isCustomize) ? 'Manage separate categories dedicated for custom fabrics and workshop products.' : 'Manage general ready-made product categories.' ?></p>
+            </div>
             
             <div class="flex items-center space-x-3 ml-auto">
                 <button onclick="window.location.reload()" class="bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-full font-bold text-sm shadow-sm border border-gray-200 transition-all flex items-center uppercase tracking-widest">
@@ -18,6 +21,7 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Export Excel
                 </button>
+                <?php if (empty($isCustomize)): ?>
                 <?php
                 $reqModel = new \App\Models\CategoryRequest();
                 $pendingCatReqCount = $reqModel->getPendingCount();
@@ -29,10 +33,11 @@
                         <span class="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-black"><?= $pendingCatReqCount ?></span>
                     <?php endif; ?>
                 </a>
+                <?php endif; ?>
                 <?php if ($this->hasPermission('categories', 'create')): ?>
                 <button onclick="document.getElementById('add-modal').classList.remove('hidden')" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-full font-bold text-sm shadow-md transition-all flex items-center uppercase tracking-widest">
                     <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    Add Category
+                    <?= !empty($isCustomize) ? 'Add Customize Category' : 'Add Category' ?>
                 </button>
                 <?php endif; ?>
             </div>
@@ -56,6 +61,23 @@
 
     <!-- Background Decoration -->
     <div class="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-brand-50/40 to-transparent pointer-events-none -z-10"></div>
+
+    <?php 
+    $flashSuccess = \Core\Session::getFlash('success');
+    $flashError = \Core\Session::getFlash('error');
+    ?>
+    <?php if ($flashSuccess): ?>
+    <div class="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold flex items-center justify-between shadow-sm">
+        <span>✅ <?= htmlspecialchars($flashSuccess) ?></span>
+        <button onclick="this.parentElement.remove()" class="text-emerald-500 hover:text-emerald-700 font-bold text-lg">&times;</button>
+    </div>
+    <?php endif; ?>
+    <?php if ($flashError): ?>
+    <div class="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm font-semibold flex items-center justify-between shadow-sm">
+        <span>❌ <?= htmlspecialchars($flashError) ?></span>
+        <button onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+    </div>
+    <?php endif; ?>
 
     <!-- Table Container -->
     <div class="bg-white/80 backdrop-blur-xl rounded-2xl shadow-xl shadow-brand-900/5 border border-white/60 overflow-hidden ring-1 ring-gray-900/5">
@@ -160,14 +182,16 @@
     <div class="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden border border-white transform transition-all my-auto">
         <div class="px-6 py-3.5 border-b border-gray-100 flex justify-between items-center bg-gray-50/70 shrink-0">
             <div>
-                <h3 class="text-lg font-display font-bold text-gray-900">Add Category</h3>
-                <p class="text-xs text-gray-500 font-medium">Create a new product category.</p>
+                <h3 class="text-lg font-display font-bold text-gray-900"><?= !empty($isCustomize) ? 'Add Customize Category' : 'Add Category' ?></h3>
+                <p class="text-xs text-gray-500 font-medium"><?= !empty($isCustomize) ? 'Create a separate category dedicated for customizable fabrics.' : 'Create a new product category.' ?></p>
             </div>
             <button onclick="document.getElementById('add-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-900 bg-white hover:bg-gray-100 p-1.5 rounded-full transition-colors shadow-sm border border-gray-100">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
         <form action="<?= BASE_URL ?>/admin/catalog/categories/store" method="POST" enctype="multipart/form-data" class="p-5 overflow-y-auto space-y-3.5 flex-1 text-sm">
+            <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
+            <input type="hidden" name="is_customizable" value="<?= !empty($isCustomize) ? 1 : 0 ?>">
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
@@ -245,8 +269,8 @@
     <div class="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] flex flex-col overflow-hidden border border-white transform transition-all my-auto">
         <div class="px-6 py-3.5 border-b border-gray-100 flex justify-between items-center bg-gray-50/70 shrink-0">
             <div>
-                <h3 class="text-lg font-display font-bold text-gray-900">Edit Category</h3>
-                <p class="text-xs text-gray-500 font-medium">Update category details and settings.</p>
+                <h3 class="text-lg font-display font-bold text-gray-900"><?= !empty($isCustomize) ? 'Edit Customize Category' : 'Edit Category' ?></h3>
+                <p class="text-xs text-gray-500 font-medium"><?= !empty($isCustomize) ? 'Update customize category details and settings.' : 'Update category details and settings.' ?></p>
             </div>
             <button onclick="document.getElementById('edit-modal').classList.add('hidden')" class="text-gray-400 hover:text-gray-900 bg-white hover:bg-gray-100 p-1.5 rounded-full transition-colors shadow-sm border border-gray-100">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
@@ -254,6 +278,8 @@
         </div>
         <form action="<?= BASE_URL ?>/admin/catalog/categories/update" method="POST" enctype="multipart/form-data" class="p-5 overflow-y-auto space-y-3.5 flex-1 text-sm">
             <input type="hidden" name="id" id="edit-id">
+            <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
+            <input type="hidden" name="is_customizable" id="edit-is-customizable" value="<?= !empty($isCustomize) ? 1 : 0 ?>">
             
             <div class="grid grid-cols-2 gap-3">
                 <div>
@@ -339,10 +365,12 @@
         </div>
         <h3 class="text-xl font-display font-bold text-gray-900 mb-2">Delete Category?</h3>
         <p id="delete-modal-text" class="text-sm text-gray-500 mb-8 font-medium">Checking products...</p>
-        <form action="<?= BASE_URL ?>/admin/catalog/categories/delete" method="POST" class="flex space-x-3">
+        <div id="delete-error-msg" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-left"></div>
+        <form id="category-delete-form" action="<?= BASE_URL ?>/admin/catalog/categories/delete" method="POST" class="flex space-x-3">
             <input type="hidden" name="id" id="delete-id">
+            <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
             <button type="button" onclick="document.getElementById('delete-modal').classList.add('hidden')" class="flex-1 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">Cancel</button>
-            <button type="submit" class="flex-1 px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl text-sm font-semibold shadow-lg shadow-red-500/30 transform hover:-translate-y-0.5 transition-all">Yes, Delete</button>
+            <button type="submit" id="btn-confirm-delete" class="flex-1 px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl text-sm font-semibold shadow-lg shadow-red-500/30 transform hover:-translate-y-0.5 transition-all">Yes, Delete</button>
         </form>
     </div>
 </div>
@@ -439,22 +467,91 @@ function openEditModal(cat) {
 function openDeleteModal(id) {
     document.getElementById('delete-id').value = id;
     const modalText = document.getElementById('delete-modal-text');
+    const errDiv = document.getElementById('delete-error-msg');
+    if (errDiv) { errDiv.classList.add('hidden'); errDiv.innerText = ''; }
+    
+    const confirmBtn = document.getElementById('btn-confirm-delete');
+    if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = 'Yes, Delete';
+    }
+    
     modalText.innerHTML = 'Checking products...';
     document.getElementById('delete-modal').classList.remove('hidden');
     
-    fetch(`<?= BASE_URL ?>/admin/catalog/categories/check-delete?id=${id}`)
+    const checkUrl = '<?= BASE_URL ?>/admin/catalog/categories/check-delete?id=' + id;
+    fetch(checkUrl, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+        }
+    })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
+            if (data.success && data.count !== undefined) {
                 modalText.innerHTML = `This category contains <strong class="text-gray-900">${data.count}</strong> product(s).<br>Are you sure you want to delete this category? All related subcategories, attributes, and products will also be deleted. This action <strong class="text-gray-900">cannot be undone</strong>.`;
             } else {
-                modalText.innerHTML = `Are you sure you want to delete this category? All related subcategories and products will also be deleted. This action <strong class="text-gray-900">cannot be undone</strong>.`;
+                modalText.innerHTML = `Are you sure you want to delete this category? All related subcategories, attributes, and products will also be deleted. This action <strong class="text-gray-900">cannot be undone</strong>.`;
             }
         })
         .catch(err => {
-            modalText.innerHTML = `Are you sure you want to delete this category? All related subcategories and products will also be deleted. This action <strong class="text-gray-900">cannot be undone</strong>.`;
+            modalText.innerHTML = `Are you sure you want to delete this category? All related subcategories, attributes, and products will also be deleted. This action <strong class="text-gray-900">cannot be undone</strong>.`;
         });
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const deleteForm = document.getElementById('category-delete-form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-confirm-delete');
+            const errDiv = document.getElementById('delete-error-msg');
+            const catId = document.getElementById('delete-id').value;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Deleting...';
+            
+            const formData = new FormData(this);
+            fetch(this.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(res => {
+                const contentType = res.headers.get('content-type');
+                if (contentType && contentType.includes('application/json')) {
+                    return res.json();
+                }
+                // Fallback for full page reload
+                window.location.reload();
+                return { success: true };
+            })
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('delete-modal').classList.add('hidden');
+                    // Reload to update stats and table cleanly
+                    window.location.reload();
+                } else {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Yes, Delete';
+                    if (errDiv) {
+                        errDiv.innerText = data.message || 'Error deleting category.';
+                        errDiv.classList.remove('hidden');
+                    } else {
+                        alert(data.message || 'Error deleting category.');
+                    }
+                }
+            })
+            .catch(err => {
+                // If anything went unexpected, submit form normally
+                this.submit();
+            });
+        });
+    }
+});
 </script>
 
 <?php include __DIR__ . '/../../media/_selector_modal.php'; ?>

@@ -15,8 +15,8 @@ class BusinessProfile extends Model
     public function create(array $data)
     {
         $stmt = $this->db->prepare("
-            INSERT INTO business_profiles (user_id, business_name, shop_location, gst_number, pan_number, no_gst_reason, instagram_link)
-            VALUES (:user_id, :business_name, :shop_location, :gst_number, :pan_number, :no_gst_reason, :instagram_link)
+            INSERT INTO business_profiles (user_id, business_name, shop_location, gst_number, gst_document, pan_number, pan_document, no_gst_reason, instagram_link)
+            VALUES (:user_id, :business_name, :shop_location, :gst_number, :gst_document, :pan_number, :pan_document, :no_gst_reason, :instagram_link)
         ");
         
         $stmt->execute([
@@ -24,7 +24,9 @@ class BusinessProfile extends Model
             'business_name' => $data['business_name'],
             'shop_location' => $data['shop_location'] ?? null,
             'gst_number' => $data['gst_number'] ?? null,
+            'gst_document' => $data['gst_document'] ?? null,
             'pan_number' => $data['pan_number'] ?? null,
+            'pan_document' => $data['pan_document'] ?? null,
             'no_gst_reason' => $data['no_gst_reason'] ?? null,
             'instagram_link' => $data['instagram_link'] ?? null
         ]);

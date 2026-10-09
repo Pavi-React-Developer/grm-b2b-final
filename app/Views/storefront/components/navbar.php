@@ -100,27 +100,27 @@ $renderItems = function($items) use ($textColor, $globalFontSize, $globalIconSiz
                 $dropdownBg = $item['dropdown_bg_color'] ?? '#ffffff';
                 $dropdownText = $item['dropdown_text_color'] ?? '#111827';
             ?>
-            <div class="absolute top-full <?= $isMega ? 'left-1/2 -translate-x-1/2 origin-top' : 'left-0 origin-top-left' ?> mt-2 shadow-2xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform <?= $isMega ? '' : 'w-64 rounded-xl' ?>" style="background-color: <?= htmlspecialchars($dropdownBg) ?>; <?= $isMega ? 'border-radius: 12px; width: 750px; max-width: 90vw;' : '' ?>">
+            <div class="absolute top-full <?= $isMega ? 'left-1/2 -translate-x-1/2 origin-top w-[750px] max-w-[90vw]' : 'left-0 origin-top-left min-w-[260px] w-auto max-w-sm' ?> mt-2 shadow-2xl border border-gray-100 rounded-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform overflow-hidden" style="background-color: <?= htmlspecialchars($dropdownBg) ?>;">
                 <?php if (!empty($catIds)): 
                     $db = \Core\Database::getInstance();
                     $inClause = implode(',', $catIds);
                     $subCats = $db->query("SELECT id, name, slug FROM categories WHERE id IN ($inClause) AND status = 'active' ORDER BY name ASC")->fetchAll();
                     if (count($subCats) > 0):
                 ?>
-                    <div class="p-8 flex flex-wrap gap-x-12 gap-y-10 overflow-y-auto" style="max-height: 75vh;">
+                    <div class="<?= $isMega ? 'p-6 sm:p-8 flex flex-wrap gap-x-10 gap-y-8' : 'p-5 flex flex-col' ?> overflow-y-auto overflow-x-hidden" style="max-height: 75vh;">
                         <?php foreach ($subCats as $subCat): 
                             $stmt = $db->prepare("SELECT id, name, slug FROM products WHERE category_id = ? AND status = 'active' ORDER BY name ASC LIMIT 10");
                             $stmt->execute([$subCat['id']]);
                             $products = $stmt->fetchAll();
                         ?>
-                        <div class="flex flex-col flex-1" style="min-width: 200px; max-width: 280px;">
-                            <a href="<?= BASE_URL ?>/catalog?category_id=<?= htmlspecialchars($subCat['id']) ?>" class="block font-bold uppercase mb-4 hover:opacity-80 transition-opacity border-b border-gray-200 pb-3" style="color: <?= htmlspecialchars($dropdownText) ?>; letter-spacing: 1px;">
+                        <div class="flex flex-col <?= $isMega ? 'flex-1 min-w-[180px] max-w-[260px]' : 'w-full' ?>">
+                            <a href="<?= BASE_URL ?>/catalog?category_id=<?= htmlspecialchars($subCat['id']) ?>" class="block font-bold uppercase mb-3 hover:opacity-80 transition-opacity border-b border-gray-200/80 pb-2.5 text-xs sm:text-sm tracking-wider" style="color: <?= htmlspecialchars($dropdownText) ?>;">
                                 <?= htmlspecialchars($subCat['name']) ?>
                             </a>
-                            <div class="flex flex-col space-y-3.5">
+                            <div class="flex flex-col space-y-2.5">
                                 <?php if (count($products) > 0): ?>
                                     <?php foreach ($products as $prod): ?>
-                                        <a href="<?= BASE_URL ?>/product?id=<?= htmlspecialchars($prod['id']) ?>" class="hover:opacity-80 transition-opacity flex items-center gap-3 group/link font-medium text-sm" style="color: <?= htmlspecialchars($dropdownText) ?>; opacity: 0.85;">
+                                        <a href="<?= BASE_URL ?>/product?id=<?= htmlspecialchars($prod['id']) ?>" class="hover:opacity-80 transition-opacity flex items-center gap-2.5 group/link font-medium text-xs sm:text-sm" style="color: <?= htmlspecialchars($dropdownText) ?>; opacity: 0.85;">
                                             <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background-color: <?= htmlspecialchars($dropdownText) ?>; opacity: 0.6;"></span>
                                             <span class="leading-snug break-words"><?= htmlspecialchars($prod['name']) ?></span>
                                         </a>
@@ -209,7 +209,7 @@ $renderSystemIcons = function() use ($textColor, $bgColorVal, $globalFontSize, $
                     $dashLink = $isAdminRole ? BASE_URL . '/admin/dashboard' : BASE_URL . '/dashboard'; 
                 ?>
                 <a href="<?= $dashLink ?>" class="flex items-center hover:opacity-90 transition-opacity focus:outline-none shrink-0 cursor-pointer" style="color: <?= htmlspecialchars($textColor) ?>;" title="Account Profile">
-                    <div class="w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center font-bold text-xs lg:text-sm shadow-sm ring-2 ring-white/40 transition-transform group-hover:scale-105" style="background-color: <?= htmlspecialchars($textColor) ?>; color: <?= htmlspecialchars($bgColorVal ?? '#ffffff') ?>;">
+                    <div class="w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center font-bold text-xs lg:text-sm shadow-sm ring-2 ring-white/60 transition-transform group-hover:scale-105 bg-white text-[#F25996]">
                         <?= $initial ?>
                     </div>
                 </a>
@@ -404,7 +404,7 @@ $renderSystemIcons = function() use ($textColor, $bgColorVal, $globalFontSize, $
                         $dashLink = in_array(\Core\Session::get('user_role'), ['super_admin', 'manager', 'staff', 'vendor']) ? BASE_URL . '/admin/dashboard' : BASE_URL . '/dashboard'; 
                     ?>
                     <a href="<?= $dashLink ?>" class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl hover:bg-black/5 active:bg-black/10 transition-colors" title="Account">
-                        <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-sm ring-2 ring-white/30" style="background-color: <?= htmlspecialchars($textColor) ?>; color: <?= htmlspecialchars($bgColorVal ?? '#ffffff') ?>;">
+                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm ring-2 ring-white/60 bg-white text-[#F25996]">
                             <?= $initial ?>
                         </div>
                     </a>

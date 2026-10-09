@@ -180,14 +180,23 @@
 function promptReject(userId, businessName) {
     Swal.fire({
         title: 'Reject Registration',
-        html: `Rejecting application from: <b>${businessName}</b><br><br>Please enter the reason for rejection:`,
+        html: `<p class="text-sm text-gray-600 mb-2">Rejecting application from: <strong class="text-gray-900">${businessName}</strong></p><p class="text-xs text-gray-500">Please enter the reason for rejection:</p>`,
         input: 'textarea',
-        inputPlaceholder: 'e.g., Documents provided are unclear...',
+        inputPlaceholder: 'e.g., Documents provided are unclear or invalid...',
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#6b7280',
         confirmButtonText: 'Confirm Rejection',
+        cancelButtonText: 'Cancel',
+        buttonsStyling: false,
+        customClass: {
+            popup: 'rounded-3xl p-6 md:p-8 shadow-2xl border border-gray-100 bg-white',
+            title: 'text-2xl font-black text-gray-900 font-display',
+            htmlContainer: 'text-sm text-gray-600',
+            input: 'rounded-2xl border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 text-sm p-4 w-full text-gray-800',
+            actions: 'flex items-center justify-center gap-3 mt-6',
+            confirmButton: 'inline-flex items-center justify-center px-7 py-3 font-bold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-95 rounded-full shadow-md transition-all cursor-pointer',
+            cancelButton: 'inline-flex items-center justify-center px-7 py-3 font-bold text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 active:scale-95 border border-gray-200 rounded-full shadow-sm transition-all cursor-pointer'
+        },
         inputValidator: (value) => {
             if (!value || value.trim().length === 0) {
                 return 'You need to write a rejection reason!';

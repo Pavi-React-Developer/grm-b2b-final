@@ -83,6 +83,7 @@ class AuthController extends Controller
             Session::set('user_role', $user['role']);
             Session::set('user_status', $user['status']);
             Session::set('user_name', $user['name']);
+            Session::set('user_email', $user['email'] ?? '');
             
             // If they are admin/manager/vendor, redirect to admin panel
             if (in_array($user['role'], ['super_admin', 'manager', 'staff', 'vendor'])) {
@@ -323,23 +324,65 @@ class AuthController extends Controller
             }
         }
 
+        // Handle GST / PAN document upload (max 3MB)
+        $gstDocUrl  = null;
+        $panDocUrl  = null;
+        $allowedDocExts = ['pdf', 'jpg', 'jpeg', 'png'];
+        $maxDocBytes    = 3 * 1024 * 1024; // 3MB
+
+        if ($hasGst && isset($_FILES['gst_document']) && $_FILES['gst_document']['error'] === UPLOAD_ERR_OK) {
+            $docSize = $_FILES['gst_document']['size'];
+            $docExt  = strtolower(pathinfo($_FILES['gst_document']['name'], PATHINFO_EXTENSION));
+            if ($docSize > $maxDocBytes) {
+                Session::setFlash('error', 'GST document must be under 3MB.');
+                $this->redirect('/register');
+            }
+            if (!in_array($docExt, $allowedDocExts)) {
+                Session::setFlash('error', 'GST document must be a PDF, JPG, or PNG file.');
+                $this->redirect('/register');
+            }
+            $cloudinaryResponse = $uploader->uploadMedia($_FILES['gst_document']['tmp_name']);
+            if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
+                $gstDocUrl = $cloudinaryResponse['secure_url'];
+            }
+        }
+
+        if (!$hasGst && isset($_FILES['pan_document']) && $_FILES['pan_document']['error'] === UPLOAD_ERR_OK) {
+            $docSize = $_FILES['pan_document']['size'];
+            $docExt  = strtolower(pathinfo($_FILES['pan_document']['name'], PATHINFO_EXTENSION));
+            if ($docSize > $maxDocBytes) {
+                Session::setFlash('error', 'PAN document must be under 3MB.');
+                $this->redirect('/register');
+            }
+            if (!in_array($docExt, $allowedDocExts)) {
+                Session::setFlash('error', 'PAN document must be a PDF, JPG, or PNG file.');
+                $this->redirect('/register');
+            }
+            $cloudinaryResponse = $uploader->uploadMedia($_FILES['pan_document']['tmp_name']);
+            if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
+                $panDocUrl = $cloudinaryResponse['secure_url'];
+            }
+        }
+
         // Generate OTP
         $otp = sprintf("%06d", mt_rand(1, 999999));
         
         // Store all data in session for the next step
         Session::set('pending_registration', [
-            'name' => $name,
-            'email' => $email,
-            'phone' => $phone,
-            'password' => $password, // Plaintext, will be hashed upon final save
+            'name'          => $name,
+            'email'         => $email,
+            'phone'         => $phone,
+            'password'      => $password, // Plaintext, will be hashed upon final save
             'business_name' => $businessName,
             'shop_location' => $shopLocation,
-            'has_gst' => $hasGst,
-            'gst_number' => $gstNumber,
-            'pan_number' => $panNumber,
+            'has_gst'       => $hasGst,
+            'gst_number'    => $gstNumber,
+            'gst_doc_url'   => $gstDocUrl,
+            'pan_number'    => $panNumber,
+            'pan_doc_url'   => $panDocUrl,
             'no_gst_reason' => $noGstReason,
-            'instagram_link' => $instagramLink,
-            'temp_files' => $tempFiles
+            'instagram_link'=> $instagramLink,
+            'temp_files'    => $tempFiles
         ]);
         Session::set('registration_otp', $otp);
         Session::set('otp_generated_at', time());
@@ -364,8 +407,11 @@ class AuthController extends Controller
         $email = trim($data['email'] ?? '');
         $phone = trim($data['phone'] ?? '');
         $businessName = trim($data['business_name'] ?? '');
+        $gstNumber = strtoupper(trim($data['gst_number'] ?? ''));
+        $panNumber = strtoupper(trim($data['pan_number'] ?? ''));
+        $instagramLink = trim($data['instagram_link'] ?? '');
 
-        if (empty($email) && empty($phone) && empty($businessName)) {
+        if (empty($email) && empty($phone) && empty($businessName) && empty($gstNumber) && empty($panNumber) && empty($instagramLink)) {
             echo json_encode(['exists' => false]);
             return;
         }
@@ -390,8 +436,9 @@ class AuthController extends Controller
             return;
         }
 
+        $db = \Core\Database::getInstance();
+
         if (!empty($businessName)) {
-            $db = \Core\Database::getInstance();
             $stmt = $db->prepare("SELECT id FROM business_profiles WHERE LOWER(business_name) = LOWER(?)");
             $stmt->execute([$businessName]);
             if ($stmt->fetch()) {
@@ -401,6 +448,57 @@ class AuthController extends Controller
                     'message' => 'This business name is already registered.'
                 ]);
                 return;
+            }
+        }
+
+        if (!empty($gstNumber)) {
+            $stmt = $db->prepare("SELECT id FROM business_profiles WHERE UPPER(gst_number) = ?");
+            $stmt->execute([$gstNumber]);
+            if ($stmt->fetch()) {
+                echo json_encode([
+                    'exists' => true,
+                    'field' => 'gst_number',
+                    'message' => 'This GST number is already registered.'
+                ]);
+                return;
+            }
+        }
+
+        if (!empty($panNumber)) {
+            $stmt = $db->prepare("SELECT id FROM business_profiles WHERE UPPER(pan_number) = ?");
+            $stmt->execute([$panNumber]);
+            if ($stmt->fetch()) {
+                echo json_encode([
+                    'exists' => true,
+                    'field' => 'pan_number',
+                    'message' => 'This PAN number is already registered.'
+                ]);
+                return;
+            }
+        }
+
+        if (!empty($instagramLink)) {
+            // Clean/normalize instagram link for comparison
+            $cleanInsta = rtrim(preg_replace('/^https?:\/\/(www\.)?instagram\.com\//i', '', $instagramLink), '/');
+            $cleanInsta = explode('?', $cleanInsta)[0]; // strip query string if any
+            
+            if (!empty($cleanInsta)) {
+                $stmt = $db->prepare("SELECT id, instagram_link FROM business_profiles WHERE instagram_link IS NOT NULL AND instagram_link != ''");
+                $stmt->execute();
+                $allLinks = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                
+                foreach ($allLinks as $row) {
+                    $existingClean = rtrim(preg_replace('/^https?:\/\/(www\.)?instagram\.com\//i', '', $row['instagram_link'] ?? ''), '/');
+                    $existingClean = explode('?', $existingClean)[0];
+                    if (strcasecmp($cleanInsta, $existingClean) === 0) {
+                        echo json_encode([
+                            'exists' => true,
+                            'field' => 'instagram',
+                            'message' => 'This Instagram shop link is already registered.'
+                        ]);
+                        return;
+                    }
+                }
             }
         }
 
@@ -568,7 +666,9 @@ class AuthController extends Controller
                 'business_name' => $regData['business_name'],
                 'shop_location' => $regData['shop_location'],
                 'gst_number' => $regData['has_gst'] ? $regData['gst_number'] : null,
+                'gst_document' => $regData['has_gst'] ? ($regData['gst_doc_url'] ?? null) : null,
                 'pan_number' => !$regData['has_gst'] ? $regData['pan_number'] : null,
+                'pan_document' => !$regData['has_gst'] ? ($regData['pan_doc_url'] ?? null) : null,
                 'no_gst_reason' => !$regData['has_gst'] ? $regData['no_gst_reason'] : null,
                 'instagram_link' => $regData['instagram_link'] ?? null,
             ]);
@@ -585,8 +685,27 @@ class AuthController extends Controller
             foreach ($regData['temp_files'] as $tempFile) {
                 $mediaModel->create([
                     'user_id' => $userId,
-                    'file_path' => $tempFile['path'], // Now a Cloudinary URL
-                    'file_type' => $tempFile['type']
+                    'file_path' => $tempFile['path'], // Cloudinary URL
+                    'file_type' => $tempFile['type'],
+                    'purpose' => 'shop_verification'
+                ]);
+            }
+
+            if (!empty($regData['gst_doc_url'])) {
+                $mediaModel->create([
+                    'user_id' => $userId,
+                    'file_path' => $regData['gst_doc_url'],
+                    'file_type' => 'document',
+                    'purpose' => 'gst_document'
+                ]);
+            }
+
+            if (!empty($regData['pan_doc_url'])) {
+                $mediaModel->create([
+                    'user_id' => $userId,
+                    'file_path' => $regData['pan_doc_url'],
+                    'file_type' => 'document',
+                    'purpose' => 'pan_document'
                 ]);
             }
 

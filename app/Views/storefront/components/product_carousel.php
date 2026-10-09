@@ -481,7 +481,7 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                         <?php 
                                         $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                                         if ($isLoggedIn && $discPercent > 0) {
-                                            echo render_discount_starburst($discPercent, 'absolute top-1 left-1.5 z-10 w-9 sm:w-11 md:w-13 transition-transform duration-300 group-hover:scale-110');
+                                            echo render_discount_starburst($discPercent, 'absolute top-1.5 left-1.5 z-10 w-16 sm:w-18 md:w-20 transition-transform duration-300 group-hover:scale-110');
                                         }
                                         ?>
                                         <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" class="w-full h-full <?= $objectFitClass ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">

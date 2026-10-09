@@ -141,17 +141,55 @@ class HomeController extends Controller
     public function apiSizeChart()
     {
         header('Content-Type: application/json');
+        $chartId = (int)($_GET['chart_id'] ?? 0);
+        $productId = (int)($_GET['product_id'] ?? 0);
         $categoryId = (int)($_GET['category_id'] ?? 0);
+        $subCategoryId = (int)($_GET['sub_category_id'] ?? 0);
+        
         $sizeChartModel = new \App\Models\SizeChart();
-        if ($categoryId > 0) {
-            $charts = $sizeChartModel->getByCategoryId($categoryId);
-        } else {
-            $charts = $sizeChartModel->getAllActive();
+
+        // 1. If product_id is given, resolve product-specific size_chart_id and category/subcategory
+        if ($productId > 0) {
+            $productModel = new \App\Models\Product();
+            $product = $productModel->findById($productId);
+            if ($product) {
+                if (empty($chartId) && !empty($product['size_chart_id'])) {
+                    $chartId = (int)$product['size_chart_id'];
+                }
+                if (empty($categoryId) && !empty($product['category_id'])) {
+                    $categoryId = (int)$product['category_id'];
+                }
+                if (empty($subCategoryId) && !empty($product['sub_category_id'])) {
+                    $subCategoryId = (int)$product['sub_category_id'];
+                }
+            }
+        }
+
+        $charts = [];
+        // 2. If a specific chart_id is requested or assigned to the product
+        if ($chartId > 0) {
+            $specificChart = $sizeChartModel->getById($chartId);
+            if ($specificChart && (!isset($specificChart['is_active']) || $specificChart['is_active'])) {
+                $charts[] = $specificChart;
+            }
+        }
+
+        // 3. If no specific chart was found, fall back to subcategory/category matching
+        if (empty($charts)) {
+            if ($subCategoryId > 0 || $categoryId > 0) {
+                $charts = $sizeChartModel->getByCategoryAndSubCategory($categoryId, $subCategoryId);
+            } else {
+                $charts = $sizeChartModel->getAllActive();
+            }
         }
 
         foreach ($charts as &$chart) {
-            $chart['columns'] = json_decode($chart['columns_json'] ?? '[]', true) ?: [];
-            $chart['rows'] = json_decode($chart['rows_json'] ?? '[]', true) ?: [];
+            $chart['columns'] = is_array($chart['columns_json'] ?? null) 
+                ? $chart['columns_json'] 
+                : (json_decode($chart['columns_json'] ?? '[]', true) ?: []);
+            $chart['rows'] = is_array($chart['rows_json'] ?? null) 
+                ? $chart['rows_json'] 
+                : (json_decode($chart['rows_json'] ?? '[]', true) ?: []);
         }
         unset($chart);
 

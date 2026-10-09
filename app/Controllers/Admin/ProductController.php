@@ -28,9 +28,11 @@ class ProductController extends Controller
         $isVendor = (Session::get('user_role') === 'vendor');
         $vendorId = $isVendor ? (int)Session::get('user_id') : (!empty($_GET['vendor_id']) ? (int)$_GET['vendor_id'] : null);
         $status = $_GET['status'] ?? 'all';
+        $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
 
         $productModel = new Product();
-        $products = $productModel->getAllAdmin($vendorId, $status);
+        $products = $productModel->getAllAdmin($vendorId, $status, $isCustomize ? 1 : 0);
         $pendingCount = $productModel->getPendingApprovalCount($vendorId);
 
         if (!empty($products)) {
@@ -52,12 +54,11 @@ class ProductController extends Controller
             }
         }
         $categoryModel = new Category();
-        $categories = $categoryModel->getAllActive();
+        $categories = $categoryModel->getAllActive(null, $isCustomize ? 1 : 0);
 
         $subCategoryModel = new SubCategory();
-        $subCategories = $subCategoryModel->getAll();
+        $subCategories = $subCategoryModel->getAll(null, $isCustomize ? 1 : 0);
 
-        $module = $_GET['module'] ?? '';
         $this->render('admin/catalog/products/index', [
             'title' => ($module === 'customize') ? 'Customizable Products & Fabrics' : ($isVendor ? 'My Products' : 'Manage Products'),
             'products' => $products,
@@ -65,7 +66,7 @@ class ProductController extends Controller
             'currentStatus' => $status,
             'pendingCount' => $pendingCount,
             'module' => $module,
-            'isCustomize' => ($module === 'customize')
+            'isCustomize' => $isCustomize
         ], 'admin');
     }
 
@@ -74,9 +75,13 @@ class ProductController extends Controller
         $this->requirePermission('products', 'create');
         $isVendor = (Session::get('user_role') === 'vendor');
         $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
 
         $categoryModel = new Category();
-        $categories = $categoryModel->getAllActive();
+        $categories = $categoryModel->getAllActive(null, $isCustomize ? 1 : 0);
+
+        $sizeChartModel = new \App\Models\SizeChart();
+        $sizeCharts = $sizeChartModel->getAllActive();
 
         $attrValueModel = new AttributeValue();
         $attributes = $attrValueModel->getAllGroupedByAttribute();
@@ -90,11 +95,12 @@ class ProductController extends Controller
         $this->render('admin/catalog/products/create', [
             'title' => ($module === 'customize') ? 'Add Customizable Product / Fabric' : 'Add Product',
             'categories' => $categories,
+            'sizeCharts' => $sizeCharts,
             'attributes' => $attributes,
             'isVendor' => $isVendor,
             'vendors' => $vendors,
             'module' => $module,
-            'isCustomize' => ($module === 'customize')
+            'isCustomize' => $isCustomize
         ], 'admin');
     }
 
@@ -102,21 +108,23 @@ class ProductController extends Controller
     {
         $this->requirePermission('products', 'view');
         $id = $_GET['id'] ?? null;
+        $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
         if (!$id) {
-            $this->redirect('/admin/catalog/products');
+            $this->redirect('/admin/catalog/products' . ($isCustomize ? '?module=customize' : ''));
         }
 
         $productModel = new Product();
         $product = $productModel->findById($id);
 
         if (!$product) {
-            $this->redirect('/admin/catalog/products');
+            $this->redirect('/admin/catalog/products' . ($isCustomize ? '?module=customize' : ''));
         }
 
         $isVendor = (Session::get('user_role') === 'vendor');
         if ($isVendor && (int)($product['vendor_id'] ?? 0) !== (int)Session::get('user_id')) {
             Session::setFlash('error', 'You do not have permission to view this product.');
-            $this->redirect('/admin/catalog/products');
+            $this->redirect('/admin/catalog/products' . ($isCustomize ? '?module=customize' : ''));
             return;
         }
 
@@ -137,13 +145,22 @@ class ProductController extends Controller
         // Get Images
         $images = $productModel->getImages($id);
 
+        $sizeChart = null;
+        if (!empty($product['size_chart_id'])) {
+            $sizeChartModel = new \App\Models\SizeChart();
+            $sizeChart = $sizeChartModel->getById((int)$product['size_chart_id']);
+        }
+
         $this->render('admin/catalog/products/view', [
             'product' => $product,
             'category' => $category,
             'subCategory' => $subCategory,
+            'sizeChart' => $sizeChart,
             'variants' => $variants,
             'images' => $images,
-            'isVendor' => $isVendor
+            'isVendor' => $isVendor,
+            'module' => $module,
+            'isCustomize' => $isCustomize
         ], 'admin');
     }
 
@@ -154,20 +171,41 @@ class ProductController extends Controller
         $productModel = new Product();
         $product = $productModel->findById($id);
         
+        $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
+
         if (!$product) {
             Session::setFlash('error', 'Product not found.');
-            $this->redirect('/admin/catalog/products');
+            $this->redirect('/admin/catalog/products' . ($isCustomize ? '?module=customize' : ''));
         }
 
         $isVendor = (Session::get('user_role') === 'vendor');
         if ($isVendor && (int)($product['vendor_id'] ?? 0) !== (int)Session::get('user_id')) {
             Session::setFlash('error', 'You do not have permission to edit this product.');
-            $this->redirect('/admin/catalog/products');
+            $this->redirect('/admin/catalog/products' . ($isCustomize ? '?module=customize' : ''));
             return;
         }
 
+        if (!$isCustomize && !empty($product['id'])) {
+            if (!empty($product['is_customizable'])) {
+                $isCustomize = true;
+                $module = 'customize';
+            } else {
+                $db = \Core\Database::getInstance();
+                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+                $stmt->execute([(int)$product['id']]);
+                if ($stmt->fetch()) {
+                    $isCustomize = true;
+                    $module = 'customize';
+                }
+            }
+        }
+
         $categoryModel = new Category();
-        $categories = $categoryModel->getAllActive();
+        $categories = $categoryModel->getAllActive(null, $isCustomize ? 1 : 0);
+
+        $sizeChartModel = new \App\Models\SizeChart();
+        $sizeCharts = $sizeChartModel->getAllActive();
 
         $subCategoryModel = new SubCategory();
         $subCategories = $subCategoryModel->getByCategory($product['category_id']);
@@ -188,23 +226,12 @@ class ProductController extends Controller
             $vendors = $userModel->getActiveVendors();
         }
 
-        $module = $_GET['module'] ?? '';
-        $isCustomize = ($module === 'customize');
-        if (!$isCustomize && !empty($product['id'])) {
-            $db = \Core\Database::getInstance();
-            $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
-            $stmt->execute([(int)$product['id']]);
-            if ($stmt->fetch()) {
-                $isCustomize = true;
-                $module = 'customize';
-            }
-        }
-
         $this->render('admin/catalog/products/edit', [
             'title' => ($isCustomize) ? 'Edit Customizable Product / Fabric' : 'Edit Product',
             'product' => $product,
             'categories' => $categories,
             'subCategories' => $subCategories,
+            'sizeCharts' => $sizeCharts,
             'attributes' => $attributes,
             'selectedAttributes' => $selectedAttributes,
             'variants' => $variants,
@@ -248,13 +275,34 @@ class ProductController extends Controller
         $approvalStatus = $isVendor ? 'pending' : 'approved';
         $status = $isVendor ? 'draft' : ($_POST['status'] ?? 'active');
 
+        // Extract custom description fields
+        $customFields = [];
+        if (!empty($_POST['custom_fields']) && is_array($_POST['custom_fields'])) {
+            foreach ($_POST['custom_fields'] as $cf) {
+                $fName = trim($cf['name'] ?? '');
+                $fVal = trim($cf['value'] ?? '');
+                if ($fName !== '' || $fVal !== '') {
+                    $customFields[] = [
+                        'name' => $fName,
+                        'value' => $fVal
+                    ];
+                }
+            }
+        }
+        $customFieldsJson = !empty($customFields) ? json_encode($customFields, JSON_UNESCAPED_UNICODE) : null;
+
         $data = [
             'vendor_id' => $vendorId,
             'category_id' => (int)($_POST['category_id'] ?? 0),
             'sub_category_id' => !empty($_POST['sub_category_id']) ? (int)$_POST['sub_category_id'] : null,
+            'size_chart_id' => !empty($_POST['size_chart_id']) ? (int)$_POST['size_chart_id'] : null,
+            'is_customizable' => $isCustomize ? 1 : 0,
             'name' => trim($_POST['name'] ?? ''),
             'slug' => trim($_POST['slug'] ?? ''),
             'description' => trim($_POST['description'] ?? ''),
+            'how_to_use' => !empty($_POST['how_to_use']) ? trim($_POST['how_to_use']) : null,
+            'why_choose' => !empty($_POST['why_choose']) ? trim($_POST['why_choose']) : null,
+            'custom_fields' => $customFieldsJson,
             'wholesale_price' => $firstVariantEffectivePrice,
             'retail_price' => $firstVariantBasePrice,
             'weight' => $firstVariantWeight,
@@ -282,17 +330,17 @@ class ProductController extends Controller
 
             if ($basePrice <= 0) {
                 Session::setFlash('error', 'Base Price is required and must be greater than 0 for all variants.');
-                $this->redirect('/admin/catalog/products/create');
+                $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
             }
 
             if ($weight <= 0) {
                 Session::setFlash('error', 'Weight is required and must be greater than 0 kg for all variants.');
-                $this->redirect('/admin/catalog/products/create');
+                $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
             }
 
             if (empty($sku)) {
                 Session::setFlash('error', 'Variant SKU is required and cannot be empty.');
-                $this->redirect('/admin/catalog/products/create');
+                $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
             }
         }
 
@@ -307,7 +355,7 @@ class ProductController extends Controller
                 if (in_array($sku, $skus)) {
                     $db->rollBack();
                     Session::setFlash('error', 'Duplicate SKU found in the form data: ' . $sku);
-                    $this->redirect('/admin/catalog/products/create');
+                    $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
                 }
                 $skus[] = $sku;
                 
@@ -316,7 +364,7 @@ class ProductController extends Controller
                 if ($existing->fetch()) {
                     $db->rollBack();
                     Session::setFlash('error', 'The SKU "' . $sku . '" is already in use by another product.');
-                    $this->redirect('/admin/catalog/products/create');
+                    $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
                 }
             }
             // ----------------------
@@ -327,7 +375,7 @@ class ProductController extends Controller
             if ($productModel->findBySlug($data['slug'])) {
                 $db->rollBack();
                 Session::setFlash('error', 'A product with this slug already exists. Please choose a different name or manually change the slug to be unique.');
-                $this->redirect('/admin/catalog/products/create');
+                $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
             }
 
             $productId = $productModel->create($data);
@@ -445,21 +493,46 @@ class ProductController extends Controller
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
         if (!$isCustomize && !empty($id)) {
-            $db = \Core\Database::getInstance();
-            $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
-            $stmt->execute([(int)$id]);
-            if ($stmt->fetch()) {
+            if (!empty($existingProduct['is_customizable'])) {
                 $isCustomize = true;
+            } else {
+                $db = \Core\Database::getInstance();
+                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+                $stmt->execute([(int)$id]);
+                if ($stmt->fetch()) {
+                    $isCustomize = true;
+                }
             }
         }
+
+        // Extract custom description fields
+        $customFields = [];
+        if (!empty($_POST['custom_fields']) && is_array($_POST['custom_fields'])) {
+            foreach ($_POST['custom_fields'] as $cf) {
+                $fName = trim($cf['name'] ?? '');
+                $fVal = trim($cf['value'] ?? '');
+                if ($fName !== '' || $fVal !== '') {
+                    $customFields[] = [
+                        'name' => $fName,
+                        'value' => $fVal
+                    ];
+                }
+            }
+        }
+        $customFieldsJson = !empty($customFields) ? json_encode($customFields, JSON_UNESCAPED_UNICODE) : null;
 
         $data = [
             'vendor_id' => $vendorId,
             'category_id' => (int)($_POST['category_id'] ?? 0),
             'sub_category_id' => !empty($_POST['sub_category_id']) ? (int)$_POST['sub_category_id'] : null,
+            'size_chart_id' => !empty($_POST['size_chart_id']) ? (int)$_POST['size_chart_id'] : null,
+            'is_customizable' => $isCustomize ? 1 : 0,
             'name' => trim($_POST['name'] ?? ''),
             'slug' => trim($_POST['slug'] ?? ''),
             'description' => trim($_POST['description'] ?? ''),
+            'how_to_use' => !empty($_POST['how_to_use']) ? trim($_POST['how_to_use']) : null,
+            'why_choose' => !empty($_POST['why_choose']) ? trim($_POST['why_choose']) : null,
+            'custom_fields' => $customFieldsJson,
             'wholesale_price' => $firstVariantEffectivePrice,
             'retail_price' => $firstVariantBasePrice,
             'weight' => $firstVariantWeight,
@@ -489,17 +562,17 @@ class ProductController extends Controller
 
             if ($basePrice <= 0) {
                 Session::setFlash('error', 'Base Price is required and must be greater than 0 for all variants.');
-                $this->redirect('/admin/catalog/products/edit?id=' . $id);
+                $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
             }
 
             if ($weight <= 0) {
                 Session::setFlash('error', 'Weight is required and must be greater than 0 kg for all variants.');
-                $this->redirect('/admin/catalog/products/edit?id=' . $id);
+                $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
             }
 
             if (empty($sku)) {
                 Session::setFlash('error', 'Variant SKU is required and cannot be empty.');
-                $this->redirect('/admin/catalog/products/edit?id=' . $id);
+                $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
             }
         }
 
@@ -529,12 +602,12 @@ class ProductController extends Controller
                     if (empty($sku)) {
                         $db->rollBack();
                         Session::setFlash('error', 'Variant SKU cannot be empty.');
-                        $this->redirect('/admin/catalog/products/edit?id=' . $id);
+                        $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
                     }
                     if (in_array($sku, $skus)) {
                         $db->rollBack();
                         Session::setFlash('error', 'Duplicate SKU found in the form data: ' . $sku);
-                        $this->redirect('/admin/catalog/products/edit?id=' . $id);
+                        $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
                     }
                     $skus[] = $sku;
                     
@@ -544,7 +617,7 @@ class ProductController extends Controller
                     if ($existing->fetch()) {
                         $db->rollBack();
                         Session::setFlash('error', 'The SKU "' . $sku . '" is already in use by another product.');
-                        $this->redirect('/admin/catalog/products/edit?id=' . $id);
+                        $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
                     }
                 }
             }
@@ -557,7 +630,7 @@ class ProductController extends Controller
             if ($existingProduct && $existingProduct['id'] != $id) {
                 $db->rollBack();
                 Session::setFlash('error', 'Another product with this slug already exists. Please choose a different name or manually change the slug to be unique.');
-                $this->redirect('/admin/catalog/products/edit?id=' . $id);
+                $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
             }
 
             $productModel->update($id, $data);
@@ -669,38 +742,67 @@ class ProductController extends Controller
     public function delete()
     {
         $this->requirePermission('products', 'delete');
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $redirectUrl = '/admin/catalog/products' . ($isCustomize ? '?module=customize' : '');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/products');
+            if ($this->isJsonRequest()) {
+                $this->json(['success' => false, 'message' => 'Invalid request method.']);
+            }
+            $this->redirect($redirectUrl);
         }
 
         $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $jsonInput = json_decode(file_get_contents('php://input'), true);
+            $id = (int)($jsonInput['id'] ?? 0);
+        }
         
         if ($id > 0) {
             try {
                 $productModel = new Product();
                 $existingProduct = $productModel->findById($id);
                 if (!$existingProduct) {
+                    if ($this->isJsonRequest()) {
+                        $this->json(['success' => false, 'message' => 'Product not found.']);
+                    }
                     Session::setFlash('error', 'Product not found.');
-                    $this->redirect('/admin/catalog/products');
+                    $this->redirect($redirectUrl);
                     return;
+                }
+
+                if (!$isCustomize && !empty($existingProduct['is_customizable'])) {
+                    $isCustomize = true;
+                    $redirectUrl = '/admin/catalog/products?module=customize';
                 }
 
                 $isVendor = (Session::get('user_role') === 'vendor');
                 if ($isVendor && (int)($existingProduct['vendor_id'] ?? 0) !== (int)Session::get('user_id')) {
+                    if ($this->isJsonRequest()) {
+                        $this->json(['success' => false, 'message' => 'You do not have permission to delete this product.']);
+                    }
                     Session::setFlash('error', 'You do not have permission to delete this product.');
-                    $this->redirect('/admin/catalog/products');
+                    $this->redirect($redirectUrl);
                     return;
                 }
 
                 $productModel->delete($id);
                 \Core\Cache::delete('catalog_active');
-                Session::setFlash('success', 'Product deleted successfully.');
+                
+                if ($this->isJsonRequest()) {
+                    $this->json(['success' => true, 'message' => ($isCustomize ? 'Fabric' : 'Product') . ' deleted successfully.']);
+                }
+                Session::setFlash('success', ($isCustomize ? 'Fabric' : 'Product') . ' deleted successfully.');
             } catch (\Exception $e) {
+                if ($this->isJsonRequest()) {
+                    $this->json(['success' => false, 'message' => 'Cannot delete product: ' . $e->getMessage()]);
+                }
                 Session::setFlash('error', 'Cannot delete product: ' . $e->getMessage());
             }
         }
 
-        $this->redirect('/admin/catalog/products');
+        $this->redirect($redirectUrl);
     }
 
     private function parsePostedAttributes(array $postedAttributes): array
@@ -747,18 +849,40 @@ class ProductController extends Controller
     public function deleteImage()
     {
         $this->requirePermission('products', 'edit');
-        $input = json_decode(file_get_contents('php://input'), true);
-        $productId = $input['product_id'] ?? null;
-        $imagePath = $input['image_path'] ?? null;
+        
+        $jsonInput = json_decode(file_get_contents('php://input'), true);
+        $productId = (int)($_POST['product_id'] ?? ($jsonInput['product_id'] ?? 0));
+        $imageId = (int)($_POST['image_id'] ?? ($jsonInput['image_id'] ?? 0));
+        $imagePath = trim($_POST['image_path'] ?? ($jsonInput['image_path'] ?? ''));
 
-        if ($productId && $imagePath) {
+        $deleted = false;
+        $db = \Core\Database::getInstance();
+
+        if ($imageId > 0) {
+            $stmt = $db->prepare("DELETE FROM product_images WHERE id = ?");
+            $stmt->execute([$imageId]);
+            $deleted = true;
+        } elseif ($productId > 0 && !empty($imagePath)) {
             $productModel = new Product();
-            $productModel->deleteImageByPath((int)$productId, $imagePath);
-            echo json_encode(['success' => true]);
-        } else {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'message' => 'Missing product ID or image path']);
+            $productModel->deleteImageByPath($productId, $imagePath);
+            $deleted = true;
         }
+
+        if ($deleted) {
+            \Core\Cache::delete('catalog_active');
+            if ($this->isJsonRequest()) {
+                $this->json(['success' => true, 'message' => 'Image removed successfully.']);
+            }
+            Session::setFlash('success', 'Image removed successfully.');
+        } else {
+            if ($this->isJsonRequest()) {
+                $this->json(['success' => false, 'message' => 'Image not found or missing parameters.'], 400);
+            }
+            Session::setFlash('error', 'Image not found.');
+        }
+
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $this->redirect('/admin/catalog/products/edit?id=' . $productId . ($module === 'customize' ? '&module=customize' : ''));
     }
 
     public function approve()

@@ -348,6 +348,8 @@ class EmailService
                 $port = defined('SMTP_PORT') ? (int)SMTP_PORT : (int)($this->envVars['SMTP_PORT'] ?? 587);
                 $from = defined('SMTP_FROM') ? SMTP_FROM : ($this->envVars['SMTP_FROM'] ?? $this->fromEmail);
 
+                $pass = str_replace(' ', '', $pass);
+
                 if (!empty($host) && !empty($user) && !empty($pass)) {
                     $mail->isSMTP();
                     $mail->Host       = $host;

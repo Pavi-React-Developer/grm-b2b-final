@@ -4,12 +4,15 @@ namespace App\Controllers\Admin;
 use Core\Controller;
 use App\Models\SizeChart;
 use App\Models\Category;
+use App\Models\SubCategory;
 use Core\Session;
+use App\Core\CloudinaryUploader;
 
 class SizeChartController extends Controller
 {
     private SizeChart $sizeChartModel;
     private Category $categoryModel;
+    private SubCategory $subCategoryModel;
 
     public function __construct()
     {
@@ -19,6 +22,7 @@ class SizeChartController extends Controller
         }
         $this->sizeChartModel = new SizeChart();
         $this->categoryModel = new Category();
+        $this->subCategoryModel = new SubCategory();
     }
 
     public function index(): void
@@ -48,10 +52,12 @@ class SizeChartController extends Controller
     public function create(): void
     {
         $categories = $this->categoryModel->getAll();
+        $subCategories = $this->subCategoryModel->getAll();
 
         $this->render('admin/cms/size_charts/create', [
             'title' => 'Add New Size Chart',
-            'categories' => $categories
+            'categories' => $categories,
+            'subCategories' => $subCategories
         ], 'admin');
     }
 
@@ -75,6 +81,15 @@ class SizeChartController extends Controller
             $cat = $this->categoryModel->getById($categoryId);
             if ($cat) {
                 $categoryName = $cat['name'];
+            }
+        }
+
+        $subCategoryId = !empty($_POST['sub_category_id']) ? (int)$_POST['sub_category_id'] : null;
+        $subCategoryName = trim($_POST['sub_category_name'] ?? '');
+        if ($subCategoryId && empty($subCategoryName)) {
+            $subCat = $this->subCategoryModel->findById($subCategoryId);
+            if ($subCat) {
+                $subCategoryName = $subCat['name'];
             }
         }
 
@@ -132,11 +147,26 @@ class SizeChartController extends Controller
             }
         }
 
+        // Handle image upload via Cloudinary
+        $imageUrl = null;
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $uploader = new CloudinaryUploader();
+            $cloudinaryResponse = $uploader->uploadImage($_FILES['image']['tmp_name']);
+            if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
+                $imageUrl = $cloudinaryResponse['secure_url'];
+            } else {
+                Session::setFlash('error', 'Failed to upload size chart image to Cloudinary.');
+            }
+        }
+
         $this->sizeChartModel->create([
             'title' => $title,
             'category_id' => $categoryId,
             'category_name' => $categoryName,
+            'sub_category_id' => $subCategoryId,
+            'sub_category_name' => $subCategoryName,
             'dress_type' => $dressType,
+            'image_url' => $imageUrl,
             'tolerance_note' => $toleranceNote,
             'columns_json' => json_encode($columns, JSON_UNESCAPED_UNICODE),
             'rows_json' => json_encode($rowsData, JSON_UNESCAPED_UNICODE),
@@ -161,11 +191,13 @@ class SizeChartController extends Controller
         $chart['columns'] = json_decode($chart['columns_json'] ?? '[]', true) ?: [];
         $chart['rows'] = json_decode($chart['rows_json'] ?? '[]', true) ?: [];
         $categories = $this->categoryModel->getAll();
+        $subCategories = !empty($chart['category_id']) ? $this->subCategoryModel->getByCategory((int)$chart['category_id']) : $this->subCategoryModel->getAll();
 
         $this->render('admin/cms/size_charts/edit', [
             'title' => 'Edit Size Chart - ' . htmlspecialchars($chart['title']),
             'chart' => $chart,
-            'categories' => $categories
+            'categories' => $categories,
+            'subCategories' => $subCategories
         ], 'admin');
     }
 
@@ -197,6 +229,15 @@ class SizeChartController extends Controller
             $cat = $this->categoryModel->getById($categoryId);
             if ($cat) {
                 $categoryName = $cat['name'];
+            }
+        }
+
+        $subCategoryId = !empty($_POST['sub_category_id']) ? (int)$_POST['sub_category_id'] : null;
+        $subCategoryName = trim($_POST['sub_category_name'] ?? '');
+        if ($subCategoryId && empty($subCategoryName)) {
+            $subCat = $this->subCategoryModel->findById($subCategoryId);
+            if ($subCat) {
+                $subCategoryName = $subCat['name'];
             }
         }
 
@@ -253,11 +294,29 @@ class SizeChartController extends Controller
             }
         }
 
+        // Handle image upload / removal via Cloudinary
+        $imageUrl = $chart['image_url'] ?? null;
+        if (isset($_POST['remove_image']) && (int)$_POST['remove_image'] === 1) {
+            $imageUrl = null;
+        }
+        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+            $uploader = new CloudinaryUploader();
+            $cloudinaryResponse = $uploader->uploadImage($_FILES['image']['tmp_name']);
+            if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
+                $imageUrl = $cloudinaryResponse['secure_url'];
+            } else {
+                Session::setFlash('error', 'Failed to upload size chart image to Cloudinary.');
+            }
+        }
+
         $this->sizeChartModel->update($id, [
             'title' => $title,
             'category_id' => $categoryId,
             'category_name' => $categoryName,
+            'sub_category_id' => $subCategoryId,
+            'sub_category_name' => $subCategoryName,
             'dress_type' => $dressType,
+            'image_url' => $imageUrl,
             'tolerance_note' => $toleranceNote,
             'columns_json' => json_encode($columns, JSON_UNESCAPED_UNICODE),
             'rows_json' => json_encode($rowsData, JSON_UNESCAPED_UNICODE),

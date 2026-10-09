@@ -523,7 +523,7 @@ class CartController extends Controller
                 $cartModel->removeItem($cartItemId, $userId);
             }
 
-            $data = $this->getCartDataResponse($userId);
+            $data = $this->getCartDataResponse($userId, false);
             ob_end_clean();
             echo json_encode(array_merge(['success' => true, 'cart_data' => $data], $data));
         } catch (\Throwable $e) {
@@ -551,7 +551,7 @@ class CartController extends Controller
             $cartModel = new Cart();
             $cartModel->removeItem($cartItemId, $userId);
 
-            $data = $this->getCartDataResponse($userId);
+            $data = $this->getCartDataResponse($userId, true);
             ob_end_clean();
             echo json_encode(array_merge(['success' => true, 'cart_data' => $data], $data));
         } catch (\Throwable $e) {
@@ -561,7 +561,7 @@ class CartController extends Controller
         exit;
     }
 
-    private function getCartDataResponse(int $userId): array
+    private function getCartDataResponse(int $userId, bool $includeRelated = true): array
     {
         $cartModel = new Cart();
         $cartItems = $cartModel->getItems($userId);
@@ -689,7 +689,7 @@ class CartController extends Controller
             ? $ruleValidation['failing_categories'] 
             : (!empty($unlockedCatIds) ? $unlockedCatIds : $cartCategoryIds);
 
-        $relatedProducts = $this->getRelatedProducts($suggestionCategoryIds, $unlockedCatIds);
+        $relatedProducts = $includeRelated ? $this->getRelatedProducts($suggestionCategoryIds, $unlockedCatIds) : [];
         
         $suggestionUrl = BASE_URL . "/catalog";
         if (!empty($ruleValidation['failing_categories'])) {
@@ -760,56 +760,7 @@ class CartController extends Controller
 
     private function validateOrderRules(array $categoryTotals): array
     {
-        $db = Database::getInstance();
-        $errors = [];
-        $failingCategories = [];
-
-        try {
-            $ruleModel = new OrderRule();
-            $rules = $ruleModel->getActiveRules();
-
-            // Fetch category names map for easy lookup
-            $catStmt = $db->query("SELECT id, name FROM categories");
-            $catMap = $catStmt ? $catStmt->fetchAll(\PDO::FETCH_KEY_PAIR) : [];
-
-            foreach ($rules as $rule) {
-                $mainCatId = (int)$rule['category_id'];
-                $minAmount = (float)$rule['min_amount'];
-                $mainCatTotal = isset($categoryTotals[$mainCatId]) ? $categoryTotals[$mainCatId]['total'] : 0;
-                $mainCatName = $rule['category_name'] ?? ($catMap[$mainCatId] ?? "Category #$mainCatId");
-
-                $secondRules = json_decode($rule['second_category_rules'] ?? '[]', true) ?? [];
-
-                foreach ($secondRules as $secCatId => $specialMin) {
-                    $secCatId = (int)$secCatId;
-                    $specialMin = (float)$specialMin;
-                    $secCatName = $catMap[$secCatId] ?? "Category #$secCatId";
-                    $secCatTotal = isset($categoryTotals[$secCatId]) ? $categoryTotals[$secCatId]['total'] : 0;
-
-                    if ($secCatTotal > 0) {
-                        if ($mainCatTotal < $minAmount) {
-                            $shortfall = $minAmount - $mainCatTotal;
-                            $errors[] = "To buy items from <strong>{$secCatName}</strong>, your order must contain at least <strong>₹" . number_format($minAmount) . "</strong> from <strong>{$mainCatName}</strong>. (Currently: ₹" . number_format($mainCatTotal) . ", add ₹" . number_format($shortfall) . " more of {$mainCatName}).";
-                            if (!in_array($mainCatId, $failingCategories)) {
-                                $failingCategories[] = $mainCatId;
-                            }
-                        } else {
-                            if ($specialMin > 0 && $secCatTotal < $specialMin) {
-                                $secShortfall = $specialMin - $secCatTotal;
-                                $errors[] = "Minimum order for <strong>{$secCatName}</strong> under this offer is <strong>₹" . number_format($specialMin) . "</strong>. (Currently: ₹" . number_format($secCatTotal) . ", add ₹" . number_format($secShortfall) . " more of {$secCatName}).";
-                                if (!in_array($secCatId, $failingCategories)) {
-                                    $failingCategories[] = $secCatId;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (\Throwable $e) {
-            // Silently fallback if table has any issues
-        }
-
-        return ['errors' => $errors, 'failing_categories' => $failingCategories];
+        return OrderRule::validateCartRules($categoryTotals);
     }
 
     private function getActiveOffersData(array $categoryTotals): array

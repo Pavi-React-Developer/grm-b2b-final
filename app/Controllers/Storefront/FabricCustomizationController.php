@@ -44,7 +44,7 @@ class FabricCustomizationController extends Controller
         ];
 
         $fabrics = $this->model->getCustomizableFabrics($filters);
-        $categories = $this->categoryModel->getAllActive();
+        $categories = $this->categoryModel->getAllActive(null, 1);
 
         // Extract available garment types for filter buttons
         $garmentTypes = array_unique(array_filter(array_column($fabrics, 'garment_type')));
@@ -376,7 +376,7 @@ class FabricCustomizationController extends Controller
 
         echo json_encode([
             'success'           => true,
-            'razorpay_key'      => defined('RAZORPAY_KEY_ID') ? RAZORPAY_KEY_ID : 'rzp_test_YourKeyIdHere',
+            'razorpay_key'      => defined('RAZORPAY_KEY_ID') ? RAZORPAY_KEY_ID : '',
             'razorpay_order_id' => $rzpOrderId,
             'amount_in_paise'   => (int)round($pricing['total'] * 100),
             'amount'            => $pricing['total'],

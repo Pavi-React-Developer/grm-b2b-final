@@ -66,6 +66,22 @@ if (!empty($variants)) {
 }
 ?>
 
+<style>
+    .no-scrollbar::-webkit-scrollbar,
+    .hide-scrollbar::-webkit-scrollbar,
+    .scrollbar-none::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+    .no-scrollbar,
+    .hide-scrollbar,
+    .scrollbar-none {
+        -ms-overflow-style: none !important;
+        scrollbar-width: none !important;
+    }
+</style>
+
 <div class="bg-[#fafafa] min-h-screen pb-24 md:pb-12">
 
     <!-- ── Breadcrumb Section ── -->
@@ -104,22 +120,22 @@ if (!empty($variants)) {
 
     <div class="w-full max-w-full mx-auto px-2 sm:px-6 lg:px-8">
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 mb-10">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 mb-10 items-start">
             
             <!-- ===== LEFT: Image Gallery ===== -->
-            <div class="lg:sticky lg:top-6 lg:self-start relative z-40">
+            <div class="lg:col-span-5 lg:sticky lg:top-6 lg:self-start relative z-40 max-w-[460px] w-full mx-auto">
                 <!-- Main Image -->
                 <div class="relative bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm mb-3 group cursor-crosshair" id="mainImageWrap">
                     <?php 
                     $initialDiscPct = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                     ?>
-                    <div id="mainImageDiscountBadge" class="<?= ($canAddToCart && $initialDiscPct > 0) ? '' : 'hidden' ?> absolute top-3 left-3 z-20 w-14 sm:w-16 drop-shadow-lg pointer-events-none">
+                    <div id="mainImageDiscountBadge" class="<?= ($canAddToCart && $initialDiscPct > 0) ? '' : 'hidden' ?> absolute top-3 left-3 z-20 w-16 h-16 sm:w-20 sm:h-20 drop-shadow-lg pointer-events-none">
                         <?= render_discount_starburst($initialDiscPct > 0 ? $initialDiscPct : 1, 'w-full h-full') ?>
                     </div>
                     <!-- Zoom Lens -->
-                    <div id="zoomLens" class="absolute hidden border border-gray-300 bg-white/40 pointer-events-none" style="width: 150px; height: 150px; z-index: 10;"></div>
+                    <div id="zoomLens" class="absolute hidden border border-gray-300 bg-white/40 pointer-events-none" style="width: 140px; height: 140px; z-index: 10;"></div>
                     
-                    <div class="w-full overflow-hidden flex items-center justify-center bg-gray-50" style="aspect-ratio: 1 / 1; max-height: 520px;">
+                    <div class="w-full overflow-hidden flex items-center justify-center bg-gray-50/40 rounded-xl" style="aspect-ratio: 3 / 4; max-height: 560px;">
                         <img id="mainImage" 
                              src="<?= $initialMainImage ?>" 
                              alt="<?= htmlspecialchars($product['name']) ?>" 
@@ -136,26 +152,16 @@ if (!empty($variants)) {
                 </div>
                 
                 <!-- Zoom Result Panel (Hidden by default, shown on hover, desktop only) -->
-                <div id="zoomResult" class="hidden absolute top-0 left-full ml-6 w-[500px] h-[520px] bg-white border border-gray-200 shadow-2xl z-50 rounded-2xl bg-no-repeat pointer-events-none" style="background-color: #fff; background-size: 200%;"></div>
+                <div id="zoomResult" class="hidden absolute top-0 left-full ml-6 w-[500px] h-[560px] bg-white border border-gray-200 shadow-2xl z-50 rounded-2xl bg-no-repeat pointer-events-none" style="background-color: #fff; background-size: 200%;"></div>
                 
                 <!-- Thumbnail Strip -->
-                <div id="thumbnailGallery" class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
+                <div id="thumbnailGallery" class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin justify-center">
                     <!-- Populated by JS -->
                 </div>
-
-                <!-- Description â€” desktop only below gallery -->
-                <?php if (!empty($product['description'])): ?>
-                <div class="hidden lg:block mt-5 bg-gray-50 rounded-xl p-5 border border-gray-100">
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider mb-2">Product Description</h3>
-                    <p class="text-gray-600 leading-relaxed text-sm">
-                        <?= nl2br(htmlspecialchars($product['description'])) ?>
-                    </p>
-                </div>
-                <?php endif; ?>
             </div>
 
             <!-- ===== RIGHT: Details Panel ===== -->
-            <div class="flex flex-col">
+            <div class="lg:col-span-7 flex flex-col">
                 <?php 
                 $vendorBrandName = !empty($product['vendor_store_name']) ? $product['vendor_store_name'] : (!empty($product['vendor_company_name']) ? $product['vendor_company_name'] : (!empty($product['vendor_name']) ? $product['vendor_name'] : ''));
                 ?>
@@ -299,7 +305,7 @@ if (!empty($variants)) {
                         <p class="text-sm font-black text-gray-900"><?= $moq ?> units</p>
                     </div>
                     <div class="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Weight</p>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Weight / Unit</p>
                         <p class="text-sm font-black text-gray-900"><?= !empty($product['weight']) ? htmlspecialchars($product['weight']) . ' kg' : '-' ?></p>
                     </div>
                 </div>
@@ -368,17 +374,17 @@ if (!empty($variants)) {
                     <!-- Variant Selection -->
                     <?php if (!empty($variants) && count($variants) > 0): ?>
                     <div class="mb-5">
-                        <div class="flex items-center justify-between mb-2.5">
-                            <span class="text-sm font-bold text-gray-900">Select Variant</span>
+                        <div class="flex items-center justify-between mb-3">
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="openProductSizeChartModal(<?= (int)($product['category_id'] ?? ($category['id'] ?? 0)) ?>)" class="inline-flex items-center gap-1 text-xs font-bold text-[#f25996] hover:text-[#d94883] bg-[#fdf2f7] hover:bg-[#fce7f1] border border-[#fbaed2] px-2.5 py-1 rounded-lg transition-all shadow-2xs">
-                                    <svg class="w-3.5 h-3.5 text-[#f25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M3 12h18M3 18h18M7 6v3m4-3v2m4-2v3m4-3v2M7 12v3m4-3v2m4-3v3m4-3v2"></path></svg>
-                                    <span>Size Guide</span>
-                                </button>
-                                <span id="selectedVariantName" class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">1 selected</span>
+                                <span class="text-sm font-bold text-gray-900">Select Variant</span>
+                                <span id="selectedVariantName" class="text-xs font-bold text-[#F25996] bg-pink-50 border border-pink-200 px-2.5 py-0.5 rounded-full transition-all">1 selected</span>
                             </div>
+                            <button type="button" onclick="openProductSizeChartModal(<?= (int)($product['category_id'] ?? ($category['id'] ?? 0)) ?>, <?= (int)($product['size_chart_id'] ?? 0) ?>, <?= (int)($product['id'] ?? 0) ?>, <?= (int)($product['sub_category_id'] ?? ($subCategory['id'] ?? 0)) ?>)" class="inline-flex items-center gap-1.5 text-xs font-bold text-[#f25996] hover:text-[#d94883] bg-[#fdf2f7] hover:bg-[#fce7f1] border border-[#fbaed2] px-3 py-1 rounded-full transition-all shadow-2xs hover:shadow-xs cursor-pointer">
+                                <svg class="w-3.5 h-3.5 text-[#f25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M3 12h18M3 18h18M7 6v3m4-3v2m4-2v3m4-3v2M7 12v3m4-3v2m4-3v3m4-3v2"></path></svg>
+                                <span>Size Guide</span>
+                            </button>
                         </div>
-                        <div class="flex flex-wrap gap-2" id="variantCheckboxGroup">
+                        <div class="flex flex-wrap gap-2.5" id="variantCheckboxGroup">
                             <?php 
                             $hasInStockVariant = false;
                             $firstInStockIndex = -1;
@@ -400,19 +406,19 @@ if (!empty($variants)) {
                                 ?>
                                 <label class="<?= $isOutOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer' ?>" <?= $isOutOfStock ? 'title="Out of stock"' : '' ?>>
                                     <input type="checkbox" name="variant_ids[]" value="<?= $variant['id'] ?>" class="hidden peer variant-checkbox" <?= $isChecked ? 'checked' : '' ?> <?= $isOutOfStock ? 'disabled' : '' ?> onchange="updateVariantSelection()" data-name="<?= htmlspecialchars($variant['name']) ?>" data-stock="<?= $stock ?>" data-moq="<?= $moq ?>" data-color="<?= htmlspecialchars($colorCode ?? '') ?>">
-                                    <div class="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border-2 border-gray-200 text-gray-700 bg-white transition-all flex flex-col items-center justify-center
-                                        peer-checked:border-[#F25996] peer-checked:bg-pink-50/60 peer-checked:shadow-sm
-                                        <?= !$isOutOfStock ? 'hover:border-gray-400' : '' ?>
+                                    <div class="min-w-[72px] sm:min-w-[85px] px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border-2 border-gray-200 text-gray-800 bg-white transition-all flex flex-col items-center justify-center
+                                        peer-checked:border-[#F25996] peer-checked:bg-pink-50/70 peer-checked:text-[#F25996] peer-checked:shadow-xs
+                                        <?= !$isOutOfStock ? 'hover:border-pink-300 hover:bg-pink-50/20' : '' ?>
                                         peer-disabled:bg-gray-50 peer-disabled:text-gray-400 peer-disabled:border-gray-100">
                                         <div class="flex items-center gap-1.5 sm:gap-2">
                                             <?php if ($colorCode): ?>
-                                                <span class="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 rounded-full border border-gray-300 shadow-xs shrink-0" style="background-color: <?= htmlspecialchars($colorCode) ?>"></span>
+                                                <span class="w-3 h-3 rounded-full border border-gray-300 shadow-2xs shrink-0" style="background-color: <?= htmlspecialchars($colorCode) ?>"></span>
                                             <?php endif; ?>
                                             <span class="font-bold text-xs sm:text-sm leading-tight"><?= htmlspecialchars($variant['name']) ?></span>
                                         </div>
                                         <?php 
                                         $badgeText = !$isOutOfStock ? $stock . ' in stock' : 'Out of stock';
-                                        $badgeColor = !$isOutOfStock ? 'text-teal-600' : 'text-red-400';
+                                        $badgeColor = !$isOutOfStock ? 'text-emerald-600 peer-checked:text-[#F25996]' : 'text-red-400';
                                         ?>
                                         <span class="text-[9px] sm:text-[10px] font-semibold <?= $badgeColor ?> mt-0.5"><?= $badgeText ?></span>
                                     </div>
@@ -525,6 +531,224 @@ if (!empty($variants)) {
                 </div>
             </div>
             <?php endif; ?>
+            </div>
+        </div>
+
+        <?php
+        $rawCustomFields = $product['custom_fields'] ?? [];
+        if (is_string($rawCustomFields)) {
+            $productCustomTabs = json_decode($rawCustomFields, true) ?: [];
+        } elseif (is_array($rawCustomFields)) {
+            $productCustomTabs = $rawCustomFields;
+        } else {
+            $productCustomTabs = [];
+        }
+
+        // Determine title for Tab 2 ("How to play" for toys/games/kids/wooden products or "How to use")
+        $catName = strtolower($category['name'] ?? $product['category_name'] ?? '');
+        $subCatName = strtolower($subCategory['name'] ?? $product['sub_category_name'] ?? '');
+        $prodName = strtolower($product['name'] ?? '');
+        
+        $isToyContext = (
+            strpos($catName, 'toy') !== false ||
+            strpos($catName, 'play') !== false ||
+            strpos($catName, 'kid') !== false ||
+            strpos($catName, 'game') !== false ||
+            strpos($catName, 'wood') !== false ||
+            strpos($subCatName, 'toy') !== false ||
+            strpos($subCatName, 'play') !== false ||
+            strpos($subCatName, 'kid') !== false ||
+            strpos($prodName, 'toy') !== false ||
+            strpos($prodName, 'play') !== false ||
+            strpos($prodName, 'puzzle') !== false ||
+            strpos($prodName, 'alphabet') !== false ||
+            strpos($prodName, 'board') !== false ||
+            strpos($prodName, 'game') !== false
+        );
+
+        $howToUseTabTitle = $isToyContext ? 'How to play' : 'How to use';
+
+        // Filter custom fields to avoid duplicating standard tab names
+        $filteredCustomTabs = [];
+        if (!empty($productCustomTabs)) {
+            foreach ($productCustomTabs as $cf) {
+                $cfName = trim($cf['name'] ?? '');
+                $cfNameLower = strtolower($cfName);
+                if (empty($cfName)) continue;
+                if (in_array($cfNameLower, ['description', 'how to use', 'how to play', 'why choose', 'why choose us'])) {
+                    continue;
+                }
+                $filteredCustomTabs[] = $cf;
+            }
+        }
+        ?>
+        <!-- ===== PRODUCT INFORMATION TABS (Description, How to play, Why Choose, etc.) ===== -->
+        <div class="mt-8 mb-12 bg-white rounded-3xl border border-pink-100/90 p-5 sm:p-8 md:p-10 shadow-sm">
+            
+            <!-- Tab Navigation Header (Smooth Horizontal Scrollable, No Arrows, No Dots) -->
+            <div class="border-b border-pink-100 pb-0 mb-8 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
+                <nav class="flex items-center space-x-4 sm:space-x-8 min-w-max px-1" aria-label="Product Information Tabs">
+                    <!-- 1. Description Tab (Default Active) -->
+                    <button type="button" 
+                            onclick="switchProductInfoTab('tab-description', this)" 
+                            class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-[#F25996] text-[#F25996] font-bold text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                        <span class="w-4 h-4 rounded-full border border-current flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
+                        <span class="whitespace-nowrap">Description</span>
+                    </button>
+
+                    <!-- 2. How to play / How to use Tab -->
+                    <button type="button" 
+                            onclick="switchProductInfoTab('tab-how-to-use', this)" 
+                            class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
+                        <span class="whitespace-nowrap"><?= htmlspecialchars($howToUseTabTitle) ?></span>
+                    </button>
+
+                    <!-- 3. Why choose Tab -->
+                    <button type="button" 
+                            onclick="switchProductInfoTab('tab-why-choose', this)" 
+                            class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
+                        <span class="whitespace-nowrap">Why choose</span>
+                    </button>
+
+                    <!-- 4. Dynamic Additional Custom Field Tabs -->
+                    <?php if (!empty($filteredCustomTabs)): ?>
+                        <?php foreach ($filteredCustomTabs as $idx => $tab): ?>
+                            <button type="button" 
+                                    onclick="switchProductInfoTab('tab-custom-<?= $idx ?>', this)" 
+                                    class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                                <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
+                                <span class="whitespace-nowrap"><?= htmlspecialchars($tab['name']) ?></span>
+                            </button>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </nav>
+            </div>
+
+            <!-- Tab Content Panels -->
+            <div class="product-info-panels min-h-[140px]">
+                
+                <!-- 1. Description Panel (Default Active) -->
+                <div id="tab-description" class="product-info-panel block transition-opacity duration-300">
+                    <div class="text-center max-w-3xl mx-auto">
+                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-4 tracking-tight flex items-center justify-center gap-2 text-center">
+                            <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                            <span>About <?= htmlspecialchars($product['name']) ?></span>
+                        </h3>
+                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4 text-center">
+                            <?php 
+                            $descText = trim($product['description'] ?? '');
+                            if (!empty($descText)) {
+                                $paragraphs = explode("\n", $descText);
+                                foreach ($paragraphs as $p) {
+                                    $p = trim($p);
+                                    if ($p !== '') {
+                                        echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($p) . '</p>';
+                                    }
+                                }
+                            } else {
+                                echo '<p class="text-gray-400 italic">No description provided for this product.</p>';
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. How to use / How to play Panel -->
+                <div id="tab-how-to-use" class="product-info-panel hidden transition-opacity duration-300">
+                    <div class="text-center max-w-3xl mx-auto">
+                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-4 tracking-tight flex items-center justify-center gap-2 text-center">
+                            <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                            <span><?= htmlspecialchars($howToUseTabTitle) ?></span>
+                        </h3>
+                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4 text-center">
+                            <?php 
+                            $howText = trim($product['how_to_use'] ?? '');
+                            if (!empty($howText)) {
+                                $howParagraphs = explode("\n", $howText);
+                                foreach ($howParagraphs as $hp) {
+                                    $hp = trim($hp);
+                                    if ($hp !== '') {
+                                        echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($hp) . '</p>';
+                                    }
+                                }
+                            } else {
+                                echo '<div class="space-y-2 text-gray-700">';
+                                if ($isToyContext) {
+                                    echo '<p class="leading-relaxed">1. Unpack all components safely on a clean, flat surface.</p>';
+                                    echo '<p class="leading-relaxed">2. Guide children through hands-on discovery, letter recognition, and creative problem-solving.</p>';
+                                    echo '<p class="leading-relaxed">3. Store safely in a dry place after playtime to maintain wood finish and longevity.</p>';
+                                } else {
+                                    echo '<p class="leading-relaxed">Follow product care instructions and handle with care. For detailed usage assistance or bulk customization guidelines, please contact our support team.</p>';
+                                }
+                                echo '</div>';
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Why choose Panel -->
+                <div id="tab-why-choose" class="product-info-panel hidden transition-opacity duration-300">
+                    <div class="max-w-3xl mx-auto">
+                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-6 tracking-tight flex items-center justify-center gap-2 text-center">
+                            <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                            <span>Why choose</span>
+                        </h3>
+                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
+                            <?php 
+                            $whyText = trim($product['why_choose'] ?? '');
+                            if (!empty($whyText)) {
+                                $whyParagraphs = explode("\n", $whyText);
+                                foreach ($whyParagraphs as $wp) {
+                                    $wp = trim($wp);
+                                    if ($wp !== '') {
+                                        echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($wp) . '</p>';
+                                    }
+                                }
+                            } else {
+                                echo '<div class="space-y-3 text-gray-700">';
+                                echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Premium Quality Craftsmanship:</strong> Made with top-grade, eco-friendly materials engineered for longevity.</p></div>';
+                                echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Safe & Non-Toxic:</strong> Smooth child-safe finish with rounded corners and non-toxic food-grade coating.</p></div>';
+                                echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Direct B2B Pricing:</strong> Factory-direct wholesale rates with flexible MOQ and reliable dispatch.</p></div>';
+                                echo '</div>';
+                            }
+                            ?>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Dynamic Custom Field Panels -->
+                <?php if (!empty($filteredCustomTabs)): ?>
+                    <?php foreach ($filteredCustomTabs as $idx => $tab): ?>
+                        <div id="tab-custom-<?= $idx ?>" class="product-info-panel hidden transition-opacity duration-300">
+                            <div class="text-center max-w-3xl mx-auto">
+                                <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-4 tracking-tight flex items-center justify-center gap-2 text-center">
+                                    <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                                    <span><?= htmlspecialchars($tab['name']) ?></span>
+                                </h3>
+                                <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4 text-center">
+                                    <?php 
+                                    $valText = trim($tab['value'] ?? '');
+                                    if (!empty($valText)) {
+                                        $valParagraphs = explode("\n", $valText);
+                                        foreach ($valParagraphs as $vp) {
+                                            $vp = trim($vp);
+                                            if ($vp !== '') {
+                                                echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($vp) . '</p>';
+                                            }
+                                        }
+                                    } else {
+                                        echo '<p class="text-gray-400 italic">No content available for this section.</p>';
+                                    }
+                                    ?>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+
             </div>
         </div>
 
@@ -1494,7 +1718,8 @@ if (!empty($variants)) {
         if (allImages.length > 1) {
             allImages.forEach(function(url, idx) {
                 const btn = document.createElement('button');
-                btn.className = 'flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl bg-gray-100 overflow-hidden border-2 transition-all ' + (idx === 0 ? 'border-[#673327]' : 'border-transparent hover:border-[#673327]/50');
+                btn.type = 'button';
+                btn.className = 'flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl bg-white overflow-hidden border-2 transition-all ' + (idx === 0 ? 'border-[#f25996] shadow-xs' : 'border-gray-200 hover:border-[#f25996]/50');
                 btn.setAttribute('data-img-idx', idx);
                 btn.onclick = function() {
                     mainImg.src = url;
@@ -1503,7 +1728,7 @@ if (!empty($variants)) {
                 };
                 const img = document.createElement('img');
                 img.src = url;
-                img.className = 'w-full h-full object-cover';
+                img.className = 'w-full h-full object-contain p-1';
                 img.alt = 'Thumbnail ' + (idx + 1);
                 btn.appendChild(img);
                 gallery.appendChild(btn);
@@ -1526,11 +1751,11 @@ if (!empty($variants)) {
     function highlightThumb(gallery, activeIdx) {
         gallery.querySelectorAll('button').forEach(b => {
             if (parseInt(b.getAttribute('data-img-idx')) === activeIdx) {
-                b.classList.remove('border-transparent');
-                b.classList.add('border-[#673327]');
+                b.classList.remove('border-gray-200');
+                b.classList.add('border-[#f25996]', 'shadow-xs');
             } else {
-                b.classList.remove('border-[#673327]');
-                b.classList.add('border-transparent');
+                b.classList.remove('border-[#f25996]', 'shadow-xs');
+                b.classList.add('border-gray-200');
             }
         });
     }
@@ -1683,7 +1908,7 @@ if (!empty($variants)) {
     // Product Size Guide Modal Logic
     let productSizeChartsCache = null;
 
-    function openProductSizeChartModal(categoryId) {
+    function openProductSizeChartModal(categoryId, chartId = 0, productId = 0, subCategoryId = 0) {
         const modal = document.getElementById('productSizeGuideModal');
         const container = document.getElementById('productSizeGuideContent');
         const loader = document.getElementById('productSizeGuideLoader');
@@ -1692,20 +1917,26 @@ if (!empty($variants)) {
         modal.classList.add('flex');
         document.body.style.overflow = 'hidden';
 
-        if (productSizeChartsCache) {
-            renderProductSizeGuide(productSizeChartsCache);
+        const cacheKey = `${categoryId}_${chartId}_${productId}_${subCategoryId}`;
+        if (productSizeChartsCache && productSizeChartsCache._key === cacheKey) {
+            renderProductSizeGuide(productSizeChartsCache.data);
             return;
         }
 
         loader.classList.remove('hidden');
         container.innerHTML = '';
 
-        fetch(`<?= BASE_URL ?>/api/size-chart?category_id=${categoryId || 0}`)
+        let apiUrl = `<?= BASE_URL ?>/api/size-chart?category_id=${categoryId || 0}`;
+        if (chartId) apiUrl += `&chart_id=${chartId}`;
+        if (productId) apiUrl += `&product_id=${productId}`;
+        if (subCategoryId) apiUrl += `&sub_category_id=${subCategoryId}`;
+
+        fetch(apiUrl)
             .then(res => res.json())
             .then(data => {
                 loader.classList.add('hidden');
                 if (data.success && data.charts && data.charts.length > 0) {
-                    productSizeChartsCache = data.charts;
+                    productSizeChartsCache = { _key: cacheKey, data: data.charts };
                     renderProductSizeGuide(data.charts);
                 } else {
                     container.innerHTML = `
@@ -1728,6 +1959,49 @@ if (!empty($variants)) {
                 container.innerHTML = '<div class="text-center py-8 text-sm text-red-500">Failed to load size guide. Please try again.</div>';
             });
     }
+
+    // Interactive Product Information Tab Switcher (Description, How to play/use, Why choose, Custom fields)
+    window.switchProductInfoTab = function(targetPanelId, btn) {
+        // Hide all tab panels
+        const panels = document.querySelectorAll('.product-info-panel');
+        panels.forEach(panel => {
+            panel.classList.add('hidden');
+            panel.classList.remove('block');
+        });
+
+        // Reset all tab buttons
+        const tabBtns = document.querySelectorAll('.product-info-tab-btn');
+        tabBtns.forEach(tabBtn => {
+            tabBtn.classList.remove('border-[#F25996]', 'text-[#F25996]', 'font-bold');
+            tabBtn.classList.add('border-transparent', 'text-gray-500', 'font-medium');
+            const icon = tabBtn.querySelector('span:first-child');
+            if (icon) {
+                icon.classList.remove('border-current');
+                icon.classList.add('border-gray-400');
+            }
+        });
+
+        // Activate clicked tab button
+        if (btn) {
+            btn.classList.add('border-[#F25996]', 'text-[#F25996]', 'font-bold');
+            btn.classList.remove('border-transparent', 'text-gray-500', 'font-medium');
+            const activeIcon = btn.querySelector('span:first-child');
+            if (activeIcon) {
+                activeIcon.classList.add('border-current');
+                activeIcon.classList.remove('border-gray-400');
+            }
+            try {
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } catch(e) {}
+        }
+
+        // Show target panel
+        const targetPanel = document.getElementById(targetPanelId);
+        if (targetPanel) {
+            targetPanel.classList.remove('hidden');
+            targetPanel.classList.add('block');
+        }
+    };
 
     function closeProductSizeChartModal() {
         const modal = document.getElementById('productSizeGuideModal');
@@ -1772,32 +2046,50 @@ if (!empty($variants)) {
                         ` : ''}
                     </div>
 
-                    <!-- Size Table -->
-                    <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-xs mb-4">
-                        <table class="w-full text-center text-xs sm:text-sm border-collapse">
-                            <thead>
-                                <tr class="border-b-2 border-gray-200 bg-[#faf8f5]">
-                                    ${cols.map(col => `
-                                        <th class="py-3 px-3.5 font-bold text-[#3b281c] uppercase tracking-wider text-[11px] sm:text-xs">${escapeHtml(col)}</th>
-                                    `).join('')}
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-200 font-medium text-gray-700">
-                                ${rows.map(row => `
-                                    <tr class="hover:bg-[#fbf9f6] transition-colors">
-                                        ${cols.map((col, cIdx) => {
-                                            const val = row[col] !== undefined ? row[col] : (row['Size'] || row['size'] || '');
-                                            const isSizeCol = (cIdx === 0 || col.toLowerCase() === 'size');
-                                            return `
-                                                <td class="py-3 px-3.5 ${isSizeCol ? 'font-black text-[#2a1c13] text-sm bg-gray-50/50' : 'text-gray-600'}">
-                                                    ${escapeHtml(val || '-')}
-                                                </td>
-                                            `;
-                                        }).join('')}
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                    <!-- Size Table and Optional Diagram -->
+                    <div class="grid grid-cols-1 ${chart.image_url ? 'lg:grid-cols-12 gap-5' : ''} items-start mb-4">
+                        <div class="${chart.image_url ? 'lg:col-span-8' : 'w-full'}">
+                            <div class="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-xs">
+                                <table class="w-full text-center text-xs sm:text-sm border-collapse min-w-[360px]">
+                                    <thead>
+                                        <tr class="border-b-2 border-gray-200 bg-[#faf8f5]">
+                                            ${cols.map(col => `
+                                                <th class="py-3 px-3.5 font-bold text-[#3b281c] uppercase tracking-wider text-[11px] sm:text-xs whitespace-nowrap">${escapeHtml(col)}</th>
+                                            `).join('')}
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 font-medium text-gray-700">
+                                        ${rows.map(row => `
+                                            <tr class="hover:bg-[#fbf9f6] transition-colors">
+                                                ${cols.map((col, cIdx) => {
+                                                    const val = row[col] !== undefined ? row[col] : (row['Size'] || row['size'] || '');
+                                                    const isSizeCol = (cIdx === 0 || col.toLowerCase() === 'size');
+                                                    return `
+                                                        <td class="py-3 px-3.5 ${isSizeCol ? 'font-black text-[#2a1c13] text-sm bg-gray-50/50' : 'text-gray-600'}">
+                                                            ${escapeHtml(val || '-')}
+                                                        </td>
+                                                    `;
+                                                }).join('')}
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        ${chart.image_url ? `
+                            <div class="lg:col-span-4 mt-3 lg:mt-0">
+                                <div class="bg-gray-50/90 p-3.5 rounded-xl border border-gray-200 text-center">
+                                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider block mb-2">Guide Illustration</span>
+                                    <a href="${escapeHtml(chart.image_url)}" target="_blank" rel="noopener noreferrer" class="block group" title="Click to enlarge diagram">
+                                        <img src="${escapeHtml(chart.image_url)}" alt="${escapeHtml(chart.title)} Diagram" class="w-full h-auto max-h-48 object-contain rounded-lg border border-gray-200 bg-white p-1.5 shadow-2xs group-hover:scale-[1.02] transition-transform">
+                                        <span class="inline-flex items-center gap-1 text-[10px] text-[#f25996] font-bold mt-1.5 group-hover:underline">
+                                            🔍 View Full Diagram
+                                        </span>
+                                    </a>
+                                </div>
+                            </div>
+                        ` : ''}
                     </div>
                 </div>
             `;
@@ -1859,14 +2151,11 @@ if (!empty($variants)) {
         </div>
 
         <!-- Modal Footer -->
-        <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center justify-between text-xs">
-            <a href="<?= BASE_URL ?>/size-chart" class="font-bold text-[#f25996] hover:underline inline-flex items-center gap-1">
-                <span>View Full Size Guide Catalog</span>
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-            </a>
-            <button type="button" onclick="closeProductSizeChartModal()" class="px-4 py-1.5 bg-gray-200 hover:bg-gray-300 font-bold text-gray-700 rounded-lg transition-colors">
-                Close
-            </button>
+        <div class="px-6 py-3.5 bg-gray-50 border-t border-gray-100 flex items-center text-xs">
+            <span class="text-gray-400 font-medium flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5 text-[#f25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                Accurate sizing specifications for this garment
+            </span>
         </div>
     </div>
 </div>

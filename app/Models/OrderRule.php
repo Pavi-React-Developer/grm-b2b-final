@@ -106,4 +106,121 @@ class OrderRule
         $stmt->execute($params);
         return $stmt->fetch() !== false;
     }
+
+    public static function validateCartRules(array $categoryTotals): array
+    {
+        $db = Database::getInstance();
+        $errors = [];
+        $failingCategories = [];
+
+        try {
+            $ruleModel = new self();
+            $rules = $ruleModel->getActiveRules();
+
+            // Fetch category details map (name, min_order_value)
+            $catStmt = $db->query("SELECT id, name, min_order_value FROM categories");
+            $categories = $catStmt ? $catStmt->fetchAll(\PDO::FETCH_ASSOC) : [];
+            $catMap = [];
+            foreach ($categories as $c) {
+                $catMap[(int)$c['id']] = $c;
+            }
+
+            // Group active order rules by main category id
+            $mainRulesByCat = [];
+            foreach ($rules as $rule) {
+                $mainRulesByCat[(int)$rule['category_id']] = $rule;
+            }
+
+            // 1. Validate each category present in cart
+            foreach ($categoryTotals as $catId => $data) {
+                $catId = (int)$catId;
+                $catTotal = (float)($data['total'] ?? 0);
+                if ($catTotal <= 0) continue;
+
+                $catInfo = $catMap[$catId] ?? null;
+                $catName = $data['name'] ?? ($catInfo['name'] ?? "Category #$catId");
+                $catMov = !empty($catInfo['min_order_value']) ? (float)$catInfo['min_order_value'] : 0;
+
+                // Priority 1: If an active Order Rule exists for this main category
+                if (isset($mainRulesByCat[$catId])) {
+                    $rule = $mainRulesByCat[$catId];
+                    $minAmount = (float)$rule['min_amount'];
+
+                    // Enforce main category minimum amount
+                    if ($minAmount > 0 && $catTotal < $minAmount) {
+                        $shortfall = $minAmount - $catTotal;
+                        $errors[] = "Minimum order amount for <strong>" . htmlspecialchars($catName) . "</strong> is <strong>₹" . number_format($minAmount) . "</strong>. (Currently: ₹" . number_format($catTotal) . ", add ₹" . number_format($shortfall) . " more).";
+                        if (!in_array($catId, $failingCategories)) {
+                            $failingCategories[] = $catId;
+                        }
+                    }
+
+                    // Check linked secondary category rules
+                    $secondRules = json_decode($rule['second_category_rules'] ?? '[]', true) ?? [];
+                    foreach ($secondRules as $secCatId => $specialMin) {
+                        $secCatId = (int)$secCatId;
+                        $specialMin = (float)$specialMin;
+                        $secCatName = $catMap[$secCatId]['name'] ?? "Category #$secCatId";
+                        $secCatTotal = isset($categoryTotals[$secCatId]) ? (float)$categoryTotals[$secCatId]['total'] : 0;
+
+                        if ($secCatTotal > 0) {
+                            if ($catTotal < $minAmount) {
+                                $shortfall = $minAmount - $catTotal;
+                                $errors[] = "To buy items from <strong>" . htmlspecialchars($secCatName) . "</strong>, your order must contain at least <strong>₹" . number_format($minAmount) . "</strong> from <strong>" . htmlspecialchars($catName) . "</strong>. (Currently: ₹" . number_format($catTotal) . ", add ₹" . number_format($shortfall) . " more).";
+                                if (!in_array($catId, $failingCategories)) {
+                                    $failingCategories[] = $catId;
+                                }
+                            } elseif ($specialMin > 0 && $secCatTotal < $specialMin) {
+                                $secShortfall = $specialMin - $secCatTotal;
+                                $errors[] = "Minimum order for <strong>" . htmlspecialchars($secCatName) . "</strong> under this offer is <strong>₹" . number_format($specialMin) . "</strong>. (Currently: ₹" . number_format($secCatTotal) . ", add ₹" . number_format($secShortfall) . " more).";
+                                if (!in_array($secCatId, $failingCategories)) {
+                                    $failingCategories[] = $secCatId;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Priority 2: No Order Rule set -> Fallback to Category MOV from Catalog -> Categories
+                    if ($catMov > 0 && $catTotal < $catMov) {
+                        $shortfall = $catMov - $catTotal;
+                        $errors[] = "Minimum order value for <strong>" . htmlspecialchars($catName) . "</strong> is <strong>₹" . number_format($catMov) . "</strong>. (Currently: ₹" . number_format($catTotal) . ", add ₹" . number_format($shortfall) . " more).";
+                        if (!in_array($catId, $failingCategories)) {
+                            $failingCategories[] = $catId;
+                        }
+                    }
+                }
+            }
+
+            // 2. Also check if user added secondary items belonging to a rule whose main category is NOT in the cart
+            foreach ($rules as $rule) {
+                $mainCatId = (int)$rule['category_id'];
+                $minAmount = (float)$rule['min_amount'];
+                $mainCatTotal = isset($categoryTotals[$mainCatId]) ? (float)$categoryTotals[$mainCatId]['total'] : 0;
+                $mainCatName = $rule['category_name'] ?? ($catMap[$mainCatId]['name'] ?? "Category #$mainCatId");
+
+                if ($mainCatTotal <= 0) {
+                    $secondRules = json_decode($rule['second_category_rules'] ?? '[]', true) ?? [];
+                    foreach ($secondRules as $secCatId => $specialMin) {
+                        $secCatId = (int)$secCatId;
+                        $secCatTotal = isset($categoryTotals[$secCatId]) ? (float)$categoryTotals[$secCatId]['total'] : 0;
+                        if ($secCatTotal > 0) {
+                            $secCatName = $catMap[$secCatId]['name'] ?? "Category #$secCatId";
+                            $errors[] = "To buy items from <strong>" . htmlspecialchars($secCatName) . "</strong>, your order must contain at least <strong>₹" . number_format($minAmount) . "</strong> from <strong>" . htmlspecialchars($mainCatName) . "</strong>.";
+                            if (!in_array($mainCatId, $failingCategories)) {
+                                $failingCategories[] = $mainCatId;
+                            }
+                        }
+                    }
+                }
+            }
+
+        } catch (\Throwable $e) {
+            // Silently fallback on any exception
+        }
+
+        return [
+            'errors' => array_values(array_unique($errors)),
+            'failing_categories' => array_values(array_unique($failingCategories))
+        ];
+    }
 }

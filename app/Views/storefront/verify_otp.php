@@ -52,11 +52,6 @@
             <p id="expired-text" class="text-red-500 font-bold hidden mt-1">OTP Expired!</p>
         </div>
 
-        <?php if (!empty($devOtp) && defined('APP_ENV') && APP_ENV === 'development'): ?>
-            <div class="text-center bg-amber-50 p-2.5 rounded-xl border border-amber-200 text-amber-900 text-xs font-mono font-bold">
-                <span class="text-gray-500 font-sans font-normal">Dev OTP:</span> <?= htmlspecialchars($devOtp) ?>
-            </div>
-        <?php endif; ?>
 
         <form id="otp-form" class="mt-6 space-y-6" action="<?= BASE_URL ?><?= $formAction ?? '/verify-otp' ?>" method="POST" novalidate>
             <div>

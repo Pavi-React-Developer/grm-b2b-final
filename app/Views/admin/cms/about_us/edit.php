@@ -362,11 +362,27 @@ $c = $aboutUs['content'];
                             </div>
                         </div>
                         <div class="color-field-item">
-                            <label>Text Color</label>
+                            <label>Section Title Color</label>
                             <div class="color-link-group">
                                 <input type="color" name="theme_faq_text_color" id="clr_theme_faq_text_color" value="<?= htmlspecialchars($c['theme']['faq_text_color'] ?? '#111827') ?>" oninput="syncColorLink(this)">
                                 <input type="text" class="color-link-hex" value="<?= htmlspecialchars($c['theme']['faq_text_color'] ?? '#111827') ?>" oninput="syncColorHex(this,'clr_theme_faq_text_color')" placeholder="#111827">
                                 <span class="color-link-preview" id="prev_theme_faq_text_color" style="background:<?= htmlspecialchars($c['theme']['faq_text_color'] ?? '#111827') ?>;"></span>
+                            </div>
+                        </div>
+                        <div class="color-field-item">
+                            <label>Question Color</label>
+                            <div class="color-link-group">
+                                <input type="color" name="theme_faq_question_color" id="clr_theme_faq_question_color" value="<?= htmlspecialchars($c['theme']['faq_question_color'] ?? $c['theme']['faq_text_color'] ?? '#111827') ?>" oninput="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="<?= htmlspecialchars($c['theme']['faq_question_color'] ?? $c['theme']['faq_text_color'] ?? '#111827') ?>" oninput="syncColorHex(this,'clr_theme_faq_question_color')" placeholder="#111827">
+                                <span class="color-link-preview" id="prev_theme_faq_question_color" style="background:<?= htmlspecialchars($c['theme']['faq_question_color'] ?? $c['theme']['faq_text_color'] ?? '#111827') ?>;"></span>
+                            </div>
+                        </div>
+                        <div class="color-field-item">
+                            <label>Answer Color</label>
+                            <div class="color-link-group">
+                                <input type="color" name="theme_faq_answer_color" id="clr_theme_faq_answer_color" value="<?= htmlspecialchars($c['theme']['faq_answer_color'] ?? '#4b5563') ?>" oninput="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="<?= htmlspecialchars($c['theme']['faq_answer_color'] ?? '#4b5563') ?>" oninput="syncColorHex(this,'clr_theme_faq_answer_color')" placeholder="#4b5563">
+                                <span class="color-link-preview" id="prev_theme_faq_answer_color" style="background:<?= htmlspecialchars($c['theme']['faq_answer_color'] ?? '#4b5563') ?>;"></span>
                             </div>
                         </div>
                     </div>

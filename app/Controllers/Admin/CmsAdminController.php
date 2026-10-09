@@ -11,9 +11,6 @@ class CmsAdminController extends Controller
     public function __construct()
     {
         parent::__construct();
-        if (\Core\Session::get('user_role') !== 'super_admin') {
-            $this->redirect('/admin/dashboard');
-        }
         $this->db = Database::getInstance();
     }
 

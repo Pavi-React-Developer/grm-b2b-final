@@ -132,7 +132,8 @@ class User extends Model
     {
         $sql = "
             SELECT u.id, u.unique_buyer_id, u.name, u.email, u.phone, u.created_at, u.status, u.role, u.role_id, u.permissions,
-                   bp.business_name, bp.shop_location, bp.gst_number, bp.pan_number, bp.no_gst_reason, bp.instagram_link,
+                   bp.business_name, bp.shop_location, bp.gst_number, bp.gst_document, bp.pan_number, bp.pan_document, bp.no_gst_reason, bp.instagram_link,
+                   bp.verification_data, bp.tax_verified,
                    rr.status as request_status, rr.gst_flag
             FROM users u
             LEFT JOIN business_profiles bp ON u.id = bp.user_id

@@ -495,7 +495,7 @@ if (!empty($category_ids)) {
                                     <?php 
                                     $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                                     if ($isLoggedIn && $discPercent > 0) {
-                                        echo render_discount_starburst($discPercent, 'absolute top-2 left-2 z-10 w-10 h-10 md:w-12 md:h-12 transition-transform duration-300 group-hover:scale-110');
+                                        echo render_discount_starburst($discPercent, 'absolute top-2 left-2 z-10 w-16 h-16 md:w-20 md:h-20 transition-transform duration-300 group-hover:scale-110');
                                     }
                                     ?>
                                     <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" class="w-full h-full object-<?= htmlspecialchars($image_fit) ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
@@ -634,12 +634,12 @@ if (!empty($category_ids)) {
 
                         <!-- Image -->
                         <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="mobile-img-wrap relative">
-                            <?php 
-                            $mobDiscPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
-                            if ($isLoggedIn && $mobDiscPercent > 0) {
-                                echo render_discount_starburst($mobDiscPercent, 'absolute top-1.5 left-1.5 z-10 w-8 h-8');
-                            }
-                            ?>
+                                <?php 
+                                $mobDiscPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
+                                if ($isLoggedIn && $mobDiscPercent > 0) {
+                                    echo render_discount_starburst($mobDiscPercent, 'absolute top-1.5 left-1.5 z-10 w-14 h-14');
+                                }
+                                ?>
                             <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" loading="lazy" decoding="async">
                         </a>
 

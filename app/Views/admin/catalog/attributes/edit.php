@@ -1,17 +1,18 @@
 <div class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
     <div class="mb-8 flex justify-between items-center">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900 font-display">Edit Attribute</h1>
+            <h1 class="text-2xl font-bold text-gray-900 font-display"><?= !empty($isCustomize) ? 'Edit Customize Attribute' : 'Edit Attribute' ?></h1>
             <p class="text-sm text-gray-500 mt-1">Modify attribute settings and configuration.</p>
         </div>
-        <a href="<?= BASE_URL ?>/admin/catalog/attributes" class="text-gray-500 hover:text-gray-900 font-medium text-sm flex items-center transition-colors">
+        <a href="<?= BASE_URL ?>/admin/catalog/attributes<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="text-gray-500 hover:text-gray-900 font-medium text-sm flex items-center transition-colors">
             <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            Back to Attributes
+            Back to <?= !empty($isCustomize) ? 'Customize Attributes' : 'Attributes' ?>
         </a>
     </div>
 
     <form action="<?= BASE_URL ?>/admin/catalog/attributes/update" method="POST" class="space-y-8 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
         <input type="hidden" name="id" value="<?= $attribute['id'] ?>">
+        <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
 
         <!-- Categorization -->
         <div>

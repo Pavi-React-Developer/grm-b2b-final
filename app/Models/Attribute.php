@@ -5,15 +5,24 @@ use Core\Model;
 
 class Attribute extends Model
 {
-    public function getAll()
+    public function getAll(?int $isCustomizable = null)
     {
-        $stmt = $this->db->prepare("
+        $sql = "
             SELECT a.*, c.name as category_name, sc.name as sub_category_name 
             FROM attributes a
             LEFT JOIN categories c ON a.category_id = c.id
             LEFT JOIN sub_categories sc ON a.sub_category_id = sc.id
-            ORDER BY a.display_order ASC, a.name ASC
-        ");
+        ";
+        if ($isCustomizable !== null) {
+            if ($isCustomizable === 1) {
+                $sql .= " WHERE (c.is_customizable = 1 OR sc.is_customizable = 1)";
+            } else {
+                $sql .= " WHERE (c.is_customizable = 0 OR c.is_customizable IS NULL) AND (sc.is_customizable = 0 OR sc.is_customizable IS NULL)";
+            }
+        }
+        $sql .= " ORDER BY a.display_order ASC, a.name ASC";
+
+        $stmt = $this->db->prepare($sql);
         $stmt->execute();
         return $stmt->fetchAll();
     }
@@ -39,8 +48,8 @@ class Attribute extends Model
                 
         $stmt = $this->db->prepare($sql);
         $stmt->execute([
-            'category_id' => $data['category_id'] ?: null,
-            'sub_category_id' => $data['sub_category_id'] ?: null,
+            'category_id' => !empty($data['category_id']) ? $data['category_id'] : null,
+            'sub_category_id' => !empty($data['sub_category_id']) ? $data['sub_category_id'] : null,
             'name' => $data['name'],
             'attribute_code' => $data['attribute_code'],
             'input_type' => $data['input_type'] ?? 'textbox',
@@ -80,8 +89,8 @@ class Attribute extends Model
         $stmt = $this->db->prepare($sql);
         return $stmt->execute([
             'id' => $id,
-            'category_id' => $data['category_id'] ?: null,
-            'sub_category_id' => $data['sub_category_id'] ?: null,
+            'category_id' => !empty($data['category_id']) ? $data['category_id'] : null,
+            'sub_category_id' => !empty($data['sub_category_id']) ? $data['sub_category_id'] : null,
             'name' => $data['name'],
             'attribute_code' => $data['attribute_code'],
             'input_type' => $data['input_type'] ?? 'textbox',

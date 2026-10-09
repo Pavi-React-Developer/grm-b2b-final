@@ -23,8 +23,11 @@ class AttributeController extends Controller
     public function index()
     {
         $this->requirePermission('attributes', 'view');
+        $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
+
         $attributeModel = new Attribute();
-        $attributes = $attributeModel->getAll();
+        $attributes = $attributeModel->getAll($isCustomize ? 1 : 0);
         
         $attributeValueModel = new AttributeValue();
         foreach ($attributes as &$attr) {
@@ -32,20 +35,27 @@ class AttributeController extends Controller
         }
 
         $this->render('admin/catalog/attributes/index', [
-            'title' => 'Manage Attributes',
-            'attributes' => $attributes
+            'title' => $isCustomize ? 'Customize Attributes' : 'Manage Attributes',
+            'attributes' => $attributes,
+            'module' => $module,
+            'isCustomize' => $isCustomize
         ], 'admin');
     }
 
     public function create()
     {
         $this->requirePermission('attributes', 'create');
+        $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
+
         $categoryModel = new Category();
-        $categories = $categoryModel->getAllActive();
+        $categories = $categoryModel->getAllActive(null, $isCustomize ? 1 : 0);
 
         $this->render('admin/catalog/attributes/create', [
-            'title' => 'Add Attribute',
-            'categories' => $categories
+            'title' => $isCustomize ? 'Add Customize Attribute' : 'Add Attribute',
+            'categories' => $categories,
+            'module' => $module,
+            'isCustomize' => $isCustomize
         ], 'admin');
     }
 
@@ -53,16 +63,19 @@ class AttributeController extends Controller
     {
         $this->requirePermission('attributes', 'edit');
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
+
         $attributeModel = new Attribute();
         $attribute = $attributeModel->findById($id);
 
         if (!$attribute) {
             Session::setFlash('error', 'Attribute not found.');
-            $this->redirect('/admin/catalog/attributes');
+            $this->redirect('/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : ''));
         }
 
         $categoryModel = new Category();
-        $categories = $categoryModel->getAllActive();
+        $categories = $categoryModel->getAllActive(null, $isCustomize ? 1 : 0);
 
         $subCategoryModel = new SubCategory();
         $subCategories = [];
@@ -74,11 +87,13 @@ class AttributeController extends Controller
         $attributeValues = $attributeValueModel->getByAttributeId($id);
 
         $this->render('admin/catalog/attributes/edit', [
-            'title' => 'Edit Attribute',
+            'title' => $isCustomize ? 'Edit Customize Attribute' : 'Edit Attribute',
             'attribute' => $attribute,
             'categories' => $categories,
             'subCategories' => $subCategories,
-            'values' => $attributeValues
+            'values' => $attributeValues,
+            'module' => $module,
+            'isCustomize' => $isCustomize
         ], 'admin');
     }
 
@@ -179,24 +194,32 @@ class AttributeController extends Controller
                 exit;
             }
 
+            $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+            $isCustomize = ($module === 'customize');
             Session::setFlash('success', $successMsg);
-            $this->redirect('/admin/catalog/attributes');
+            $this->redirect('/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : ''));
         } catch (\Exception $e) {
             $errMsg = 'Error creating attribute: ' . $e->getMessage();
             if ($isJson) {
                 echo json_encode(['success' => false, 'message' => $errMsg]);
                 exit;
             }
+            $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+            $isCustomize = ($module === 'customize');
             Session::setFlash('error', $errMsg);
-            $this->redirect('/admin/catalog/attributes/create');
+            $this->redirect('/admin/catalog/attributes/create' . ($isCustomize ? '?module=customize' : ''));
         }
     }
 
     public function update()
     {
         $this->requirePermission('attributes', 'edit');
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $redirectListUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/attributes');
+            $this->redirect($redirectListUrl);
         }
 
         $id = (int)($_POST['id'] ?? 0);
@@ -219,7 +242,7 @@ class AttributeController extends Controller
 
         if ($id <= 0 || empty($data['name']) || empty($data['attribute_code']) || empty($data['category_id'])) {
             Session::setFlash('error', 'Invalid input or missing required fields.');
-            $this->redirect('/admin/catalog/attributes/edit?id=' . $id);
+            $this->redirect('/admin/catalog/attributes/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
         }
 
         try {
@@ -277,25 +300,42 @@ class AttributeController extends Controller
             Session::setFlash('success', 'Attribute updated successfully.');
         } catch (\Exception $e) {
             Session::setFlash('error', 'Error updating attribute: ' . $e->getMessage());
-            $this->redirect('/admin/catalog/attributes/edit?id=' . $id);
+            $this->redirect('/admin/catalog/attributes/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
         }
 
-        $this->redirect('/admin/catalog/attributes');
+        $this->redirect($redirectListUrl);
     }
 
     public function delete()
     {
         $this->requirePermission('attributes', 'delete');
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $redirectListUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/attributes');
+            if ($this->isJsonRequest()) {
+                $this->json(['success' => false, 'message' => 'Invalid request method.']);
+            }
+            $this->redirect($redirectListUrl);
         }
 
         $id = (int)($_POST['id'] ?? 0);
+        if ($id <= 0) {
+            $jsonInput = json_decode(file_get_contents('php://input'), true);
+            $id = (int)($jsonInput['id'] ?? 0);
+        }
         
         if ($id > 0) {
             try {
                 $db = \Core\Database::getInstance();
                 $db->beginTransaction();
+
+                $db->exec("SET FOREIGN_KEY_CHECKS=0");
+
+                // Clean up references in product tables
+                $db->prepare("DELETE FROM product_variant_attributes WHERE attribute_id = ?")->execute([$id]);
+                $db->prepare("DELETE FROM product_attribute_values WHERE attribute_id = ?")->execute([$id]);
 
                 // Delete associated attribute values first
                 $stmtVal = $db->prepare("DELETE FROM attribute_values WHERE attribute_id = ?");
@@ -305,17 +345,29 @@ class AttributeController extends Controller
                 $attributeModel = new Attribute();
                 $attributeModel->delete($id);
 
+                $db->exec("SET FOREIGN_KEY_CHECKS=1");
+
                 $db->commit();
+                if (class_exists('\Core\Cache')) {
+                    \Core\Cache::delete('catalog_active');
+                }
+                if ($this->isJsonRequest()) {
+                    $this->json(['success' => true, 'message' => 'Attribute deleted successfully.']);
+                }
                 Session::setFlash('success', 'Attribute deleted successfully.');
             } catch (\Exception $e) {
                 if (isset($db) && $db->inTransaction()) {
+                    $db->exec("SET FOREIGN_KEY_CHECKS=1");
                     $db->rollBack();
                 }
-                Session::setFlash('error', 'Cannot delete attribute because it is in use by existing products or variants.');
+                if ($this->isJsonRequest()) {
+                    $this->json(['success' => false, 'message' => 'Error deleting attribute: ' . $e->getMessage()]);
+                }
+                Session::setFlash('error', 'Error deleting attribute: ' . $e->getMessage());
             }
         }
 
-        $this->redirect('/admin/catalog/attributes');
+        $this->redirect($redirectListUrl);
     }
 
     public function storeValue()
@@ -347,23 +399,37 @@ class AttributeController extends Controller
     public function deleteValue()
     {
         $this->requirePermission('attributes', 'delete');
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $redirectUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/attributes');
+            $this->redirect($redirectUrl);
         }
 
         $id = (int)($_POST['id'] ?? 0);
+        $isJson = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+            || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
         
         if ($id > 0) {
             try {
                 $attributeValueModel = new AttributeValue();
                 $attributeValueModel->delete($id);
+                if ($isJson) {
+                    echo json_encode(['success' => true]);
+                    exit;
+                }
                 Session::setFlash('success', 'Attribute value deleted successfully.');
             } catch (\Exception $e) {
-                Session::setFlash('error', 'Cannot delete attribute value because it is in use.');
+                if ($isJson) {
+                    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+                    exit;
+                }
+                Session::setFlash('error', 'Cannot delete attribute value: ' . $e->getMessage());
             }
         }
 
-        $this->redirect('/admin/catalog/attributes');
+        $this->redirect($redirectUrl);
     }
 
     public function ajaxGetForCategory()
@@ -401,5 +467,11 @@ class AttributeController extends Controller
         }
 
         echo json_encode($attributes);
+    }
+
+    private function isJsonRequest(): bool
+    {
+        return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+            || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
     }
 }

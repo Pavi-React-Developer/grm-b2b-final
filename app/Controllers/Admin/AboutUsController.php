@@ -12,7 +12,7 @@ class AboutUsController extends Controller
     public function __construct()
     {
         parent::__construct();
-        if (\Core\Session::get('user_role') !== 'super_admin') {
+        if (Session::get('user_role') !== 'super_admin') {
             $this->redirect('/admin/dashboard');
         }
         $this->cmsModel = new CmsComponent();
@@ -201,6 +201,8 @@ class AboutUsController extends Controller
                 'feature_text_color'=> trim($_POST['theme_feature_text_color'] ?? '#111827'),
                 'faq_bg_color'      => trim($_POST['theme_faq_bg_color'] ?? '#ffffff'),
                 'faq_text_color'    => trim($_POST['theme_faq_text_color'] ?? '#111827'),
+                'faq_question_color'=> trim($_POST['theme_faq_question_color'] ?? $_POST['theme_faq_text_color'] ?? '#111827'),
+                'faq_answer_color'  => trim($_POST['theme_faq_answer_color'] ?? '#4b5563'),
                 'why_choose_bg_color'  => trim($_POST['theme_why_choose_bg_color'] ?? '#ffffff'),
                 'why_choose_text_color'=> trim($_POST['theme_why_choose_text_color'] ?? '#111827'),
                 'why_choose_icon_color'=> trim($_POST['theme_why_choose_icon_color'] ?? '#059669'),

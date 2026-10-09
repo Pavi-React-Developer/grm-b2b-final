@@ -997,14 +997,34 @@ if ($currentUserRole === 'super_admin') {
                     </span>
                 </div>
                 
-                <div class="customize-dropdown ml-4 pl-4 border-l border-amber-200 space-y-1 mt-1">
+                <div class="customize-dropdown ml-4 pl-4 border-l border-pink-200 space-y-1 mt-1">
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('categories', 'view') || $this->hasAnyPermission('categories')): ?>
+                    <a href="<?= BASE_URL ?>/admin/catalog/categories" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/categories') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📁 Category</span>
+                    </a>
+                    <?php endif; ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('subcategories', 'view') || $this->hasAnyPermission('subcategories')): ?>
+                    <a href="<?= BASE_URL ?>/admin/catalog/subcategories" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/subcategories') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">🏷️ Sub Category</span>
+                    </a>
+                    <?php endif; ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('attributes', 'view') || $this->hasAnyPermission('attributes')): ?>
+                    <a href="<?= BASE_URL ?>/admin/catalog/attributes" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/attributes') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📏 Attributes</span>
+                    </a>
+                    <?php endif; ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('products', 'view') || $this->hasAnyPermission('products')): ?>
+                    <a href="<?= BASE_URL ?>/admin/catalog/products" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/products') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">🧵 Products / Fabrics</span>
+                    </a>
+                    <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('fabric_customizations', 'view') || $this->hasAnyPermission('fabric_customizations')): ?>
-                    <a href="<?= BASE_URL ?>/admin/fabric-customizations" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/fabric-customizations') === 0 ? 'bg-amber-100 text-amber-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                    <a href="<?= BASE_URL ?>/admin/fabric-customizations" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/fabric-customizations') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">✂️ Fabric Rules</span>
                     </a>
                     <?php endif; ?>
                     <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('custom_orders', 'view') || $this->hasAnyPermission('custom_orders')): ?>
-                    <a href="<?= BASE_URL ?>/admin/customize/orders" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/customize/orders') === 0 ? 'bg-amber-100 text-amber-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                    <a href="<?= BASE_URL ?>/admin/customize/orders" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/customize/orders') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📦 Custom Orders</span>
                     </a>
                     <?php endif; ?>
