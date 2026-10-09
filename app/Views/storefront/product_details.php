@@ -119,12 +119,12 @@ if (!empty($variants)) {
                     <!-- Zoom Lens -->
                     <div id="zoomLens" class="absolute hidden border border-gray-300 bg-white/40 pointer-events-none" style="width: 150px; height: 150px; z-index: 10;"></div>
                     
-                    <div class="w-full overflow-hidden flex items-center justify-center bg-gray-50" style="aspect-ratio: 1 / 1; max-height: 520px;">
+                    <div class="w-full overflow-hidden flex items-center justify-center bg-white rounded-xl" style="aspect-ratio: 1 / 1; max-height: 560px;">
                         <img id="mainImage" 
                              src="<?= $initialMainImage ?>" 
                              alt="<?= htmlspecialchars($product['name']) ?>" 
-                             class="w-full h-full object-cover" 
-                             style="width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s ease;"
+                             class="w-full h-full object-contain p-1" 
+                             style="width: 100%; height: 100%; object-fit: contain; display: block; transition: opacity 0.2s ease;"
                              loading="eager" decoding="async"
                              onerror="this.src='https://placehold.co/800x800/f9fafb/9ca3af?text=No+Image'">
                     </div>
@@ -141,8 +141,6 @@ if (!empty($variants)) {
                 <!-- Thumbnail Strip -->
                 <div id="thumbnailGallery" class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin">
                     <!-- Populated by JS -->
-                </div>
-
                 </div>
             </div>
 
@@ -363,7 +361,7 @@ if (!empty($variants)) {
                         <div class="flex items-center justify-between mb-2.5">
                             <span class="text-sm font-bold text-gray-900">Select Variant</span>
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="openProductSizeChartModal(<?= (int)($product['category_id'] ?? ($category['id'] ?? 0)) ?>, <?= (int)($product['size_chart_id'] ?? 0) ?>, <?= (int)($product['id'] ?? 0) ?>)" class="inline-flex items-center gap-1 text-xs font-bold text-[#f25996] hover:text-[#d94883] bg-[#fdf2f7] hover:bg-[#fce7f1] border border-[#fbaed2] px-2.5 py-1 rounded-lg transition-all shadow-2xs">
+                                <button type="button" onclick="openProductSizeChartModal(<?= (int)($product['category_id'] ?? ($category['id'] ?? 0)) ?>, <?= (int)($product['size_chart_id'] ?? 0) ?>, <?= (int)($product['id'] ?? 0) ?>, <?= (int)($product['sub_category_id'] ?? ($subCategory['id'] ?? 0)) ?>)" class="inline-flex items-center gap-1 text-xs font-bold text-[#f25996] hover:text-[#d94883] bg-[#fdf2f7] hover:bg-[#fce7f1] border border-[#fbaed2] px-2.5 py-1 rounded-lg transition-all shadow-2xs">
                                     <svg class="w-3.5 h-3.5 text-[#f25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M3 12h18M3 18h18M7 6v3m4-3v2m4-2v3m4-3v2M7 12v3m4-3v2m4-3v3m4-3v2"></path></svg>
                                     <span>Size Guide</span>
                                 </button>
@@ -1692,7 +1690,8 @@ if (!empty($variants)) {
         if (allImages.length > 1) {
             allImages.forEach(function(url, idx) {
                 const btn = document.createElement('button');
-                btn.className = 'flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl bg-gray-100 overflow-hidden border-2 transition-all ' + (idx === 0 ? 'border-[#673327]' : 'border-transparent hover:border-[#673327]/50');
+                btn.type = 'button';
+                btn.className = 'flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl bg-white overflow-hidden border-2 transition-all ' + (idx === 0 ? 'border-[#f25996] shadow-xs' : 'border-gray-200 hover:border-[#f25996]/50');
                 btn.setAttribute('data-img-idx', idx);
                 btn.onclick = function() {
                     mainImg.src = url;
@@ -1701,7 +1700,7 @@ if (!empty($variants)) {
                 };
                 const img = document.createElement('img');
                 img.src = url;
-                img.className = 'w-full h-full object-cover';
+                img.className = 'w-full h-full object-contain p-1';
                 img.alt = 'Thumbnail ' + (idx + 1);
                 btn.appendChild(img);
                 gallery.appendChild(btn);
@@ -1724,11 +1723,11 @@ if (!empty($variants)) {
     function highlightThumb(gallery, activeIdx) {
         gallery.querySelectorAll('button').forEach(b => {
             if (parseInt(b.getAttribute('data-img-idx')) === activeIdx) {
-                b.classList.remove('border-transparent');
-                b.classList.add('border-[#673327]');
+                b.classList.remove('border-gray-200');
+                b.classList.add('border-[#f25996]', 'shadow-xs');
             } else {
-                b.classList.remove('border-[#673327]');
-                b.classList.add('border-transparent');
+                b.classList.remove('border-[#f25996]', 'shadow-xs');
+                b.classList.add('border-gray-200');
             }
         });
     }
@@ -1881,7 +1880,7 @@ if (!empty($variants)) {
     // Product Size Guide Modal Logic
     let productSizeChartsCache = null;
 
-    function openProductSizeChartModal(categoryId, chartId = 0, productId = 0) {
+    function openProductSizeChartModal(categoryId, chartId = 0, productId = 0, subCategoryId = 0) {
         const modal = document.getElementById('productSizeGuideModal');
         const container = document.getElementById('productSizeGuideContent');
         const loader = document.getElementById('productSizeGuideLoader');
@@ -1890,8 +1889,9 @@ if (!empty($variants)) {
         modal.classList.add('flex');
         document.body.style.overflow = 'hidden';
 
-        if (productSizeChartsCache) {
-            renderProductSizeGuide(productSizeChartsCache);
+        const cacheKey = `${categoryId}_${chartId}_${productId}_${subCategoryId}`;
+        if (productSizeChartsCache && productSizeChartsCache._key === cacheKey) {
+            renderProductSizeGuide(productSizeChartsCache.data);
             return;
         }
 
@@ -1901,13 +1901,14 @@ if (!empty($variants)) {
         let apiUrl = `<?= BASE_URL ?>/api/size-chart?category_id=${categoryId || 0}`;
         if (chartId) apiUrl += `&chart_id=${chartId}`;
         if (productId) apiUrl += `&product_id=${productId}`;
+        if (subCategoryId) apiUrl += `&sub_category_id=${subCategoryId}`;
 
         fetch(apiUrl)
             .then(res => res.json())
             .then(data => {
                 loader.classList.add('hidden');
                 if (data.success && data.charts && data.charts.length > 0) {
-                    productSizeChartsCache = data.charts;
+                    productSizeChartsCache = { _key: cacheKey, data: data.charts };
                     renderProductSizeGuide(data.charts);
                 } else {
                     container.innerHTML = `
