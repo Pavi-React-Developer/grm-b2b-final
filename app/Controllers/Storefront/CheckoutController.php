@@ -68,8 +68,8 @@ class CheckoutController extends Controller
             $categoryTotals[$catId]['total'] += $itemTotal;
         }
         
-        // Validate against dynamic Order Rules and Category MOV
-        $ruleValidation = \App\Models\OrderRule::validateCartRules($categoryTotals);
+        // Validate against dynamic Order Rules, Category MOV and Order Cart Value
+        $ruleValidation = \App\Models\OrderRule::validateCartRules($categoryTotals, $subtotal);
         if (!empty($ruleValidation['errors'])) {
             Session::setFlash('error', $ruleValidation['errors'][0]);
             $this->redirect('/cart');
@@ -183,8 +183,8 @@ class CheckoutController extends Controller
             $categoryTotals[$catId]['total'] += $itemTotal;
         }
 
-        // Validate against dynamic Order Rules and Category MOV
-        $ruleValidation = \App\Models\OrderRule::validateCartRules($categoryTotals);
+        // Validate against dynamic Order Rules, Category MOV and Order Cart Value
+        $ruleValidation = \App\Models\OrderRule::validateCartRules($categoryTotals, $totalAmount);
         if (!empty($ruleValidation['errors'])) {
             Session::setFlash('error', $ruleValidation['errors'][0]);
             $this->redirect('/cart');

@@ -80,8 +80,8 @@ class Category extends Model
         $uniqueSlug = $this->generateUniqueSlug($slug);
 
         $stmt = $this->db->prepare("
-            INSERT INTO categories (name, slug, hsn_code, description, image_path, min_order_value, sgst, cgst, status, is_customizable)
-            VALUES (:name, :slug, :hsn_code, :description, :image_path, :min_order_value, :sgst, :cgst, :status, :is_customizable)
+            INSERT INTO categories (name, slug, hsn_code, description, image_path, min_order_value, min_cart_value, sgst, cgst, status, is_customizable)
+            VALUES (:name, :slug, :hsn_code, :description, :image_path, :min_order_value, :min_cart_value, :sgst, :cgst, :status, :is_customizable)
         ");
         
         $stmt->execute([
@@ -91,6 +91,7 @@ class Category extends Model
             'description' => $data['description'] ?? null,
             'image_path' => $data['image_path'] ?? null,
             'min_order_value' => !empty($data['min_order_value']) ? (float)$data['min_order_value'] : null,
+            'min_cart_value' => !empty($data['min_cart_value']) ? (float)$data['min_cart_value'] : null,
             'sgst' => isset($data['sgst']) && $data['sgst'] !== '' ? (float)$data['sgst'] : 0.00,
             'cgst' => isset($data['cgst']) && $data['cgst'] !== '' ? (float)$data['cgst'] : 0.00,
             'status' => $data['status'] ?? 'active',
@@ -120,6 +121,7 @@ class Category extends Model
                 description = :description, 
                 image_path = :image_path,
                 min_order_value = :min_order_value,
+                min_cart_value = :min_cart_value,
                 sgst = :sgst,
                 cgst = :cgst,
                 status = :status,
@@ -135,6 +137,7 @@ class Category extends Model
             'description' => $data['description'] ?? null,
             'image_path' => $data['image_path'] ?? null,
             'min_order_value' => !empty($data['min_order_value']) ? (float)$data['min_order_value'] : null,
+            'min_cart_value' => !empty($data['min_cart_value']) ? (float)$data['min_cart_value'] : null,
             'sgst' => isset($data['sgst']) && $data['sgst'] !== '' ? (float)$data['sgst'] : 0.00,
             'cgst' => isset($data['cgst']) && $data['cgst'] !== '' ? (float)$data['cgst'] : 0.00,
             'status' => $data['status'] ?? 'active',
