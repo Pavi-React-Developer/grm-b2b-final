@@ -17,16 +17,22 @@ class FabricCustomizationService
     {
         $fabricQuantity = max(1, $fabricQuantity);
         $minPieces = (int)($customization['minimum_pieces'] ?? 1) * $fabricQuantity;
-        $maxPieces = !empty($customization['maximum_pieces']) ? (int)$customization['maximum_pieces'] * $fabricQuantity : null;
+        $maxPieces = (int)($customization['minimum_pieces'] ?? 35) * $fabricQuantity;
         $wastagePct = (float)($customization['wastage_percentage'] ?? 0.00);
         $unit = $customization['unit'] ?? 'Meter';
         $stock = $availableStock !== null ? (float)$availableStock : (float)($customization['fabric_stock'] ?? 0);
 
-        // Map configured sizes
+        // Map configured sizes and limits
         $configuredSizes = [];
+        $sizeLimits = [];
         if (!empty($customization['sizes'])) {
             foreach ($customization['sizes'] as $sz) {
-                $configuredSizes[$sz['size_name']] = (float)$sz['fabric_consumption'];
+                $sName = $sz['size_name'];
+                $configuredSizes[$sName] = (float)$sz['fabric_consumption'];
+                $sizeLimits[$sName] = [
+                    'base_min' => isset($sz['base_quantity']) ? (int)$sz['base_quantity'] : 2,
+                    'base_max' => isset($sz['max_quantity']) && (int)$sz['max_quantity'] > 0 ? (int)$sz['max_quantity'] : 35
+                ];
                 if (!empty($sz['size_id'])) {
                     $configuredSizes['id_' . $sz['size_id']] = (float)$sz['fabric_consumption'];
                 }
@@ -36,6 +42,7 @@ class FabricCustomizationService
         $totalPieces = 0;
         $baseConsumption = 0.00;
         $breakdown = [];
+        $errors = [];
 
         foreach ($sizeQuantities as $sizeKey => $qty) {
             $qty = (int)$qty;
@@ -59,6 +66,18 @@ class FabricCustomizationService
                 }
             }
 
+            // Validate individual size min & max limits
+            $limits = $sizeLimits[$sizeName] ?? ['base_min' => 1, 'base_max' => 9999];
+            $effectiveSizeMin = $limits['base_min'] * $fabricQuantity;
+            $effectiveSizeMax = $limits['base_max'] * $fabricQuantity;
+
+            if ($qty < $effectiveSizeMin) {
+                $errors[] = "Size {$sizeName}: Quantity {$qty} pcs is below the minimum required ({$effectiveSizeMin} pcs for {$fabricQuantity} Set(s)).";
+            }
+            if ($qty > $effectiveSizeMax) {
+                $errors[] = "Size {$sizeName}: Quantity {$qty} pcs exceeds the maximum allowed ({$effectiveSizeMax} pcs for {$fabricQuantity} Set(s)).";
+            }
+
             $sizeTotalConsumption = $qty * $consumptionPerPiece;
             $totalPieces += $qty;
             $baseConsumption += $sizeTotalConsumption;
@@ -66,6 +85,8 @@ class FabricCustomizationService
             $breakdown[] = [
                 'size_name'             => $sizeName,
                 'quantity'              => $qty,
+                'min_allowed'           => $effectiveSizeMin,
+                'max_allowed'           => $effectiveSizeMax,
                 'consumption_per_piece' => $consumptionPerPiece,
                 'total_consumption'     => round($sizeTotalConsumption, 3),
                 'unit'                  => $unit
@@ -79,15 +100,14 @@ class FabricCustomizationService
         $isMaxMet = ($maxPieces === null || $totalPieces <= $maxPieces);
         $isStockSufficient = ($stock >= $fabricQuantity);
 
-        $errors = [];
         if ($totalPieces === 0) {
             $errors[] = "Please select size variants. A minimum of {$minPieces} pieces is required to enable payment.";
         } elseif (!$isMinMet) {
             $remaining = $minPieces - $totalPieces;
             $errors[] = "Minimum {$minPieces} pieces required to enable payment. You currently have {$totalPieces} pieces (Please select {$remaining} more pcs).";
-        }
-        if (!$isMaxMet && $maxPieces !== null) {
-            $errors[] = "Maximum order quantity is {$maxPieces} pieces. You currently have {$totalPieces} pieces.";
+        } elseif ($totalPieces > $maxPieces) {
+            $excess = $totalPieces - $maxPieces;
+            $errors[] = "Maximum {$maxPieces} pieces allowed for {$fabricQuantity} Set(s). You currently have {$totalPieces} pieces ({$excess} pcs in excess). Please reduce variant quantities.";
         }
         if (!$isStockSufficient) {
             $shortage = (int)($fabricQuantity - $stock);
