@@ -130,10 +130,10 @@ class ProductController extends Controller
 
         // Get Category and SubCategory details
         $categoryModel = new Category();
-        $category = $categoryModel->findById($product['category_id']);
+        $category = !empty($product['category_id']) ? $categoryModel->findById($product['category_id']) : null;
         
         $subCategory = null;
-        if ($product['sub_category_id']) {
+        if (!empty($product['sub_category_id'])) {
             $subCategoryModel = new SubCategory();
             $subCategory = $subCategoryModel->findById($product['sub_category_id']);
         }
@@ -208,7 +208,7 @@ class ProductController extends Controller
         $sizeCharts = $sizeChartModel->getAllActive();
 
         $subCategoryModel = new SubCategory();
-        $subCategories = $subCategoryModel->getByCategory($product['category_id']);
+        $subCategories = !empty($product['category_id']) ? $subCategoryModel->getByCategory($product['category_id']) : [];
 
         $attrValueModel = new AttributeValue();
         $attributes = $attrValueModel->getAllGroupedByAttribute();
@@ -322,25 +322,35 @@ class ProductController extends Controller
             $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
         }
 
-        // Validate variants price and weight
+        // Validate variants price, discount price, and weight
         foreach ($postedVariants as $vData) {
             $basePrice = isset($vData['base_price']) && $vData['base_price'] !== '' ? (float)$vData['base_price'] : 0;
+            $discountPrice = (isset($vData['discount_price']) && $vData['discount_price'] !== '' && (float)$vData['discount_price'] > 0) ? (float)$vData['discount_price'] : null;
             $weight = isset($vData['weight']) && $vData['weight'] !== '' ? (float)$vData['weight'] : 0;
             $sku = trim($vData['sku'] ?? '');
 
             if ($basePrice <= 0) {
                 Session::setFlash('error', 'Base Price is required and must be greater than 0 for all variants.');
                 $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
+                return;
             }
 
-            if ($weight <= 0) {
+            if ($discountPrice !== null && $discountPrice >= $basePrice) {
+                Session::setFlash('error', 'Discount Price (₹' . number_format($discountPrice, 2) . ') must be less than Base Price (₹' . number_format($basePrice, 2) . ') for all variants.');
+                $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
+                return;
+            }
+
+            if (!$isCustomize && $weight <= 0) {
                 Session::setFlash('error', 'Weight is required and must be greater than 0 kg for all variants.');
                 $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
+                return;
             }
 
             if (empty($sku)) {
                 Session::setFlash('error', 'Variant SKU is required and cannot be empty.');
                 $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
+                return;
             }
         }
 
@@ -557,22 +567,32 @@ class ProductController extends Controller
 
         foreach ($allVariantsList as $vData) {
             $basePrice = isset($vData['base_price']) && $vData['base_price'] !== '' ? (float)$vData['base_price'] : 0;
+            $discountPrice = (isset($vData['discount_price']) && $vData['discount_price'] !== '' && (float)$vData['discount_price'] > 0) ? (float)$vData['discount_price'] : null;
             $weight = isset($vData['weight']) && $vData['weight'] !== '' ? (float)$vData['weight'] : 0;
             $sku = trim($vData['sku'] ?? '');
 
             if ($basePrice <= 0) {
                 Session::setFlash('error', 'Base Price is required and must be greater than 0 for all variants.');
                 $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
+                return;
             }
 
-            if ($weight <= 0) {
+            if ($discountPrice !== null && $discountPrice >= $basePrice) {
+                Session::setFlash('error', 'Discount Price (₹' . number_format($discountPrice, 2) . ') must be less than Base Price (₹' . number_format($basePrice, 2) . ') for all variants.');
+                $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
+                return;
+            }
+
+            if (!$isCustomize && $weight <= 0) {
                 Session::setFlash('error', 'Weight is required and must be greater than 0 kg for all variants.');
                 $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
+                return;
             }
 
             if (empty($sku)) {
                 Session::setFlash('error', 'Variant SKU is required and cannot be empty.');
                 $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
+                return;
             }
         }
 

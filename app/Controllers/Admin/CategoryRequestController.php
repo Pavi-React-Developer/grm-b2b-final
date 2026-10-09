@@ -98,6 +98,17 @@ class CategoryRequestController extends Controller
             return;
         }
 
+        if (!empty($hsnCode) && !preg_match('/^\d+$/', $hsnCode)) {
+            $msg = 'HSN Code must contain only numbers.';
+            if ($this->isJsonRequest()) {
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            }
+            Session::setFlash('error', $msg);
+            $this->redirect('/admin/catalog/products/create');
+            return;
+        }
+
         // Check if category name already exists in active categories
         $db = \Core\Database::getInstance();
         if ($requestType === 'category') {

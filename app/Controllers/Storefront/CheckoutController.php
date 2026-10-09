@@ -808,11 +808,11 @@ class CheckoutController extends Controller
             $state = $otherState;
         }
         $postal= trim($_POST['postal_code'] ?? '');
-        $country = 'India';
+        $country = trim($_POST['country'] ?? 'India') ?: 'India';
         $isDefault = !empty($_POST['is_default']) ? 1 : 0;
 
-        if (empty($line1) || empty($city) || empty($state) || $state === 'Others' || empty($postal)) {
-            echo json_encode(['error' => 'Please fill in all required fields.']);
+        if (empty($line1) || empty($city) || empty($state) || empty($postal)) {
+            echo json_encode(['error' => 'Please fill in all required fields (Address Line 1, State, District/City, Pincode).']);
             exit;
         }
 
@@ -847,11 +847,11 @@ class CheckoutController extends Controller
             $state = $otherState;
         }
         $postal= trim($_POST['postal_code'] ?? '');
-        $country = 'India';
+        $country = trim($_POST['country'] ?? 'India') ?: 'India';
         $isDefault = !empty($_POST['is_default']) ? 1 : 0;
 
-        if (!$addressId || empty($line1) || empty($city) || empty($state) || $state === 'Others' || empty($postal)) {
-            echo json_encode(['error' => 'Please fill in all required fields.']);
+        if (!$addressId || empty($line1) || empty($city) || empty($state) || empty($postal)) {
+            echo json_encode(['error' => 'Please fill in all required fields (Address Line 1, State, District/City, Pincode).']);
             exit;
         }
 

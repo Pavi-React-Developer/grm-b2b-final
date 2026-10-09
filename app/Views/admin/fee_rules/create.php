@@ -178,20 +178,20 @@ $categoriesList = $categories ?? [];
                             <input type="hidden" name="slab_order[<?= $i ?>]" value="<?= $i ?>" class="slab-order-input">
                             
                             <div class="flex-1">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Min Weight (kg)</label>
-                                <input type="text" name="slab_min_weight[<?= $i ?>]" step="0.001" min="0" required
-                                       value="<?= htmlspecialchars($slab['minWeight']) ?>"
-                                       class="slab-min w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 focus:border-brand-500 focus:ring-0 text-sm"
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Min Weight (kg) <span class="text-red-500">* (Min 0.1)</span></label>
+                                <input type="number" name="slab_min_weight[<?= $i ?>]" step="0.001" min="0.1" required
+                                       value="<?= htmlspecialchars(isset($slab['minWeight']) ? (float)$slab['minWeight'] : '0.1') ?>"
+                                       class="slab-min w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 focus:border-brand-500 focus:ring-0 text-sm font-medium"
                                        onchange="validateSlabs()">
                             </div>
                             
                             <span class="text-gray-400 font-light text-2xl mb-2">-</span>
                             
                             <div class="flex-1">
-                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Max Weight (kg)</label>
-                                <input type="text" name="slab_max_weight[<?= $i ?>]" step="0.001" min="0" required
-                                       value="<?= htmlspecialchars($slab['maxWeight']) ?>"
-                                       class="slab-max w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 focus:border-brand-500 focus:ring-0 text-sm"
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Max Weight (kg) <span class="text-red-500">*</span></label>
+                                <input type="number" name="slab_max_weight[<?= $i ?>]" step="0.001" min="0.1" required
+                                       value="<?= htmlspecialchars($slab['maxWeight'] ?? '1') ?>"
+                                       class="slab-max w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 focus:border-brand-500 focus:ring-0 text-sm font-medium"
                                        onchange="validateSlabs()">
                             </div>
 
@@ -416,17 +416,17 @@ function addSlab() {
         <input type="hidden" name="slab_order[${slabIndex}]" value="${slabIndex}" class="slab-order-input">
         
         <div class="flex-1">
-            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Min Weight (kg)</label>
-            <input type="text" name="slab_min_weight[${slabIndex}]" step="0.001" min="0" value="0"
-                   class="slab-min w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 focus:border-brand-500 focus:ring-0 text-sm" onchange="validateSlabs()">
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Min Weight (kg) <span class="text-red-500">* (Min 0.1)</span></label>
+            <input type="number" name="slab_min_weight[${slabIndex}]" step="0.001" min="0.1" value="0.1" required
+                   class="slab-min w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 focus:border-brand-500 focus:ring-0 text-sm font-medium" onchange="validateSlabs()">
         </div>
         
         <span class="text-gray-400 font-light text-2xl mb-2">-</span>
         
         <div class="flex-1">
-            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Max Weight (kg)</label>
-            <input type="text" name="slab_max_weight[${slabIndex}]" step="0.001" min="0" value="0"
-                   class="slab-max w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 focus:border-brand-500 focus:ring-0 text-sm" onchange="validateSlabs()">
+            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Max Weight (kg) <span class="text-red-500">*</span></label>
+            <input type="number" name="slab_max_weight[${slabIndex}]" step="0.001" min="0.1" value="1" required
+                   class="slab-max w-full bg-white border border-gray-300 rounded-xl px-4 py-2.5 text-gray-800 focus:border-brand-500 focus:ring-0 text-sm font-medium" onchange="validateSlabs()">
         </div>
 
         <div class="flex-1">
@@ -476,56 +476,73 @@ function updateSlabOrders() {
     });
 }
 
-// ---------- Overlap Validator ----------
+// ---------- Overlap & Minimum Weight Validator ----------
 function validateSlabs() {
     const rows = document.querySelectorAll('.slab-row');
     const errEl = document.getElementById('slab-error');
     const btn = document.getElementById('submit-btn');
     const slabs = [];
 
-    rows.forEach(row => {
+    for (let row of rows) {
         const minEl = row.querySelector('.slab-min');
         const maxEl = row.querySelector('.slab-max');
-        const statusEl = row.querySelector('input[name="slab_status[]"][type="checkbox"]');
-        if (!minEl || !maxEl || !(statusEl && statusEl.checked)) return;
+        const statusEl = row.querySelector('input[name*="slab_status"][type="checkbox"]');
+        if (!minEl || !maxEl) continue;
 
         const min = parseFloat(minEl.value);
         const max = parseFloat(maxEl.value);
 
-        if (isNaN(min) || isNaN(max)) return;
+        if (isNaN(min) || min < 0.1) {
+            showError('Minimum weight must be at least 0.1 kg.');
+            if (btn) btn.disabled = true;
+            return false;
+        }
 
-        if (min < 0 || max < 0) {
-            showError('Negative weight values are not allowed.');
-            btn.disabled = true;
-            return;
+        if (isNaN(max) || max <= min) {
+            showError(`Max weight (${max || 0} kg) must be greater than min weight (${min} kg).`);
+            if (btn) btn.disabled = true;
+            return false;
         }
-        if (max <= min) {
-            showError(`Max weight (${max}) must be greater than min weight (${min}).`);
-            btn.disabled = true;
-            return;
+
+        if (statusEl && statusEl.checked) {
+            slabs.push({ min, max });
         }
-        slabs.push({ min, max });
-    });
+    }
 
     // Sort and check overlaps
     slabs.sort((a, b) => a.min - b.min);
     for (let i = 1; i < slabs.length; i++) {
         if (slabs[i].min < slabs[i-1].max) {
             showError(`Slab overlap detected: [${slabs[i].min} - ${slabs[i].max}] overlaps with [${slabs[i-1].min} - ${slabs[i-1].max}].`);
-            btn.disabled = true;
-            return;
+            if (btn) btn.disabled = true;
+            return false;
         }
     }
 
-    errEl.classList.add('hidden');
-    btn.disabled = false;
+    if (errEl) errEl.classList.add('hidden');
+    if (btn) btn.disabled = false;
+    return true;
 }
 
 function showError(msg) {
     const errEl = document.getElementById('slab-error');
-    errEl.textContent = msg;
-    errEl.classList.remove('hidden');
+    if (errEl) {
+        errEl.textContent = msg;
+        errEl.classList.remove('hidden');
+    }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('fee-rule-form')?.addEventListener('submit', function(e) {
+        const weightCont = document.getElementById('weight-slabs-container');
+        if (weightCont && !weightCont.classList.contains('hidden')) {
+            if (!validateSlabs()) {
+                e.preventDefault();
+                return false;
+            }
+        }
+    });
+});
 </script>
 
 <script>

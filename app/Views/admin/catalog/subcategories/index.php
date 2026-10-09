@@ -97,8 +97,8 @@
                                 <span class="group-hover:text-brand-600 transition-colors duration-300">#<?= $index + 1 ?></span>
                             </td>
                             <td class="px-6 py-5">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-50 border border-gray-100 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
-                                    <?= htmlspecialchars($sub['category_name']) ?>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md <?= empty($sub['category_name']) || $sub['category_name'] === 'Unassigned' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-gray-50 border-gray-100 text-gray-700' ?> border text-[11px] font-bold uppercase tracking-wider">
+                                    <?= htmlspecialchars(!empty($sub['category_name']) ? $sub['category_name'] : 'Unassigned') ?>
                                 </span>
                             </td>
                             <td class="px-6 py-5">

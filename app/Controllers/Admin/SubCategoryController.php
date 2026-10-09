@@ -85,10 +85,20 @@ class SubCategoryController extends Controller
         if ($data['category_id'] <= 0 || empty($data['name'])) {
             Session::setFlash('error', 'Parent Category and Name are required.');
             $this->redirect($redirectUrl);
+            return;
         }
 
         try {
             $subCategoryModel = new SubCategory();
+
+            // Prevent duplicate subcategory names within parent category
+            $existingDuplicate = $subCategoryModel->findByName($data['name'], $data['category_id'], $isCustomize ? 1 : 0);
+            if ($existingDuplicate) {
+                Session::setFlash('error', 'A subcategory named "' . htmlspecialchars($data['name']) . '" already exists in this category. Duplicate subcategories are not allowed.');
+                $this->redirect($redirectUrl);
+                return;
+            }
+
             $subCategoryModel->create($data);
             Session::setFlash('success', ($isCustomize ? 'Customize Subcategory' : 'Subcategory') . ' created successfully.');
         } catch (\Exception $e) {
@@ -128,10 +138,20 @@ class SubCategoryController extends Controller
         if ($id <= 0 || $data['category_id'] <= 0 || empty($data['name'])) {
             Session::setFlash('error', 'Invalid input.');
             $this->redirect($redirectUrl);
+            return;
         }
 
         try {
             $subCategoryModel = new SubCategory();
+
+            // Prevent duplicate subcategory names within parent category
+            $existingDuplicate = $subCategoryModel->findByName($data['name'], $data['category_id'], $isCustomize ? 1 : 0, $id);
+            if ($existingDuplicate) {
+                Session::setFlash('error', 'A subcategory named "' . htmlspecialchars($data['name']) . '" already exists in this category. Duplicate subcategories are not allowed.');
+                $this->redirect($redirectUrl);
+                return;
+            }
+
             $subCategoryModel->update($id, $data);
             Session::setFlash('success', 'Subcategory updated successfully.');
         } catch (\Exception $e) {

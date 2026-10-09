@@ -183,11 +183,12 @@
                                             <?php 
                                                 $availableStock = (int)($item['available_stock'] ?? 0);
                                                 $isMaxStock = ($availableStock > 0 && $item['quantity'] >= $availableStock);
+                                                $moqStep = ($requiredMoq > 0) ? (int)$requiredMoq : 1;
                                             ?>
                                             <!-- Bottom (Below Trash): AJAX Stepper - qty saved without page reload -->
                                             <div id="cart-stepper-<?= $item['cart_item_id'] ?>" class="inline-flex items-center border border-pink-200 rounded-xl bg-white p-0.5 shadow-2xs mt-auto select-none" style="touch-action: manipulation;">
                                                 <button type="button"
-                                                    onclick="cartPageUpdateQty(<?= $item['cart_item_id'] ?>, -1, <?= $requiredMoq ?>, <?= $availableStock ?>, this)"
+                                                    onclick="cartPageUpdateQty(<?= $item['cart_item_id'] ?>, -<?= $moqStep ?>, <?= $requiredMoq ?>, <?= $availableStock ?>, this)"
                                                     class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer select-none"
                                                     style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
                                                     <?= $item['quantity'] <= $requiredMoq ? 'disabled' : '' ?>>&minus;</button>
@@ -195,7 +196,7 @@
                                                 <span id="cart-qty-<?= $item['cart_item_id'] ?>" class="w-6 text-center text-xs font-bold text-[#F25996] select-none pointer-events-none"><?= $item['quantity'] ?></span>
                                                 <div class="h-3 w-[1px] bg-pink-100"></div>
                                                 <button type="button"
-                                                    onclick="cartPageUpdateQty(<?= $item['cart_item_id'] ?>, 1, <?= $requiredMoq ?>, <?= $availableStock ?>, this)"
+                                                    onclick="cartPageUpdateQty(<?= $item['cart_item_id'] ?>, <?= $moqStep ?>, <?= $requiredMoq ?>, <?= $availableStock ?>, this)"
                                                     class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer select-none"
                                                     style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
                                                     <?= $isMaxStock ? 'disabled' : '' ?>>&plus;</button>
@@ -540,7 +541,7 @@ function cartPageUpdateQty(cartItemId, delta, moq, maxStock, btnEl) {
         clearTimeout(cartPageUpdateTimers[cartItemId]);
     }
 
-    // Debounce server call by 150ms so rapid clicks are bundled together
+    // Debounce server call by 75ms so rapid clicks are bundled together
     cartPageUpdateTimers[cartItemId] = setTimeout(() => {
         const sendQty = cartPagePendingQty[cartItemId] !== undefined ? cartPagePendingQty[cartItemId] : newQty;
         const seq = (cartPageRequestSeq[cartItemId] || 0) + 1;

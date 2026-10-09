@@ -182,15 +182,16 @@
                                 <!-- Manual entry (hidden by default when saved addresses exist) -->
                                 <div id="manual-entry" class="hidden space-y-4 border-t border-gray-100 pt-4 mt-2">
                                     <div>
-                                        <label class="form-label">Address Line 1</label>
+                                        <label class="form-label">Address Line 1 <span class="text-[#F25996]">*</span></label>
                                         <input type="text" id="ship_line1" class="form-input" placeholder="House/Flat no., Building, Street">
                                     </div>
                                     <div>
                                         <label class="form-label">Address Line 2 <span class="text-gray-400 font-normal">(optional)</span></label>
                                         <input type="text" id="ship_line2" class="form-input" placeholder="Area, Locality, Landmark">
-                                    </div>                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label class="form-label">State</label>
+                                            <label class="form-label">State <span class="text-[#F25996]">*</span></label>
                                             <select id="ship_state" name="state" onchange="toggleShipDistrictFields()" class="form-input">
                                                 <option value="">Select State</option>
                                                 <option value="Tamil Nadu">Tamil Nadu</option>
@@ -198,7 +199,7 @@
                                             </select>
                                         </div>
                                         <div id="ship_district_container">
-                                            <label class="form-label" id="ship_district_label">District/City</label>
+                                            <label class="form-label" id="ship_district_label">District/City <span class="text-[#F25996]">*</span></label>
                                             <!-- Dropdown for Tamil Nadu -->
                                             <select id="ship_district_select" name="city" class="form-input hidden">
                                                 <option value="">Select District</option>
@@ -251,13 +252,22 @@
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label class="form-label">Pincode</label>
-                                            <input type="text" id="ship_pincode" pattern="[0-9]{6}" maxlength="6" oninput="this.value=this.value.replace(/\D/g,'')" class="form-input">
+                                            <label class="form-label">Pincode <span class="text-[#F25996]">*</span></label>
+                                            <input type="text" id="ship_pincode" pattern="[0-9]{6}" maxlength="6" oninput="this.value=this.value.replace(/\D/g,'')" class="form-input" placeholder="6-digit pincode">
                                         </div>
                                         <div>
                                             <label class="form-label">Country</label>
                                             <input type="text" id="ship_country" value="India" class="form-input" readonly>
                                         </div>
+                                    </div>
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                                        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                                            <input type="checkbox" id="save_manual_address_check" checked class="w-4 h-4 rounded text-[#F25996] accent-[#F25996] focus:ring-0">
+                                            <span class="text-xs sm:text-sm font-semibold text-gray-700">Save this address to my profile</span>
+                                        </label>
+                                        <button type="button" id="save-manual-addr-btn" onclick="saveManualAddressAjax()" class="text-xs sm:text-sm font-bold text-[#F25996] hover:text-[#d8407d] hover:underline cursor-pointer inline-flex items-center gap-1 self-start sm:self-auto py-1">
+                                            <span>+ Save Address to Profile</span>
+                                        </button>
                                     </div>
                                 </div>
 
@@ -580,41 +590,87 @@
         if (selectedRadio) {
             if (selectedRadio.value === 'new') {
                 // Manual entry mode
-                const line1  = (document.getElementById('ship_line1')  || {}).value || '';
-                const line2  = (document.getElementById('ship_line2')  || {}).value || '';
-                const state  = (document.getElementById('ship_state')  || {}).value || '';
+                const line1  = ((document.getElementById('ship_line1')  || {}).value || '').trim();
+                const line2  = ((document.getElementById('ship_line2')  || {}).value || '').trim();
+                const state  = ((document.getElementById('ship_state')  || {}).value || '').trim();
+                
+                if (!line1) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'warning', title: 'Missing Address', text: 'Please enter Address Line 1' });
+                    } else {
+                        alert('Please enter Address Line 1');
+                    }
+                    return;
+                }
+
+                if (!state) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'warning', title: 'Missing State', text: 'Please select a State' });
+                    } else {
+                        alert('Please select a State');
+                    }
+                    return;
+                }
                 
                 let city = '';
                 if (state === 'Tamil Nadu') {
-                    city = (document.getElementById('ship_district_select') || {}).value || '';
+                    city = ((document.getElementById('ship_district_select') || {}).value || '').trim();
+                    if (!city) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ icon: 'warning', title: 'Missing District', text: 'Please select your District' });
+                        } else {
+                            alert('Please select your District');
+                        }
+                        return;
+                    }
                 } else if (state === 'Others') {
-                    const dist = (document.getElementById('ship_district_text') || {}).value || '';
-                    const cty = (document.getElementById('ship_city_text') || {}).value || '';
+                    const dist = ((document.getElementById('ship_district_text') || {}).value || '').trim();
+                    const cty  = ((document.getElementById('ship_city_text') || {}).value || '').trim();
                     
+                    if (!dist || !cty) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter both District and City' });
+                        } else {
+                            alert('Please enter both District and City');
+                        }
+                        return;
+                    }
+
                     const tnRegex = /tamil\s*nadu/i;
                     if (tnRegex.test(dist) || tnRegex.test(cty)) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Invalid State Entry',
-                            text: 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.'
-                        });
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Invalid State Entry',
+                                text: 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.'
+                            });
+                        } else {
+                            alert('If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
+                        }
                         return;
                     }
                     
                     city = [dist, cty].filter(Boolean).join(', ');
                 }
-                const pin    = (document.getElementById('ship_pincode') || {}).value || '';
-                const country= (document.getElementById('ship_country') || {}).value || 'India';
+                const pin    = ((document.getElementById('ship_pincode') || {}).value || '').trim();
+                const country= ((document.getElementById('ship_country') || {}).value || 'India').trim();
 
-                if (!line1 || !city) {
-                    alert('Please fill in at least Address Line 1 and City.');
+                if (!pin || pin.length !== 6) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'warning', title: 'Invalid Pincode', text: 'Please enter a valid 6-digit Pincode' });
+                    } else {
+                        alert('Please enter a valid 6-digit Pincode');
+                    }
                     return;
                 }
 
                 const parts = [line1, line2, city + (state ? ', ' + state : ''), pin, country].filter(Boolean);
                 fullAddr = parts.join('\n');
                 
-                document.getElementById('final_is_new_address').value = '1';
+                const saveCheck = document.getElementById('save_manual_address_check');
+                const shouldSave = saveCheck ? (saveCheck.checked ? '1' : '0') : '1';
+
+                document.getElementById('final_is_new_address').value = shouldSave;
                 document.getElementById('final_new_addr_line1').value = line1;
                 document.getElementById('final_new_addr_line2').value = line2;
                 document.getElementById('final_new_addr_city').value = city;
@@ -636,36 +692,80 @@
             }
         } else {
             // Fallback: no radio buttons (no saved addresses) — use manual fields
-            const line1 = (document.getElementById('ship_line1') || document.getElementById('ship_address') || {}).value || '';
-            const state = (document.getElementById('ship_state') || {}).value || '';
+            const line1 = ((document.getElementById('ship_line1') || document.getElementById('ship_address') || {}).value || '').trim();
+            const state = ((document.getElementById('ship_state') || {}).value || '').trim();
             
+            if (!line1) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'warning', title: 'Missing Address', text: 'Please enter your Address' });
+                } else {
+                    alert('Please enter your Address');
+                }
+                return;
+            }
+
+            if (!state) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'warning', title: 'Missing State', text: 'Please select a State' });
+                } else {
+                    alert('Please select a State');
+                }
+                return;
+            }
+
             let city = '';
             if (state === 'Tamil Nadu') {
-                city = (document.getElementById('ship_fallback_district_select') || {}).value || '';
+                city = ((document.getElementById('ship_fallback_district_select') || {}).value || '').trim();
+                if (!city) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'warning', title: 'Missing District', text: 'Please select your District' });
+                    } else {
+                        alert('Please select your District');
+                    }
+                    return;
+                }
             } else if (state === 'Others') {
-                const dist = (document.getElementById('ship_fallback_district_text') || {}).value || '';
-                const cty = (document.getElementById('ship_fallback_city_text') || {}).value || '';
+                const dist = ((document.getElementById('ship_fallback_district_text') || {}).value || '').trim();
+                const cty  = ((document.getElementById('ship_fallback_city_text') || {}).value || '').trim();
                 
+                if (!dist || !cty) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter both District and City' });
+                    } else {
+                        alert('Please enter both District and City');
+                    }
+                    return;
+                }
+
                 const tnRegex = /tamil\s*nadu/i;
                 if (tnRegex.test(dist) || tnRegex.test(cty)) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid State Entry',
-                        text: 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.'
-                    });
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Invalid State Entry',
+                            text: 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.'
+                        });
+                    } else {
+                        alert('If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
+                    }
                     return;
                 }
                 
                 city = [dist, cty].filter(Boolean).join(', ');
             }
             
-            const pin   = (document.getElementById('ship_pincode') || {}).value || '';
-            const name  = (document.getElementById('ship_name')  || {}).value || '';
+            const pin   = ((document.getElementById('ship_pincode') || {}).value || '').trim();
+            const name  = ((document.getElementById('ship_name')  || {}).value || '').trim();
 
-            if (!line1 || !city) {
-                alert('Please fill in address and city.');
+            if (!pin || pin.length !== 6) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'warning', title: 'Invalid Pincode', text: 'Please enter a valid 6-digit Pincode' });
+                } else {
+                    alert('Please enter a valid 6-digit Pincode');
+                }
                 return;
             }
+
             fullAddr = [name, line1, city + ' - ' + pin].filter(Boolean).join('\n');
             
             document.getElementById('final_is_new_address').value = '1';
@@ -948,8 +1048,150 @@
             }
         }
     })();
+    function saveManualAddressAjax() {
+        const line1 = ((document.getElementById('ship_line1') || {}).value || '').trim();
+        const line2 = ((document.getElementById('ship_line2') || {}).value || '').trim();
+        const state = ((document.getElementById('ship_state') || {}).value || '').trim();
+        const pin   = ((document.getElementById('ship_pincode') || {}).value || '').trim();
+        const country = ((document.getElementById('ship_country') || {}).value || 'India').trim();
+
+        if (!line1) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Missing Address', text: 'Please enter Address Line 1' });
+            } else {
+                alert('Please enter Address Line 1');
+            }
+            return;
+        }
+
+        if (!state) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Missing State', text: 'Please select a State' });
+            } else {
+                alert('Please select a State');
+            }
+            return;
+        }
+
+        let city = '';
+        if (state === 'Tamil Nadu') {
+            city = ((document.getElementById('ship_district_select') || {}).value || '').trim();
+            if (!city) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'warning', title: 'Missing District', text: 'Please select your District' });
+                } else {
+                    alert('Please select your District');
+                }
+                return;
+            }
+        } else if (state === 'Others') {
+            const dist = ((document.getElementById('ship_district_text') || {}).value || '').trim();
+            const cty  = ((document.getElementById('ship_city_text') || {}).value || '').trim();
+            
+            if (!dist || !cty) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter both District and City' });
+                } else {
+                    alert('Please enter both District and City');
+                }
+                return;
+            }
+
+            const tnRegex = /tamil\s*nadu/i;
+            if (tnRegex.test(dist) || tnRegex.test(cty)) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid State Entry',
+                        text: 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.'
+                    });
+                } else {
+                    alert('If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
+                }
+                return;
+            }
+            
+            city = [dist, cty].filter(Boolean).join(', ');
+        }
+
+        if (!pin || pin.length !== 6) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'warning', title: 'Invalid Pincode', text: 'Please enter a valid 6-digit Pincode' });
+            } else {
+                alert('Please enter a valid 6-digit Pincode');
+            }
+            return;
+        }
+
+        const saveBtn = document.getElementById('save-manual-addr-btn');
+        const origText = saveBtn ? saveBtn.innerHTML : '';
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<svg class="w-4 h-4 animate-spin inline mr-1" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Saving...';
+        }
+
+        const formData = new FormData();
+        formData.append('label', 'Saved Address');
+        formData.append('line1', line1);
+        formData.append('line2', line2);
+        formData.append('state', state);
+        formData.append('city', city);
+        formData.append('postal_code', pin);
+        formData.append('country', country);
+        formData.append('is_default', '1');
+
+        const baseUrlEndpoint = typeof BASE_URL_JS !== 'undefined' ? BASE_URL_JS : '<?= BASE_URL ?>';
+
+        fetch(baseUrlEndpoint + '/checkout/address/add', {
+            method: 'POST',
+            body: formData
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Address Saved',
+                        text: 'Your address has been saved to your account.',
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        window.location.reload();
+                    });
+                } else {
+                    alert('Your address has been saved.');
+                    window.location.reload();
+                }
+            } else {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = origText;
+                }
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.error || 'Failed to save address' });
+                } else {
+                    alert(data.error || 'Failed to save address');
+                }
+            }
+        })
+        .catch(err => {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = origText;
+            }
+            console.error(err);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'An error occurred while saving the address.' });
+            } else {
+                alert('An error occurred while saving the address.');
+            }
+        });
+    }
+
     function toggleShipDistrictFields() {
-        const state = document.getElementById('ship_state').value;
+        const stateEl = document.getElementById('ship_state');
+        const state = stateEl ? stateEl.value : '';
         const select = document.getElementById('ship_district_select') || document.getElementById('ship_fallback_district_select');
         const othersContainer = document.getElementById('ship_others_container') || document.getElementById('ship_fallback_others_container');
         const distText = document.getElementById('ship_district_text') || document.getElementById('ship_fallback_district_text');
@@ -957,17 +1199,23 @@
         const label = document.getElementById('ship_district_label') || document.getElementById('ship_fallback_district_label');
 
         if (state === 'Tamil Nadu') {
-            if(label) label.innerText = 'District/City';
-            if(select) { select.classList.remove('hidden'); select.required = true; }
-            if(othersContainer) othersContainer.classList.add('hidden');
-            if(distText) distText.required = false;
-            if(cityText) cityText.required = false;
+            if (label) label.innerText = 'District/City';
+            if (select) { select.classList.remove('hidden'); select.required = true; }
+            if (othersContainer) othersContainer.classList.add('hidden');
+            if (distText) distText.required = false;
+            if (cityText) cityText.required = false;
         } else if (state === 'Others') {
-            if(label) label.innerText = 'District & City';
-            if(select) { select.classList.add('hidden'); select.required = false; select.value = ''; }
-            if(othersContainer) othersContainer.classList.remove('hidden');
-            if(distText) distText.required = true;
-            if(cityText) cityText.required = true;
+            if (label) label.innerText = 'District & City';
+            if (select) { select.classList.add('hidden'); select.required = false; select.value = ''; }
+            if (othersContainer) othersContainer.classList.remove('hidden');
+            if (distText) distText.required = true;
+            if (cityText) cityText.required = true;
+        } else {
+            if (label) label.innerText = 'District/City';
+            if (select) { select.classList.remove('hidden'); select.required = false; }
+            if (othersContainer) othersContainer.classList.add('hidden');
+            if (distText) distText.required = false;
+            if (cityText) cityText.required = false;
         }
 
         if (typeof recalculateFees === 'function') {
@@ -976,7 +1224,8 @@
     }
 
     function toggleEditShipDistrictFields() {
-        const state = document.getElementById('edit_state').value;
+        const stateEl = document.getElementById('edit_state');
+        const state = stateEl ? stateEl.value : '';
         const select = document.getElementById('edit_district_select');
         const othersContainer = document.getElementById('edit_others_container');
         const distText = document.getElementById('edit_district_text');
@@ -984,17 +1233,23 @@
         const label = document.getElementById('edit_district_label');
 
         if (state === 'Tamil Nadu') {
-            if(label) label.innerText = 'District/City';
-            if(select) { select.classList.remove('hidden'); select.required = true; }
-            if(othersContainer) othersContainer.classList.add('hidden');
-            if(distText) distText.required = false;
-            if(cityText) cityText.required = false;
+            if (label) label.innerHTML = 'District/City <span class="text-[#F25996]">*</span>';
+            if (select) { select.classList.remove('hidden'); select.required = true; }
+            if (othersContainer) othersContainer.classList.add('hidden');
+            if (distText) distText.required = false;
+            if (cityText) cityText.required = false;
         } else if (state === 'Others') {
-            if(label) label.innerText = 'District & City';
-            if(select) { select.classList.add('hidden'); select.required = false; select.value = ''; }
-            if(othersContainer) othersContainer.classList.remove('hidden');
-            if(distText) distText.required = true;
-            if(cityText) cityText.required = true;
+            if (label) label.innerHTML = 'District & City <span class="text-[#F25996]">*</span>';
+            if (select) { select.classList.add('hidden'); select.required = false; select.value = ''; }
+            if (othersContainer) othersContainer.classList.remove('hidden');
+            if (distText) distText.required = true;
+            if (cityText) cityText.required = true;
+        } else {
+            if (label) label.innerHTML = 'District/City <span class="text-[#F25996]">*</span>';
+            if (select) { select.classList.remove('hidden'); select.required = false; }
+            if (othersContainer) othersContainer.classList.add('hidden');
+            if (distText) distText.required = false;
+            if (cityText) cityText.required = false;
         }
     }
 

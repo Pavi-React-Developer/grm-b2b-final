@@ -217,7 +217,9 @@ async function submitAttributeModal(e) {
             });
 
             // Reload specifications in the product form
-            if (typeof fetchAttributes === 'function') {
+            if (typeof window.fetchAttributes === 'function') {
+                window.fetchAttributes();
+            } else if (typeof fetchAttributes === 'function') {
                 fetchAttributes();
             }
         } else {

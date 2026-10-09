@@ -1222,7 +1222,7 @@ if ($hasDynamicNavbar) {
                 clearTimeout(cartUpdateTimers[cartItemId]);
             }
 
-            // Debounce the network request by 150ms so rapid consecutive taps are bundled into one smooth server call
+            // Debounce the network request by 75ms so rapid consecutive taps are bundled into an ultra-fast server call
             cartUpdateTimers[cartItemId] = setTimeout(() => {
                 const sendQty = cartPendingQty[cartItemId] ? cartPendingQty[cartItemId].qty : newQty;
                 const seq = (cartDrawerReqSeq[cartItemId] || 0) + 1;
@@ -1258,7 +1258,7 @@ if ($hasDynamicNavbar) {
                     }
                     console.error('Error updating cart:', err);
                 });
-            }, 150);
+            }, 75);
         }
 
         // Send a cart update to the server (keepalive: request survives page navigation/refresh)
@@ -1576,11 +1576,11 @@ if ($hasDynamicNavbar) {
 
                                         <!-- Bottom (Below Trash): Quantity Stepper with NO dividing line -->
                                         <div class="inline-flex items-center border border-pink-200 rounded-xl bg-white p-0.5 shadow-2xs mt-auto select-none" style="touch-action: manipulation;">
-                                            <button type="button" onclick="updateCartItem(${item.cart_item_id}, -1, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;" ${item.quantity <= (item.moq || 1) ? 'disabled' : ''}>&minus;</button>
+                                            <button type="button" onclick="updateCartItem(${item.cart_item_id}, -${(item.moq && parseInt(item.moq) > 0) ? parseInt(item.moq) : 1}, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;" ${item.quantity <= (item.moq || 1) ? 'disabled' : ''}>&minus;</button>
                                             <div class="h-3 w-[1px] bg-pink-100"></div>
                                             <span id="cart-drawer-qty-${item.cart_item_id}" class="text-xs font-bold w-6 text-center text-[#F25996] select-none pointer-events-none">${item.quantity}</span>
                                             <div class="h-3 w-[1px] bg-pink-100"></div>
-                                            <button type="button" onclick="updateCartItem(${item.cart_item_id}, 1, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;" ${isMaxStock ? 'disabled' : ''}>&plus;</button>
+                                            <button type="button" onclick="updateCartItem(${item.cart_item_id}, ${(item.moq && parseInt(item.moq) > 0) ? parseInt(item.moq) : 1}, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;" ${isMaxStock ? 'disabled' : ''}>&plus;</button>
                                         </div>
                                     </div>
                                 </div>

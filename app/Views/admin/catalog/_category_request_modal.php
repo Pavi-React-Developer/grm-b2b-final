@@ -53,8 +53,8 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-700 mb-1">HSN Code (Optional)</label>
-                        <input type="text" name="hsn_code" id="req_cat_hsn" placeholder="e.g. 6403" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2 text-sm font-mono">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">HSN Code <span class="text-[10px] text-gray-400 font-normal">(digits only)</span></label>
+                        <input type="text" name="hsn_code" id="req_cat_hsn" maxlength="8" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" placeholder="e.g. 6403" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2 text-sm font-mono">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-gray-700 mb-1">SGST (%)</label>

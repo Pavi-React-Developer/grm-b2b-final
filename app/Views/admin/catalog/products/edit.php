@@ -46,9 +46,9 @@
                                 <?php endif; ?>
                             </div>
                             <select name="category_id" id="category_id" required class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
-                                <option value="">Select Category...</option>
+                                <option value="" <?= empty($product['category_id']) ? 'selected' : '' ?>>Select Category<?= empty($product['category_id']) ? ' (Currently Unassigned)...' : '...' ?></option>
                                 <?php foreach($categories as $category): ?>
-                                    <option value="<?= $category['id'] ?>" data-sgst="<?= htmlspecialchars($category['sgst'] ?? '0.00') ?>" data-cgst="<?= htmlspecialchars($category['cgst'] ?? '0.00') ?>" data-hsn="<?= htmlspecialchars($category['hsn_code'] ?? '') ?>" <?= $product['category_id'] == $category['id'] ? 'selected' : '' ?>><?= htmlspecialchars($category['name']) ?><?= !empty($category['hsn_code']) ? ' (HSN: ' . htmlspecialchars($category['hsn_code']) . ')' : '' ?></option>
+                                    <option value="<?= $category['id'] ?>" data-sgst="<?= htmlspecialchars($category['sgst'] ?? '0.00') ?>" data-cgst="<?= htmlspecialchars($category['cgst'] ?? '0.00') ?>" data-hsn="<?= htmlspecialchars($category['hsn_code'] ?? '') ?>" <?= (!empty($product['category_id']) && $product['category_id'] == $category['id']) ? 'selected' : '' ?>><?= htmlspecialchars($category['name']) ?><?= !empty($category['hsn_code']) ? ' (HSN: ' . htmlspecialchars($category['hsn_code']) . ')' : '' ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -82,10 +82,6 @@
                                         <label class="block text-sm font-bold text-gray-800">Size Chart</label>
                                         <span class="text-[11px] font-semibold text-gray-400 bg-gray-200/60 px-2 py-0.5 rounded-full">Optional</span>
                                     </div>
-                                    <a href="<?= BASE_URL ?>/admin/cms/size-charts/create" target="_blank" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors shrink-0 flex items-center gap-1" title="Open Size Chart Creator in new tab">
-                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                        <span>Add New Chart</span>
-                                    </a>
                                 </div>
                                 <select name="size_chart_id" id="size_chart_id" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
                                     <option value="">Default (Auto from Category / Subcategory / General)</option>
@@ -217,22 +213,10 @@
                 <label class="block text-sm font-bold text-[#4A3C31]"><?= !empty($isCustomize) ? 'Fabric Description' : 'Description' ?> <span class="text-red-500">*</span></label>
                 <button type="button" onclick="addCustomField()" class="text-xs font-semibold text-brown bg-cream border border-cream px-3 py-1.5 rounded-lg flex items-center hover:bg-[#F5F0E6] transition-colors shadow-2xs">
                     <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                    + Add Field
+                    Add Field
                 </button>
             </div>
             <textarea name="description" rows="5" required placeholder="Detailed description of the product features, benefits..." class="w-full border border-gray-200 rounded-xl focus:ring-brown focus:border-brown px-4 py-3 text-sm text-gray-700 bg-gray-50/50"><?= htmlspecialchars($product['description'] ?? '') ?></textarea>
-
-            <!-- 2. How to Use / How to Play -->
-            <div>
-                <label class="block text-sm font-bold text-[#4A3C31] mb-1"><?= !empty($isCustomize) ? 'How to Customize / Use' : 'How to Use / How to Play' ?></label>
-                <textarea name="how_to_use" rows="3" placeholder="Enter instructions on how to use or play with this product..." class="w-full border border-gray-200 rounded-xl focus:ring-brown focus:border-brown px-4 py-2.5 text-sm text-gray-700 bg-gray-50/50"><?= htmlspecialchars($product['how_to_use'] ?? '') ?></textarea>
-            </div>
-
-            <!-- 3. Why Choose -->
-            <div>
-                <label class="block text-sm font-bold text-[#4A3C31] mb-1">Why Choose</label>
-                <textarea name="why_choose" rows="3" placeholder="Enter why customers should choose this product..." class="w-full border border-gray-200 rounded-xl focus:ring-brown focus:border-brown px-4 py-2.5 text-sm text-gray-700 bg-gray-50/50"><?= htmlspecialchars($product['why_choose'] ?? '') ?></textarea>
-            </div>
 
             <!-- Dynamic Custom Fields Container -->
             <div id="custom-fields-container" class="space-y-3 pt-2">
@@ -263,7 +247,7 @@
                     </h3>
                     <button type="button" onclick="openAttributeModal()" class="inline-flex items-center px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-bold transition-colors shadow-sm">
                         <svg class="w-3.5 h-3.5 mr-1 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        + Add Attribute
+                        Add Attribute
                     </button>
                 </div>
                 <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
@@ -303,12 +287,13 @@
                             <th class="px-6 py-4 border-b border-gray-100">Variant</th>
                             <th class="px-6 py-4 border-b border-gray-100">SKU</th>
                             <th class="px-6 py-4 border-b border-gray-100">Price (₹)</th>
+                            <th class="px-6 py-4 border-b border-gray-100">Discount Price (₹)</th>
                             <th class="px-6 py-4 border-b border-gray-100 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody id="variant-table-body" class="divide-y divide-gray-100">
                         <?php if (empty($variants)): ?>
-                        <tr><td colspan="4" class="px-6 py-4 text-center text-gray-500">No variants exist for this product.</td></tr>
+                        <tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No variants exist for this product.</td></tr>
                         <?php else: ?>
                             <?php foreach ($variants as $index => $variant): ?>
                             <tr class="hover:bg-gray-50/50 transition-colors variant-table-row">
@@ -326,6 +311,9 @@
                                 </td>
                                 <td class="px-6 py-4">
                                     <input type="text" step="any" min="0.01" data-sync="variants[<?= $variant['id'] ?>][base_price]" value="<?= htmlspecialchars($variant['base_price']) ?>" class="w-32 text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-600 focus:ring-brown focus:border-brown bg-white shadow-sm sync-input">
+                                </td>
+                                <td class="px-6 py-4">
+                                    <input type="text" step="0.01" min="0" data-sync="variants[<?= $variant['id'] ?>][discount_price]" value="<?= htmlspecialchars($variant['discount_price'] ?? '') ?>" placeholder="e.g. 899.00" class="w-36 text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-600 focus:ring-brown focus:border-brown bg-white shadow-sm sync-input">
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <button type="button" onclick="if(confirm('Remove this variant? It will be deleted when you update the product.')){ this.closest('.variant-table-row').remove(); const card = document.getElementById('variant-card-<?= $variant['id'] ?>'); if(card) card.remove(); }" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Delete variant">
@@ -414,10 +402,12 @@
                                         <label class="block text-xs font-bold text-gray-500 mb-1">SKU <span class="text-red-500">*</span></label>
                                         <input type="text" name="variants[<?= $variant['id'] ?>][sku]" value="<?= htmlspecialchars($variant['sku']) ?>" required class="w-full border border-gray-200 rounded-lg focus:ring-brown focus:border-brown px-3 py-2 text-sm text-gray-700 shadow-sm">
                                     </div>
+                                    <?php if (empty($isCustomize)): ?>
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Weight (kg) <span class="text-red-500">*</span></label>
                                         <input type="text" step="0.0001" min="0.0001" name="variants[<?= $variant['id'] ?>][weight]" value="<?= $variant['weight'] !== null ? (float)$variant['weight'] : '' ?>" required class="w-full border border-gray-200 rounded-lg focus:ring-brown focus:border-brown px-3 py-2 text-sm text-gray-700 shadow-sm">
                                     </div>
+                                    <?php endif; ?>
                                 </div>
                                 
                                 <!-- Images Section (1/3 width) -->
@@ -665,7 +655,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         attributesContainer.innerHTML = '<div class="text-sm text-gray-400">Loading specifications...</div>';
 
-        let url = '/admin/catalog/attributes/api-get-by-category?category_id=' + catId;
+        let url = '<?= BASE_URL ?>/admin/catalog/attributes/api-get-by-category?category_id=' + catId;
         if (subCatId) url += '&sub_category_id=' + subCatId;
 
         fetch(url)
@@ -681,7 +671,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <p class="text-xs text-gray-500 mb-3">Add attributes like Size, Color, or Material to generate product variants, or check "No Attributes (Simple Product)".</p>
                             <button type="button" onclick="openAttributeModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                + Add Specification Attribute
+                                Add Specification Attribute
                             </button>
                         </div>
                     `;
@@ -790,6 +780,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 attributesContainer.innerHTML = '<div class="text-sm text-red-500">Error loading specifications.</div>';
             });
     }
+    window.fetchAttributes = fetchAttributes;
 
     function generateVariants() {
         const tableBody = document.getElementById('variant-table-body');
@@ -810,7 +801,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const groupKeys = Object.keys(attributeGroups);
         if (groupKeys.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="3" class="px-6 py-4 text-center text-gray-500">No variant-defining attributes selected. Please select specifications above and click Refresh Variants.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">No variant-defining attributes selected. Please select specifications above and click Refresh Variants.</td></tr>';
             cardsView.innerHTML = '<div class="text-center py-8 text-gray-500 text-sm border-2 border-dashed border-gray-200 rounded-xl">No variant-defining attributes selected. Please select specifications above and click Refresh Variants.</div>';
             return;
         }
@@ -911,6 +902,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <input type="text" step="any" min="0.01" data-sync="${inputPrefix}[base_price]" value="${escapeHtml(basePrice)}" class="w-32 text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-600 focus:ring-brown focus:border-brown bg-white shadow-sm sync-input">
                 </td>
                 <td class="px-6 py-4">
+                    <input type="text" step="0.01" min="0" data-sync="${inputPrefix}[discount_price]" value="${escapeHtml(discountPrice)}" placeholder="e.g. 899.00" class="w-36 text-sm border border-gray-200 rounded-lg px-3 py-2 text-gray-600 focus:ring-brown focus:border-brown bg-white shadow-sm sync-input">
+                </td>
+                <td class="px-6 py-4 text-right">
                     <button type="button" onclick="this.closest('tr').remove(); document.getElementById('variant-card-${variantId}').remove();" class="text-red-500 hover:text-red-700">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                     </button>
@@ -953,7 +947,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         `}
                         <div><label class="block text-xs font-bold text-gray-500 mb-1">Low Stock Alert <span class="text-red-500">*</span></label><input type="number" name="${inputPrefix}[low_stock_alert]" value="${escapeHtml(lowStockAlert)}" required class="w-full border border-gray-200 rounded-lg focus:ring-brown focus:border-brown px-3 py-2 text-sm text-gray-700 shadow-sm"></div>
                         <div><label class="block text-xs font-bold text-gray-500 mb-1">SKU <span class="text-red-500">*</span></label><input type="text" name="${inputPrefix}[sku]" value="${escapeHtml(actualSku)}" required class="w-full border border-gray-200 rounded-lg focus:ring-brown focus:border-brown px-3 py-2 text-sm text-gray-700 shadow-sm"></div>
+                        ${ <?= !empty($isCustomize) ? 'true' : 'false' ?> ? '' : `
                         <div><label class="block text-xs font-bold text-gray-500 mb-1">Weight (kg) <span class="text-red-500">*</span></label><input type="text" step="0.0001" min="0.0001" name="${inputPrefix}[weight]" value="${escapeHtml(weight)}" required class="w-full border border-gray-200 rounded-lg focus:ring-brown focus:border-brown px-3 py-2 text-sm text-gray-700 shadow-sm"></div>
+                        `}
                     </div>
                     
                     <!-- Images -->
@@ -994,7 +990,12 @@ document.addEventListener('DOMContentLoaded', function() {
             new_element.addEventListener('input', function() {
                 const targetName = this.getAttribute('data-sync');
                 const target = document.querySelector(`input[name="${targetName}"]`);
-                if (target) target.value = this.value;
+                if (target) {
+                    target.value = this.value;
+                    if (targetName.includes('[base_price]') || targetName.includes('[discount_price]')) {
+                        calculateGst(target);
+                    }
+                }
             });
         });
         
@@ -1044,7 +1045,26 @@ document.addEventListener('DOMContentLoaded', function() {
             totalGstEl.value = totalGst.toFixed(2);
         }
 
-        const effectivePrice = discountPrice > 0 ? discountPrice : basePrice;
+        // Validate discount price < base price
+        if (discountPriceEl) {
+            let errorMsgEl = container.querySelector('.price-discount-error');
+            if (discountPrice > 0 && discountPrice >= basePrice) {
+                discountPriceEl.classList.add('border-red-500', 'ring-2', 'ring-red-200', 'bg-red-50/50');
+                if (!errorMsgEl) {
+                    errorMsgEl = document.createElement('p');
+                    errorMsgEl.className = 'price-discount-error text-[11px] text-red-600 font-semibold mt-1';
+                    discountPriceEl.parentNode.appendChild(errorMsgEl);
+                }
+                errorMsgEl.textContent = `Discount Price must be less than Base Price (₹${basePrice.toFixed(2)})`;
+            } else {
+                discountPriceEl.classList.remove('border-red-500', 'ring-2', 'ring-red-200', 'bg-red-50/50');
+                if (errorMsgEl) {
+                    errorMsgEl.remove();
+                }
+            }
+        }
+
+        const effectivePrice = (discountPrice > 0 && discountPrice < basePrice) ? discountPrice : basePrice;
         const totalAmount = effectivePrice;
 
         if (totalAmountEl) {
@@ -1163,6 +1183,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     priceInput.focus();
                     hasError = true;
                     return;
+                }
+
+                const container = priceInput.closest('.variant-card-container') || priceInput.closest('.grid') || priceInput.closest('tr') || priceInput.closest('.p-6');
+                const discountPriceEl = container ? (container.querySelector('.variant-discount-price') || container.querySelector('input[name*="[discount_price]"]')) : null;
+                if (discountPriceEl && discountPriceEl.value.trim() !== '') {
+                    const discountPrice = parseFloat(discountPriceEl.value);
+                    if (!isNaN(discountPrice) && discountPrice > 0 && discountPrice >= price) {
+                        e.preventDefault();
+                        alert(`Discount Price (₹${discountPrice.toFixed(2)}) must be less than Base Price (₹${price.toFixed(2)}) for variant #${idx + 1}.`);
+                        discountPriceEl.focus();
+                        hasError = true;
+                        return;
+                    }
                 }
             });
 

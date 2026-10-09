@@ -535,7 +535,7 @@ function renderTable() {
                 </div>
             </td>
             <td class="px-6 py-5 text-sm">
-                <div class="font-semibold text-gray-900">${prod.category_name}</div>
+                <div class="font-semibold text-gray-900">${prod.category_name ? prod.category_name : '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">Unassigned</span>'}</div>
                 ${prod.category_hsn_code ? `<div class="mt-0.5"><span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">HSN: ${prod.category_hsn_code}</span></div>` : ''}
                 ${subCatHtml}
             </td>

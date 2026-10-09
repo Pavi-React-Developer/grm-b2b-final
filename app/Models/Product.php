@@ -31,7 +31,7 @@ class Product extends Model
                    pv_agg.sgst AS variant_sgst,
                    pv_agg.cgst AS variant_cgst
             FROM products p
-            JOIN categories c ON p.category_id = c.id
+            LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
             LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
             LEFT JOIN users u_v ON p.vendor_id = u_v.id
@@ -189,7 +189,7 @@ class Product extends Model
                    (SELECT MIN(CASE WHEN max_amount > 0 THEN max_amount ELSE NULL END) FROM product_variants WHERE product_id = p.id) as max_amount,
                    (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image
             FROM products p
-            JOIN categories c ON p.category_id = c.id
+            LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id
             LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
             LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
@@ -326,7 +326,7 @@ class Product extends Model
                    (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS current_stock_quantity,
                    (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS total_stock_quantity
             FROM products p 
-            JOIN categories c ON p.category_id = c.id
+            LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
             LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
             LEFT JOIN users u_v ON p.vendor_id = u_v.id
@@ -350,7 +350,7 @@ class Product extends Model
                    (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS current_stock_quantity,
                    (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS total_stock_quantity
             FROM products p 
-            JOIN categories c ON p.category_id = c.id
+            LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
             LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
             LEFT JOIN users u_v ON p.vendor_id = u_v.id

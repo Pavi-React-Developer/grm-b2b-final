@@ -144,10 +144,26 @@ class CategoryController extends Controller
         if (empty($data['name'])) {
             Session::setFlash('error', 'Name is required.');
             $this->redirect($redirectUrl);
+            return;
+        }
+
+        if (!empty($data['hsn_code']) && !preg_match('/^\d+$/', $data['hsn_code'])) {
+            Session::setFlash('error', 'HSN Code must contain only numbers.');
+            $this->redirect($redirectUrl);
+            return;
         }
 
         try {
             $categoryModel = new Category();
+
+            // Prevent duplicate category names
+            $existingDuplicate = $categoryModel->findByName($data['name'], $isCustomize ? 1 : 0);
+            if ($existingDuplicate) {
+                Session::setFlash('error', 'A category named "' . htmlspecialchars($data['name']) . '" already exists. Duplicate categories are not allowed.');
+                $this->redirect($redirectUrl);
+                return;
+            }
+
             $categoryModel->create($data);
             Session::setFlash('success', ($isCustomize ? 'Customize Category' : 'Category') . ' created successfully.');
         } catch (\Exception $e) {
@@ -214,10 +230,25 @@ class CategoryController extends Controller
         if ($id <= 0 || empty($data['name']) || empty($data['slug'])) {
             Session::setFlash('error', 'Invalid input.');
             $this->redirect($redirectUrl);
+            return;
+        }
+
+        if (!empty($data['hsn_code']) && !preg_match('/^\d+$/', $data['hsn_code'])) {
+            Session::setFlash('error', 'HSN Code must contain only numbers.');
+            $this->redirect($redirectUrl);
+            return;
         }
 
         try {
             $categoryModel = new Category();
+
+            // Prevent duplicate category names
+            $existingDuplicate = $categoryModel->findByName($data['name'], $isCustomize ? 1 : 0, $id);
+            if ($existingDuplicate) {
+                Session::setFlash('error', 'A category named "' . htmlspecialchars($data['name']) . '" already exists. Duplicate categories are not allowed.');
+                $this->redirect($redirectUrl);
+                return;
+            }
             $categoryModel->update($id, $data);
 
             // Sync updated GST rates to all products & variants in this category
@@ -309,8 +340,13 @@ class CategoryController extends Controller
         
         if ($id > 0) {
             $categoryModel = new Category();
-            $count = $categoryModel->getProductCount($id);
-            echo json_encode(['success' => true, 'count' => $count]);
+            $counts = $categoryModel->getCounts($id);
+            echo json_encode([
+                'success' => true,
+                'count' => $counts['product_count'],
+                'product_count' => $counts['product_count'],
+                'subcategory_count' => $counts['subcategory_count']
+            ]);
             exit;
         }
         

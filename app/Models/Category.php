@@ -27,23 +27,74 @@ class Category extends Model
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
-        return $stmt->fetchAll();
+        $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Deduplicate by category name to ensure each unique category is only shown once
+        $uniqueCategories = [];
+        $seenNames = [];
+        foreach ($results as $cat) {
+            $normName = strtolower(trim($cat['name']));
+            if (!isset($seenNames[$normName])) {
+                $seenNames[$normName] = true;
+                $uniqueCategories[] = $cat;
+            }
+        }
+        return $uniqueCategories;
     }
     
     public function getAll(?int $isCustomizable = null)
     {
-        $sql = "SELECT * FROM categories";
+        $sql = "SELECT c.*, COUNT(p.id) as product_count 
+                FROM categories c 
+                LEFT JOIN products p ON p.category_id = c.id";
+        $conditions = [];
         if ($isCustomizable !== null) {
             if ($isCustomizable === 1) {
-                $sql .= " WHERE is_customizable = 1";
+                $conditions[] = "c.is_customizable = 1";
             } else {
-                $sql .= " WHERE (is_customizable = 0 OR is_customizable IS NULL)";
+                $conditions[] = "(c.is_customizable = 0 OR c.is_customizable IS NULL)";
             }
         }
-        $sql .= " ORDER BY name ASC";
+        if (!empty($conditions)) {
+            $sql .= " WHERE " . implode(' AND ', $conditions);
+        }
+        $sql .= " GROUP BY c.id ORDER BY c.name ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute();
-        return $stmt->fetchAll();
+        $results = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        // Deduplicate by category name to ensure each unique category is only shown once
+        $uniqueCategories = [];
+        $seenNames = [];
+        foreach ($results as $cat) {
+            $normName = strtolower(trim($cat['name']));
+            if (!isset($seenNames[$normName])) {
+                $seenNames[$normName] = true;
+                $uniqueCategories[] = $cat;
+            }
+        }
+        return $uniqueCategories;
+    }
+
+    public function findByName(string $name, ?int $isCustomizable = null, ?int $excludeId = null)
+    {
+        $sql = "SELECT * FROM categories WHERE LOWER(TRIM(name)) = LOWER(TRIM(:name))";
+        $params = ['name' => trim($name)];
+        if ($isCustomizable !== null) {
+            if ($isCustomizable === 1) {
+                $sql .= " AND is_customizable = 1";
+            } else {
+                $sql .= " AND (is_customizable = 0 OR is_customizable IS NULL)";
+            }
+        }
+        if ($excludeId !== null) {
+            $sql .= " AND id != :exclude_id";
+            $params['exclude_id'] = $excludeId;
+        }
+        $sql .= " LIMIT 1";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetch(\PDO::FETCH_ASSOC);
     }
 
     public function generateUniqueSlug(string $nameOrSlug, ?int $excludeId = null): string
@@ -157,6 +208,21 @@ class Category extends Model
         return (int)$stmt->fetchColumn();
     }
 
+    public function getSubCategoryCount(int $id): int
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM sub_categories WHERE category_id = :id");
+        $stmt->execute(['id' => $id]);
+        return (int)$stmt->fetchColumn();
+    }
+
+    public function getCounts(int $id): array
+    {
+        return [
+            'product_count' => $this->getProductCount($id),
+            'subcategory_count' => $this->getSubCategoryCount($id)
+        ];
+    }
+
     public function delete(int $id)
     {
         $ownsTx = false;
@@ -168,53 +234,25 @@ class Category extends Model
         try {
             $this->db->exec("SET FOREIGN_KEY_CHECKS=0");
 
-            // 1. Delete all products belonging to this category
-            $stmt = $this->db->prepare("SELECT id FROM products WHERE category_id = :id");
-            $stmt->execute(['id' => $id]);
-            $productIds = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            // 1. Unassign all products belonging to this category (do NOT delete products)
+            $stmtProd = $this->db->prepare("UPDATE products SET category_id = NULL WHERE category_id = :id");
+            $stmtProd->execute(['id' => $id]);
 
-            $productModel = new Product();
-            foreach ($productIds as $pId) {
-                $productModel->delete($pId);
-            }
-
-            // 2. Fetch all subcategory IDs for this category
-            $stmtSubIds = $this->db->prepare("SELECT id FROM sub_categories WHERE category_id = :id");
-            $stmtSubIds->execute(['id' => $id]);
-            $subCategoryIds = $stmtSubIds->fetchAll(\PDO::FETCH_COLUMN);
-
-            // 3. Find all attributes belonging to this category or its subcategories
-            $attrSql = "SELECT id FROM attributes WHERE category_id = :id";
-            if (!empty($subCategoryIds)) {
-                $subPlaceholders = implode(',', array_fill(0, count($subCategoryIds), '?'));
-                $attrSql = "SELECT id FROM attributes WHERE category_id = ? OR sub_category_id IN ($subPlaceholders)";
-                $stmtAttr = $this->db->prepare($attrSql);
-                $stmtAttr->execute(array_merge([$id], $subCategoryIds));
-            } else {
-                $stmtAttr = $this->db->prepare($attrSql);
-                $stmtAttr->execute(['id' => $id]);
-            }
-            $attributeIds = $stmtAttr->fetchAll(\PDO::FETCH_COLUMN);
-
-            if (!empty($attributeIds)) {
-                $attrPlaceholders = implode(',', array_fill(0, count($attributeIds), '?'));
-                $this->db->prepare("DELETE FROM product_variant_attributes WHERE attribute_id IN ($attrPlaceholders)")->execute($attributeIds);
-                $this->db->prepare("DELETE FROM product_attribute_values WHERE attribute_id IN ($attrPlaceholders)")->execute($attributeIds);
-                $this->db->prepare("DELETE FROM attribute_values WHERE attribute_id IN ($attrPlaceholders)")->execute($attributeIds);
-                $this->db->prepare("DELETE FROM attributes WHERE id IN ($attrPlaceholders)")->execute($attributeIds);
-            }
-
-            // 4. Delete associated subcategories
-            $stmtSub = $this->db->prepare("DELETE FROM sub_categories WHERE category_id = :id");
+            // 2. Unassign all subcategories belonging to this category (do NOT delete subcategories)
+            $stmtSub = $this->db->prepare("UPDATE sub_categories SET category_id = NULL WHERE category_id = :id");
             $stmtSub->execute(['id' => $id]);
 
-            // 5. Delete associated order rules, size charts, fabric customizations, category requests
-            $this->db->prepare("DELETE FROM order_rules WHERE category_id = :id")->execute(['id' => $id]);
-            $this->db->prepare("DELETE FROM size_charts WHERE category_id = :id")->execute(['id' => $id]);
-            $this->db->prepare("DELETE FROM fabric_customizations WHERE category_id = :id")->execute(['id' => $id]);
-            $this->db->prepare("DELETE FROM category_requests WHERE parent_category_id = :id")->execute(['id' => $id]);
+            // 3. Unassign category from attributes (do NOT delete attributes)
+            $stmtAttr = $this->db->prepare("UPDATE attributes SET category_id = NULL WHERE category_id = :id");
+            $stmtAttr->execute(['id' => $id]);
 
-            // 6. Delete the category itself
+            // 4. Remove category-specific rules / references
+            $this->db->prepare("DELETE FROM order_rules WHERE category_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("UPDATE size_charts SET category_id = NULL WHERE category_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("UPDATE fabric_customizations SET category_id = NULL WHERE category_id = :id")->execute(['id' => $id]);
+            $this->db->prepare("UPDATE category_requests SET parent_category_id = NULL WHERE parent_category_id = :id")->execute(['id' => $id]);
+
+            // 5. Delete the category record
             $stmtDel = $this->db->prepare("DELETE FROM categories WHERE id = :id");
             $result = $stmtDel->execute(['id' => $id]);
 

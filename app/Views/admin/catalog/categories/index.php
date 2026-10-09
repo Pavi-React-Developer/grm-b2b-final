@@ -156,7 +156,9 @@
                         <th class="px-6 py-5 font-semibold text-gray-500 w-16">ID</th>
                         <th class="px-6 py-5 font-semibold text-gray-500 w-24">Image</th>
                         <th class="px-6 py-5 font-semibold text-gray-500">Details</th>
-                        <th class="px-6 py-5 font-semibold text-gray-500">MOV / Cart Limit</th>
+                        <?php if (empty($isCustomize)): ?>
+                        <th class="px-6 py-5 font-semibold text-gray-500">MOV</th>
+                        <?php endif; ?>
                         <th class="px-6 py-5 font-semibold text-gray-500">Status</th>
                         <th class="px-6 py-5 font-semibold text-gray-500 text-right">Actions</th>
                     </tr>
@@ -164,7 +166,7 @@
                 <tbody class="divide-y divide-gray-50 text-sm">
                     <?php if(empty($categories)): ?>
                     <tr>
-                        <td colspan="6" class="px-6 py-16 text-center text-gray-400 font-medium">
+                        <td colspan="<?= empty($isCustomize) ? '6' : '5' ?>" class="px-6 py-16 text-center text-gray-400 font-medium">
                             <div class="flex flex-col items-center">
                                 <svg class="w-12 h-12 mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                                 No categories found. Let's create your first one.
@@ -200,23 +202,17 @@
                                     <?php endif; ?>
                                 </div>
                             </td>
+                            <?php if (empty($isCustomize)): ?>
                             <td class="px-6 py-5">
-                                <div class="flex flex-col space-y-1.5 items-start">
+                                <div class="flex items-center">
                                     <?php if(!empty($cat['min_order_value'])): ?>
-                                        <span class="px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-100 shadow-sm inline-flex items-center">
-                                            MOV: ₹<?= number_format($cat['min_order_value'], 2) ?>
-                                        </span>
-                                    <?php endif; ?>
-                                    <?php if(!empty($cat['min_cart_value'])): ?>
-                                        <span class="px-2.5 py-0.5 bg-purple-50 text-purple-700 rounded-lg text-xs font-semibold border border-purple-100 shadow-sm inline-flex items-center">
-                                            Cart Limit: ₹<?= number_format($cat['min_cart_value'], 2) ?>
-                                        </span>
-                                    <?php endif; ?>
-                                    <?php if(empty($cat['min_order_value']) && empty($cat['min_cart_value'])): ?>
-                                        <span class="text-gray-400 text-xs font-medium italic">No Limits</span>
+                                        <span class="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-100 shadow-sm">MOV: ₹<?= number_format($cat['min_order_value'], 2) ?></span>
+                                    <?php else: ?>
+                                        <span class="text-gray-400 text-xs font-medium italic">No MOV</span>
                                     <?php endif; ?>
                                 </div>
                             </td>
+                            <?php endif; ?>
                             <td class="px-6 py-5">
                                 <?php if($cat['status'] === 'active'): ?>
                                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 shadow-sm">
@@ -279,20 +275,17 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="<?= empty($isCustomize) ? 'grid grid-cols-2 gap-3' : '' ?>">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">HSN Code <span class="text-[10px] text-gray-400 font-normal">(6 digits)</span></label>
-                    <input type="text" name="hsn_code" maxlength="8" pattern="[0-9]{4,8}" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 transition-all bg-white font-mono text-xs" placeholder="e.g. 610910">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">HSN Code <span class="text-[10px] text-gray-400 font-normal">(digits only)</span></label>
+                    <input type="text" name="hsn_code" maxlength="8" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 transition-all bg-white font-mono text-xs" placeholder="e.g. 610910">
                 </div>
+                <?php if (empty($isCustomize)): ?>
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Min Order Value (₹) <span class="text-[10px] text-gray-400 font-normal">(Category MOV)</span></label>
                     <input type="text" name="min_order_value" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 text-sm transition-all" placeholder="0.00">
                 </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Order Cart Value (₹) <span class="text-[10px] text-gray-400 font-normal">(Overall Cart Limit required for this category)</span></label>
-                <input type="text" name="min_cart_value" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 text-sm transition-all" placeholder="e.g. 5000.00">
+                <?php endif; ?>
             </div>
             
             <div>
@@ -373,20 +366,17 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
+            <div class="<?= empty($isCustomize) ? 'grid grid-cols-2 gap-3' : '' ?>">
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 mb-1">HSN Code <span class="text-[10px] text-gray-400 font-normal">(6 digits)</span></label>
-                    <input type="text" name="hsn_code" id="edit-hsn-code" maxlength="8" pattern="[0-9]{4,8}" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 transition-all bg-white font-mono text-xs" placeholder="e.g. 610910">
+                    <label class="block text-xs font-bold text-gray-700 mb-1">HSN Code <span class="text-[10px] text-gray-400 font-normal">(digits only)</span></label>
+                    <input type="text" name="hsn_code" id="edit-hsn-code" maxlength="8" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'')" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 transition-all bg-white font-mono text-xs" placeholder="e.g. 610910">
                 </div>
+                <?php if (empty($isCustomize)): ?>
                 <div>
                     <label class="block text-xs font-bold text-gray-700 mb-1">Min Order Value (₹) <span class="text-[10px] text-gray-400 font-normal">(Category MOV)</span></label>
                     <input type="text" name="min_order_value" id="edit-min-value" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 text-sm transition-all">
                 </div>
-            </div>
-
-            <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Order Cart Value (₹) <span class="text-[10px] text-gray-400 font-normal">(Overall Cart Limit required for this category)</span></label>
-                <input type="text" name="min_cart_value" id="edit-min-cart-value" step="0.01" min="0" class="w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 px-3 py-2 text-sm transition-all" placeholder="e.g. 5000.00">
+                <?php endif; ?>
             </div>
             
             <div>
@@ -490,16 +480,26 @@ function exportCategories() {
         alert('No categories to export.');
         return;
     }
-    const headers = ['ID', 'Name', 'Slug', 'HSN Code', 'Min Order Value', 'Min Cart Value', 'Status', 'Product Count'];
+    const isCustomizeCat = <?= !empty($isCustomize) ? 'true' : 'false' ?>;
+    const headers = isCustomizeCat 
+        ? ['ID', 'Name', 'Slug', 'HSN Code', 'Status', 'Product Count']
+        : ['ID', 'Name', 'Slug', 'HSN Code', 'Min Order Value', 'Status', 'Product Count'];
+        
     let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
     allCategories.forEach(c => {
-        const row = [
+        const row = isCustomizeCat ? [
+            c.id,
+            `"${(c.name || '').replace(/"/g, '""')}"`,
+            c.slug,
+            c.hsn_code || '',
+            c.status,
+            c.product_count || 0
+        ] : [
             c.id,
             `"${(c.name || '').replace(/"/g, '""')}"`,
             c.slug,
             c.hsn_code || '',
             c.min_order_value || '',
-            c.min_cart_value || '',
             c.status,
             c.product_count || 0
         ];
@@ -508,7 +508,7 @@ function exportCategories() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "categories_export.csv");
+    link.setAttribute("download", isCustomizeCat ? "customize_categories_export.csv" : "categories_export.csv");
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -545,8 +545,10 @@ function openEditModal(cat) {
     document.getElementById('edit-slug').value = cat.slug;
     document.getElementById('edit-hsn-code').value = cat.hsn_code || '';
     document.getElementById('edit-description').value = cat.description || '';
-    document.getElementById('edit-min-value').value = cat.min_order_value || '';
-    document.getElementById('edit-min-cart-value').value = cat.min_cart_value || '';
+    const minValEl = document.getElementById('edit-min-value');
+    if (minValEl) {
+        minValEl.value = cat.min_order_value || '';
+    }
     document.getElementById('edit-sgst').value = cat.sgst !== null && cat.sgst !== undefined ? cat.sgst : '0.00';
     document.getElementById('edit-cgst').value = cat.cgst !== null && cat.cgst !== undefined ? cat.cgst : '0.00';
     document.getElementById('edit-status').value = cat.status;
@@ -585,7 +587,7 @@ function openDeleteModal(id) {
         confirmBtn.innerHTML = 'Yes, Delete';
     }
     
-    modalText.innerHTML = 'Checking products...';
+    modalText.innerHTML = '<span class="inline-flex items-center gap-1.5 text-gray-500"><svg class="animate-spin h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Checking linked items...</span>';
     document.getElementById('delete-modal').classList.remove('hidden');
     
     const checkUrl = '<?= BASE_URL ?>/admin/catalog/categories/check-delete?id=' + id;
@@ -597,14 +599,16 @@ function openDeleteModal(id) {
     })
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.count !== undefined) {
-                modalText.innerHTML = `This category contains <strong class="text-gray-900">${data.count}</strong> product(s).<br>Are you sure you want to delete this category? All related subcategories, attributes, and products will also be deleted. This action <strong class="text-gray-900">cannot be undone</strong>.`;
+            if (data.success) {
+                const prodCount = data.product_count !== undefined ? data.product_count : (data.count || 0);
+                const subCount = data.subcategory_count !== undefined ? data.subcategory_count : 0;
+                modalText.innerHTML = `This category currently has <strong class="text-gray-900 font-bold">${subCount}</strong> sub-categor(y/ies) and <strong class="text-gray-900 font-bold">${prodCount}</strong> product(s).<br><br><span class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200 block text-left leading-relaxed">ℹ️ <strong>Note:</strong> Deleting this category will <strong>not delete</strong> any products or sub-categories. They will remain safely in the system as <strong>Unassigned</strong>.</span>`;
             } else {
-                modalText.innerHTML = `Are you sure you want to delete this category? All related subcategories, attributes, and products will also be deleted. This action <strong class="text-gray-900">cannot be undone</strong>.`;
+                modalText.innerHTML = `Are you sure you want to delete this category?<br><span class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200 block text-left mt-2 leading-relaxed">ℹ️ <strong>Note:</strong> Related products and subcategories will not be deleted; they will be set to <strong>Unassigned</strong>.</span>`;
             }
         })
         .catch(err => {
-            modalText.innerHTML = `Are you sure you want to delete this category? All related subcategories, attributes, and products will also be deleted. This action <strong class="text-gray-900">cannot be undone</strong>.`;
+            modalText.innerHTML = `Are you sure you want to delete this category?<br><span class="text-xs text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200 block text-left mt-2 leading-relaxed">ℹ️ <strong>Note:</strong> Related products and subcategories will not be deleted; they will be set to <strong>Unassigned</strong>.</span>`;
         });
 }
 

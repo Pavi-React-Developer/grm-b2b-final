@@ -111,10 +111,24 @@
     <?php endforeach; ?>
 </div>
 
-<!-- Visible Horizontal & Vertical Scrollbars for Admin Orders Table -->
+<style>
+/* Remove inside right-side vertical scrollbar on Orders Table */
+.orders-table-container {
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: thin;
+}
+.orders-table-container::-webkit-scrollbar:vertical {
+    display: none !important;
+    width: 0px !important;
+    height: 0px !important;
+    background: transparent !important;
+}
+</style>
+
 <!-- Table Container with Clean List Style (No inside vertical scrollbar) -->
-<div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 mb-6">
-    <div class="overflow-x-auto relative rounded-2xl">
+<div class="bg-white rounded-2xl shadow-sm border border-gray-200/80 mb-6 overflow-hidden">
+    <div class="orders-table-container overflow-x-auto relative rounded-2xl" style="overflow-y: hidden !important;">
         <table class="w-full text-left border-collapse min-w-[1100px]">
             <thead class="sticky top-0 z-20 bg-gray-50 shadow-2xs">
                 <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
@@ -254,30 +268,13 @@
                                 ?>
                                 <?php if ($this->hasPermission('all_orders', 'edit') && !empty($allowedNext) && !$isRefundStatus): ?>
                                 <div class="flex flex-col items-start space-y-1.5">
-                                    <div class="relative inline-block text-left status-menu-container">
-                                        <button type="button" 
-                                                onclick="toggleStatusMenu(event, '<?= $order['order_number'] ?>')" 
-                                                class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border shadow-2xs transition-all active:scale-95 cursor-pointer <?= $btnStyle ?>"
-                                                id="status-btn-<?= $order['order_number'] ?>">
-                                            <span><?= $label ?></span>
-                                            <svg class="w-3.5 h-3.5 opacity-70 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                                        </button>
-                                        <div id="status-menu-<?= $order['order_number'] ?>" 
-                                             class="hidden absolute left-0 top-full mt-1.5 w-48 rounded-2xl bg-white shadow-xl border border-gray-100 p-1.5 z-50 ring-1 ring-black/5 animate-in fade-in zoom-in-95 duration-150">
-                                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-3 py-1">Advance Status</div>
-                                            <?php foreach ($allowedNext as $nextVal => $nextLabel): ?>
-                                                <button type="button" 
-                                                        onclick="applyStatusTransition('<?= $order['order_number'] ?>', '<?= $currentStatus ?>', '<?= $nextVal ?>')" 
-                                                        class="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-gray-800 hover:bg-pink-50 hover:text-pink-700 flex items-center justify-between transition-colors group">
-                                                    <span class="flex items-center gap-2">
-                                                        <span class="w-2 h-2 rounded-full bg-pink-500"></span>
-                                                        <?= $nextLabel ?>
-                                                    </span>
-                                                    <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-pink-600 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                                </button>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    </div>
+                                    <button type="button" 
+                                            onclick="openOrderStatusMenu(event, '<?= $order['order_number'] ?>', '<?= $currentStatus ?>')" 
+                                            class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold border shadow-2xs cursor-pointer <?= $btnStyle ?>"
+                                            id="status-btn-<?= $order['order_number'] ?>">
+                                        <span><?= $label ?></span>
+                                        <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                    </button>
                                     <?php if (!empty($order['has_modification'])): ?>
                                         <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
@@ -317,7 +314,7 @@
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                 </a>
                                 <?php if ($this->hasPermission('all_orders', 'edit') && in_array($order['status'], ['placed', 'packed'])): ?>
-                                <button type="button" onclick="openPackingModal('<?= $order['order_number'] ?>', document.querySelector('select[data-id=\'<?= $order['order_number'] ?>\']'))" class="text-purple-600 hover:text-purple-800 transition-colors" title="<?= $order['status'] === 'packed' ? 'Update Packing Videos & Email Invoice' : 'Pack Order & Upload Videos' ?>">
+                                <button type="button" onclick="openPackingModal('<?= $order['order_number'] ?>', document.getElementById('status-btn-<?= $order['order_number'] ?>'))" class="text-purple-600 hover:text-purple-800 transition-colors" title="<?= $order['status'] === 'packed' ? 'Update Packing Videos & Email Invoice' : 'Pack Order & Upload Videos' ?>">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                 </button>
                                 <?php endif; ?>
@@ -453,41 +450,145 @@
     </div>
 </div>
 
+<!-- Global Status Dropdown Portal Menu (Static positioning, closes on scroll) -->
+<div id="orderStatusPortal" class="fixed inset-0 z-[9999] hidden">
+    <!-- Backdrop to close on click outside -->
+    <div class="fixed inset-0 bg-black/5" onclick="closeOrderStatusPortal()"></div>
+    
+    <!-- Static Positioned Card Container -->
+    <div id="orderStatusFloatingCard" class="fixed bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 min-w-[240px] max-w-[280px] z-[10000] ring-1 ring-black/5 flex flex-col gap-1" style="top: 0px; left: 0px;">
+        <div class="px-3 py-2 border-b border-gray-100 flex items-center justify-between mb-1 bg-gray-50/80 -mx-2 -mt-2 rounded-t-2xl">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Change Order Status</span>
+            <span id="portalOrderNumber" class="text-[11px] font-mono font-bold text-[#F25996]"></span>
+        </div>
+        <div id="portalStatusOptions" class="flex flex-col gap-1">
+            <!-- Dynamic Options Injected by JS -->
+        </div>
+    </div>
+</div>
+
 <?php if (!$isPendingView): ?>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    window.toggleStatusMenu = function(e, orderNumber) {
-        e.stopPropagation();
-        const menu = document.getElementById('status-menu-' + orderNumber);
-        if (!menu) return;
-        const isHidden = menu.classList.contains('hidden');
-        
-        // Close all other menus
-        document.querySelectorAll('[id^="status-menu-"]').forEach(el => el.classList.add('hidden'));
-        
-        if (isHidden) {
-            menu.classList.remove('hidden');
-        }
+    let currentActiveBtn = null;
+    let currentActiveOrderId = null;
+
+    const STATUS_CONFIG = {
+        'placed': { label: 'Placed', icon: '⏳', desc: 'Order received', badge: 'bg-amber-100 text-amber-800' },
+        'packed': { label: 'Packed', icon: '📦', desc: 'Videos & Invoice dispatched', badge: 'bg-purple-100 text-purple-800' },
+        'shipped': { label: 'Shipped', icon: '🚚', desc: 'Courier & Tracking added', badge: 'bg-blue-100 text-blue-800' },
+        'out_for_delivery': { label: 'Out for Delivery', icon: '🛵', desc: 'Out for customer delivery', badge: 'bg-indigo-100 text-indigo-800' },
+        'delivered': { label: 'Delivered', icon: '✅', desc: 'Successfully delivered', badge: 'bg-emerald-100 text-emerald-800' }
     };
 
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.status-menu-container')) {
-            document.querySelectorAll('[id^="status-menu-"]').forEach(el => el.classList.add('hidden'));
-        }
-    });
+    const ALLOWED_TRANSITIONS = {
+        'placed': ['packed'],
+        'packed': ['shipped'],
+        'shipped': ['out_for_delivery'],
+        'out_for_delivery': ['delivered'],
+        'delivered': [],
+        'cancelled': []
+    };
 
-    window.applyStatusTransition = function(orderId, currentStatus, newStatus) {
-        // Close menus
-        document.querySelectorAll('[id^="status-menu-"]').forEach(el => el.classList.add('hidden'));
+    window.closeOrderStatusPortal = function() {
+        const portal = document.getElementById('orderStatusPortal');
+        if (portal) portal.classList.add('hidden');
+    };
+
+    // Auto close portal on any scroll or resize so it never floats/moves in mid-air
+    window.addEventListener('scroll', closeOrderStatusPortal, true);
+    window.addEventListener('resize', closeOrderStatusPortal);
+
+    window.openOrderStatusMenu = function(event, orderId, currentStatus) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        currentActiveOrderId = orderId;
+        currentActiveBtn = event ? event.currentTarget : document.getElementById('status-btn-' + orderId);
+
+        const portal = document.getElementById('orderStatusPortal');
+        const card = document.getElementById('orderStatusFloatingCard');
+        const badge = document.getElementById('portalOrderNumber');
+        const optionsContainer = document.getElementById('portalStatusOptions');
+
+        if (!portal || !card || !optionsContainer) return;
+
+        badge.textContent = '#' + orderId;
+
+        const allowed = ALLOWED_TRANSITIONS[currentStatus] || [];
+        const curConf = STATUS_CONFIG[currentStatus] || { label: currentStatus, icon: '•' };
+
+        let html = `
+            <div class="px-3 py-2 rounded-xl bg-gray-50 flex items-center justify-between border border-gray-200/80 mb-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">${curConf.icon}</span>
+                    <span class="text-xs font-bold text-gray-800">${curConf.label}</span>
+                </div>
+                <span class="text-[9px] font-black uppercase tracking-wider bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">Current</span>
+            </div>
+        `;
+
+        if (allowed.length === 0) {
+            html += `
+                <div class="px-3 py-2 text-center text-xs text-gray-400 font-medium">
+                    No further status transitions available
+                </div>
+            `;
+        } else {
+            html += `<div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 py-0.5">Advance Status To:</div>`;
+            allowed.forEach(st => {
+                const conf = STATUS_CONFIG[st] || { label: st, icon: '•' };
+                const btnStyle = 'hover:bg-pink-50 text-gray-800 hover:text-pink-700 border-gray-100 hover:border-pink-200';
+                const actionLabel = `Advance to ${conf.label}`;
+
+                html += `
+                    <button type="button" 
+                            onclick="selectOrderStatusOption('${orderId}', '${currentStatus}', '${st}')"
+                            class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold ${btnStyle} flex items-center justify-between transition-colors group border shadow-2xs cursor-pointer">
+                        <span class="flex items-center gap-2.5">
+                            <span class="text-base">${conf.icon}</span>
+                            <span>${actionLabel}</span>
+                        </span>
+                        <svg class="w-4 h-4 text-gray-400 group-hover:text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>
+                `;
+            });
+        }
+
+        optionsContainer.innerHTML = html;
+        portal.classList.remove('hidden');
+
+        // Position statically right under the clicked button
+        const rect = currentActiveBtn ? currentActiveBtn.getBoundingClientRect() : { top: 100, left: 100, bottom: 130 };
+        const cardWidth = 260;
+        const cardHeight = card.offsetHeight || 200;
+
+        let top = rect.bottom + 6;
+        let left = rect.left;
+
+        if (top + cardHeight > window.innerHeight - 15) {
+            top = Math.max(15, rect.top - cardHeight - 6);
+        }
+        if (left + cardWidth > window.innerWidth - 15) {
+            left = Math.max(15, window.innerWidth - cardWidth - 15);
+        }
+
+        card.style.top = top + 'px';
+        card.style.left = left + 'px';
+    };
+
+    window.selectOrderStatusOption = function(orderId, currentStatus, newStatus) {
+        closeOrderStatusPortal();
 
         if (newStatus === 'packed') {
-            openPackingModal(orderId, null);
+            openPackingModal(orderId, currentActiveBtn);
             return;
         }
 
         if (newStatus === 'shipped') {
-            openTrackingModal(orderId, null);
+            openTrackingModal(orderId, currentActiveBtn);
             return;
         }
 
@@ -496,13 +597,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
         Swal.fire({
             title: 'Update Order Status?',
-            html: `Are you sure you want to transition Order <b>#${orderId}</b> from <span class="text-gray-600 font-semibold">${formatCurrent}</span> to <span class="text-pink-600 font-bold">${formatTarget}</span>?`,
+            html: `Are you sure you want to transition Order <b>#${orderId}</b> from <span class="text-gray-600 font-semibold">${formatCurrent}</span> to <span class="text-[#F25996] font-bold">${formatTarget}</span>?`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#F25996',
             cancelButtonColor: '#f3f4f6',
             confirmButtonText: 'Yes, Update Status',
-            cancelButtonText: '<span style="color: #F25996; font-weight: bold;">Cancel</span>',
+            cancelButtonText: '<span style="color: #6b7280; font-weight: bold;">Keep as ' + formatCurrent + '</span>',
             reverseButtons: true,
             customClass: {
                 popup: 'rounded-2xl shadow-xl border border-gray-100',
@@ -511,7 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                updateStatusAjax(orderId, newStatus, null);
+                updateStatusAjax(orderId, newStatus, currentActiveBtn);
             }
         });
     };
@@ -667,19 +768,29 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         })
-        .then(r => r.json())
+        .then(async response => {
+            let res;
+            try {
+                res = await response.json();
+            } catch (e) {
+                const text = await response.text();
+                console.error("Server raw response:", text);
+                throw new Error(text || 'Invalid JSON response from server');
+            }
+            return res;
+        })
         .then(res => {
             document.getElementById('packingUploadStatus').classList.add('hidden');
             document.getElementById('packingSubmitBtn').disabled = false;
             document.getElementById('packingCancelBtn').disabled = false;
 
-            if (res.success) {
+            if (res && res.success) {
                 document.getElementById('packingModal').classList.add('hidden');
                 if (selectEl) {
                     selectEl.setAttribute('data-original', 'packed');
                     selectEl.value = 'packed';
-                    updateDropdownStyle(selectEl);
-                    updateDropdownOptions(selectEl, 'packed');
+                    if (typeof updateDropdownStyle === 'function') updateDropdownStyle(selectEl);
+                    if (typeof updateDropdownOptions === 'function') updateDropdownOptions(selectEl, 'packed');
                 }
                 Swal.fire({
                     title: 'Packed & Invoice Dispatched!',
@@ -690,8 +801,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     location.reload();
                 });
             } else {
-                alert('Error: ' + res.message);
-                closePackingModal();
+                Swal.fire({
+                    title: 'Failed to Pack Order',
+                    text: res ? res.message : 'An unknown error occurred.',
+                    icon: 'error',
+                    confirmButtonColor: '#F25996'
+                });
             }
         })
         .catch(err => {
@@ -699,8 +814,12 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('packingUploadStatus').classList.add('hidden');
             document.getElementById('packingSubmitBtn').disabled = false;
             document.getElementById('packingCancelBtn').disabled = false;
-            alert('Failed to upload packing videos or update status.');
-            closePackingModal();
+            Swal.fire({
+                title: 'Upload Failed',
+                text: (err.message && err.message.length < 150) ? err.message : 'Failed to upload packing videos or update status. Please try again.',
+                icon: 'error',
+                confirmButtonColor: '#F25996'
+            });
         });
     };
 

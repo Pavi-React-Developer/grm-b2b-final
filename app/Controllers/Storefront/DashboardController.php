@@ -393,7 +393,7 @@ class DashboardController extends Controller
         $country  = trim($_POST['country'] ?? 'India') ?: 'India';
         $isDefault = isset($_POST['is_default']) ? 1 : 0;
 
-        if (empty($line1) || empty($city) || empty($state) || $state === 'Others' || empty($postal)) {
+        if (empty($line1) || empty($city) || empty($state) || empty($postal)) {
             Session::setFlash('error', 'Address Line 1, City, State, and Pincode are required.');
             $this->redirect('/dashboard/addresses');
         }
@@ -433,7 +433,7 @@ class DashboardController extends Controller
         $country   = trim($_POST['country'] ?? 'India') ?: 'India';
         $isDefault = isset($_POST['is_default']) ? 1 : 0;
 
-        if (!$addressId || empty($line1) || empty($city) || empty($state) || $state === 'Others' || empty($postal)) {
+        if (!$addressId || empty($line1) || empty($city) || empty($state) || empty($postal)) {
             Session::setFlash('error', 'Address Line 1, City, State, and Pincode are required.');
             $this->redirect('/dashboard/addresses');
         }

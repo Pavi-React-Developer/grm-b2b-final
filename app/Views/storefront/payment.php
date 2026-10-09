@@ -134,12 +134,8 @@ if (empty($cmsLogo) && defined('BASE_URL')) {
             },
             "modal": {
                 "ondismiss": function() {
-                    console.log('Payment modal dismissed');
-                    const noticeEl = document.getElementById('payment-status-notice');
-                    if (noticeEl) {
-                        noticeEl.innerText = 'Payment window closed. Click the button above to retry payment or return to your cart.';
-                        noticeEl.classList.remove('hidden');
-                    }
+                    console.log('Payment modal dismissed - redirecting to secure checkout');
+                    window.location.href = '<?= BASE_URL ?>/checkout';
                 }
             }
         };
@@ -154,7 +150,6 @@ if (empty($cmsLogo) && defined('BASE_URL')) {
                 noticeEl.innerText = desc;
                 noticeEl.classList.remove('hidden');
             }
-            // Do NOT call alert() or redirect away so the user can use Razorpay's in-modal retry methods (Cards, Netbanking, UPI, Wallet)
         });
 
         const payBtn = document.getElementById('pay-btn');
@@ -164,9 +159,13 @@ if (empty($cmsLogo) && defined('BASE_URL')) {
             });
         }
 
-        // Automatically trigger Razorpay checkout modal
+        // Automatically and instantly trigger Razorpay checkout modal
         setTimeout(function() {
-            rzp.open();
-        }, 500);
+            try {
+                rzp.open();
+            } catch (e) {
+                console.error("Auto open failed:", e);
+            }
+        }, 50);
     });
 </script>

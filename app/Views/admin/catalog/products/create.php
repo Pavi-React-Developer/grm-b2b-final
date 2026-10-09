@@ -51,22 +51,10 @@
                         <label class="block text-sm font-bold text-gray-800"><?= !empty($isCustomize) ? 'Fabric Description' : 'Description' ?> <span class="text-red-500">*</span></label>
                         <button type="button" onclick="addCustomField()" class="text-xs font-semibold text-brand-700 bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg flex items-center hover:bg-brand-100 transition-colors shadow-2xs">
                             <svg class="w-3.5 h-3.5 mr-1 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                            + Add Field
+                            Add Field
                         </button>
                     </div>
                     <textarea name="description" rows="4" required placeholder="<?= !empty($isCustomize) ? 'Enter detailed fabric description...' : 'Detailed description of the product features, benefits...' ?>" class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-2 text-sm text-gray-800"></textarea>
-
-                    <!-- 2. How to Use / How to Play -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1"><?= !empty($isCustomize) ? 'How to Customize / Use' : 'How to Use / How to Play' ?></label>
-                        <textarea name="how_to_use" rows="3" placeholder="Enter instructions on how to use or play with this product..." class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-2 text-sm text-gray-800"></textarea>
-                    </div>
-
-                    <!-- 3. Why Choose -->
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Why Choose</label>
-                        <textarea name="why_choose" rows="3" placeholder="Enter why customers should choose this product..." class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-2 text-sm text-gray-800"></textarea>
-                    </div>
 
                     <!-- Dynamic Additional Custom Fields Container -->
                     <div id="custom-fields-container" class="space-y-3 pt-2"></div>
@@ -129,10 +117,6 @@
                                             <label class="block text-sm font-bold text-gray-800">Size Chart</label>
                                             <span class="text-[11px] font-semibold text-gray-400 bg-gray-200/60 px-2 py-0.5 rounded-full">Optional</span>
                                         </div>
-                                        <a href="<?= BASE_URL ?>/admin/cms/size-charts/create" target="_blank" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors shrink-0 flex items-center gap-1" title="Open Size Chart Creator in new tab">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                                            <span>Add New Chart</span>
-                                        </a>
                                     </div>
                                     <select name="size_chart_id" id="size_chart_id" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
                                         <option value="">Default (Auto from Category / Subcategory / General)</option>
@@ -206,7 +190,7 @@
                     <h3 class="text-lg font-semibold text-gray-900">✨ Custom Specifications</h3>
                     <button type="button" onclick="openAttributeModal()" class="inline-flex items-center px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-bold transition-colors shadow-sm">
                         <svg class="w-3.5 h-3.5 mr-1 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                        + Add Attribute
+                        Add Attribute
                     </button>
                 </div>
                 <label class="flex items-center space-x-2 cursor-pointer bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-200">
@@ -344,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             <p class="text-xs text-gray-500 mb-3">Add attributes like Size, Color, or Material to generate product variants, or check "No Attributes (Simple Product)".</p>
                             <button type="button" onclick="openAttributeModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                + Add Specification Attribute
+                                Add Specification Attribute
                             </button>
                         </div>
                     `;
@@ -483,6 +467,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 attributesContainer.innerHTML = '<p class="text-sm text-red-500 italic">Error loading attributes.</p>';
             });
     }
+    window.fetchAttributes = fetchAttributes;
 
     function updateCategoryGstRates() {
         if (!categorySelect) return;
@@ -736,10 +721,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <label class="block text-xs font-bold text-gray-700 mb-1">SKU <span class="text-red-500">*</span></label>
                                 <input type="text" name="variants[${index}][sku]" value="${variantSku}" required class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-1.5 text-sm font-mono">
                             </div>
+                            ${<?= !empty($isCustomize) ? 'true' : 'false' ?> ? '' : `
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 mb-1">Weight (kg) <span class="text-red-500">*</span></label>
                                 <input type="text" step="0.0001" min="0.0001" name="variants[${index}][weight]" value="" placeholder="e.g. 0.5000" required class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-1.5 text-sm">
                             </div>
+                            `}
                         </div>
 
                         <!-- Images Upload -->
@@ -796,7 +783,26 @@ document.addEventListener('DOMContentLoaded', function() {
             totalGstEl.value = totalGst.toFixed(2);
         }
 
-        const effectivePrice = discountPrice > 0 ? discountPrice : basePrice;
+        // Validate discount price < base price
+        if (discountPriceEl) {
+            let errorMsgEl = container.querySelector('.price-discount-error');
+            if (discountPrice > 0 && discountPrice >= basePrice) {
+                discountPriceEl.classList.add('border-red-500', 'ring-2', 'ring-red-200', 'bg-red-50/50');
+                if (!errorMsgEl) {
+                    errorMsgEl = document.createElement('p');
+                    errorMsgEl.className = 'price-discount-error text-[11px] text-red-600 font-semibold mt-1';
+                    discountPriceEl.parentNode.appendChild(errorMsgEl);
+                }
+                errorMsgEl.textContent = `Discount Price must be less than Base Price (₹${basePrice.toFixed(2)})`;
+            } else {
+                discountPriceEl.classList.remove('border-red-500', 'ring-2', 'ring-red-200', 'bg-red-50/50');
+                if (errorMsgEl) {
+                    errorMsgEl.remove();
+                }
+            }
+        }
+
+        const effectivePrice = (discountPrice > 0 && discountPrice < basePrice) ? discountPrice : basePrice;
         const totalAmount = effectivePrice;
 
         if (totalAmountEl) {
@@ -936,6 +942,18 @@ document.addEventListener('DOMContentLoaded', function() {
                     priceInput ? priceInput.focus() : null;
                     hasError = true;
                     return;
+                }
+
+                const discountPriceInput = card.querySelector('.variant-discount-price');
+                if (discountPriceInput && discountPriceInput.value.trim() !== '') {
+                    const discountPrice = parseFloat(discountPriceInput.value);
+                    if (!isNaN(discountPrice) && discountPrice > 0 && discountPrice >= price) {
+                        e.preventDefault();
+                        alert(`Discount Price (₹${discountPrice.toFixed(2)}) must be less than Base Price (₹${price.toFixed(2)}) for variant #${idx + 1}.`);
+                        discountPriceInput.focus();
+                        hasError = true;
+                        return;
+                    }
                 }
 
                 if (!weightInput || isNaN(weight) || weight <= 0) {

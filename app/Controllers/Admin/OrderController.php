@@ -103,7 +103,7 @@ class OrderController extends Controller
             return;
         }
 
-        $validStatuses = ['placed', 'packed', 'shipped', 'out_for_delivery', 'delivered'];
+        $validStatuses = ['placed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
         if (!in_array($status, $validStatuses)) {
             echo json_encode(['success' => false, 'message' => 'Invalid status']);
             return;
@@ -135,7 +135,7 @@ class OrderController extends Controller
 
         $currentStatus = $order['status'];
 
-        // Strict Forward-Only Transition map: Once moved, status can NEVER be changed backwards. Cancelled is removed from operational updates.
+        // Strict Forward-Only Transition map: Once moved, status can NEVER be changed backwards.
         $allowedTransitions = [
             'placed'           => ['packed'],
             'packed'           => ['shipped'],
@@ -258,155 +258,212 @@ class OrderController extends Controller
 
     public function updatePacked()
     {
-        $this->requirePermission('all_orders', 'edit');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            http_response_code(405);
-            echo json_encode(['success' => false, 'message' => 'Method Not Allowed']);
-            return;
+        while (ob_get_level()) {
+            ob_end_clean();
         }
+        ob_start();
+        header('Content-Type: application/json; charset=utf-8');
 
-        header('Content-Type: application/json');
-
-        $orderId = trim($_POST['order_id'] ?? '');
-        if (!$orderId) {
-            echo json_encode(['success' => false, 'message' => 'Order ID is required']);
-            return;
-        }
-
-        $db = \Core\Database::getInstance();
-        $stmt = $db->prepare("SELECT * FROM orders WHERE order_number = ? LIMIT 1");
-        $stmt->execute([$orderId]);
-        $order = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-        if (!$order) {
-            echo json_encode(['success' => false, 'message' => 'Order not found']);
-            return;
-        }
-
-        $isVendor = (Session::get('user_role') === 'vendor');
-        $vendorId = $isVendor ? (int)Session::get('user_id') : null;
-        if ($isVendor) {
-            $chk = $db->prepare("SELECT 1 FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ? AND p.vendor_id = ? LIMIT 1");
-            $chk->execute([$order['id'], $vendorId]);
-            if (!$chk->fetch()) {
-                echo json_encode(['success' => false, 'message' => 'Unauthorized order access']);
+        try {
+            $this->requirePermission('all_orders', 'edit');
+            if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+                http_response_code(405);
+                echo json_encode(['success' => false, 'message' => 'Method Not Allowed']);
                 return;
             }
-        }
 
-        // Validate state transition
-        if ($order['status'] !== 'placed' && $order['status'] !== 'packed') {
-            echo json_encode(['success' => false, 'message' => 'Order must be in "Placed" state to transition to "Packed".']);
-            return;
-        }
-
-        // Handle packing video uploads
-        $uploadDir = PUBLIC_PATH . '/uploads/packing_videos';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        require_once BASE_PATH . '/app/Core/CloudinaryUploader.php';
-        $cloudinaryUploader = new \App\Core\CloudinaryUploader();
-
-        $video1Path = $order['packing_video_1'] ?? null;
-        $video2Path = $order['packing_video_2'] ?? null;
-
-        $maxSizeBytes = 3 * 1024 * 1024; // 3 MB max limit per video
-
-        // Video 1 upload
-        if (isset($_FILES['packing_video_1']) && $_FILES['packing_video_1']['error'] !== UPLOAD_ERR_NO_FILE) {
-            if ($_FILES['packing_video_1']['error'] === UPLOAD_ERR_INI_SIZE || $_FILES['packing_video_1']['size'] > $maxSizeBytes) {
-                $mb = number_format(($_FILES['packing_video_1']['size'] ?? 0) / (1024 * 1024), 2);
-                echo json_encode(['success' => false, 'message' => "Video 1 file size ({$mb}MB) exceeds the maximum allowed limit of 3MB."]);
+            $orderId = trim($_POST['order_id'] ?? '');
+            if (!$orderId) {
+                echo json_encode(['success' => false, 'message' => 'Order ID is required']);
                 return;
             }
-            if ($_FILES['packing_video_1']['error'] === UPLOAD_ERR_OK) {
-                $file = $_FILES['packing_video_1'];
-                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $allowedExts = ['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v', '3gp'];
-                if (!in_array($ext, $allowedExts)) {
-                    echo json_encode(['success' => false, 'message' => 'Video 1 must be a valid video format (MP4, WebM, MOV).']);
+
+            $db = \Core\Database::getInstance();
+            $stmt = $db->prepare("SELECT * FROM orders WHERE order_number = ? OR id = ? LIMIT 1");
+            $stmt->execute([$orderId, $orderId]);
+            $order = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$order) {
+                echo json_encode(['success' => false, 'message' => 'Order not found']);
+                return;
+            }
+
+            $actualOrderNumber = $order['order_number'];
+
+            $isVendor = (Session::get('user_role') === 'vendor');
+            $vendorId = $isVendor ? (int)Session::get('user_id') : null;
+            if ($isVendor) {
+                $chk = $db->prepare("SELECT 1 FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ? AND p.vendor_id = ? LIMIT 1");
+                $chk->execute([$order['id'], $vendorId]);
+                if (!$chk->fetch()) {
+                    echo json_encode(['success' => false, 'message' => 'Unauthorized order access']);
                     return;
                 }
-                
-                $publicId = 'packing_videos/v1_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $orderId) . '_' . time();
-                $cloudRes = $cloudinaryUploader->uploadMedia($file['tmp_name'], $publicId, $file['name']);
-                if ($cloudRes && !empty($cloudRes['secure_url'])) {
-                    $video1Path = $cloudRes['secure_url'];
-                } else {
-                    $filename = 'packing_v1_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $orderId) . '_' . time() . '.' . $ext;
-                    $destination = $uploadDir . '/' . $filename;
-                    if (move_uploaded_file($file['tmp_name'], $destination)) {
-                        $video1Path = 'uploads/packing_videos/' . $filename;
-                    }
-                }
             }
-        } elseif (!empty($_POST['packing_video_url_1'])) {
-            $video1Path = trim($_POST['packing_video_url_1']);
-        }
 
-        // Video 2 upload
-        if (isset($_FILES['packing_video_2']) && $_FILES['packing_video_2']['error'] !== UPLOAD_ERR_NO_FILE) {
-            if ($_FILES['packing_video_2']['error'] === UPLOAD_ERR_INI_SIZE || $_FILES['packing_video_2']['size'] > $maxSizeBytes) {
-                $mb = number_format(($_FILES['packing_video_2']['size'] ?? 0) / (1024 * 1024), 2);
-                echo json_encode(['success' => false, 'message' => "Video 2 file size ({$mb}MB) exceeds the maximum allowed limit of 3MB."]);
+            // Validate state transition (allow from placed or re-uploading on packed)
+            $currentStatus = strtolower(trim($order['status'] ?? ''));
+            if ($currentStatus !== 'placed' && $currentStatus !== 'packed') {
+                echo json_encode(['success' => false, 'message' => 'Order must be in "Placed" state to transition to "Packed".']);
                 return;
             }
-            if ($_FILES['packing_video_2']['error'] === UPLOAD_ERR_OK) {
-                $file = $_FILES['packing_video_2'];
-                $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-                $allowedExts = ['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v', '3gp'];
-                if (!in_array($ext, $allowedExts)) {
-                    echo json_encode(['success' => false, 'message' => 'Video 2 must be a valid video format (MP4, WebM, MOV).']);
+
+            // Handle packing video upload directories
+            $uploadDirs = [
+                PUBLIC_PATH . '/uploads/packing_videos',
+                BASE_PATH . '/public/uploads/packing_videos',
+                BASE_PATH . '/uploads/packing_videos'
+            ];
+            foreach ($uploadDirs as $dir) {
+                if (!is_dir($dir)) {
+                    @mkdir($dir, 0777, true);
+                }
+            }
+            $primaryUploadDir = PUBLIC_PATH . '/uploads/packing_videos';
+
+            $cloudinaryUploader = null;
+            if (file_exists(BASE_PATH . '/app/Core/CloudinaryUploader.php')) {
+                require_once BASE_PATH . '/app/Core/CloudinaryUploader.php';
+                $cloudinaryUploader = new \App\Core\CloudinaryUploader();
+            }
+
+            $video1Path = $order['packing_video_1'] ?? null;
+            $video2Path = $order['packing_video_2'] ?? null;
+
+            $maxSizeBytes = 3 * 1024 * 1024; // 3 MB max limit per video
+            $allowedExts = ['mp4', 'webm', 'mov', 'mkv', 'avi', 'm4v', '3gp', 'ogg'];
+
+            // Video 1 upload
+            if (isset($_FILES['packing_video_1']) && $_FILES['packing_video_1']['error'] !== UPLOAD_ERR_NO_FILE) {
+                if ($_FILES['packing_video_1']['error'] === UPLOAD_ERR_INI_SIZE || $_FILES['packing_video_1']['size'] > $maxSizeBytes) {
+                    $mb = number_format(($_FILES['packing_video_1']['size'] ?? 0) / (1024 * 1024), 2);
+                    echo json_encode(['success' => false, 'message' => "Video 1 file size ({$mb}MB) exceeds the maximum allowed limit of 3MB."]);
                     return;
                 }
+                if ($_FILES['packing_video_1']['error'] === UPLOAD_ERR_OK && !empty($_FILES['packing_video_1']['tmp_name'])) {
+                    $file = $_FILES['packing_video_1'];
+                    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                    if (!in_array($ext, $allowedExts)) {
+                        echo json_encode(['success' => false, 'message' => 'Video 1 must be a valid video format (MP4, WebM, MOV).']);
+                        return;
+                    }
+                    
+                    $uploadedCloud = false;
+                    if ($cloudinaryUploader) {
+                        try {
+                            $publicId = 'packing_videos/v1_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $actualOrderNumber) . '_' . time();
+                            $cloudRes = $cloudinaryUploader->uploadMedia($file['tmp_name'], $publicId, $file['name']);
+                            if ($cloudRes && !empty($cloudRes['secure_url'])) {
+                                $video1Path = $cloudRes['secure_url'];
+                                $uploadedCloud = true;
+                            }
+                        } catch (\Throwable $ce) {
+                            error_log("[OrderController Packed] Cloudinary Video 1 exception: " . $ce->getMessage());
+                        }
+                    }
 
-                $publicId = 'packing_videos/v2_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $orderId) . '_' . time();
-                $cloudRes = $cloudinaryUploader->uploadMedia($file['tmp_name'], $publicId, $file['name']);
-                if ($cloudRes && !empty($cloudRes['secure_url'])) {
-                    $video2Path = $cloudRes['secure_url'];
-                } else {
-                    $filename = 'packing_v2_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $orderId) . '_' . time() . '.' . $ext;
-                    $destination = $uploadDir . '/' . $filename;
-                    if (move_uploaded_file($file['tmp_name'], $destination)) {
-                        $video2Path = 'uploads/packing_videos/' . $filename;
+                    if (!$uploadedCloud) {
+                        $filename = 'packing_v1_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $actualOrderNumber) . '_' . time() . '.' . $ext;
+                        $destination = $primaryUploadDir . '/' . $filename;
+                        if (!move_uploaded_file($file['tmp_name'], $destination)) {
+                            @copy($file['tmp_name'], $destination);
+                        }
+                        if (file_exists($destination)) {
+                            $video1Path = 'uploads/packing_videos/' . $filename;
+                            // Also sync to other public folder if exists
+                            if (is_dir(BASE_PATH . '/public/uploads/packing_videos')) {
+                                @copy($destination, BASE_PATH . '/public/uploads/packing_videos/' . $filename);
+                            }
+                        }
                     }
                 }
+            } elseif (!empty($_POST['packing_video_url_1'])) {
+                $video1Path = trim($_POST['packing_video_url_1']);
             }
-        } elseif (!empty($_POST['packing_video_url_2'])) {
-            $video2Path = trim($_POST['packing_video_url_2']);
-        }
 
-        $orderModel = new Order();
-        $res = $orderModel->updatePackedStatus($orderId, $video1Path, $video2Path);
-
-        if ($res) {
-            // Generate dynamic invoice and send email to buyer
-            $emailSent = false;
-            try {
-                $invoiceResult = \App\Services\InvoiceService::generateInvoicePdf($orderId);
-                if ($invoiceResult) {
-                    $emailService = new \App\Services\EmailService();
-                    $emailSent = $emailService->sendOrderPackedWithInvoice(
-                        $invoiceResult['user'],
-                        $invoiceResult['order'],
-                        $invoiceResult['pdf_binary'],
-                        $invoiceResult['filename'],
-                        $video1Path,
-                        $video2Path
-                    );
+            // Video 2 upload
+            if (isset($_FILES['packing_video_2']) && $_FILES['packing_video_2']['error'] !== UPLOAD_ERR_NO_FILE) {
+                if ($_FILES['packing_video_2']['error'] === UPLOAD_ERR_INI_SIZE || $_FILES['packing_video_2']['size'] > $maxSizeBytes) {
+                    $mb = number_format(($_FILES['packing_video_2']['size'] ?? 0) / (1024 * 1024), 2);
+                    echo json_encode(['success' => false, 'message' => "Video 2 file size ({$mb}MB) exceeds the maximum allowed limit of 3MB."]);
+                    return;
                 }
-            } catch (\Exception $e) {
-                error_log("[OrderController Packed] Invoice/Email dispatch error: " . $e->getMessage());
+                if ($_FILES['packing_video_2']['error'] === UPLOAD_ERR_OK && !empty($_FILES['packing_video_2']['tmp_name'])) {
+                    $file = $_FILES['packing_video_2'];
+                    $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+                    if (!in_array($ext, $allowedExts)) {
+                        echo json_encode(['success' => false, 'message' => 'Video 2 must be a valid video format (MP4, WebM, MOV).']);
+                        return;
+                    }
+
+                    $uploadedCloud = false;
+                    if ($cloudinaryUploader) {
+                        try {
+                            $publicId = 'packing_videos/v2_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $actualOrderNumber) . '_' . time();
+                            $cloudRes = $cloudinaryUploader->uploadMedia($file['tmp_name'], $publicId, $file['name']);
+                            if ($cloudRes && !empty($cloudRes['secure_url'])) {
+                                $video2Path = $cloudRes['secure_url'];
+                                $uploadedCloud = true;
+                            }
+                        } catch (\Throwable $ce) {
+                            error_log("[OrderController Packed] Cloudinary Video 2 exception: " . $ce->getMessage());
+                        }
+                    }
+
+                    if (!$uploadedCloud) {
+                        $filename = 'packing_v2_' . preg_replace('/[^a-zA-Z0-9_-]/', '_', $actualOrderNumber) . '_' . time() . '.' . $ext;
+                        $destination = $primaryUploadDir . '/' . $filename;
+                        if (!move_uploaded_file($file['tmp_name'], $destination)) {
+                            @copy($file['tmp_name'], $destination);
+                        }
+                        if (file_exists($destination)) {
+                            $video2Path = 'uploads/packing_videos/' . $filename;
+                            if (is_dir(BASE_PATH . '/public/uploads/packing_videos')) {
+                                @copy($destination, BASE_PATH . '/public/uploads/packing_videos/' . $filename);
+                            }
+                        }
+                    }
+                }
+            } elseif (!empty($_POST['packing_video_url_2'])) {
+                $video2Path = trim($_POST['packing_video_url_2']);
             }
 
+            $orderModel = new Order();
+            $res = $orderModel->updatePackedStatus($actualOrderNumber, $video1Path, $video2Path);
+
+            if ($res) {
+                // Generate dynamic invoice and send email to buyer
+                $emailSent = false;
+                try {
+                    $invoiceResult = \App\Services\InvoiceService::generateInvoicePdf($actualOrderNumber);
+                    if ($invoiceResult) {
+                        $emailService = new \App\Services\EmailService();
+                        $emailSent = $emailService->sendOrderPackedWithInvoice(
+                            $invoiceResult['user'],
+                            $invoiceResult['order'],
+                            $invoiceResult['pdf_binary'],
+                            $invoiceResult['filename'],
+                            $video1Path,
+                            $video2Path
+                        );
+                    }
+                } catch (\Throwable $e) {
+                    error_log("[OrderController Packed] Invoice/Email dispatch error: " . $e->getMessage());
+                }
+
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Order marked as Packed! ' . ($emailSent ? 'Invoice PDF emailed to customer.' : 'Invoice generated.')
+                ]);
+            } else {
+                echo json_encode(['success' => false, 'message' => 'Failed to update order to Packed state in database.']);
+            }
+        } catch (\Throwable $e) {
+            error_log("[OrderController Packed] Fatal Error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
             echo json_encode([
-                'success' => true,
-                'message' => 'Order marked as Packed! ' . ($emailSent ? 'Invoice PDF emailed to customer.' : 'Invoice generated.')
+                'success' => false,
+                'message' => 'Error packing order: ' . $e->getMessage()
             ]);
-        } else {
-            echo json_encode(['success' => false, 'message' => 'Failed to update order to Packed state.']);
         }
     }
 

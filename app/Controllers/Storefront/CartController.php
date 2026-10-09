@@ -661,7 +661,7 @@ class CartController extends Controller
         }
         unset($item);
         
-        $ruleValidation = $this->validateOrderRules($categoryTotals);
+        $ruleValidation = $this->validateOrderRules($categoryTotals, $subtotal);
         $ruleErrorsText = array_map(function($err) {
             return strip_tags($err, '<a><strong><br><span><i>');
         }, $ruleValidation['errors']);
@@ -758,9 +758,9 @@ class CartController extends Controller
         return $relatedProducts;
     }
 
-    private function validateOrderRules(array $categoryTotals): array
+    private function validateOrderRules(array $categoryTotals, float $cartSubtotal = 0): array
     {
-        return OrderRule::validateCartRules($categoryTotals);
+        return OrderRule::validateCartRules($categoryTotals, $cartSubtotal);
     }
 
     private function getActiveOffersData(array $categoryTotals): array

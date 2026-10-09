@@ -441,25 +441,33 @@ class AttributeController extends Controller
         
         if ($categoryId <= 0) {
             echo json_encode([]);
-            return;
+            exit;
         }
 
-        $attributeModel = new Attribute();
         $db = \Core\Database::getInstance();
         
-        // Fetch active attributes that belong to the category AND (sub_category is null OR matches)
-        $sql = "SELECT * FROM attributes 
-                WHERE status = 'active' 
-                AND category_id = :category_id 
-                AND (sub_category_id IS NULL OR sub_category_id = :sub_category_id)
-                ORDER BY display_order ASC";
-        
-        $stmt = $db->prepare($sql);
-        $stmt->execute([
-            'category_id' => $categoryId,
-            'sub_category_id' => $subCategoryId > 0 ? $subCategoryId : null
-        ]);
-        $attributes = $stmt->fetchAll();
+        if ($subCategoryId > 0) {
+            $sql = "SELECT * FROM attributes 
+                    WHERE status = 'active' 
+                    AND category_id = :category_id 
+                    AND (sub_category_id IS NULL OR sub_category_id = :sub_category_id)
+                    ORDER BY display_order ASC, name ASC";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([
+                'category_id' => $categoryId,
+                'sub_category_id' => $subCategoryId
+            ]);
+        } else {
+            $sql = "SELECT * FROM attributes 
+                    WHERE status = 'active' 
+                    AND category_id = :category_id 
+                    ORDER BY display_order ASC, name ASC";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([
+                'category_id' => $categoryId
+            ]);
+        }
+        $attributes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         $attributeValueModel = new AttributeValue();
         foreach ($attributes as &$attr) {
@@ -467,6 +475,7 @@ class AttributeController extends Controller
         }
 
         echo json_encode($attributes);
+        exit;
     }
 
     private function isJsonRequest(): bool
