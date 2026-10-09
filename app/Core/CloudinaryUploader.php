@@ -45,6 +45,14 @@ class CloudinaryUploader
     }
 
     /**
+     * Alias for uploadMedia specifically for images.
+     */
+    public function uploadImage(string $filePath, ?string $publicId = null, ?string $originalFilename = null)
+    {
+        return $this->uploadMedia($filePath, $publicId, $originalFilename);
+    }
+
+    /**
      * Upload an image or video to Cloudinary. Images are forced to WebP.
      * 
      * @param string $filePath The local file path to upload

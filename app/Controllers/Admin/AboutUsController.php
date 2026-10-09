@@ -12,7 +12,7 @@ class AboutUsController extends Controller
     public function __construct()
     {
         parent::__construct();
-        if (\Core\Session::get('user_role') !== 'super_admin') {
+        if (Session::get('user_role') !== 'super_admin') {
             $this->redirect('/admin/dashboard');
         }
         $this->cmsModel = new CmsComponent();

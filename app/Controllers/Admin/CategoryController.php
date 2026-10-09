@@ -72,7 +72,7 @@ class CategoryController extends Controller
 
         // Handle image upload via Cloudinary
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $uploader = new \App\Core\CloudinaryUploader();
+            $uploader = new CloudinaryUploader();
             $cloudinaryResponse = $uploader->uploadImage($_FILES['image']['tmp_name']);
             if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
                 $data['image_path'] = $cloudinaryResponse['secure_url'];
@@ -132,7 +132,7 @@ class CategoryController extends Controller
 
         // Handle image upload via Cloudinary (fallback for traditional file upload)
         if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $uploader = new \App\Core\CloudinaryUploader();
+            $uploader = new CloudinaryUploader();
             $cloudinaryResponse = $uploader->uploadImage($_FILES['image']['tmp_name']);
             if ($cloudinaryResponse && isset($cloudinaryResponse['secure_url'])) {
                 $data['image_path'] = $cloudinaryResponse['secure_url'];
