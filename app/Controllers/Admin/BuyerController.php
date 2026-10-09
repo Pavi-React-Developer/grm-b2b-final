@@ -189,6 +189,7 @@ class BuyerController extends Controller
         
         $type = $_GET['type'] ?? '';
         $value = strtoupper(trim($_GET['value'] ?? ''));
+        $userId = isset($_GET['user_id']) ? (int)$_GET['user_id'] : 0;
 
         if (!$type || !$value) {
             echo json_encode(['success' => false, 'message' => 'Missing parameter type or value.']);
@@ -246,20 +247,32 @@ class BuyerController extends Controller
             $legalName = $realInfo ? $realInfo['name'] : 'Registered Business Owner';
             $address = $realInfo ? $realInfo['shop_location'] : '102 Main Wholesale Market, Sector 4, ' . $stateName;
 
+            $data = [
+                'gstin' => $value,
+                'pan' => $pan,
+                'legal_name' => $legalName,
+                'trade_name' => $tradeName,
+                'constitution' => $constitution,
+                'taxpayer_type' => 'Regular Regular Taxpayer',
+                'status' => 'Active',
+                'registration_date' => date('d/m/Y', strtotime('-2 years')),
+                'state' => $stateName,
+                'address' => $address
+            ];
+
+            if ($userId > 0) {
+                $payload = json_encode([
+                    'type' => 'gst',
+                    'verified_at' => date('Y-m-d H:i:s'),
+                    'data' => $data
+                ]);
+                $stmtUpdate = $db->prepare("UPDATE business_profiles SET tax_verified = 1, verification_data = :vdata WHERE user_id = :uid");
+                $stmtUpdate->execute(['vdata' => $payload, 'uid' => $userId]);
+            }
+
             echo json_encode([
                 'success' => true,
-                'data' => [
-                    'gstin' => $value,
-                    'pan' => $pan,
-                    'legal_name' => $legalName,
-                    'trade_name' => $tradeName,
-                    'constitution' => $constitution,
-                    'taxpayer_type' => 'Regular Regular Taxpayer',
-                    'status' => 'Active',
-                    'registration_date' => date('d/m/Y', strtotime('-2 years')),
-                    'state' => $stateName,
-                    'address' => $address
-                ]
+                'data' => $data
             ]);
             exit;
         } elseif ($type === 'pan') {
@@ -315,16 +328,28 @@ class BuyerController extends Controller
             $tradeName = $realInfo ? $realInfo['business_name'] : 'GRM Partner Store';
             $legalName = $realInfo ? $realInfo['name'] : 'Registered Business Owner';
 
+            $data = [
+                'pan' => $value,
+                'legal_name' => $legalName,
+                'trade_name' => $tradeName,
+                'status' => 'Active / Valid',
+                'pan_type' => $constitution,
+                'gstins' => $associatedGstins
+            ];
+
+            if ($userId > 0) {
+                $payload = json_encode([
+                    'type' => 'pan',
+                    'verified_at' => date('Y-m-d H:i:s'),
+                    'data' => $data
+                ]);
+                $stmtUpdate = $db->prepare("UPDATE business_profiles SET tax_verified = 1, verification_data = :vdata WHERE user_id = :uid");
+                $stmtUpdate->execute(['vdata' => $payload, 'uid' => $userId]);
+            }
+
             echo json_encode([
                 'success' => true,
-                'data' => [
-                    'pan' => $value,
-                    'legal_name' => $legalName,
-                    'trade_name' => $tradeName,
-                    'status' => 'Active / Valid',
-                    'pan_type' => $constitution,
-                    'gstins' => $associatedGstins
-                ]
+                'data' => $data
             ]);
             exit;
         }

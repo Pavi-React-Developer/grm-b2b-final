@@ -95,8 +95,8 @@
         <!-- Main layout: stacks on mobile (1. Cart Items -> 2. Order Summary -> 3. You May Also Like), side-by-side on lg+ -->
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
 
-            <!-- ── 1. Cart Items (Order 1 on Mobile, Left Column on Desktop) ── -->
-            <div class="lg:col-span-8 order-1 min-w-0">
+            <!-- ── Left Column: Cart Items + You May Also Like (lg:col-span-8) ── -->
+            <div class="lg:col-span-8 min-w-0 space-y-5 sm:space-y-6 flex flex-col">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                     <div class="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/40">
                         <h2 class="font-black text-gray-900 text-sm sm:text-base"><?= count($cartItems) ?> Item<?= count($cartItems) !== 1 ? 's' : '' ?></h2>
@@ -119,7 +119,7 @@
                             $discPct = $hasDiscount ? round((($basePrice - $discountPrice) / $basePrice) * 100) : 0;
                             $isOutOfStock = !empty($item['is_out_of_stock']);
                         ?>
-                        <li class="p-3 sm:p-3.5 transition-colors hover:bg-gray-50/30 <?= ($hasMoqError || $isOutOfStock) ? 'bg-pink-50/40' : '' ?>">
+                        <li id="cart-page-item-<?= $item['cart_item_id'] ?>" data-cart-item-id="<?= $item['cart_item_id'] ?>" data-unit-price="<?= $unitPrice ?>" class="p-3 sm:p-3.5 transition-colors hover:bg-gray-50/30 <?= ($hasMoqError || $isOutOfStock) ? 'bg-pink-50/40' : '' ?>">
                             <div class="bg-white border border-gray-100/90 rounded-[22px] p-2.5 sm:p-3 hover:shadow-md transition-all duration-300 group relative shadow-xs">
                                 <div class="flex items-start gap-2.5 sm:gap-3">
                                     <!-- Product Image (88px x 88px rounded-[16px]) -->
@@ -185,17 +185,19 @@
                                                 $isMaxStock = ($availableStock > 0 && $item['quantity'] >= $availableStock);
                                             ?>
                                             <!-- Bottom (Below Trash): AJAX Stepper - qty saved without page reload -->
-                                            <div id="cart-stepper-<?= $item['cart_item_id'] ?>" class="inline-flex items-center border border-pink-200 rounded-xl bg-white p-0.5 shadow-2xs mt-auto">
+                                            <div id="cart-stepper-<?= $item['cart_item_id'] ?>" class="inline-flex items-center border border-pink-200 rounded-xl bg-white p-0.5 shadow-2xs mt-auto select-none" style="touch-action: manipulation;">
                                                 <button type="button"
-                                                    onclick="cartPageUpdateQty(<?= $item['cart_item_id'] ?>, -<?= $requiredMoq ?>, <?= $requiredMoq ?>, <?= $availableStock ?>, this)"
-                                                    class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 rounded transition-colors text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    onclick="cartPageUpdateQty(<?= $item['cart_item_id'] ?>, -1, <?= $requiredMoq ?>, <?= $availableStock ?>, this)"
+                                                    class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer select-none"
+                                                    style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
                                                     <?= $item['quantity'] <= $requiredMoq ? 'disabled' : '' ?>>&minus;</button>
                                                 <div class="h-3 w-[1px] bg-pink-100"></div>
-                                                <span id="cart-qty-<?= $item['cart_item_id'] ?>" class="w-6 text-center text-xs font-bold text-[#F25996] select-none"><?= $item['quantity'] ?></span>
+                                                <span id="cart-qty-<?= $item['cart_item_id'] ?>" class="w-6 text-center text-xs font-bold text-[#F25996] select-none pointer-events-none"><?= $item['quantity'] ?></span>
                                                 <div class="h-3 w-[1px] bg-pink-100"></div>
                                                 <button type="button"
-                                                    onclick="cartPageUpdateQty(<?= $item['cart_item_id'] ?>, <?= $requiredMoq ?>, <?= $requiredMoq ?>, <?= $availableStock ?>, this)"
-                                                    class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 rounded transition-colors text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed"
+                                                    onclick="cartPageUpdateQty(<?= $item['cart_item_id'] ?>, 1, <?= $requiredMoq ?>, <?= $availableStock ?>, this)"
+                                                    class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all text-sm font-bold disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer select-none"
+                                                    style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;"
                                                     <?= $isMaxStock ? 'disabled' : '' ?>>&plus;</button>
                                             </div>
                                         </div>
@@ -237,76 +239,12 @@
                         </li>
                         <?php endforeach; ?>
                     </ul>
-                </div>
-            </div><!-- /cart items (order-1) -->
+                </div><!-- /cart items card -->
 
-            <!-- ── 2. Order Summary (Order 2 on Mobile, Right Column on Desktop) ── -->
-            <div class="w-full lg:col-span-4 order-2 min-w-0">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden lg:sticky lg:top-24">
-
-                    <!-- Header -->
-                    <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/40">
-                        <h2 class="font-black text-gray-900 text-base sm:text-lg">Order Summary</h2>
-                    </div>
-
-                    <!-- Line items -->
-                    <div class="px-5 py-4 space-y-3 text-sm">
-                        <div class="flex justify-between text-gray-600">
-                            <span class="font-medium">Subtotal (<span id="cart-page-count"><?= count($cartItems) ?></span> items)</span>
-                            <span id="cart-page-subtotal" class="font-bold text-gray-900">₹<?= format_price($subtotal) ?></span>
-                        </div>
-                        <div class="flex justify-between items-center text-gray-600">
-                            <span class="font-medium">Shipping</span>
-                            <span class="text-[11px] font-bold text-[#F25996] bg-pink-50 border border-pink-200 px-2 py-0.5 rounded-full">Calculated at checkout</span>
-                        </div>
-                    </div>
-
-                    <!-- Total -->
-                    <div class="px-5 py-4 bg-gray-50/80 border-t border-gray-100">
-                        <div class="flex justify-between items-center">
-                            <span class="font-black text-gray-900 text-base">Total (Est.)</span>
-                            <span id="cart-page-total" class="font-black text-gray-900 text-xl">₹<?= format_price(round($subtotal)) ?></span>
-                        </div>
-                        <p class="text-[11px] text-gray-500 mt-1">Inclusive of GST. Shipping and fees calculated at checkout</p>
-                    </div>
-
-                    <!-- MOQ Errors -->
-                    <?php if (!empty($moqErrors)): ?>
-                    <div class="px-5 py-3 space-y-2">
-                        <?php foreach($moqErrors as $err): ?>
-                        <div class="flex items-start gap-2 p-3 bg-pink-50 text-[#F25996] text-xs rounded-xl border border-pink-200">
-                            <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
-                            <span><?= $err ?></span>
-                        </div>
-                        <?php endforeach; ?>
-                    </div>
-                    <?php endif; ?>
-
-                    <!-- CTA Buttons -->
-                    <div class="px-5 pb-5 pt-3 space-y-2">
-                        <form action="<?= BASE_URL ?>/checkout" method="GET">
-                            <button type="submit"
-                                    <?= !empty($moqErrors) ? 'disabled' : '' ?>
-                                    class="w-full flex items-center justify-center gap-2 bg-[#F25996] text-white py-3.5 px-4 rounded-xl font-black text-sm hover:bg-[#db3e7c] transition-all shadow-md shadow-[#F25996]/20 active:scale-[0.99] <?= !empty($moqErrors) ? 'opacity-50 cursor-not-allowed' : '' ?>">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                                Proceed to Checkout
-                            </button>
-                        </form>
-                        <a href="<?= BASE_URL ?>/catalog"
-                           class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-[#F25996] bg-pink-50 border border-pink-200 hover:bg-pink-100 transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                            Continue Shopping
-                        </a>
-                    </div>
-
-                </div><!-- /sticky card -->
-            </div><!-- /order summary (order-2) -->
-
-            <!-- ── 3. You May Also Like (Order 3 on Mobile, Below Cart Items on Desktop) ── -->
-            <?php if (!empty($relatedProducts)): ?>
-            <div class="lg:col-span-8 order-3 min-w-0">
+                <!-- ── You May Also Like (Inside Left Column directly below cart items) ── -->
+                <?php if (!empty($relatedProducts)): ?>
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-gray-100 flex items-center justify-between">
+                    <div class="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/40">
                         <div class="flex items-center gap-2">
                             <h2 class="font-black text-gray-900 text-sm sm:text-base">You may also like</h2>
                             <?php if (array_reduce($relatedProducts, fn($carry, $p) => $carry || !empty($p['is_unlocked_offer']), false)): ?>
@@ -356,7 +294,7 @@
                                     <?php 
                                         $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                                         if ($discPercent > 0) {
-                                            echo render_discount_starburst($discPercent, 'absolute top-1 left-1.5 z-10 w-9 sm:w-11 md:w-13 transition-transform duration-300 group-hover:scale-110');
+                                            echo render_discount_starburst($discPercent, 'absolute top-1.5 left-1.5 z-10 w-16 sm:w-18 md:w-20 transition-transform duration-300 group-hover:scale-110');
                                         }
                                     ?>
                                     <img src="<?= htmlspecialchars($rpImg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
@@ -397,8 +335,72 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            <?php endif; ?>
+                <?php endif; ?>
+
+            </div><!-- /Left Column (lg:col-span-8) -->
+
+            <!-- ── Right Column: Order Summary (lg:col-span-4) ── -->
+            <div class="w-full lg:col-span-4 min-w-0">
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden lg:sticky lg:top-24">
+
+                    <!-- Header -->
+                    <div class="px-5 py-4 border-b border-gray-100 bg-gray-50/40">
+                        <h2 class="font-black text-gray-900 text-base sm:text-lg">Order Summary</h2>
+                    </div>
+
+                    <!-- Line items -->
+                    <div class="px-5 py-4 space-y-3 text-sm">
+                        <div class="flex justify-between text-gray-600">
+                            <span class="font-medium">Subtotal (<span id="cart-page-count"><?= count($cartItems) ?></span> items)</span>
+                            <span id="cart-page-subtotal" class="font-bold text-gray-900">₹<?= format_price($subtotal) ?></span>
+                        </div>
+                        <div class="flex justify-between items-center text-gray-600">
+                            <span class="font-medium">Shipping</span>
+                            <span class="text-[11px] font-bold text-[#F25996] bg-pink-50 border border-pink-200 px-2 py-0.5 rounded-full">Calculated at checkout</span>
+                        </div>
+                    </div>
+
+                    <!-- Total -->
+                    <div class="px-5 py-4 bg-gray-50/80 border-t border-gray-100">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-gray-900 text-base">Total (Est.)</span>
+                            <span id="cart-page-total" class="font-black text-gray-900 text-xl">₹<?= format_price(round($subtotal)) ?></span>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-1">Inclusive of GST. Shipping and fees calculated at checkout</p>
+                    </div>
+
+                    <!-- MOQ / Rule Errors -->
+                    <div id="cart-page-moq-errors-container" class="px-5 py-3 space-y-2 <?= empty($moqErrors) ? 'hidden' : '' ?>">
+                        <?php if (!empty($moqErrors)): ?>
+                            <?php foreach($moqErrors as $err): ?>
+                            <div class="flex items-start gap-2 p-3 bg-pink-50 text-[#F25996] text-xs rounded-xl border border-pink-200">
+                                <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                                <span><?= $err ?></span>
+                            </div>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- CTA Buttons -->
+                    <div class="px-5 pb-5 pt-3 space-y-2">
+                        <form action="<?= BASE_URL ?>/checkout" method="GET">
+                            <button type="submit"
+                                    id="cart-page-checkout-btn"
+                                    <?= !empty($moqErrors) ? 'disabled' : '' ?>
+                                    class="w-full flex items-center justify-center gap-2 bg-[#F25996] text-white py-3.5 px-4 rounded-xl font-black text-sm hover:bg-[#db3e7c] transition-all shadow-md shadow-[#F25996]/20 active:scale-[0.99] <?= !empty($moqErrors) ? 'opacity-50 cursor-not-allowed' : '' ?>">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                Proceed to Checkout
+                            </button>
+                        </form>
+                        <a href="<?= BASE_URL ?>/catalog"
+                           class="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-[#F25996] bg-pink-50 border border-pink-200 hover:bg-pink-100 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                            Continue Shopping
+                        </a>
+                    </div>
+
+                </div><!-- /sticky card -->
+            </div><!-- /Right Column -->
 
         </div><!-- /grid layout -->
 
@@ -409,7 +411,7 @@
                     <span class="text-[10px] text-gray-500 font-bold uppercase tracking-wider block leading-none mb-0.5">Total (Est.)</span>
                     <span id="cart-page-mobile-total" class="text-base sm:text-lg font-black text-gray-900">₹<?= format_price(round($subtotal)) ?></span>
                 </div>
-                <a href="<?= BASE_URL ?>/checkout" class="flex-1 max-w-[200px] bg-[#F25996] hover:bg-[#d8407d] text-white py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md shadow-[#F25996]/30 active:scale-[0.99] transition-all <?= !empty($moqErrors) ? 'opacity-50 pointer-events-none' : '' ?>">
+                <a href="<?= BASE_URL ?>/checkout" id="cart-page-mobile-checkout-btn" class="flex-1 max-w-[200px] bg-[#F25996] hover:bg-[#d8407d] text-white py-2.5 px-4 rounded-xl font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md shadow-[#F25996]/30 active:scale-[0.99] transition-all <?= !empty($moqErrors) ? 'opacity-50 pointer-events-none' : '' ?>">
                     <span>Checkout</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                 </a>
@@ -460,26 +462,61 @@ function cartPageAddVariant(productId, variantId, quantity, btnEl) {
     });
 }
 
-// ── AJAX Stepper for Cart Page ──────────────────────────────────────────
+// ── AJAX Stepper for Cart Page (Ultra Fast & Debounced) ───────────────────
+window.cartPageItemsMap = {
+<?php foreach ($cartItems as $ci): ?>
+    <?= (int)$ci['cart_item_id'] ?>: {
+        price: <?= (float)(!empty($ci['discount_price']) && (float)$ci['discount_price'] > 0 ? $ci['discount_price'] : ($ci['unit_price'] ?? 0)) ?>,
+        qty: <?= (int)$ci['quantity'] ?>,
+        moq: <?= (int)($ci['moq_override'] ?? (!empty($ci['category_moq']) ? $ci['category_moq'] : 1)) ?>,
+        maxStock: <?= (int)($ci['available_stock'] ?? 0) ?>
+    },
+<?php endforeach; ?>
+};
+const cartPageUpdateTimers = {};
+
+function calculateCartPageSubtotalInstant() {
+    let sum = 0;
+    for (const id in window.cartPageItemsMap) {
+        const it = window.cartPageItemsMap[id];
+        sum += (it.price * it.qty);
+    }
+    const formatted = '₹' + formatJsPrice(sum);
+    const subtotalEl = document.getElementById('cart-page-subtotal');
+    const totalEl = document.getElementById('cart-page-total');
+    const mobileTotalEl = document.getElementById('cart-page-mobile-total');
+    if (subtotalEl) subtotalEl.textContent = formatted;
+    if (totalEl) totalEl.textContent = formatted;
+    if (mobileTotalEl) mobileTotalEl.textContent = formatted;
+}
+
 function cartPageUpdateQty(cartItemId, delta, moq, maxStock, btnEl) {
     const span  = document.getElementById('cart-qty-' + cartItemId);
     const stepper = document.getElementById('cart-stepper-' + cartItemId);
     if (!span) return;
 
-    // Read pending qty if exists (rapid clicks), else DOM
-    let currentQty = (cartPagePendingQty[cartItemId] !== undefined)
-        ? cartPagePendingQty[cartItemId]
-        : (parseInt(span.textContent) || moq);
+    if (!window.cartPageItemsMap[cartItemId]) {
+        const itemLi = document.getElementById('cart-page-item-' + cartItemId);
+        const price = itemLi ? parseFloat(itemLi.dataset.unitPrice || 0) : 0;
+        window.cartPageItemsMap[cartItemId] = {
+            price: price,
+            qty: parseInt(span.textContent) || moq,
+            moq: moq,
+            maxStock: maxStock
+        };
+    }
 
-    let newQty = currentQty + delta;
+    const item = window.cartPageItemsMap[cartItemId];
+    let newQty = item.qty + delta;
     if (newQty < moq) return;
     if (maxStock > 0 && newQty > maxStock) newQty = maxStock;
 
-    // Update DOM immediately so user sees change
+    // 0ms in-memory update & instant DOM write
+    item.qty = newQty;
     span.textContent = newQty;
     cartPagePendingQty[cartItemId] = newQty;
 
-    // Update button states
+    // Update button states immediately
     if (stepper) {
         const minusBtn = stepper.querySelector('button:first-child');
         const plusBtn  = stepper.querySelector('button:last-child');
@@ -487,21 +524,39 @@ function cartPageUpdateQty(cartItemId, delta, moq, maxStock, btnEl) {
         if (plusBtn)  plusBtn.disabled  = (maxStock > 0 && newQty >= maxStock);
     }
 
-    // Send to server immediately
-    fetch(cartBaseUrl + '/cart/ajax-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cart_item_id: cartItemId, quantity: newQty }),
-        keepalive: true
-    })
-    .then(r => r.json())
-    .then(data => {
-        delete cartPagePendingQty[cartItemId];
-        if (data.success && data.cart_data) {
-            cartPageUpdateSummary(data.cart_data);
-        }
-    })
-    .catch(() => { delete cartPagePendingQty[cartItemId]; });
+    // 0ms Instant subtotal calculation on page
+    calculateCartPageSubtotalInstant();
+
+    if (cartPageUpdateTimers[cartItemId]) {
+        clearTimeout(cartPageUpdateTimers[cartItemId]);
+    }
+
+    // Debounce server call by 200ms so rapid clicks are bundled together
+    cartPageUpdateTimers[cartItemId] = setTimeout(() => {
+        const sendQty = cartPagePendingQty[cartItemId] !== undefined ? cartPagePendingQty[cartItemId] : newQty;
+        fetch(cartBaseUrl + '/cart/ajax-update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cart_item_id: cartItemId, quantity: sendQty }),
+            keepalive: true
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (cartPagePendingQty[cartItemId] === sendQty) {
+                delete cartPagePendingQty[cartItemId];
+            }
+            delete cartPageUpdateTimers[cartItemId];
+            if (data.success && data.cart_data) {
+                cartPageUpdateSummary(data.cart_data);
+            }
+        })
+        .catch(() => {
+            if (cartPagePendingQty[cartItemId] === sendQty) {
+                delete cartPagePendingQty[cartItemId];
+            }
+            delete cartPageUpdateTimers[cartItemId];
+        });
+    }, 200);
 }
 
 // ── AJAX Remove for Cart Page ────────────────────────────────────────────
@@ -509,6 +564,11 @@ function cartPageRemoveItem(cartItemId, btnEl) {
     // Fade out the card
     const card = btnEl ? btnEl.closest('li') : null;
     if (card) { card.style.opacity = '0.4'; card.style.pointerEvents = 'none'; }
+
+    if (window.cartPageItemsMap) {
+        delete window.cartPageItemsMap[cartItemId];
+        calculateCartPageSubtotalInstant();
+    }
 
     fetch(cartBaseUrl + '/cart/ajax-remove', {
         method: 'POST',
@@ -534,17 +594,67 @@ function cartPageRemoveItem(cartItemId, btnEl) {
     });
 }
 
-// ── Update subtotal and item count on the cart page ──────────────────────
+// ── Update subtotal, errors, and button states on the cart page ──────────
 function cartPageUpdateSummary(cartData) {
     const subtotalEl     = document.getElementById('cart-page-subtotal');
     const totalEl        = document.getElementById('cart-page-total');
     const mobileTotalEl  = document.getElementById('cart-page-mobile-total');
     const countEl        = document.getElementById('cart-page-count');
+    const errContainer   = document.getElementById('cart-page-moq-errors-container');
+    const checkoutBtn    = document.getElementById('cart-page-checkout-btn');
+    const mobileBtn      = document.getElementById('cart-page-mobile-checkout-btn');
 
-    if (subtotalEl)    subtotalEl.textContent    = cartData.subtotal;
-    if (totalEl)       totalEl.textContent        = cartData.subtotal;
-    if (mobileTotalEl) mobileTotalEl.textContent  = cartData.subtotal;
-    if (countEl)       countEl.textContent        = cartData.count;
+    if (cartData.items && window.cartPageItemsMap) {
+        cartData.items.forEach(it => {
+            if (window.cartPageItemsMap[it.cart_item_id]) {
+                if (cartPagePendingQty[it.cart_item_id] === undefined) {
+                    window.cartPageItemsMap[it.cart_item_id].qty = parseInt(it.quantity) || 1;
+                }
+            }
+        });
+    }
+
+    if (subtotalEl && cartData.subtotal)    subtotalEl.textContent    = cartData.subtotal;
+    if (totalEl && cartData.subtotal)       totalEl.textContent       = cartData.subtotal;
+    if (mobileTotalEl && cartData.subtotal) mobileTotalEl.textContent = cartData.subtotal;
+    if (countEl && cartData.count !== undefined) countEl.textContent  = cartData.count;
+
+    const hasErrors = (cartData.moqErrors && cartData.moqErrors.length > 0) || cartData.hasItemErrors || cartData.count === 0;
+
+    if (errContainer) {
+        if (cartData.moqErrors && cartData.moqErrors.length > 0) {
+            let html = '';
+            cartData.moqErrors.forEach(err => {
+                html += `<div class="flex items-start gap-2 p-3 bg-pink-50 text-[#F25996] text-xs rounded-xl border border-pink-200">
+                    <svg class="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                    <span>${err}</span>
+                </div>`;
+            });
+            errContainer.innerHTML = html;
+            errContainer.classList.remove('hidden');
+        } else {
+            errContainer.innerHTML = '';
+            errContainer.classList.add('hidden');
+        }
+    }
+
+    if (checkoutBtn) {
+        if (hasErrors) {
+            checkoutBtn.setAttribute('disabled', 'disabled');
+            checkoutBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            checkoutBtn.removeAttribute('disabled');
+            checkoutBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    if (mobileBtn) {
+        if (hasErrors) {
+            mobileBtn.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+            mobileBtn.classList.remove('opacity-50', 'pointer-events-none');
+        }
+    }
 }
 
 // Flush any pending qty on page hide/unload

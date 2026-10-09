@@ -6,18 +6,6 @@ class Session
     public static function init()
     {
         if (session_status() === PHP_SESSION_NONE) {
-            if (PHP_VERSION_ID >= 70300) {
-                $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') || 
-                           (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
-                session_set_cookie_params([
-                    'lifetime' => 86400 * 30,
-                    'path'     => '/',
-                    'domain'   => '',
-                    'secure'   => $isHttps,
-                    'httponly' => true,
-                    'samesite' => 'Lax'
-                ]);
-            }
             $handler = new \Core\DatabaseSessionHandler();
             session_set_save_handler($handler, true);
             session_start();

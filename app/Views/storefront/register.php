@@ -164,7 +164,7 @@
         </div>
 
         <div class="bg-white shadow-[0_4px_24px_-4px_rgba(0,0,0,0.05)] rounded-2xl sm:rounded-2xl border border-gray-100 overflow-hidden h-auto">
-            <form id="multi-step-form" action="<?= BASE_URL ?>/register" method="POST" enctype="multipart/form-data" class="h-auto" novalidate>
+            <form id="multi-step-form" action="<?= BASE_URL ?>/register" method="POST" enctype="multipart/form-data" class="h-auto" autocomplete="off" novalidate>
                 
                 <!-- STEP 1: Personal Details -->
                 <div id="step-1" class="step-content flex flex-col h-auto">
@@ -194,7 +194,7 @@
                                     <svg class="w-4 h-4 mr-2" style="color: #F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                     Full Name <span class="text-red-500 ml-1">*</span>
                                 </label>
-                                <input id="name" name="name" type="text" pattern="^[^0-9]+$" title="Name cannot contain numbers" oninput="this.value = this.value.replace(/[0-9]/g, '')" placeholder="Enter your full name" required class="form-input px-4 py-2 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white">
+                                <input id="name" name="name" type="text" pattern="^[^0-9]+$" title="Name cannot contain numbers" oninput="this.value = this.value.replace(/[0-9]/g, '')" placeholder="Enter your full name" required autocomplete="off" class="form-input px-4 py-2 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white">
                                 <div id="name-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
                                     <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     <span id="name-error-text">Please enter your full name.</span>
@@ -209,7 +209,7 @@
                                     <div class="bg-gray-50 flex items-center px-3 border-r border-gray-200">
                                         <span class="text-xs font-bold text-gray-700 mr-1">IN</span> <span class="text-sm font-medium text-gray-600">+91</span>
                                     </div>
-                                    <input id="phone" name="phone" type="tel" pattern="[0-9]{10}" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" title="Please enter a valid 10-digit phone number" placeholder="Enter phone number" required class="w-full px-4 py-2 border-none outline-none focus:ring-0 text-sm bg-transparent">
+                                    <input id="phone" name="phone" type="tel" pattern="[0-9]{10}" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '')" title="Please enter a valid 10-digit phone number" placeholder="Enter phone number" required autocomplete="off" class="w-full px-4 py-2 border-none outline-none focus:ring-0 text-sm bg-transparent">
                                 </div>
                                 <div id="phone-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
                                     <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -224,7 +224,7 @@
                                 Email Address <span class="text-red-500 ml-1">*</span>
                             </label>
                             <div class="relative">
-                                <input id="email" name="email" type="email" pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.(com|in|co\.in|net|org|edu|gov|io|biz|info)$" title="Please enter a valid email address with a proper domain (e.g. .com, .in)" placeholder="admin@example.com" required class="form-input px-4 py-2 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm pr-10 bg-white">
+                                <input id="email" name="email" type="email" pattern="^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.(com|in|co\.in|net|org|edu|gov|io|biz|info)$" title="Please enter a valid email address with a proper domain (e.g. .com, .in)" placeholder="admin@example.com" required autocomplete="off" class="form-input px-4 py-2 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm pr-10 bg-white">
                             </div>
                             <div id="email-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
                                 <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -239,7 +239,7 @@
                                 Password <span class="text-red-500 ml-1">*</span>
                             </label>
                             <div class="relative">
-                                <input id="password" name="password" type="password" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" title="Password must contain at least 8 characters, including one uppercase letter, one lowercase letter, and one number" placeholder="••••••••" required class="form-input px-4 py-2 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm pr-10 bg-white transition-colors duration-300">
+                                <input id="password" name="password" type="password" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" title="Password must contain at least 8 characters, including one uppercase letter, one lowercase letter, and one number" placeholder="••••••••" required autocomplete="new-password" class="form-input px-4 py-2 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm pr-10 bg-white transition-colors duration-300">
                                 <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
                                     <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                     <svg id="eye-off-icon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path></svg>
@@ -302,7 +302,7 @@
                                 Business Name <span class="text-red-500 ml-1">*</span>
                             </label>
                             <div class="relative">
-                                <input id="business_name" name="business_name" type="text" placeholder="Enter your registered business name" minlength="4" required oninput="this.value = this.value.toUpperCase()" class="form-input px-4 py-3 border-2 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] font-semibold text-sm sm:text-base text-gray-900 bg-white uppercase pr-10 transition-colors duration-300" style="border-color: #F25996;">
+                                <input id="business_name" name="business_name" type="text" placeholder="Enter your registered business name" minlength="4" required autocomplete="off" oninput="this.value = this.value.toUpperCase()" class="form-input px-4 py-3 border-2 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] font-semibold text-sm sm:text-base text-gray-900 bg-white uppercase pr-10 transition-colors duration-300" style="border-color: #F25996;">
                                 <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                     <svg class="w-5 h-5" style="color: #F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 </div>
@@ -320,7 +320,7 @@
                                     <svg class="w-4 h-4 mr-2" style="color: #F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                                     Shop Location / Street Address <span class="text-red-500 ml-1">*</span>
                                 </label>
-                                <input id="shop_location" name="shop_location" type="text" placeholder="Enter your street address or landmark" required class="form-input px-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm text-gray-900 bg-white">
+                                <input id="shop_location" name="shop_location" type="text" placeholder="Enter your street address or landmark" required autocomplete="off" class="form-input px-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm text-gray-900 bg-white">
                                 <div id="shop_location-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
                                     <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                     <span id="shop_location-error-text">Please enter your shop address or location.</span>
@@ -387,7 +387,7 @@
                                     </select>
                                     
                                     <!-- Text Input for Others -->
-                                    <input id="district_text" name="district" type="text" pattern="[A-Za-z\s]+" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')" title="Please enter letters only" placeholder="Enter District Name" class="form-input px-4 py-2.5 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white font-medium text-gray-900 hidden" disabled>
+                                    <input id="district_text" name="district" type="text" pattern="[A-Za-z\s]+" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')" title="Please enter letters only" placeholder="Enter District Name" autocomplete="off" class="form-input px-4 py-2.5 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white font-medium text-gray-900 hidden" disabled>
                                     <div id="district-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
                                         <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         <span id="district-error-text">Please select or enter your district.</span>
@@ -395,7 +395,7 @@
                                 </div>
                                 <div id="other_state_container" class="hidden sm:col-span-2">
                                     <label for="other_state_name" class="flex items-center text-xs font-bold text-gray-700 mb-1.5">State Name <span class="text-red-500 ml-1">*</span></label>
-                                    <input id="other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')" title="Please enter letters only" placeholder="Enter state name" class="form-input px-4 py-2.5 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white font-medium text-gray-900" disabled>
+                                    <input id="other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')" title="Please enter letters only" placeholder="Enter state name" autocomplete="off" class="form-input px-4 py-2.5 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white font-medium text-gray-900" disabled>
                                     <div id="other_state_name-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
                                         <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         <span id="other_state_name-error-text">Please enter your state name.</span>
@@ -403,7 +403,7 @@
                                 </div>
                                 <div class="sm:col-span-2">
                                     <label for="pincode" class="flex items-center text-xs font-bold text-gray-700 mb-1.5">Pincode <span class="text-red-500 ml-1">*</span></label>
-                                    <input id="pincode" name="pincode" type="text" pattern="[0-9]{6}" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '')" title="Please enter a valid 6-digit pincode" placeholder="e.g. 600001" required class="form-input px-4 py-2.5 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm text-gray-900 bg-white">
+                                    <input id="pincode" name="pincode" type="text" pattern="[0-9]{6}" maxlength="6" oninput="this.value = this.value.replace(/[^0-9]/g, '')" title="Please enter a valid 6-digit pincode" placeholder="e.g. 600001" required autocomplete="off" class="form-input px-4 py-2.5 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm text-gray-900 bg-white">
                                     <div id="pincode-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
                                         <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         <span id="pincode-error-text">Please enter a valid 6-digit pincode.</span>
@@ -420,10 +420,28 @@
                                         <svg class="w-4 h-4 mr-1.5" style="color: #F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                         GST Number
                                     </label>
-                                    <input id="gst_number" name="gst_number" type="text" minlength="15" maxlength="15" pattern="^(?=.*[0-9])(?=.*[A-Z])[A-Z0-9]{15}$" title="Please enter a valid 15-character GST number containing both letters and numbers" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')" class="form-input px-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white uppercase font-medium text-gray-900" placeholder="e.g. 22AAAAA0000A1Z5" required>
+                                    <input id="gst_number" name="gst_number" type="text" minlength="15" maxlength="15" pattern="^(?=.*[0-9])(?=.*[A-Z])[A-Z0-9]{15}$" title="Please enter a valid 15-character GST number containing both letters and numbers" oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '')" autocomplete="off" class="form-input px-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white uppercase font-medium text-gray-900" placeholder="e.g. 22AAAAA0000A1Z5" required>
                                     <div id="gst_number-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
                                         <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         <span id="gst_number-error-text">Please enter a valid 15-character GSTIN number.</span>
+                                    </div>
+                                </div>
+
+                                <!-- GST Document Upload -->
+                                <div class="mt-3">
+                                    <label class="flex items-center text-xs font-bold text-gray-700 mb-2">
+                                        <svg class="w-4 h-4 mr-1.5" style="color:#F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                        GST Document <span class="text-red-500 ml-1">*</span>
+                                        <span class="ml-1 text-gray-400 font-normal">(PDF / JPG / PNG · Max 3MB)</span>
+                                    </label>
+                                    <label id="gst_doc_label" for="gst_document" class="flex items-center gap-3 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#F25996] hover:bg-pink-50/40 transition-all group">
+                                        <svg class="w-5 h-5 text-gray-400 group-hover:text-[#F25996] flex-shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        <span id="gst_doc_name" class="text-sm text-gray-400 group-hover:text-gray-600 truncate">Click to upload GST certificate / registration document</span>
+                                    </label>
+                                    <input id="gst_document" name="gst_document" type="file" accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleDocUpload(this, 'gst_doc_name', 'gst_doc_label', 'gst_document-error', 'gst_document-error-text')">
+                                    <div id="gst_document-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
+                                        <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        <span id="gst_document-error-text">Please upload your GST document.</span>
                                     </div>
                                 </div>
                             </div>
@@ -460,7 +478,7 @@
                                     <label for="other_gst_reason" class="flex items-center text-xs font-bold text-gray-700 mb-2">
                                         Specify Other Reason <span class="text-red-500 ml-1">*</span>
                                     </label>
-                                    <input id="other_gst_reason" name="other_gst_reason" type="text" minlength="5" pattern="[A-Za-z\s]+" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')" title="Please enter letters only, minimum 5 characters" class="form-input px-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white font-medium text-gray-900" placeholder="Please explain why...">
+                                    <input id="other_gst_reason" name="other_gst_reason" type="text" minlength="5" pattern="[A-Za-z\s]+" oninput="this.value = this.value.replace(/[^A-Za-z\s]/g, '')" title="Please enter letters only, minimum 5 characters" autocomplete="off" class="form-input px-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white font-medium text-gray-900" placeholder="Please explain why...">
                                     <div id="other_gst_reason-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
                                         <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         <span id="other_gst_reason-error-text">Please provide a reason (minimum 5 characters).</span>
@@ -472,7 +490,7 @@
                                         PAN Number (For Non-GST Verification) <span class="text-red-500 ml-1">*</span>
                                     </label>
                                     <div class="relative">
-                                        <input id="pan_number" name="pan_number" type="text" maxlength="10" pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}" title="Please enter a valid PAN format (e.g. ABCDE1234F)" class="form-input px-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white uppercase font-medium text-gray-900" placeholder="10-DIGIT PAN NUMBER">
+                                        <input id="pan_number" name="pan_number" type="text" maxlength="10" pattern="[A-Za-z]{5}[0-9]{4}[A-Za-z]{1}" title="Please enter a valid PAN format (e.g. ABCDE1234F)" autocomplete="off" class="form-input px-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white uppercase font-medium text-gray-900" placeholder="10-DIGIT PAN NUMBER">
                                         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                         </div>
@@ -482,13 +500,31 @@
                                         <span id="pan_number-error-text">Please enter a valid 10-character PAN number.</span>
                                     </div>
                                 </div>
+
+                                <!-- PAN Document Upload -->
+                                <div class="mt-3">
+                                    <label class="flex items-center text-xs font-bold text-gray-700 mb-2">
+                                        <svg class="w-4 h-4 mr-1.5" style="color:#F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                        PAN Card Document <span class="text-red-500 ml-1">*</span>
+                                        <span class="ml-1 text-gray-400 font-normal">(PDF / JPG / PNG · Max 3MB)</span>
+                                    </label>
+                                    <label id="pan_doc_label" for="pan_document" class="flex items-center gap-3 px-4 py-3 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#F25996] hover:bg-pink-50/40 transition-all group">
+                                        <svg class="w-5 h-5 text-gray-400 group-hover:text-[#F25996] flex-shrink-0 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                        <span id="pan_doc_name" class="text-sm text-gray-400 group-hover:text-gray-600 truncate">Click to upload PAN card document</span>
+                                    </label>
+                                    <input id="pan_document" name="pan_document" type="file" accept=".pdf,.jpg,.jpeg,.png" class="hidden" onchange="handleDocUpload(this, 'pan_doc_name', 'pan_doc_label', 'pan_document-error', 'pan_document-error-text')">
+                                    <div id="pan_document-error" class="hidden mt-1.5 ml-1 text-xs text-red-500 flex items-center font-medium">
+                                        <svg class="w-3.5 h-3.5 mr-1 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        <span id="pan_document-error-text">Please upload your PAN card document.</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Footer Action Bar -->
                     <div class="p-4 sm:px-8 border-t flex flex-col sm:flex-row items-center justify-between rounded-b-2xl shrink-0" style="background-color: rgba(253, 191, 221, 0.25); border-color: #FDBFDD;">
-                        <button type="button" onclick="prevStep(2)" class="w-full sm:w-auto text-gray-600 font-bold py-2.5 px-6 rounded-xl flex items-center justify-center hover:bg-white hover:shadow-sm mb-4 sm:mb-0 transition-all text-sm border border-transparent hover:border-gray-200">
+                        <button type="button" onclick="prevStep(2)" class="w-full sm:w-auto font-bold py-3 px-8 rounded-xl flex items-center justify-center transition-all shadow-sm text-sm border-2 border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300 mb-4 sm:mb-0">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg> Back
                         </button>
                         <div class="w-full sm:w-auto flex flex-col items-center sm:items-end">
@@ -585,7 +621,7 @@
                                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
                                 </div>
-                                <input id="instagram_link" name="instagram_link" type="url" required pattern="^https?:\/\/(www\.)?instagram\.com\/.*$" title="Please provide a valid Instagram link. Facebook links are not accepted." placeholder="https://www.instagram.com/yourshop" class="form-input pl-11 pr-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white font-medium text-gray-900">
+                                <input id="instagram_link" name="instagram_link" type="url" required pattern="^https?:\/\/(www\.)?instagram\.com\/.*$" title="Please provide a valid Instagram link. Facebook links are not accepted." placeholder="https://www.instagram.com/yourshop" autocomplete="off" class="form-input pl-11 pr-4 py-3 border border-gray-200 rounded-xl w-full focus:ring-[#F25996] focus:border-[#F25996] text-sm bg-white font-medium text-gray-900">
                             </div>
                             <div id="instagram-error" class="hidden mt-1.5 ml-7 text-xs text-red-500 flex items-center font-medium">
                                 <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -597,10 +633,10 @@
 
                     <!-- Footer Action Bar -->
                     <div class="p-4 sm:px-8 border-t flex flex-col sm:flex-row items-center justify-between rounded-b-2xl shrink-0" style="background-color: rgba(253, 191, 221, 0.25); border-color: #FDBFDD;">
-                        <button type="button" onclick="prevStep(3)" class="w-full sm:w-auto text-gray-600 font-bold py-2.5 px-6 rounded-xl flex items-center justify-center hover:bg-white hover:shadow-sm mb-4 sm:mb-0 transition-all text-sm border border-transparent hover:border-gray-200">
+                        <button type="button" onclick="prevStep(3)" class="w-full sm:w-auto font-bold py-3 px-8 rounded-xl flex items-center justify-center transition-all shadow-sm text-sm border-2 border-gray-200 bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-300 mb-4 sm:mb-0">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg> Back
                         </button>
-                        <button type="submit" class="w-full sm:w-auto text-white font-bold py-3 px-8 rounded-xl flex items-center justify-center transition-all shadow-lg text-sm" style="background: #F25996;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
+                        <button type="button" onclick="submitFinalForm()" class="w-full sm:w-auto text-white font-bold py-3 px-8 rounded-xl flex items-center justify-center transition-all shadow-lg text-sm" style="background: #F25996;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">
                             Submit <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
                         </button>
                     </div>
@@ -629,10 +665,24 @@ function togglePassword() {
 }
 
 // ── Comprehensive Inline Validation Engine ──
+function getFieldAndError(fieldId) {
+    let field = document.getElementById(fieldId);
+    let errorBox = document.getElementById(fieldId + '-error');
+
+    if (!field) {
+        if (fieldId === 'business') field = document.getElementById('business_name');
+        else if (fieldId === 'instagram') field = document.getElementById('instagram_link');
+    }
+    if (!errorBox) {
+        if (fieldId === 'business_name') errorBox = document.getElementById('business-error');
+        else if (fieldId === 'instagram_link') errorBox = document.getElementById('instagram-error');
+    }
+    return { field, errorBox, fieldId };
+}
+
 function setFieldError(fieldId, msg) {
-    const field = document.getElementById(fieldId);
-    const errorBox = document.getElementById(fieldId + '-error');
-    const errorText = document.getElementById(fieldId + '-error-text') || (errorBox ? errorBox.querySelector('span') : null);
+    const { field, errorBox } = getFieldAndError(fieldId);
+    const errorText = errorBox ? (document.getElementById(fieldId + '-error-text') || errorBox.querySelector('span')) : null;
 
     if (errorBox) {
         errorBox.classList.remove('hidden');
@@ -640,14 +690,14 @@ function setFieldError(fieldId, msg) {
     }
 
     if (field) {
-        if (fieldId === 'phone') {
+        if (field.id === 'phone' || fieldId === 'phone') {
             const wrap = document.getElementById('phone-wrapper');
             if (wrap) wrap.classList.add('border-red-500', 'ring-1', 'ring-red-500');
         } else if (field.tagName === 'SELECT') {
             const csTrigger = field.parentElement ? field.parentElement.querySelector('.reg-cs-trigger') : null;
             if (csTrigger) csTrigger.classList.add('error');
             field.classList.add('border-red-500', 'ring-1', 'ring-red-500');
-        } else if (fieldId === 'shop_photos') {
+        } else if (field.id === 'shop_photos' || fieldId === 'shop_photos') {
             const dropzone = document.getElementById('dropzone_container');
             if (dropzone) {
                 dropzone.classList.add('border-red-500', 'bg-red-50/30');
@@ -661,22 +711,21 @@ function setFieldError(fieldId, msg) {
 }
 
 function clearFieldError(fieldId) {
-    const field = document.getElementById(fieldId);
-    const errorBox = document.getElementById(fieldId + '-error');
+    const { field, errorBox } = getFieldAndError(fieldId);
 
     if (errorBox) {
         errorBox.classList.add('hidden');
     }
 
     if (field) {
-        if (fieldId === 'phone') {
+        if (field.id === 'phone' || fieldId === 'phone') {
             const wrap = document.getElementById('phone-wrapper');
             if (wrap) wrap.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
         } else if (field.tagName === 'SELECT') {
             const csTrigger = field.parentElement ? field.parentElement.querySelector('.reg-cs-trigger') : null;
             if (csTrigger) csTrigger.classList.remove('error');
             field.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
-        } else if (fieldId === 'shop_photos') {
+        } else if (field.id === 'shop_photos' || fieldId === 'shop_photos') {
             const dropzone = document.getElementById('dropzone_container');
             if (dropzone) {
                 dropzone.classList.remove('border-red-500', 'bg-red-50/30');
@@ -718,6 +767,10 @@ function validateSingleField(fieldId) {
             setFieldError('phone', 'Please enter a valid 10-digit phone number.');
             return false;
         }
+        if (_dbDuplicateErrors['phone']) {
+            setFieldError('phone', _dbDuplicateErrors['phone']);
+            return false;
+        }
         clearFieldError('phone');
         return true;
     }
@@ -731,6 +784,10 @@ function validateSingleField(fieldId) {
         const emailRegex = /^[\w._%+-]+@[\w.-]+\.(com|in|co\.in|net|org|edu|gov|io|biz|info)$/i;
         if (!emailRegex.test(val)) {
             setFieldError('email', 'Please enter a valid email address (e.g. name@example.com).');
+            return false;
+        }
+        if (_dbDuplicateErrors['email']) {
+            setFieldError('email', _dbDuplicateErrors['email']);
             return false;
         }
         clearFieldError('email');
@@ -760,6 +817,10 @@ function validateSingleField(fieldId) {
         }
         if (val.length < 4) {
             setFieldError('business', 'Business name must be at least 4 characters.');
+            return false;
+        }
+        if (_dbDuplicateErrors['business']) {
+            setFieldError('business', _dbDuplicateErrors['business']);
             return false;
         }
         clearFieldError('business');
@@ -861,6 +922,10 @@ function validateSingleField(fieldId) {
                 setFieldError('gst_number', 'Please enter a valid 15-character GSTIN format.');
                 return false;
             }
+            if (_dbDuplicateErrors['gst_number']) {
+                setFieldError('gst_number', _dbDuplicateErrors['gst_number']);
+                return false;
+            }
             clearFieldError('gst_number');
             return true;
         }
@@ -908,6 +973,10 @@ function validateSingleField(fieldId) {
                 setFieldError('pan_number', 'Please enter a valid 10-character PAN (e.g. ABCDE1234F).');
                 return false;
             }
+            if (_dbDuplicateErrors['pan_number']) {
+                setFieldError('pan_number', _dbDuplicateErrors['pan_number']);
+                return false;
+            }
             clearFieldError('pan_number');
             return true;
         }
@@ -923,15 +992,19 @@ function validateSingleField(fieldId) {
         return true;
     }
 
-    if (fieldId === 'instagram_link') {
+    if (fieldId === 'instagram_link' || fieldId === 'instagram') {
         const val = document.getElementById('instagram_link').value.trim();
         if (!val) {
             setFieldError('instagram', 'Instagram shop profile link is required.');
             return false;
         }
-        const instaRegex = /^https?:\/\/(www\.)?instagram\.com\/.+$/i;
+        const instaRegex = /^https?:\/\/(www\.)?instagram\.com\/[A-Za-z0-9_.\-\/]+(\?.*)?$/i;
         if (!instaRegex.test(val)) {
-            setFieldError('instagram', 'Please provide a valid Instagram link. Facebook links are not accepted.');
+            setFieldError('instagram', 'Please enter a valid Instagram profile link (e.g. https://www.instagram.com/yourshop).');
+            return false;
+        }
+        if (_dbDuplicateErrors['instagram']) {
+            setFieldError('instagram', _dbDuplicateErrors['instagram']);
             return false;
         }
         clearFieldError('instagram');
@@ -983,25 +1056,158 @@ document.getElementById('password').addEventListener('input', function() {
     }
 });
 
-// Clear existing inline error on typing/changing (validation errors only appear when user clicks button)
-['name', 'phone', 'email', 'shop_location', 'pincode', 'gst_number', 'other_gst_reason', 'pan_number', 'other_state_name', 'district_text', 'instagram_link', 'business_name'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-        el.addEventListener('input', () => {
-            const errId = id === 'district_text' ? 'district' : (id === 'business_name' ? 'business' : (id === 'instagram_link' ? 'instagram' : id));
-            clearFieldError(errId);
-        });
+// ── Real-time inline validation & Database duplicate checking ────────────────
+const _touched = {};
+const _debounceTimers = {};
+const _asyncCheckTimers = {};
+const _dbDuplicateErrors = {
+    email: null,
+    phone: null,
+    business: null,
+    gst_number: null,
+    pan_number: null,
+    instagram: null
+};
+
+async function checkFieldDbDuplicate(fieldId) {
+    let payload = {};
+    if (fieldId === 'email') {
+        const val = document.getElementById('email').value.trim();
+        const emailRegex = /^[\w._%+-]+@[\w.-]+\.(com|in|co\.in|net|org|edu|gov|io|biz|info)$/i;
+        if (!val || !emailRegex.test(val)) return;
+        payload = { email: val };
+    } else if (fieldId === 'phone') {
+        const val = document.getElementById('phone').value.trim();
+        if (!val || !/^[0-9]{10}$/.test(val)) return;
+        payload = { phone: val };
+    } else if (fieldId === 'business_name') {
+        const val = document.getElementById('business_name').value.trim();
+        if (!val || val.length < 4) return;
+        payload = { business_name: val };
+    } else if (fieldId === 'gst_number') {
+        const val = document.getElementById('gst_number').value.trim().toUpperCase();
+        if (!val || val.length !== 15) return;
+        payload = { gst_number: val };
+    } else if (fieldId === 'pan_number') {
+        const val = document.getElementById('pan_number').value.trim().toUpperCase();
+        if (!val || val.length !== 10) return;
+        payload = { pan_number: val };
+    } else if (fieldId === 'instagram_link' || fieldId === 'instagram') {
+        const val = document.getElementById('instagram_link').value.trim();
+        const instaRegex = /^https?:\/\/(www\.)?instagram\.com\/[A-Za-z0-9_.\-\/]+(\?.*)?$/i;
+        if (!val || !instaRegex.test(val)) return;
+        payload = { instagram_link: val };
+    } else {
+        return;
     }
+
+    let targetErrKey = fieldId;
+    if (fieldId === 'business_name') targetErrKey = 'business';
+    if (fieldId === 'instagram_link') targetErrKey = 'instagram';
+
+    try {
+        const response = await fetch('<?= BASE_URL ?>/api/check-user-exists', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        
+        if (data.exists && (data.field === targetErrKey || data.field === fieldId)) {
+            _dbDuplicateErrors[targetErrKey] = data.message;
+            setFieldError(targetErrKey, data.message);
+        } else {
+            if (_dbDuplicateErrors[targetErrKey]) {
+                _dbDuplicateErrors[targetErrKey] = null;
+                clearFieldError(targetErrKey);
+            }
+        }
+    } catch (e) {
+        console.error("Async duplicate check error:", e);
+    }
+}
+
+function _liveValidate(id, fieldIdForValidate) {
+    clearTimeout(_debounceTimers[id]);
+    _debounceTimers[id] = setTimeout(() => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        const hasValue = el.value.trim().length > 0;
+        if (!_touched[id] && !hasValue) {
+            // Not yet touched and still empty — stay silent
+            return;
+        }
+        if (hasValue) _touched[id] = true;
+
+        let key = id;
+        if (id === 'business_name') key = 'business';
+        if (id === 'instagram_link') key = 'instagram';
+        if (_dbDuplicateErrors.hasOwnProperty(key)) {
+            _dbDuplicateErrors[key] = null;
+        }
+
+        const isValid = validateSingleField(fieldIdForValidate || id);
+
+        if (isValid && ['email', 'phone', 'business_name', 'gst_number', 'pan_number', 'instagram_link'].includes(id)) {
+            clearTimeout(_asyncCheckTimers[id]);
+            _asyncCheckTimers[id] = setTimeout(() => {
+                checkFieldDbDuplicate(id);
+            }, 300);
+        }
+    }, 300);
+}
+
+// Text / number inputs — live validation
+[
+    { id: 'name',             validate: 'name' },
+    { id: 'phone',            validate: 'phone' },
+    { id: 'email',            validate: 'email' },
+    { id: 'shop_location',    validate: 'shop_location' },
+    { id: 'pincode',          validate: 'pincode' },
+    { id: 'gst_number',       validate: 'gst_number' },
+    { id: 'other_gst_reason', validate: 'other_gst_reason' },
+    { id: 'pan_number',       validate: 'pan_number' },
+    { id: 'other_state_name', validate: 'other_state_name' },
+    { id: 'district_text',    validate: 'district' },
+    { id: 'instagram_link',   validate: 'instagram' },
+    { id: 'business_name',    validate: 'business_name' }
+].forEach(({ id, validate }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => _liveValidate(id, validate));
 });
 
-['state', 'district_select', 'no_gst_reason'].forEach(id => {
+// Immediate validation and DB duplicate check on blur
+['email', 'phone', 'business_name', 'gst_number', 'pan_number', 'instagram_link'].forEach(id => {
     const el = document.getElementById(id);
-    if (el) {
-        el.addEventListener('change', () => {
-            const errId = id === 'district_select' ? 'district' : id;
-            clearFieldError(errId);
-        });
-    }
+    if (!el) return;
+    el.addEventListener('blur', () => {
+        const val = el.value.trim();
+        if (val) {
+            _touched[id] = true;
+            let validateKey = id;
+            if (id === 'business_name') validateKey = 'business_name';
+            if (id === 'instagram_link') validateKey = 'instagram';
+            const valid = validateSingleField(validateKey);
+            if (valid) {
+                checkFieldDbDuplicate(id);
+            }
+        }
+    });
+});
+
+// Select / dropdown inputs — validate immediately on change (no debounce needed)
+[
+    { id: 'state',          validate: 'state' },
+    { id: 'district_select', validate: 'district' },
+    { id: 'no_gst_reason',  validate: 'no_gst_reason' }
+].forEach(({ id, validate }) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', () => {
+        _touched[id] = true;
+        validateSingleField(validate);
+    });
 });
 
 let selectedFiles = [];
@@ -1070,6 +1276,34 @@ function updateDropzoneUI() {
         iconElement.innerHTML = '<svg class="w-6 h-6" style="color: #F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>';
         iconElement.style.backgroundColor = 'rgba(253, 191, 221, 0.5)';
     }
+}
+
+// Document upload handler — validates 3MB limit and shows filename
+function handleDocUpload(input, nameId, labelId, errorId, errorTextId) {
+    const MAX_BYTES = 3 * 1024 * 1024; // 3MB
+    const errDiv  = document.getElementById(errorId);
+    const errSpan = document.getElementById(errorTextId);
+    const nameEl  = document.getElementById(nameId);
+    const label   = document.getElementById(labelId);
+
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+
+    if (file.size > MAX_BYTES) {
+        errDiv.classList.remove('hidden');
+        errSpan.textContent = 'File is too large. Maximum allowed size is 3MB.';
+        label.classList.add('border-red-400');
+        label.classList.remove('border-[#F25996]');
+        nameEl.textContent = 'Click to choose a file';
+        input.value = '';
+        return;
+    }
+
+    errDiv.classList.add('hidden');
+    label.classList.remove('border-red-400');
+    label.classList.add('border-[#F25996]', 'bg-pink-50/40');
+    nameEl.textContent = '✓ ' + file.name;
+    nameEl.style.color = '#F25996';
 }
 
 function toggleGstFields() {
@@ -1230,7 +1464,7 @@ async function nextStep(currentStep) {
         const phone = document.getElementById('phone').value.trim();
 
         try {
-            const response = await fetch('/api/check-user-exists', {
+            const response = await fetch('<?= BASE_URL ?>/api/check-user-exists', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, phone })
@@ -1240,6 +1474,7 @@ async function nextStep(currentStep) {
             
             if (data.exists) {
                 const targetField = data.field || 'email';
+                _dbDuplicateErrors[targetField] = data.message;
                 setFieldError(targetField, data.message);
                 const targetEl = document.getElementById(targetField);
                 if (targetEl) {
@@ -1257,29 +1492,67 @@ async function nextStep(currentStep) {
     
     if (currentStep === 2) {
         const businessName = document.getElementById('business_name').value.trim();
+        const hasGst = document.getElementById('has_gst').checked;
+
+        // Validate document uploads
+        if (hasGst) {
+            const gstDoc = document.getElementById('gst_document');
+            if (!gstDoc || !gstDoc.files || !gstDoc.files[0]) {
+                const errDiv  = document.getElementById('gst_document-error');
+                const errSpan = document.getElementById('gst_document-error-text');
+                if (errDiv) { errDiv.classList.remove('hidden'); errSpan.textContent = 'Please upload your GST document.'; }
+                gstDoc && gstDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+        } else {
+            const panDoc = document.getElementById('pan_document');
+            if (!panDoc || !panDoc.files || !panDoc.files[0]) {
+                const errDiv  = document.getElementById('pan_document-error');
+                const errSpan = document.getElementById('pan_document-error-text');
+                if (errDiv) { errDiv.classList.remove('hidden'); errSpan.textContent = 'Please upload your PAN card document.'; }
+                panDoc && panDoc.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
+        }
+
+        const checkPayload = { business_name: businessName };
+        if (hasGst) {
+            const gstVal = document.getElementById('gst_number').value.trim().toUpperCase();
+            if (gstVal) checkPayload.gst_number = gstVal;
+        } else {
+            const panVal = document.getElementById('pan_number').value.trim().toUpperCase();
+            if (panVal) checkPayload.pan_number = panVal;
+        }
 
         try {
-            const response = await fetch('/api/check-user-exists', {
+            const response = await fetch('<?= BASE_URL ?>/api/check-user-exists', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ business_name: businessName })
+                body: JSON.stringify(checkPayload)
             });
 
             const data = await response.json();
             
             if (data.exists) {
-                setFieldError('business', data.message);
-                const bizInput = document.getElementById('business_name');
-                if (bizInput) {
-                    bizInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    if (bizInput.focus) bizInput.focus();
+                const targetField = data.field === 'business' ? 'business' : data.field;
+                _dbDuplicateErrors[targetField] = data.message;
+                setFieldError(targetField, data.message);
+                const targetEl = document.getElementById(targetField === 'business' ? 'business_name' : targetField);
+                if (targetEl) {
+                    targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    if (targetEl.focus) targetEl.focus();
                 }
                 return; // Stop here, do not advance
             } else {
+                _dbDuplicateErrors['business'] = null;
+                _dbDuplicateErrors['gst_number'] = null;
+                _dbDuplicateErrors['pan_number'] = null;
                 clearFieldError('business');
+                clearFieldError('gst_number');
+                clearFieldError('pan_number');
             }
         } catch (error) {
-            console.error("Error checking business name:", error);
+            console.error("Error checking step 2 duplicates:", error);
         }
     }
     
@@ -1344,60 +1617,122 @@ function prevStep(currentStep) {
         }
     }
     
+    let _isSubmitting = false;
+
+    async function submitFinalForm() {
+        if (_isSubmitting) return;
+
+        if (!validateStep(1)) {
+            goToStep(1, true);
+            return;
+        }
+        if (!validateStep(2)) {
+            goToStep(2, true);
+            return;
+        }
+        if (!validateStep(3)) {
+            goToStep(3, true);
+            return;
+        }
+
+        const instaVal = document.getElementById('instagram_link').value.trim();
+        if (instaVal) {
+            try {
+                const response = await fetch('<?= BASE_URL ?>/api/check-user-exists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ instagram_link: instaVal })
+                });
+                const data = await response.json();
+                if (data.exists) {
+                    _dbDuplicateErrors['instagram'] = data.message;
+                    setFieldError('instagram', data.message);
+                    const instaEl = document.getElementById('instagram_link');
+                    if (instaEl) {
+                        instaEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        if (instaEl.focus) instaEl.focus();
+                    }
+                    return;
+                }
+            } catch(err) {
+                console.error("Error checking instagram duplicate:", err);
+            }
+        }
+
+        try {
+            sessionStorage.removeItem('grm_user_reg_step');
+        } catch(e) {}
+
+        _isSubmitting = true;
+        document.getElementById('multi-step-form').submit();
+    }
+
     // Prevent premature submit on Enter key and form submit event
     const userForm = document.getElementById('multi-step-form');
     if (userForm) {
         userForm.addEventListener('keydown', function(e) {
             if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
-                if (currentStepIndex < 3) {
-                    e.preventDefault();
-                    nextStep(currentStepIndex);
+                e.preventDefault();
+                if (currentStepIndex === 1) {
+                    nextStep(1);
+                } else if (currentStepIndex === 2) {
+                    nextStep(2);
+                } else if (currentStepIndex === 3) {
+                    submitFinalForm();
                 }
+                return false;
             }
         });
 
         userForm.addEventListener('submit', function(e) {
-            if (currentStepIndex < 3) {
+            if (!_isSubmitting) {
                 e.preventDefault();
-                nextStep(currentStepIndex);
+                if (currentStepIndex === 1) nextStep(1);
+                else if (currentStepIndex === 2) nextStep(2);
+                else if (currentStepIndex === 3) submitFinalForm();
                 return false;
             }
-            if (!validateStep(3)) {
-                e.preventDefault();
-                return false;
-            }
-            try {
-                sessionStorage.removeItem('grm_user_reg_step');
-            } catch(e) {}
         });
     }
 
-    // Initialize on DOM ready
-    document.addEventListener('DOMContentLoaded', function() {
+    function resetRegistrationForm() {
+        if (userForm) {
+            userForm.reset();
+        }
+        _dbDuplicateErrors = {};
+        sessionStorage.removeItem('grm_user_reg_step');
+        if (window.location.hash) {
+            try {
+                history.replaceState(null, null, window.location.pathname);
+            } catch (e) {}
+        }
+        
+        // Hide all error messages
+        document.querySelectorAll('[id$="-error"]').forEach(function(el) {
+            el.classList.add('hidden');
+        });
+        
+        // Clear image previews
+        const previews = document.getElementById('image_previews');
+        if (previews) previews.innerHTML = '';
+        
+        // Reset file upload label texts
+        const gstLabel = document.getElementById('gst_doc_name');
+        if (gstLabel) gstLabel.textContent = 'Click to upload GST certificate / registration document';
+        const panLabel = document.getElementById('pan_doc_name');
+        if (panLabel) panLabel.textContent = 'Click to upload PAN card document';
+        const uploadText = document.getElementById('upload_text');
+        if (uploadText) uploadText.textContent = 'Click or drag & drop to upload';
+
         toggleGstFields();
         toggleDistrictFields();
         toggleOtherGstReason();
+        goToStep(1, false);
+    }
 
-        let hashStep = 0;
-        if (window.location.hash) {
-            const parsed = parseInt(window.location.hash.replace(/\D/g, ''));
-            if (parsed >= 1 && parsed <= 3) hashStep = parsed;
-        }
-        const savedStep = parseInt(sessionStorage.getItem('grm_user_reg_step') || '0');
-
-        let activeStep = 1;
-        if (hashStep >= 1 && hashStep <= 3) {
-            activeStep = hashStep;
-        } else if (savedStep >= 1 && savedStep <= 3) {
-            activeStep = savedStep;
-        }
-
-        if (activeStep > 1) {
-            goToStep(activeStep, false);
-        } else {
-            goToStep(1, false);
-        }
-    });
+    // Initialize on DOM ready & pageshow (handles refresh and browser navigation)
+    document.addEventListener('DOMContentLoaded', resetRegistrationForm);
+    window.addEventListener('pageshow', resetRegistrationForm);
 </script>
 
 <script src=https://cdn.jsdelivr.net/npm/sweetalert2@11></script>

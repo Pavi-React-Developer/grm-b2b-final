@@ -299,67 +299,40 @@
     <!-- Right Column: Customer & Shipping Details -->
     <div class="space-y-6">
         <!-- Status Card -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Current Status</h3>
             <div class="flex items-center space-x-3">
-                <?php
-                    $isTerminal = in_array($order['status'], ['delivered', 'cancelled']);
-                ?>
-                <?php if ($this->hasPermission('all_orders', 'edit') && !$isTerminal): ?>
-                <div class="relative inline-block w-full">
-                    <select class="status-dropdown text-sm font-bold rounded-xl pl-4 pr-10 py-2.5 border shadow-2xs transition-all duration-200 cursor-pointer appearance-none outline-none focus:ring-2 w-full" data-id="<?= htmlspecialchars($order['order_number']) ?>" data-original="<?= htmlspecialchars($order['status']) ?>">
-                        <?php
-                            $statuses = [
-                                'placed'           => 'Placed',
-                                'packed'           => 'Packed',
-                                'shipped'          => 'Shipped',
-                                'out_for_delivery' => 'Out for Delivery',
-                                'delivered'        => 'Delivered'
-                            ];
-                            
-                            $allowed_next = [
-                                'placed'           => ['placed', 'packed'],
-                                'packed'           => ['packed', 'shipped'],
-                                'shipped'          => ['shipped', 'out_for_delivery'],
-                                'out_for_delivery' => ['out_for_delivery', 'delivered'],
-                                'delivered'        => ['delivered']
-                            ];
-                            
-                            $currentStatus = $order['status'];
-                            $allowedForCurrent = $allowed_next[$currentStatus] ?? [$currentStatus];
-                            
-                            foreach($statuses as $val => $label) {
-                                if (!in_array($val, $allowedForCurrent)) continue;
-                                $sel = ($currentStatus === $val) ? 'selected' : '';
-                                echo "<option value=\"$val\" $sel class=\"bg-white text-slate-900 font-semibold py-2\">$label</option>";
-                            }
-                        ?>
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-current opacity-70">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                    </div>
-                </div>
-                <?php else: ?>
+                <select class="status-dropdown bg-gray-50 border border-gray-200 text-gray-800 text-sm font-bold rounded-lg pl-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-brand-500 <?= $this->hasPermission('all_orders', 'edit') ? 'cursor-pointer' : 'cursor-not-allowed opacity-75' ?>" data-id="<?= htmlspecialchars($order['order_number']) ?>" data-original="<?= htmlspecialchars($order['status']) ?>" <?= !$this->hasPermission('all_orders', 'edit') ? 'disabled' : '' ?>>
                     <?php
-                        $statusClass = 'bg-gray-100 text-gray-800 border-gray-200';
-                        if ($order['status'] === 'placed') $statusClass = 'bg-amber-50 text-amber-800 border-amber-200';
-                        elseif ($order['status'] === 'packed') $statusClass = 'bg-purple-50 text-purple-800 border-purple-200';
-                        elseif ($order['status'] === 'shipped') $statusClass = 'bg-blue-50 text-blue-800 border-blue-200';
-                        elseif ($order['status'] === 'out_for_delivery') $statusClass = 'bg-indigo-50 text-indigo-800 border-indigo-200';
-                        elseif ($order['status'] === 'delivered') $statusClass = 'bg-emerald-50 text-emerald-800 border-emerald-200';
-                        elseif ($order['status'] === 'cancelled') $statusClass = 'bg-rose-50 text-rose-800 border-rose-200';
+                        $statuses = [
+                            'placed' => 'Placed',
+                            'packed' => 'Packed',
+                            'shipped' => 'Shipped',
+                            'out_for_delivery' => 'Out for Delivery',
+                            'delivered' => 'Delivered',
+                            'cancelled' => 'Cancelled'
+                        ];
                         
-                        $formattedStatus = ucwords(str_replace('_', ' ', $order['status']));
+                        $allowed_next = [
+                            'placed'           => ['placed', 'packed', 'cancelled'],
+                            'packed'           => ['packed', 'shipped', 'cancelled'],
+                            'shipped'          => ['shipped', 'out_for_delivery', 'cancelled'],
+                            'out_for_delivery' => ['out_for_delivery', 'delivered', 'cancelled'],
+                            'delivered'        => ['delivered'],
+                            'cancelled'        => ['cancelled']
+                        ];
+                        
+                        $currentStatus = $order['status'];
+                        $allowedForCurrent = $allowed_next[$currentStatus] ?? [$currentStatus];
+                        
+                        foreach($statuses as $val => $label) {
+                            $sel = ($currentStatus === $val) ? 'selected' : '';
+                            $disabled = !in_array($val, $allowedForCurrent) ? 'disabled' : '';
+                            $optionStyle = $disabled ? 'style="color: #9ca3af; background-color: #f9fafb;"' : 'style="color: #111827; background-color: #ffffff; font-weight: 500;"';
+                            echo "<option value=\"$val\" $sel $disabled $optionStyle>$label</option>";
+                        }
                     ?>
-                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border shadow-2xs <?= $statusClass ?>">
-                        <?php if ($order['status'] === 'delivered'): ?>
-                            <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                        <?php elseif ($order['status'] === 'cancelled'): ?>
-                            <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                        <?php endif; ?>
-                        <?= $formattedStatus ?>
-                    </span>
-                <?php endif; ?>
+                </select>
             </div>
             
             <?php if ($order['status'] === 'shipped' || $order['status'] === 'out_for_delivery' || $order['status'] === 'delivered'): ?>
@@ -598,41 +571,47 @@
 document.addEventListener('DOMContentLoaded', function() {
     const statusDropdowns = document.querySelectorAll('.status-dropdown');
     
-    // Style the dropdowns based on their current value with vibrant, high-contrast pills
+    // Style the dropdowns based on their current value
     const updateDropdownStyle = (select) => {
-        const val = select.value;
-        let colorClasses = "bg-amber-50 hover:bg-amber-100/70 border-amber-300 text-amber-900 focus:ring-amber-400";
-        if (val === 'packed') {
-            colorClasses = "bg-purple-50 hover:bg-purple-100/70 border-purple-300 text-purple-900 focus:ring-purple-400";
-        } else if (val === 'shipped') {
-            colorClasses = "bg-blue-50 hover:bg-blue-100/70 border-blue-300 text-blue-900 focus:ring-blue-400";
-        } else if (val === 'out_for_delivery') {
-            colorClasses = "bg-indigo-50 hover:bg-indigo-100/70 border-indigo-300 text-indigo-900 focus:ring-indigo-400";
-        } else if (val === 'delivered') {
-            colorClasses = "bg-emerald-50 hover:bg-emerald-100/70 border-emerald-300 text-emerald-900 focus:ring-emerald-400";
+        if (select.value === 'placed') {
+            select.className = "status-dropdown bg-yellow-50 border border-yellow-200 text-yellow-800 text-sm font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500 cursor-pointer";
+        } else if (select.value === 'packed') {
+            select.className = "status-dropdown bg-purple-50 border border-purple-200 text-purple-800 text-sm font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer";
+        } else if (select.value === 'shipped') {
+            select.className = "status-dropdown bg-blue-50 border border-blue-200 text-blue-800 text-sm font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer";
+        } else if (select.value === 'out_for_delivery') {
+            select.className = "status-dropdown bg-indigo-50 border border-indigo-200 text-indigo-800 text-sm font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer";
+        } else if (select.value === 'delivered') {
+            select.className = "status-dropdown bg-green-50 border border-green-200 text-green-800 text-sm font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 cursor-pointer";
+        } else if (select.value === 'cancelled') {
+            select.className = "status-dropdown bg-red-50 border border-red-200 text-red-800 text-sm font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer";
+        } else {
+            select.className = "status-dropdown bg-gray-50 border border-gray-200 text-gray-800 text-sm font-bold rounded-lg pl-3 pr-8 py-2 focus:outline-none focus:ring-2 focus:ring-gray-500 cursor-pointer";
         }
-        
-        select.className = `status-dropdown text-sm font-bold rounded-xl pl-4 pr-10 py-2.5 border shadow-2xs transition-all duration-200 cursor-pointer appearance-none outline-none focus:ring-2 w-full ${colorClasses}`;
     };
 
     const updateDropdownOptions = (select, currentStatus) => {
-        // Strict forward-only progression (Cancelled removed from operational status update dropdown)
         const allowedNext = {
-            'placed':           ['placed', 'packed'],
-            'packed':           ['packed', 'shipped'],
-            'shipped':          ['shipped', 'out_for_delivery'],
-            'out_for_delivery': ['out_for_delivery', 'delivered'],
-            'delivered':        ['delivered']
+            'placed':           ['placed', 'packed', 'cancelled'],
+            'packed':           ['packed', 'shipped', 'cancelled'],
+            'shipped':          ['shipped', 'out_for_delivery', 'cancelled'],
+            'out_for_delivery': ['out_for_delivery', 'delivered', 'cancelled'],
+            'delivered':        ['delivered'],
+            'cancelled':        ['cancelled']
         };
         const allowed = allowedNext[currentStatus] || [currentStatus];
         
         Array.from(select.options).forEach(opt => {
             if (allowed.includes(opt.value)) {
                 opt.disabled = false;
-                opt.hidden = false;
+                opt.style.color = '#111827';
+                opt.style.backgroundColor = '#ffffff';
+                opt.style.fontWeight = '500';
             } else {
                 opt.disabled = true;
-                opt.hidden = true;
+                opt.style.color = '#9ca3af';
+                opt.style.backgroundColor = '#f9fafb';
+                opt.style.fontWeight = 'normal';
             }
         });
         select.value = currentStatus;

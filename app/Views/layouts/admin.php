@@ -13,57 +13,6 @@ if ($globalNavbar) {
     $faviconUrl = $navData['global_settings']['favicon'] ?? $navData['favicon'] ?? '';
     $cmsLogoUrl = $navData['global_settings']['logo'] ?? $navData['logo'] ?? '';
 }
-
-// Logged In User Identity & Role Resolution
-$currentUserId = (int)\Core\Session::get('user_id');
-$currentUserRole = \Core\Session::get('user_role');
-$currentUserName = \Core\Session::get('user_name') ?? 'Administrator';
-$currentUserEmail = '';
-$currentCustomRole = '';
-$currentStoreName = '';
-
-if ($currentUserId) {
-    $dbUser = \Core\Database::getInstance();
-    $stmtU = $dbUser->prepare("
-        SELECT u.email, u.name, u.role, r.name as custom_role_name, vp.store_name 
-        FROM users u 
-        LEFT JOIN roles r ON u.role_id = r.id 
-        LEFT JOIN vendor_profiles vp ON u.id = vp.user_id 
-        WHERE u.id = ? LIMIT 1
-    ");
-    $stmtU->execute([$currentUserId]);
-    $uRow = $stmtU->fetch();
-    if ($uRow) {
-        $currentUserName = $uRow['name'] ?: $currentUserName;
-        $currentUserEmail = $uRow['email'] ?? '';
-        $currentCustomRole = $uRow['custom_role_name'] ?? '';
-        $currentStoreName = $uRow['store_name'] ?? '';
-    }
-}
-
-// Role badge configuration
-if ($currentUserRole === 'super_admin') {
-    $roleBadgeText = 'Super Admin';
-    $roleBadgeIcon = '🛡️';
-    $roleBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
-    $avatarGradient = 'bg-gradient-to-tr from-[#F25996] to-[#d94480]';
-} elseif ($currentUserRole === 'staff') {
-    $roleTitle = !empty($currentCustomRole) ? $currentCustomRole : 'Staff';
-    $roleBadgeText = $roleTitle;
-    $roleBadgeIcon = '👤';
-    $roleBadgeClass = 'bg-indigo-50 text-indigo-700 border-indigo-200';
-    $avatarGradient = 'bg-gradient-to-tr from-indigo-500 to-purple-600';
-} elseif ($currentUserRole === 'vendor') {
-    $roleBadgeText = 'Vendor' . (!empty($currentStoreName) ? " • {$currentStoreName}" : '');
-    $roleBadgeIcon = '🏪';
-    $roleBadgeClass = 'bg-amber-50 text-amber-700 border-amber-200';
-    $avatarGradient = 'bg-gradient-to-tr from-amber-500 to-orange-500';
-} else {
-    $roleBadgeText = ucfirst(str_replace('_', ' ', $currentUserRole ?? 'Admin'));
-    $roleBadgeIcon = '💼';
-    $roleBadgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
-    $avatarGradient = 'bg-gradient-to-tr from-blue-500 to-cyan-600';
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -754,7 +703,6 @@ if ($currentUserRole === 'super_admin') {
                     <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Settings</span>
                 </a>
             <?php else: ?>
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('dashboard', 'view')): ?>
             <!-- ================= SYSTEM MODULE ================= -->
             <p class="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-4 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap h-0 group-hover:h-auto">System</p>
             
@@ -762,9 +710,7 @@ if ($currentUserRole === 'super_admin') {
                 <svg class="w-6 h-6 flex-shrink-0 <?= $currentUri === '/admin/dashboard' ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                 <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Dashboard</span>
             </a>
-            <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('all_buyers') || $this->hasAnyPermission('pending_buyers')): ?>
             <!-- ================= BUYERS MODULE ================= -->
             <p class="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-6 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap h-0 group-hover:h-auto">Buyers</p>
 
@@ -790,21 +736,15 @@ if ($currentUserRole === 'super_admin') {
                 </div>
                 
                 <div class="buyers-dropdown ml-4 pl-4 border-l border-gray-100 space-y-1 mt-1">
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('all_buyers', 'view') || $this->hasAnyPermission('all_buyers')): ?>
                     <a href="<?= BASE_URL ?>/admin/buyers" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/buyers' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">All Buyers</span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('pending_buyers', 'view') || $this->hasAnyPermission('pending_buyers')): ?>
                     <a href="<?= BASE_URL ?>/admin/buyers/pending" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/buyers/pending' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Pending Buyers</span>
                     </a>
-                    <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('all_orders') || $this->hasAnyPermission('pending_payments') || $this->hasAnyPermission('bill_modifications')): ?>
             <style>
                 .sales-dropdown {
                     display: none;
@@ -827,36 +767,25 @@ if ($currentUserRole === 'super_admin') {
                 </div>
                 
                 <div class="sales-dropdown ml-4 pl-4 border-l border-gray-100 space-y-1 mt-1">
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('all_orders', 'view') || $this->hasAnyPermission('all_orders')): ?>
                     <a href="<?= BASE_URL ?>/admin/orders" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/orders' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">All Orders</span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('pending_payments', 'view') || $this->hasAnyPermission('pending_payments')): ?>
                     <a href="<?= BASE_URL ?>/admin/orders/pending" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/orders/pending' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Pending Payments</span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('bill_modifications', 'view') || $this->hasAnyPermission('bill_modifications')): ?>
                     <a href="<?= BASE_URL ?>/admin/order-modifications" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/order-modifications') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Bill Modifications</span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('all_orders', 'view') || $this->hasAnyPermission('all_orders')): ?>
                     <a href="<?= BASE_URL ?>/admin/orders/packing-videos" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/orders/packing-videos' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📹 Packing Videos & Backup</span>
                     </a>
-                    <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('reviews', 'view') || $this->hasAnyPermission('reviews')): ?>
             <a href="<?= BASE_URL ?>/admin/reviews" class="flex items-center px-3 py-3 mt-1 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/reviews') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' ?>">
                 <svg class="w-6 h-6 flex-shrink-0 <?= strpos($currentUri, '/admin/reviews') === 0 ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
                 <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Reviews</span>
             </a>
-            <?php endif; ?>
 
             <style>
                 .cancellations-dropdown {
@@ -900,12 +829,9 @@ if ($currentUserRole === 'super_admin') {
             </div>
             <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('categories') || $this->hasAnyPermission('subcategories') || $this->hasAnyPermission('attributes') || $this->hasAnyPermission('products') || $this->hasAnyPermission('inventory') || $this->hasAnyPermission('fabric_customizations') || $this->hasAnyPermission('custom_orders') || $this->hasAnyPermission('order_rules') || $this->hasAnyPermission('fee_rules') || $this->hasAnyPermission('staff_management') || $this->hasAnyPermission('roles') || $this->hasAnyPermission('media_manager') || $this->hasAnyPermission('settings')): ?>
             <!-- ================= ADMIN MODULE ================= -->
             <p class="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-6 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap h-0 group-hover:h-auto">Admin</p>
-            <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('categories') || $this->hasAnyPermission('subcategories') || $this->hasAnyPermission('attributes') || $this->hasAnyPermission('products')): ?>
             <style>
                 .catalog-dropdown {
                     display: none;
@@ -938,7 +864,6 @@ if ($currentUserRole === 'super_admin') {
                     $sidebarCatReqCount = (new \App\Models\CategoryRequest())->getPendingCount();
                     $sidebarProdPendingCount = is_vendor_module_enabled() ? (new \App\Models\Product())->getPendingApprovalCount() : 0;
                     ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('categories', 'view') || $this->hasAnyPermission('categories')): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/categories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/categories') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Categories</span>
                     </a>
@@ -950,18 +875,12 @@ if ($currentUserRole === 'super_admin') {
                             <?php endif; ?>
                         </span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('subcategories', 'view') || $this->hasAnyPermission('subcategories')): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/subcategories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/subcategories') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Sub Categories</span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('attributes', 'view') || $this->hasAnyPermission('attributes')): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/attributes" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/attributes') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Attributes</span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('products', 'view') || $this->hasAnyPermission('products')): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/products" class="flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/products') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center justify-between w-full">
                             Products
@@ -970,12 +889,9 @@ if ($currentUserRole === 'super_admin') {
                             <?php endif; ?>
                         </span>
                     </a>
-                    <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('fabric_customizations') || $this->hasAnyPermission('custom_orders')): ?>
             <style>
                 .customize-dropdown {
                     display: none;
@@ -998,42 +914,42 @@ if ($currentUserRole === 'super_admin') {
                 </div>
                 
                 <div class="customize-dropdown ml-4 pl-4 border-l border-amber-200 space-y-1 mt-1">
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('fabric_customizations', 'view') || $this->hasAnyPermission('fabric_customizations')): ?>
+                    <a href="<?= BASE_URL ?>/admin/catalog/categories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/categories') === 0 ? 'bg-amber-50 text-amber-800 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📂 Category</span>
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/catalog/subcategories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/subcategories') === 0 ? 'bg-amber-50 text-amber-800 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">🏷️ Sub Category</span>
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/catalog/attributes" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/attributes') === 0 ? 'bg-amber-50 text-amber-800 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📏 Attributes</span>
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/catalog/products?module=customize" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/products') === 0 && (isset($_GET['module']) && $_GET['module'] === 'customize')) ? 'bg-amber-100 text-amber-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">🧵 Products / Fabrics</span>
+                    </a>
                     <a href="<?= BASE_URL ?>/admin/fabric-customizations" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/fabric-customizations') === 0 ? 'bg-amber-100 text-amber-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">✂️ Fabric Rules</span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('custom_orders', 'view') || $this->hasAnyPermission('custom_orders')): ?>
                     <a href="<?= BASE_URL ?>/admin/customize/orders" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/customize/orders') === 0 ? 'bg-amber-100 text-amber-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📦 Custom Orders</span>
                     </a>
-                    <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
             
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('inventory', 'view') || $this->hasAnyPermission('inventory')): ?>
             <a href="<?= BASE_URL ?>/admin/inventory" class="flex items-center px-3 py-3 mt-1 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/inventory') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' ?>">
                 <svg class="w-6 h-6 flex-shrink-0 <?= strpos($currentUri, '/admin/inventory') === 0 ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                 <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Inventory</span>
             </a>
-            <?php endif; ?>
             
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('order_rules', 'view') || $this->hasAnyPermission('order_rules')): ?>
             <a href="<?= BASE_URL ?>/admin/order-rules" class="flex items-center px-3 py-3 mt-1 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/order-rules') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' ?>">
                 <svg class="w-6 h-6 flex-shrink-0 <?= strpos($currentUri, '/admin/order-rules') === 0 ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
                 <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Order Rules</span>
             </a>
-            <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('fee_rules', 'view') || $this->hasAnyPermission('fee_rules')): ?>
             <a href="<?= BASE_URL ?>/admin/fee-rules" class="flex items-center px-3 py-3 mt-1 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/fee-rules') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' ?>">
                 <svg class="w-6 h-6 flex-shrink-0 <?= strpos($currentUri, '/admin/fee-rules') === 0 ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                 <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Fee Rules</span>
             </a>
-            <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('staff_management') || $this->hasAnyPermission('roles')): ?>
             <style>
                 .staff-dropdown {
                     display: none;
@@ -1056,24 +972,17 @@ if ($currentUserRole === 'super_admin') {
                 </div>
                 
                 <div class="staff-dropdown ml-4 pl-4 border-l border-gray-100 space-y-1 mt-1">
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('staff_management', 'view') || $this->hasAnyPermission('staff_management')): ?>
                     <a href="<?= BASE_URL ?>/admin/staff" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/staff' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">All Staff</span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('staff_management', 'create')): ?>
                     <a href="<?= BASE_URL ?>/admin/staff/create" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/staff/create' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Add Staff</span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('roles', 'view') || $this->hasAnyPermission('roles')): ?>
                     <a href="<?= BASE_URL ?>/admin/staff/roles" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/staff/roles' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Role Assign</span>
                     </a>
-                    <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
 
             <?php if (\Core\Session::get('user_role') === 'super_admin'): ?>
             <style>
@@ -1138,21 +1047,20 @@ if ($currentUserRole === 'super_admin') {
             </div>
             <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('media_manager', 'view') || $this->hasAnyPermission('media_manager')): ?>
+            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('media_manager', 'view')): ?>
             <a href="<?= BASE_URL ?>/admin/media" class="flex items-center px-3 py-3 mt-1 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/media') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' ?>">
                 <svg class="w-6 h-6 flex-shrink-0 <?= strpos($currentUri, '/admin/media') === 0 ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Media Manager</span>
             </a>
             <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('settings', 'view') || $this->hasAnyPermission('settings')): ?>
+            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('settings', 'view')): ?>
             <a href="<?= BASE_URL ?>/admin/settings" class="flex items-center px-3 py-3 mt-1 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/settings') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' ?>" title="System & Backup Settings">
                 <svg class="w-6 h-6 flex-shrink-0 <?= strpos($currentUri, '/admin/settings') === 0 ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
                 <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Settings</span>
             </a>
             <?php endif; ?>
 
-            <?php if (is_vendor_module_enabled() && (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('all_vendors') || $this->hasAnyPermission('pending_vendors') || $this->hasAnyPermission('vendor_analytics'))): ?>
             <!-- ================= VENDOR MODULE ================= -->
             <p class="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-6 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap h-0 group-hover:h-auto">Vendor</p>
 
@@ -1168,6 +1076,7 @@ if ($currentUserRole === 'super_admin') {
                     transform: rotate(180deg);
                 }
             </style>
+            <?php if (is_vendor_module_enabled() && (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('all_vendors') || $this->hasAnyPermission('pending_vendors') || $this->hasAnyPermission('vendor_analytics'))): ?>
             <div class="relative vendors-menu">
                 <div class="flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors min-w-max text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer <?= strpos($currentUri, '/admin/vendors') === 0 ? 'text-brand-600' : '' ?>">
                     <svg class="w-6 h-6 flex-shrink-0 <?= strpos($currentUri, '/admin/vendors') === 0 ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
@@ -1178,17 +1087,17 @@ if ($currentUserRole === 'super_admin') {
                 </div>
                 
                 <div class="vendors-dropdown ml-4 pl-4 border-l border-gray-100 space-y-1 mt-1">
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('vendor_analytics', 'view') || $this->hasAnyPermission('vendor_analytics')): ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('vendor_analytics', 'view')): ?>
                     <a href="<?= BASE_URL ?>/admin/vendors/dashboard" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/vendors/dashboard' ? 'bg-brand-50 text-brand-700 font-semibold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📊 Revenue Dashboard</span>
                     </a>
                     <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('all_vendors', 'view') || $this->hasAnyPermission('all_vendors')): ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('all_vendors', 'view')): ?>
                     <a href="<?= BASE_URL ?>/admin/vendors" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/vendors' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">All Vendors</span>
                     </a>
                     <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('pending_vendors', 'view') || $this->hasAnyPermission('pending_vendors')): ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('pending_vendors', 'view')): ?>
                     <a href="<?= BASE_URL ?>/admin/vendors/pending" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/vendors/pending' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Pending Vendors</span>
                     </a>
@@ -1197,7 +1106,6 @@ if ($currentUserRole === 'super_admin') {
             </div>
             <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('payments') || $this->hasAnyPermission('withdrawals') || $this->hasAnyPermission('commissions') || $this->hasAnyPermission('transactions')): ?>
             <style>
                 .finance-dropdown {
                     display: none;
@@ -1223,12 +1131,10 @@ if ($currentUserRole === 'super_admin') {
                     <?php
                     $pendingPayoutsCount = (new \App\Models\Finance())->getPendingPayoutCount();
                     ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('payments', 'view') || $this->hasAnyPermission('payments')): ?>
                     <a href="<?= BASE_URL ?>/admin/finance/payments" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/finance/payments' || $currentUri === '/admin/finance' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">💳 Payments Overview</span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (is_vendor_module_enabled() && (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('withdrawals', 'view') || $this->hasAnyPermission('withdrawals'))): ?>
+                    <?php if (is_vendor_module_enabled()): ?>
                     <a href="<?= BASE_URL ?>/admin/finance/withdrawals" class="flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/finance/withdrawals') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center justify-between w-full">
                             <span>🏦 Withdrawal Requests</span>
@@ -1237,22 +1143,18 @@ if ($currentUserRole === 'super_admin') {
                             <?php endif; ?>
                         </span>
                     </a>
-                    <?php endif; ?>
-                    <?php if (is_vendor_module_enabled() && (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('commissions', 'view') || $this->hasAnyPermission('commissions'))): ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('commissions', 'view')): ?>
                     <a href="<?= BASE_URL ?>/admin/finance/commissions" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/finance/commissions') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">⚙️ Commission Settings</span>
                     </a>
                     <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('transactions', 'view') || $this->hasAnyPermission('transactions')): ?>
+                    <?php endif; ?>
                     <a href="<?= BASE_URL ?>/admin/finance/transactions" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/finance/transactions') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📜 Financial Ledger</span>
                     </a>
-                    <?php endif; ?>
                 </div>
             </div>
-            <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('support', 'view') || $this->hasAnyPermission('support')): ?>
             <?php $adminOpenTicketsCount = (new \App\Models\SupportTicket())->getCounts()['open']; ?>
             <a href="<?= BASE_URL ?>/admin/support" class="flex items-center justify-between px-3 py-3 mt-1 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/support') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' ?>">
                 <div class="flex items-center">
@@ -1263,34 +1165,20 @@ if ($currentUserRole === 'super_admin') {
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1" title="<?= $adminOpenTicketsCount ?> open support queries"><?= $adminOpenTicketsCount ?></span>
                 <?php endif; ?>
             </a>
-            <?php endif; ?>
 
             <?php endif; ?>
 
         </nav>
         
-        <!-- Bottom / Profile & Logout -->
-        <div class="p-3 border-t border-gray-100 overflow-hidden flex flex-col space-y-2">
-            <!-- User Summary Pill in Sidebar -->
-            <div class="flex items-center px-2 py-1.5 rounded-xl bg-gray-50 border border-gray-100 min-w-max">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0 <?= $avatarGradient ?>">
-                    <?= strtoupper(substr($currentUserName, 0, 1)) ?>
-                </div>
-                <div class="ml-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col min-w-0">
-                    <span class="text-xs font-bold text-gray-900 truncate max-w-[130px]"><?= htmlspecialchars($currentUserName) ?></span>
-                    <span class="text-[10px] font-bold uppercase tracking-wider <?= ($currentUserRole === 'super_admin') ? 'text-rose-600' : (($currentUserRole === 'staff') ? 'text-indigo-600' : 'text-amber-600') ?>">
-                        <?= $roleBadgeIcon ?> <?= htmlspecialchars($roleBadgeText) ?>
-                    </span>
-                </div>
-            </div>
-
-            <a href="<?= BASE_URL ?>/" class="flex w-full items-center px-3 py-2 text-xs font-semibold text-gray-600 rounded-lg hover:bg-gray-100 hover:text-gray-900 transition-colors min-w-max" title="View Storefront">
-                <svg class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+        <!-- Bottom / Logout -->
+        <div class="p-3 border-t border-gray-100 overflow-hidden flex flex-col space-y-1">
+            <a href="<?= BASE_URL ?>/" class="flex w-full items-center px-3 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-gray-50 hover:text-gray-900 transition-colors min-w-max" title="View Storefront">
+                <svg class="w-6 h-6 flex-shrink-0 text-gray-400 group-hover:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                 <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Storefront</span>
             </a>
             <form action="<?= BASE_URL ?>/logout" method="POST">
-                <button type="submit" class="flex w-full items-center px-3 py-2 text-xs font-semibold text-gray-600 rounded-lg hover:bg-rose-50 hover:text-rose-700 transition-colors min-w-max" title="Log out">
-                    <svg class="w-5 h-5 flex-shrink-0 text-gray-400 group-hover:text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                <button type="submit" class="flex w-full items-center px-3 py-3 text-sm font-medium text-gray-600 rounded-lg hover:bg-red-50 hover:text-red-700 transition-colors min-w-max" title="Log out">
+                    <svg class="w-6 h-6 flex-shrink-0 text-gray-400 group-hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
                     <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Log out</span>
                 </button>
             </form>
@@ -1299,53 +1187,6 @@ if ($currentUserRole === 'super_admin') {
 
     <!-- Main Content Area -->
     <div class="flex-1 flex flex-col min-w-0 overflow-hidden ml-0 md:ml-0 transition-all duration-300">
-
-        <!-- Top Navigation / User Identity & Role Header Bar -->
-        <header class="bg-white border-b border-gray-100 h-16 flex items-center justify-between px-8 sticky top-0 z-20 shadow-2xs flex-shrink-0">
-            <!-- Left: System Context & Status -->
-            <div class="flex items-center gap-3">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Online
-                </span>
-                <span class="text-xs font-medium text-gray-400 font-mono hidden sm:inline">GRM B2B Portal</span>
-            </div>
-
-            <!-- Right: Logged In User Identity & Role Badge -->
-            <div class="flex items-center gap-3">
-                <a href="<?= BASE_URL ?>/" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition active:scale-95 shadow-2xs">
-                    <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-                    <span>Storefront</span>
-                </a>
-
-                <!-- User Identity Card -->
-                <div class="flex items-center gap-2.5 bg-gray-50/80 border border-gray-200/80 pl-2 pr-3.5 py-1 rounded-full shadow-2xs">
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white shadow-xs <?= $avatarGradient ?>">
-                        <?= strtoupper(substr($currentUserName, 0, 1)) ?>
-                    </div>
-                    <div class="flex flex-col text-left">
-                        <div class="flex items-center gap-1.5">
-                            <span class="text-xs font-bold text-gray-900 leading-tight"><?= htmlspecialchars($currentUserName) ?></span>
-                            <!-- Role Badge -->
-                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border <?= $roleBadgeClass ?>">
-                                <span><?= $roleBadgeIcon ?></span>
-                                <span><?= htmlspecialchars($roleBadgeText) ?></span>
-                            </span>
-                        </div>
-                        <?php if (!empty($currentUserEmail)): ?>
-                            <span class="text-[10.5px] text-gray-400 font-medium leading-none truncate max-w-[160px]"><?= htmlspecialchars($currentUserEmail) ?></span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
-                <!-- Sign out -->
-                <form action="<?= BASE_URL ?>/logout" method="POST" class="inline">
-                    <button type="submit" title="Sign Out" class="p-2 rounded-full text-gray-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                    </button>
-                </form>
-            </div>
-        </header>
 
         <!-- Flash Messages & Confirm Interceptor -->
         <?php if ($flashError = \Core\Session::getFlash('error')): ?>

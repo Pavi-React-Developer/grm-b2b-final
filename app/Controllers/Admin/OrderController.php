@@ -103,7 +103,7 @@ class OrderController extends Controller
             return;
         }
 
-        $validStatuses = ['placed', 'packed', 'shipped', 'out_for_delivery', 'delivered'];
+        $validStatuses = ['placed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
         if (!in_array($status, $validStatuses)) {
             echo json_encode(['success' => false, 'message' => 'Invalid status']);
             return;
@@ -135,12 +135,12 @@ class OrderController extends Controller
 
         $currentStatus = $order['status'];
 
-        // Strict Forward-Only Transition map: Once moved, status can NEVER be changed backwards. Cancelled is removed from operational updates.
+        // Strict Stage-by-Stage transition map
         $allowedTransitions = [
-            'placed'           => ['packed'],
-            'packed'           => ['shipped'],
-            'shipped'          => ['out_for_delivery'],
-            'out_for_delivery' => ['delivered'],
+            'placed'           => ['packed', 'cancelled'],
+            'packed'           => ['shipped', 'cancelled'],
+            'shipped'          => ['out_for_delivery', 'cancelled'],
+            'out_for_delivery' => ['delivered', 'cancelled'],
             'delivered'        => [],
             'cancelled'        => []
         ];
@@ -152,7 +152,7 @@ class OrderController extends Controller
                 $formatTarget = ucwords(str_replace('_', ' ', $status));
                 echo json_encode([
                     'success' => false,
-                    'message' => "Invalid transition: Cannot change status from {$formatCurrent} to {$formatTarget}. Order status follows a strictly forward workflow (Placed → Packed → Shipped → Out for Delivery → Delivered) and cannot be reverted backwards."
+                    'message' => "Invalid status transition from {$formatCurrent} to {$formatTarget}. Orders must be updated stage-by-stage."
                 ]);
                 return;
             }
@@ -482,13 +482,9 @@ class OrderController extends Controller
     }
 
     public function printSlips() {
-        $type = $_GET['type'] ?? 'paid';
-        if ($type === 'pending') {
-            $this->requirePermission('pending_payments', 'view');
-        } else {
-            $this->requirePermission('all_orders', 'view');
-        }
+        $this->requirePermission('pending_payments', 'view');
         
+        $type = $_GET['type'] ?? 'paid';
         $orderModel = new Order();
         $orders = $orderModel->getAllOrders($type === 'pending');
         

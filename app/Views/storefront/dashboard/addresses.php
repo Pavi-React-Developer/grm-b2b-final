@@ -125,147 +125,415 @@
 <!-- ======= ADD ADDRESS MODAL ======= -->
 <div id="add-address-modal" class="fixed inset-0 z-[100] hidden bg-black/50 backdrop-blur-sm overflow-y-auto" role="dialog" aria-modal="true">
     <div class="min-h-full flex items-center justify-center p-3 sm:p-4">
-    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg my-4 flex flex-col max-h-[90vh]">
-        <div class="flex items-center justify-between px-4 pt-4 pb-3 sm:px-7 sm:pt-7 sm:pb-4 border-b border-gray-100 shrink-0">
-            <h2 class="text-base sm:text-xl font-black text-[#1d1d1f]">Add New Address</h2>
-            <button onclick="closeAddModal()" class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg my-4 flex flex-col max-h-[85vh] overflow-hidden">
+            <!-- Modal Header (Fixed) -->
+            <div class="flex items-center justify-between px-4 pt-4 pb-3 sm:px-7 sm:pt-6 sm:pb-4 border-b border-gray-100 shrink-0 bg-white">
+                <h2 class="text-base sm:text-xl font-black text-[#1d1d1f]">Add New Address</h2>
+                <button type="button" onclick="closeAddModal()" class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <form action="<?= BASE_URL ?>/dashboard/addresses/add" method="POST" class="flex flex-col flex-1 min-h-0">
+                <!-- Scrollable Form Body -->
+                <div class="px-4 py-4 sm:px-7 sm:py-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1 overscroll-contain">
+                    <div>
+                        <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Label <span class="text-gray-400 font-normal">(e.g. Home, Office, Shop)</span></label>
+                        <input type="text" name="label" maxlength="50" placeholder="Shop Address" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Address Line 1 <span class="text-red-500">*</span></label>
+                        <input type="text" name="line1" required maxlength="255" placeholder="House/Flat no., Building, Street" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Address Line 2 <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <input type="text" name="line2" maxlength="255" placeholder="Area, Locality, Landmark" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
+                    </div>
+                    
+                    <!-- State & District / City (Registration Form Style) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div>
+                            <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">State <span class="text-red-500">*</span></label>
+                            <select id="add_state" name="state" required onchange="toggleAddDistrictFields()" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900">
+                                <option value="">Select State</option>
+                                <option value="Tamil Nadu">Tamil Nadu</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                        <div id="add_district_container">
+                            <label id="add_district_label" class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">District / City <span class="text-red-500">*</span></label>
+                            
+                            <!-- Dropdown for Tamil Nadu -->
+                            <select id="add_district_select" name="city" required class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900 hidden">
+                                <option value="">Select District</option>
+                                <option value="Ariyalur">Ariyalur</option>
+                                <option value="Chengalpattu">Chengalpattu</option>
+                                <option value="Chennai">Chennai</option>
+                                <option value="Coimbatore">Coimbatore</option>
+                                <option value="Cuddalore">Cuddalore</option>
+                                <option value="Dharmapuri">Dharmapuri</option>
+                                <option value="Dindigul">Dindigul</option>
+                                <option value="Erode">Erode</option>
+                                <option value="Kallakurichi">Kallakurichi</option>
+                                <option value="Kanchipuram">Kanchipuram</option>
+                                <option value="Kanyakumari">Kanyakumari</option>
+                                <option value="Karur">Karur</option>
+                                <option value="Krishnagiri">Krishnagiri</option>
+                                <option value="Madurai">Madurai</option>
+                                <option value="Mayiladuthurai">Mayiladuthurai</option>
+                                <option value="Nagapattinam">Nagapattinam</option>
+                                <option value="Namakkal">Namakkal</option>
+                                <option value="Nilgiris">Nilgiris</option>
+                                <option value="Perambalur">Perambalur</option>
+                                <option value="Pudukkottai">Pudukkottai</option>
+                                <option value="Ramanathapuram">Ramanathapuram</option>
+                                <option value="Ranipet">Ranipet</option>
+                                <option value="Salem">Salem</option>
+                                <option value="Sivaganga">Sivaganga</option>
+                                <option value="Tenkasi">Tenkasi</option>
+                                <option value="Thanjavur">Thanjavur</option>
+                                <option value="Theni">Theni</option>
+                                <option value="Thoothukudi">Thoothukudi</option>
+                                <option value="Tiruchirappalli">Tiruchirappalli (Trichy)</option>
+                                <option value="Tirunelveli">Tirunelveli</option>
+                                <option value="Tirupathur">Tirupathur</option>
+                                <option value="Tiruppur">Tiruppur</option>
+                                <option value="Tiruvallur">Tiruvallur</option>
+                                <option value="Tiruvannamalai">Tiruvannamalai</option>
+                                <option value="Tiruvarur">Tiruvarur</option>
+                                <option value="Vellore">Vellore</option>
+                                <option value="Viluppuram">Viluppuram</option>
+                                <option value="Virudhunagar">Virudhunagar</option>
+                            </select>
+                            
+                            <!-- Text Input for Others -->
+                            <input id="add_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900 hidden" disabled>
+                        </div>
+                        <div id="add_other_state_container" class="hidden sm:col-span-2">
+                            <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">State Name <span class="text-red-500">*</span></label>
+                            <input id="add_other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter state name (e.g. Kerala, Karnataka)" autocomplete="off" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900" disabled>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                        <div>
+                            <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Pincode <span class="text-red-500">*</span></label>
+                            <input type="text" name="postal_code" required maxlength="10" pattern="\d{6}" title="Enter a valid 6-digit pincode" placeholder="600001" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Country</label>
+                            <input type="text" name="country" value="India" maxlength="50" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2.5 pt-1">
+                        <input type="checkbox" name="is_default" id="add_is_default" value="1" class="w-4 h-4 rounded border-gray-300 accent-[#F25996]">
+                        <label for="add_is_default" class="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer">Set as default address</label>
+                    </div>
+                </div>
+
+                <!-- Modal Footer (Fixed at bottom) -->
+                <div class="px-4 py-3 sm:px-7 sm:py-4 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-2.5 sm:gap-3 shrink-0 bg-gray-50/50 rounded-b-2xl">
+                    <button type="button" onclick="closeAddModal()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors text-xs sm:text-sm order-2 sm:order-1 cursor-pointer">Cancel</button>
+                    <button type="submit" class="w-full sm:w-auto bg-[#F25996] hover:bg-[#d8407d] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-pink-900/20 transition-all text-xs sm:text-sm order-1 sm:order-2 cursor-pointer">Save Address</button>
+                </div>
+            </form>
         </div>
-        <form action="<?= BASE_URL ?>/dashboard/addresses/add" method="POST" class="px-4 py-4 sm:px-7 sm:py-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1">
-            <div>
-                <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Label <span class="text-gray-400 font-normal">(e.g. Home, Office)</span></label>
-                <input type="text" name="label" maxlength="50" placeholder="Home" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-            </div>
-            <div>
-                <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Address Line 1 <span class="text-red-500">*</span></label>
-                <input type="text" name="line1" required maxlength="255" placeholder="House/Flat no., Building, Street" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-            </div>
-            <div>
-                <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Address Line 2 <span class="text-gray-400 font-normal">(optional)</span></label>
-                <input type="text" name="line2" maxlength="255" placeholder="Area, Locality, Landmark" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-            </div>
-            <div class="grid grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                    <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">City <span class="text-red-500">*</span></label>
-                    <input type="text" name="city" required maxlength="100" placeholder="Mumbai" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">State <span class="text-red-500">*</span></label>
-                    <input type="text" name="state" required maxlength="100" placeholder="Maharashtra" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                    <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Pincode <span class="text-red-500">*</span></label>
-                    <input type="text" name="postal_code" required maxlength="10" pattern="\d{6}" title="Enter a valid 6-digit pincode" placeholder="400001" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Country</label>
-                    <input type="text" name="country" value="India" maxlength="50" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-                </div>
-            </div>
-            <div class="flex items-center gap-2.5 pt-1">
-                <input type="checkbox" name="is_default" id="add_is_default" value="1" class="w-4 h-4 rounded border-gray-300 accent-[#F25996]">
-                <label for="add_is_default" class="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer">Set as default address</label>
-            </div>
-            <div class="pt-2 flex flex-col sm:flex-row justify-end gap-2.5 sm:gap-3">
-                <button type="button" onclick="closeAddModal()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors text-xs sm:text-sm order-2 sm:order-1">Cancel</button>
-                <button type="submit" class="w-full sm:w-auto bg-[#F25996] hover:bg-[#d8407d] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-pink-900/20 transition-all text-xs sm:text-sm order-1 sm:order-2">Save Address</button>
-            </div>
-        </form>
-    </div>
     </div>
 </div>
 
 <!-- ======= EDIT ADDRESS MODAL ======= -->
 <div id="edit-address-modal" class="fixed inset-0 z-[100] hidden bg-black/50 backdrop-blur-sm overflow-y-auto" role="dialog" aria-modal="true">
     <div class="min-h-full flex items-center justify-center p-3 sm:p-4">
-    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg my-4 flex flex-col max-h-[90vh]">
-        <div class="flex items-center justify-between px-4 pt-4 pb-3 sm:px-7 sm:pt-7 sm:pb-4 border-b border-gray-100 shrink-0">
-            <h2 class="text-base sm:text-xl font-black text-[#1d1d1f]">Edit Address</h2>
-            <button onclick="closeEditModal()" class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg my-4 flex flex-col max-h-[85vh] overflow-hidden">
+            <!-- Modal Header (Fixed) -->
+            <div class="flex items-center justify-between px-4 pt-4 pb-3 sm:px-7 sm:pt-6 sm:pb-4 border-b border-gray-100 shrink-0 bg-white">
+                <h2 class="text-base sm:text-xl font-black text-[#1d1d1f]">Edit Address</h2>
+                <button type="button" onclick="closeEditModal()" class="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-400 hover:text-gray-600 cursor-pointer">
+                    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+            </div>
+            
+            <form action="<?= BASE_URL ?>/dashboard/addresses/edit" method="POST" class="flex flex-col flex-1 min-h-0">
+                <input type="hidden" name="address_id" id="edit_address_id">
+                
+                <!-- Scrollable Form Body -->
+                <div class="px-4 py-4 sm:px-7 sm:py-6 space-y-4 sm:space-y-5 overflow-y-auto flex-1 overscroll-contain">
+                    <div>
+                        <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Label <span class="text-gray-400 font-normal">(e.g. Home, Office, Shop)</span></label>
+                        <input type="text" name="label" id="edit_label" maxlength="50" placeholder="Shop Address" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Address Line 1 <span class="text-red-500">*</span></label>
+                        <input type="text" name="line1" id="edit_line1" required maxlength="255" placeholder="House/Flat no., Building, Street" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Address Line 2 <span class="text-gray-400 font-normal">(optional)</span></label>
+                        <input type="text" name="line2" id="edit_line2" maxlength="255" placeholder="Area, Locality, Landmark" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
+                    </div>
+                    
+                    <!-- State & District / City (Registration Form Style) -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div>
+                            <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">State <span class="text-red-500">*</span></label>
+                            <select id="edit_state" name="state" required onchange="toggleEditDistrictFields()" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900">
+                                <option value="">Select State</option>
+                                <option value="Tamil Nadu">Tamil Nadu</option>
+                                <option value="Others">Others</option>
+                            </select>
+                        </div>
+                        <div id="edit_district_container">
+                            <label id="edit_district_label" class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">District / City <span class="text-red-500">*</span></label>
+                            
+                            <!-- Dropdown for Tamil Nadu -->
+                            <select id="edit_district_select" name="city" required class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900 hidden">
+                                <option value="">Select District</option>
+                                <option value="Ariyalur">Ariyalur</option>
+                                <option value="Chengalpattu">Chengalpattu</option>
+                                <option value="Chennai">Chennai</option>
+                                <option value="Coimbatore">Coimbatore</option>
+                                <option value="Cuddalore">Cuddalore</option>
+                                <option value="Dharmapuri">Dharmapuri</option>
+                                <option value="Dindigul">Dindigul</option>
+                                <option value="Erode">Erode</option>
+                                <option value="Kallakurichi">Kallakurichi</option>
+                                <option value="Kanchipuram">Kanchipuram</option>
+                                <option value="Kanyakumari">Kanyakumari</option>
+                                <option value="Karur">Karur</option>
+                                <option value="Krishnagiri">Krishnagiri</option>
+                                <option value="Madurai">Madurai</option>
+                                <option value="Mayiladuthurai">Mayiladuthurai</option>
+                                <option value="Nagapattinam">Nagapattinam</option>
+                                <option value="Namakkal">Namakkal</option>
+                                <option value="Nilgiris">Nilgiris</option>
+                                <option value="Perambalur">Perambalur</option>
+                                <option value="Pudukkottai">Pudukkottai</option>
+                                <option value="Ramanathapuram">Ramanathapuram</option>
+                                <option value="Ranipet">Ranipet</option>
+                                <option value="Salem">Salem</option>
+                                <option value="Sivaganga">Sivaganga</option>
+                                <option value="Tenkasi">Tenkasi</option>
+                                <option value="Thanjavur">Thanjavur</option>
+                                <option value="Theni">Theni</option>
+                                <option value="Thoothukudi">Thoothukudi</option>
+                                <option value="Tiruchirappalli">Tiruchirappalli (Trichy)</option>
+                                <option value="Tirunelveli">Tirunelveli</option>
+                                <option value="Tirupathur">Tirupathur</option>
+                                <option value="Tiruppur">Tiruppur</option>
+                                <option value="Tiruvallur">Tiruvallur</option>
+                                <option value="Tiruvannamalai">Tiruvannamalai</option>
+                                <option value="Tiruvarur">Tiruvarur</option>
+                                <option value="Vellore">Vellore</option>
+                                <option value="Viluppuram">Viluppuram</option>
+                                <option value="Virudhunagar">Virudhunagar</option>
+                            </select>
+                            
+                            <!-- Text Input for Others -->
+                            <input id="edit_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900 hidden" disabled>
+                        </div>
+                        <div id="edit_other_state_container" class="hidden sm:col-span-2">
+                            <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">State Name <span class="text-red-500">*</span></label>
+                            <input id="edit_other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter state name (e.g. Kerala, Karnataka)" autocomplete="off" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900" disabled>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                        <div>
+                            <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Pincode <span class="text-red-500">*</span></label>
+                            <input type="text" name="postal_code" id="edit_postal_code" required maxlength="10" pattern="\d{6}" title="Enter a valid 6-digit pincode" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Country</label>
+                            <input type="text" name="country" id="edit_country" maxlength="50" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2.5 pt-1">
+                        <input type="checkbox" name="is_default" id="edit_is_default" value="1" class="w-4 h-4 rounded border-gray-300 accent-[#F25996]">
+                        <label for="edit_is_default" class="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer">Set as default address</label>
+                    </div>
+                </div>
+
+                <!-- Modal Footer (Fixed at bottom) -->
+                <div class="px-4 py-3 sm:px-7 sm:py-4 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-2.5 sm:gap-3 shrink-0 bg-gray-50/50 rounded-b-2xl">
+                    <button type="button" onclick="closeEditModal()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors text-xs sm:text-sm order-2 sm:order-1 cursor-pointer">Cancel</button>
+                    <button type="submit" class="w-full sm:w-auto bg-[#F25996] hover:bg-[#d8407d] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-pink-900/20 transition-all text-xs sm:text-sm order-1 sm:order-2 cursor-pointer">Update Address</button>
+                </div>
+            </form>
         </div>
-        <form action="<?= BASE_URL ?>/dashboard/addresses/edit" method="POST" class="px-4 py-4 sm:px-7 sm:py-6 space-y-4 sm:space-y-5">
-            <input type="hidden" name="address_id" id="edit_address_id">
-            <div>
-                <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Label <span class="text-gray-400 font-normal">(e.g. Home, Office)</span></label>
-                <input type="text" name="label" id="edit_label" maxlength="50" placeholder="Home" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-            </div>
-            <div>
-                <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Address Line 1 <span class="text-red-500">*</span></label>
-                <input type="text" name="line1" id="edit_line1" required maxlength="255" placeholder="House/Flat no., Building, Street" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-            </div>
-            <div>
-                <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Address Line 2 <span class="text-gray-400 font-normal">(optional)</span></label>
-                <input type="text" name="line2" id="edit_line2" maxlength="255" placeholder="Area, Locality, Landmark" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-            </div>
-            <div class="grid grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                    <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">City <span class="text-red-500">*</span></label>
-                    <input type="text" name="city" id="edit_city" required maxlength="100" placeholder="Mumbai" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">State <span class="text-red-500">*</span></label>
-                    <input type="text" name="state" id="edit_state" required maxlength="100" placeholder="Maharashtra" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3 sm:gap-4">
-                <div>
-                    <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Pincode <span class="text-red-500">*</span></label>
-                    <input type="text" name="postal_code" id="edit_postal_code" required maxlength="10" pattern="\d{6}" title="Enter a valid 6-digit pincode" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,6)" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">Country</label>
-                    <input type="text" name="country" id="edit_country" maxlength="50" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm">
-                </div>
-            </div>
-            <div class="flex items-center gap-2.5 pt-1">
-                <input type="checkbox" name="is_default" id="edit_is_default" value="1" class="w-4 h-4 rounded border-gray-300 accent-[#F25996]">
-                <label for="edit_is_default" class="text-xs sm:text-sm font-medium text-gray-700 cursor-pointer">Set as default address</label>
-            </div>
-            <div class="pt-2 flex flex-col sm:flex-row justify-end gap-2.5 sm:gap-3">
-                <button type="button" onclick="closeEditModal()" class="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-gray-500 hover:bg-gray-100 transition-colors text-xs sm:text-sm order-2 sm:order-1">Cancel</button>
-                <button type="submit" class="w-full sm:w-auto bg-[#F25996] hover:bg-[#d8407d] text-white px-6 py-2.5 rounded-xl font-bold shadow-lg shadow-pink-900/20 transition-all text-xs sm:text-sm order-1 sm:order-2">Update Address</button>
-            </div>
-        </form>
-    </div>
     </div>
 </div>
 
 <script>
+const TN_DISTRICTS = [
+    "Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri",
+    "Dindigul", "Erode", "Kallakurichi", "Kanchipuram", "Kanyakumari", "Karur",
+    "Krishnagiri", "Madurai", "Mayiladuthurai", "Nagapattinam", "Namakkal", "Nilgiris",
+    "Perambalur", "Pudukkottai", "Ramanathapuram", "Ranipet", "Salem", "Sivaganga",
+    "Tenkasi", "Thanjavur", "Theni", "Thoothukudi", "Tiruchirappalli", "Tirunelveli",
+    "Tirupathur", "Tiruppur", "Tiruvallur", "Tiruvannamalai", "Tiruvarur", "Vellore",
+    "Viluppuram", "Virudhunagar"
+];
+
+function toggleAddDistrictFields() {
+    const stateVal = document.getElementById('add_state').value;
+    const selectEl = document.getElementById('add_district_select');
+    const textEl   = document.getElementById('add_district_text');
+    const otherContainer = document.getElementById('add_other_state_container');
+    const otherInput = document.getElementById('add_other_state_name');
+
+    if (stateVal === 'Tamil Nadu') {
+        selectEl.classList.remove('hidden');
+        selectEl.disabled = false;
+        selectEl.required = true;
+
+        textEl.classList.add('hidden');
+        textEl.disabled = true;
+        textEl.required = false;
+
+        if (otherContainer) otherContainer.classList.add('hidden');
+        if (otherInput) { otherInput.disabled = true; otherInput.required = false; }
+    } else if (stateVal === 'Others') {
+        textEl.classList.remove('hidden');
+        textEl.disabled = false;
+        textEl.required = true;
+        textEl.placeholder = "Enter District / City Name";
+
+        selectEl.classList.add('hidden');
+        selectEl.disabled = true;
+        selectEl.required = false;
+
+        if (otherContainer) otherContainer.classList.remove('hidden');
+        if (otherInput) { otherInput.disabled = false; otherInput.required = true; }
+    } else {
+        selectEl.classList.add('hidden');
+        selectEl.disabled = true;
+        selectEl.required = false;
+
+        textEl.classList.remove('hidden');
+        textEl.disabled = true;
+        textEl.required = false;
+        textEl.placeholder = "Select State first";
+
+        if (otherContainer) otherContainer.classList.add('hidden');
+        if (otherInput) { otherInput.disabled = true; otherInput.required = false; }
+    }
+}
+
+function toggleEditDistrictFields() {
+    const stateVal = document.getElementById('edit_state').value;
+    const selectEl = document.getElementById('edit_district_select');
+    const textEl   = document.getElementById('edit_district_text');
+    const otherContainer = document.getElementById('edit_other_state_container');
+    const otherInput = document.getElementById('edit_other_state_name');
+
+    if (stateVal === 'Tamil Nadu') {
+        selectEl.classList.remove('hidden');
+        selectEl.disabled = false;
+        selectEl.required = true;
+
+        textEl.classList.add('hidden');
+        textEl.disabled = true;
+        textEl.required = false;
+
+        if (otherContainer) otherContainer.classList.add('hidden');
+        if (otherInput) { otherInput.disabled = true; otherInput.required = false; }
+    } else if (stateVal === 'Others') {
+        textEl.classList.remove('hidden');
+        textEl.disabled = false;
+        textEl.required = true;
+        textEl.placeholder = "Enter District / City Name";
+
+        selectEl.classList.add('hidden');
+        selectEl.disabled = true;
+        selectEl.required = false;
+
+        if (otherContainer) otherContainer.classList.remove('hidden');
+        if (otherInput) { otherInput.disabled = false; otherInput.required = true; }
+    } else {
+        selectEl.classList.add('hidden');
+        selectEl.disabled = true;
+        selectEl.required = false;
+
+        textEl.classList.remove('hidden');
+        textEl.disabled = true;
+        textEl.required = false;
+        textEl.placeholder = "Select State first";
+
+        if (otherContainer) otherContainer.classList.add('hidden');
+        if (otherInput) { otherInput.disabled = true; otherInput.required = false; }
+    }
+}
+
 function openAddModal() {
     const modal = document.getElementById('add-address-modal');
+    document.getElementById('add_state').value = '';
+    const otherInput = document.getElementById('add_other_state_name');
+    if (otherInput) otherInput.value = '';
+    toggleAddDistrictFields();
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
+
 function closeAddModal() {
     const modal = document.getElementById('add-address-modal');
     modal.classList.add('hidden');
     document.body.style.overflow = '';
 }
+
 function openEditModal(addr) {
-    document.getElementById('edit_address_id').value = addr.id;
+    document.getElementById('edit_address_id').value = addr.id || '';
     document.getElementById('edit_label').value = addr.label || '';
     document.getElementById('edit_line1').value = addr.line1 || '';
     document.getElementById('edit_line2').value = addr.line2 || '';
-    document.getElementById('edit_city').value = addr.city || '';
-    document.getElementById('edit_state').value = addr.state || '';
     document.getElementById('edit_postal_code').value = addr.postal_code || '';
     document.getElementById('edit_country').value = addr.country || 'India';
     document.getElementById('edit_is_default').checked = addr.is_default == 1;
+
+    const rawCity = (addr.city || '').trim();
+    const rawState = (addr.state || '').trim();
+
+    // Check if district belongs to Tamil Nadu list
+    const isTnDistrict = TN_DISTRICTS.some(d => d.toLowerCase() === rawCity.toLowerCase());
+    const isTnState = (rawState.toLowerCase() === 'tamil nadu' || isTnDistrict);
+
+    const stateSelect = document.getElementById('edit_state');
+    const otherStateInput = document.getElementById('edit_other_state_name');
+
+    if (isTnState) {
+        stateSelect.value = 'Tamil Nadu';
+        toggleEditDistrictFields();
+        const distSelect = document.getElementById('edit_district_select');
+        let matched = false;
+        for (let opt of distSelect.options) {
+            if (opt.value.toLowerCase() === rawCity.toLowerCase()) {
+                distSelect.value = opt.value;
+                matched = true;
+                break;
+            }
+        }
+        if (!matched && rawCity) {
+            distSelect.value = rawCity;
+        }
+        if (otherStateInput) otherStateInput.value = '';
+    } else {
+        stateSelect.value = 'Others';
+        toggleEditDistrictFields();
+        document.getElementById('edit_district_text').value = rawCity;
+        if (otherStateInput) {
+            otherStateInput.value = (rawState && rawState.toLowerCase() !== 'others') ? rawState : '';
+        }
+    }
 
     const modal = document.getElementById('edit-address-modal');
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
+
 function closeEditModal() {
     const modal = document.getElementById('edit-address-modal');
     modal.classList.add('hidden');
     document.body.style.overflow = '';
 }
+
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') { closeAddModal(); closeEditModal(); }
 });

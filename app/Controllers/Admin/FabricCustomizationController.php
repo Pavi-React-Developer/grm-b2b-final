@@ -20,7 +20,6 @@ class FabricCustomizationController extends Controller
 
     public function __construct()
     {
-        parent::__construct();
         // Require admin login
         if (!Session::get('user_id') || !in_array(Session::get('user_role'), ['super_admin', 'manager', 'staff'])) {
             Session::setFlash('error', 'Unauthorized access. Please login as admin.');
@@ -39,8 +38,6 @@ class FabricCustomizationController extends Controller
      */
     public function index()
     {
-        $this->requirePermission('fabric_customizations', 'view');
-
         $filters = [
             'status'        => $_GET['status'] ?? '',
             'garment_type'  => $_GET['garment_type'] ?? '',
@@ -69,7 +66,6 @@ class FabricCustomizationController extends Controller
      */
     public function create()
     {
-        $this->requirePermission('fabric_customizations', 'create');
         $products = $this->model->getAvailableFabricsForDropdown();
         $categories = $this->categoryModel->getAllActive();
         $subCategories = $this->subCategoryModel->getAllActive();
@@ -98,7 +94,6 @@ class FabricCustomizationController extends Controller
      */
     public function store()
     {
-        $this->requirePermission('fabric_customizations', 'create');
         $fabricId = (int)($_POST['fabric_id'] ?? 0);
         $programName = trim($_POST['program_name'] ?? '');
         $garmentType = trim($_POST['garment_type'] ?? '');
@@ -176,7 +171,6 @@ class FabricCustomizationController extends Controller
      */
     public function edit()
     {
-        $this->requirePermission('fabric_customizations', 'edit');
         $id = (int)($_GET['id'] ?? 0);
         if (!$id) {
             Session::setFlash('error', 'Invalid Fabric Rule ID.');
@@ -209,7 +203,6 @@ class FabricCustomizationController extends Controller
      */
     public function update()
     {
-        $this->requirePermission('fabric_customizations', 'edit');
         $id = (int)($_POST['id'] ?? 0);
         $fabricId = (int)($_POST['fabric_id'] ?? 0);
         $programName = trim($_POST['program_name'] ?? '');
@@ -287,7 +280,6 @@ class FabricCustomizationController extends Controller
      */
     public function delete()
     {
-        $this->requirePermission('fabric_customizations', 'delete');
         $id = (int)($_POST['id'] ?? 0);
         if (!$id) {
             Session::setFlash('error', 'Invalid rule ID.');
@@ -310,7 +302,6 @@ class FabricCustomizationController extends Controller
      */
     public function toggleStatus()
     {
-        $this->requirePermission('fabric_customizations', 'edit');
         header('Content-Type: application/json');
         $id = (int)($_POST['id'] ?? 0);
         if (!$id) {

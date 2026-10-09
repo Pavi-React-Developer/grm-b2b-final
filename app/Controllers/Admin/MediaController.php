@@ -232,7 +232,6 @@ class MediaController extends Controller
 
     public function ajaxGet()
     {
-        $this->requirePermission('media_manager', 'view');
         header('Content-Type: application/json');
         
         $role = Session::get('user_role');

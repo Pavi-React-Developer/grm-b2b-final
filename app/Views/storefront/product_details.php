@@ -113,18 +113,18 @@ if (!empty($variants)) {
                     <?php 
                     $initialDiscPct = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                     ?>
-                    <div id="mainImageDiscountBadge" class="<?= ($canAddToCart && $initialDiscPct > 0) ? '' : 'hidden' ?> absolute top-3 left-3 z-20 w-14 sm:w-16 drop-shadow-lg pointer-events-none">
+                    <div id="mainImageDiscountBadge" class="<?= ($canAddToCart && $initialDiscPct > 0) ? '' : 'hidden' ?> absolute top-3.5 left-3.5 z-20 w-16 sm:w-20 md:w-22 drop-shadow-lg pointer-events-none">
                         <?= render_discount_starburst($initialDiscPct > 0 ? $initialDiscPct : 1, 'w-full h-full') ?>
                     </div>
                     <!-- Zoom Lens -->
                     <div id="zoomLens" class="absolute hidden border border-gray-300 bg-white/40 pointer-events-none" style="width: 150px; height: 150px; z-index: 10;"></div>
                     
-                    <div class="w-full overflow-hidden flex items-center justify-center bg-gray-50" style="aspect-ratio: 1 / 1; max-height: 520px;">
+                    <div class="w-full overflow-hidden flex items-center justify-center bg-gray-50 rounded-xl" style="aspect-ratio: 3 / 4; min-height: 450px; max-height: 620px; width: 100%;">
                         <img id="mainImage" 
                              src="<?= $initialMainImage ?>" 
                              alt="<?= htmlspecialchars($product['name']) ?>" 
-                             class="w-full h-full object-cover" 
-                             style="width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s ease;"
+                             class="w-full h-full object-contain p-1" 
+                             style="width: 100%; height: 100%; object-fit: contain; max-height: 620px; display: block; transition: opacity 0.2s ease;"
                              loading="eager" decoding="async"
                              onerror="this.src='https://placehold.co/800x800/f9fafb/9ca3af?text=No+Image'">
                     </div>
@@ -299,8 +299,8 @@ if (!empty($variants)) {
                         <p class="text-sm font-black text-gray-900"><?= $moq ?> units</p>
                     </div>
                     <div class="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Weight</p>
-                        <p class="text-sm font-black text-gray-900"><?= !empty($product['weight']) ? htmlspecialchars($product['weight']) . ' kg' : '-' ?></p>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Weight / Unit</p>
+                        <p class="text-sm font-black text-gray-900"><?= !empty($product['weight']) ? htmlspecialchars($product['weight']) . ' kg / unit' : '-' ?></p>
                     </div>
                 </div>
                 <?php else: ?>
@@ -333,25 +333,25 @@ if (!empty($variants)) {
                 </div>
                 <?php endif; ?>
 
-                <!-- B2B Category-to-Subcategory Offer Callout -->
+                <!-- B2B Category-to-Subcategory Offer Callout (Pink Theme) -->
                 <?php if (!empty($categoryOfferRule)): ?>
-                <div class="mb-5 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-50 border border-amber-300/80 rounded-2xl p-4 shadow-sm">
+                <div class="mb-5 bg-gradient-to-br from-pink-500/10 via-pink-500/5 to-pink-50/70 border border-pink-200/80 rounded-2xl p-4 shadow-sm">
                     <div class="flex items-start gap-2.5">
                         <span class="text-xl flex-shrink-0">🎁</span>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2">
-                                <h4 class="text-xs font-black text-amber-950 uppercase tracking-wider">B2B Combo Offer Available</h4>
-                                <span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">Tier ₹<?= number_format($categoryOfferRule['min_amount']) ?></span>
+                                <h4 class="text-xs font-black text-pink-950 uppercase tracking-wider">B2B Combo Offer Available</h4>
+                                <span class="text-[10px] font-bold text-pink-700 bg-pink-100 px-2 py-0.5 rounded-full border border-pink-200/60">Tier ₹<?= number_format($categoryOfferRule['min_amount']) ?></span>
                             </div>
-                            <p class="text-xs text-amber-900 leading-snug mt-1">
+                            <p class="text-xs text-pink-900 leading-snug mt-1">
                                 Order <strong>₹<?= number_format($categoryOfferRule['min_amount']) ?></strong> or more from <em><?= htmlspecialchars($categoryOfferRule['main_category_name']) ?></em> to unlock special low order minimums on:
                             </p>
                             <?php if (!empty($categoryOfferRule['secondary_offers'])): ?>
                             <div class="mt-2.5 flex flex-wrap gap-1.5">
                                 <?php foreach($categoryOfferRule['secondary_offers'] as $so): ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-amber-900 rounded-lg text-[11px] font-bold border border-amber-200 shadow-2xs">
-                                        <span>✨ <?= htmlspecialchars($so['name']) ?></span>
-                                        <span class="text-amber-700 font-semibold">(Min ₹<?= number_format($so['min_amount']) ?>)</span>
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-pink-900 rounded-lg text-[11px] font-bold border border-pink-200 shadow-2xs">
+                                        <span class="text-pink-600">✨ <?= htmlspecialchars($so['name']) ?></span>
+                                        <span class="text-pink-700 font-semibold">(Min ₹<?= number_format($so['min_amount']) ?>)</span>
                                     </span>
                                 <?php endforeach; ?>
                             </div>
@@ -591,7 +591,7 @@ if (!empty($variants)) {
                             <?php 
                             $relDiscPct = ($relDiscountPrice && $relBasePrice > $relDiscountPrice) ? round((($relBasePrice - $relDiscountPrice) / $relBasePrice) * 100) : 0;
                             if ($canAddToCart && $relDiscPct > 0) {
-                                echo render_discount_starburst($relDiscPct, 'absolute top-2 left-2 z-10 w-9 h-9 sm:w-11 sm:h-11 transition-transform duration-300 group-hover:scale-110');
+                                echo render_discount_starburst($relDiscPct, 'absolute top-1.5 left-1.5 z-10 w-16 sm:w-18 md:w-20 transition-transform duration-300 group-hover:scale-110');
                             }
                             ?>
                             <img src="<?= htmlspecialchars($relPrimaryImage) ?>" alt="<?= htmlspecialchars($relProduct['name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: cover; width: 100%; height: 100%; display: block;">
@@ -1503,7 +1503,7 @@ if (!empty($variants)) {
                 };
                 const img = document.createElement('img');
                 img.src = url;
-                img.className = 'w-full h-full object-cover';
+                img.className = 'w-full h-full object-contain p-0.5';
                 img.alt = 'Thumbnail ' + (idx + 1);
                 btn.appendChild(img);
                 gallery.appendChild(btn);

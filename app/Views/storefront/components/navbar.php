@@ -209,7 +209,7 @@ $renderSystemIcons = function() use ($textColor, $bgColorVal, $globalFontSize, $
                     $dashLink = $isAdminRole ? BASE_URL . '/admin/dashboard' : BASE_URL . '/dashboard'; 
                 ?>
                 <a href="<?= $dashLink ?>" class="flex items-center hover:opacity-90 transition-opacity focus:outline-none shrink-0 cursor-pointer" style="color: <?= htmlspecialchars($textColor) ?>;" title="Account Profile">
-                    <div class="w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center font-bold text-xs lg:text-sm shadow-sm ring-2 ring-white/40 transition-transform group-hover:scale-105" style="background-color: <?= htmlspecialchars($textColor) ?>; color: <?= htmlspecialchars($bgColorVal ?? '#ffffff') ?>;">
+                    <div class="w-8 h-8 lg:w-9 lg:h-9 rounded-full flex items-center justify-center font-bold text-xs lg:text-sm shadow-sm ring-2 ring-white/60 transition-transform group-hover:scale-105 bg-white text-[#F25996]">
                         <?= $initial ?>
                     </div>
                 </a>
@@ -404,7 +404,7 @@ $renderSystemIcons = function() use ($textColor, $bgColorVal, $globalFontSize, $
                         $dashLink = in_array(\Core\Session::get('user_role'), ['super_admin', 'manager', 'staff', 'vendor']) ? BASE_URL . '/admin/dashboard' : BASE_URL . '/dashboard'; 
                     ?>
                     <a href="<?= $dashLink ?>" class="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl hover:bg-black/5 active:bg-black/10 transition-colors" title="Account">
-                        <div class="w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs shadow-sm ring-2 ring-white/30" style="background-color: <?= htmlspecialchars($textColor) ?>; color: <?= htmlspecialchars($bgColorVal ?? '#ffffff') ?>;">
+                        <div class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs shadow-sm ring-2 ring-white/60 bg-white text-[#F25996]">
                             <?= $initial ?>
                         </div>
                     </a>

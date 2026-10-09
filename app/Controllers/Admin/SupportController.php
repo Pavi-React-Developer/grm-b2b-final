@@ -73,7 +73,6 @@ class SupportController extends Controller
      */
     public function create()
     {
-        $this->requirePermission('support', 'create');
         if (!headers_sent() && (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')) {
             header('Content-Type: application/json');
         }
@@ -147,7 +146,6 @@ class SupportController extends Controller
      */
     public function viewDetails($id = null)
     {
-        $this->requirePermission('support', 'view');
         if (!headers_sent()) { header('Content-Type: application/json'); }
 
         $id = $id ?? $_GET['id'] ?? null;
@@ -175,7 +173,6 @@ class SupportController extends Controller
      */
     public function reply($id = null)
     {
-        $this->requirePermission('support', 'edit');
         if (!headers_sent()) { header('Content-Type: application/json'); }
 
         $role = Session::get('user_role');
@@ -232,7 +229,6 @@ class SupportController extends Controller
      */
     public function updateStatus($id = null)
     {
-        $this->requirePermission('support', 'edit');
         if (!headers_sent()) { header('Content-Type: application/json'); }
 
         $role = Session::get('user_role');
@@ -267,7 +263,6 @@ class SupportController extends Controller
      */
     public function updatePriority($id = null)
     {
-        $this->requirePermission('support', 'edit');
         if (!headers_sent()) { header('Content-Type: application/json'); }
 
         $role = Session::get('user_role');

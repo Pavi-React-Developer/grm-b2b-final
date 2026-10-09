@@ -344,7 +344,7 @@ class FinanceController extends Controller
      */
     public function transactions()
     {
-        $this->requirePermission('transactions', 'view');
+        $this->requirePermission('payments', 'view');
 
         $role = Session::get('user_role');
         $isVendor = ($role === 'vendor');
