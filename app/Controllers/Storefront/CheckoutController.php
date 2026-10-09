@@ -197,10 +197,11 @@ class CheckoutController extends Controller
             $orderModel = new Order();
             $orderNumber = $orderModel->createOrder($userId, $cartItems, $totalAmount, $address, $feeDetails);
             
-            // Get user details for Cashfree
+            // Get user details for Razorpay
             $db = \Core\Database::getInstance();
             $stmt = $db->prepare("SELECT phone, name, email FROM users WHERE id = ?");
             $stmt->execute([$userId]);
+            $user = $stmt->fetch() ?: [];
             
             // Handle saving new address
             if (($_POST['is_new_address'] ?? '0') === '1') {
