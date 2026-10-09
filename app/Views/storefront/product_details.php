@@ -883,8 +883,8 @@ if (!empty($variants)) {
     }
     $avgRating = $totalReviews > 0 ? round(array_sum(array_column($reviews, 'rating')) / $totalReviews, 1) : 0;
     ?>
-    <div id="customer-reviews" class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 mb-8 sm:mb-12">
-        <div class="bg-white rounded-2xl sm:rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+    <div id="customer-reviews" class="w-full max-w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 mb-8 sm:mb-12">
+        <div class="rounded-2xl sm:rounded-3xl shadow-sm overflow-hidden" style="background-color: #fce7f1; border: 1.5px solid #fbcfe8;">
 
             <!-- Mobile View Header -->
             <div class="sm:hidden p-4 pb-2 flex items-center justify-between">
@@ -912,7 +912,7 @@ if (!empty($variants)) {
                 <?php if (!empty($reviews)): ?>
                 <!-- 1. Customer Reviews Rating Summary Card (Fixed on Desktop/Tablet Left Side) -->
                 <div class="hidden sm:block w-[320px] flex-shrink-0">
-                    <div class="bg-pink-50/30 rounded-2xl p-5 border border-pink-100 h-full flex flex-col justify-center text-center shadow-xs">
+                    <div class="bg-white rounded-2xl p-5 border border-pink-100 h-full flex flex-col justify-center text-center shadow-xs">
                         <div>
                             <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Customer Reviews</div>
                             <!-- Star Emblem with Rating -->
@@ -984,9 +984,8 @@ if (!empty($variants)) {
                         <!-- Slider Track -->
                         <div id="review-slider-track" class="flex overflow-x-auto gap-3 sm:gap-4 pb-3 pt-1 snap-x snap-mandatory scroll-smooth touch-pan-x hide-scrollbar select-none cursor-grab">
                             
-                            <!-- 1. Customer Reviews Rating Summary Card (Shown as first card on Mobile ONLY) -->
                             <div class="review-slide-card sm:hidden flex-none w-[85vw] max-w-[320px]">
-                            <div class="bg-pink-50/30 rounded-2xl p-4 border border-pink-100 h-full flex flex-col justify-between text-center shadow-xs">
+                            <div class="bg-white rounded-2xl p-4 border border-pink-100 h-full flex flex-col justify-between text-center shadow-xs">
                                 <div>
                                     <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Customer Reviews</div>
                                     <!-- Star Emblem with Rating -->
@@ -1038,7 +1037,7 @@ if (!empty($variants)) {
                                 $bodyContent = $hasHeadline ? implode("\n", array_slice($lines, 1)) : ($review['review_text'] ?? '');
                             ?>
                             <!-- Review Card (Marakathai Mobile View Style) -->
-                            <div class="review-slide-card flex-none w-[85vw] max-w-[320px] sm:w-[300px] lg:w-[calc(33.333%-11px)]">
+                            <div class="review-slide-card flex-none w-[85vw] max-w-[320px] sm:w-[300px] lg:w-[calc((100%-32px)/3)]">
                                 <div class="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 h-full flex flex-col shadow-xs hover:shadow-md transition-shadow">
                                     <!-- Top Row: Avatar + Name + Verified Purchase Badge + Stars + Date -->
                                     <div class="flex items-start gap-3 mb-2.5">

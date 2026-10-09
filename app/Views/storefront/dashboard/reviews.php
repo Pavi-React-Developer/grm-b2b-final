@@ -386,4 +386,15 @@ function submitReview(e) {
         btn.innerText = 'Submit Review';
     });
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('order_id');
+    const productId = urlParams.get('product_id');
+    if (orderId && productId) {
+        setTimeout(() => {
+            openReviewModal(parseInt(productId), parseInt(orderId));
+        }, 150);
+    }
+});
 </script>

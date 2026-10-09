@@ -285,10 +285,6 @@
                                 $rpMoq = !empty($rp['moq']) ? (int)$rp['moq'] : (!empty($rp['moq_override']) ? (int)$rp['moq_override'] : ($rp['category_moq'] ?? 1));
                             ?>
                             <div class="product-card shrink-0 w-[calc(50%-0.25rem)] sm:w-[260px] md:w-[280px] snap-start bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 flex flex-col relative group">
-                                <?php if (!empty($rp['is_unlocked_offer'])): ?>
-                                    <span class="absolute top-2 left-2 bg-[#F25996] text-white text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider z-10">Offer</span>
-                                <?php endif; ?>
-
                                 <!-- Product Image -->
                                 <a href="<?= BASE_URL ?>/product?id=<?= $rp['id'] ?>" class="product-image-wrap block w-full bg-gray-50 overflow-hidden shrink-0 aspect-square relative">
                                     <?php 

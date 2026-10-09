@@ -93,11 +93,14 @@ class RefundController extends Controller
             $this->json(['success' => false, 'message' => 'Order not found.'], 404);
         }
 
-        // ---- Eligibility check ----
-        if (!in_array($order['status'], Order::getRefundEligibleStatuses())) {
+        // ---- Check Cancellation Rules & Eligibility ----
+        $ruleModel = new \App\Models\CancellationRule();
+        $rule = $ruleModel->getRuleForOrder($order);
+
+        if (!$rule['eligible']) {
             $this->json([
                 'success' => false,
-                'message' => "This order cannot be cancelled. Current status: " . ucwords(str_replace('_', ' ', $order['status']))
+                'message' => "This order cannot be cancelled under status '" . ucwords(str_replace('_', ' ', $order['status'])) . "' based on active cancellation policy."
             ], 422);
         }
 
@@ -110,21 +113,10 @@ class RefundController extends Controller
         }
 
         // ---- Determine refund amount based on Cancellation Rules ----
-        $ruleModel = new \App\Models\CancellationRule();
-        $rule = $ruleModel->getRuleForOrder($order);
-        
         $totalAmount = (float)($order['grand_total'] ?? $order['total_amount']);
-        $weightFee    = (float)($order['weight_fee'] ?? 0);
-        $packagingFee = (float)($order['packaging_fee'] ?? 0);
-        $shippingFee  = (float)($order['shipping_fee'] ?? 0);
-        $platformFee  = (float)($order['platform_fee'] ?? 0);
-        
         $feeAmount = (float)$rule['cancellation_fee'];
         
-        $refundAmount = $totalAmount - $feeAmount;
-        if ($refundAmount < 0) {
-            $refundAmount = 0;
-        }
+        $refundAmount = max(0, $totalAmount - $feeAmount);
         // ---- Persist refund request ----
         try {
             $refundId = $refundModel->create([

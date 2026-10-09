@@ -137,11 +137,18 @@ class DashboardController extends Controller
             $orderIds = array_column($orders, 'id');
             $placeholders = implode(',', array_fill(0, count($orderIds), '?'));
             $stmtItems = $db->prepare("
-                SELECT oi.*, p.name, p.weight, pi.image_path as image, pv.name as variant_name, c.hsn_code as category_hsn_code
+                SELECT oi.*, 
+                       COALESCE(oi.product_id, pv.product_id, fc.fabric_id) as resolved_product_id,
+                       COALESCE(p.name, 'Custom Item') as name, 
+                       p.weight, 
+                       pi.image_path as image, 
+                       pv.name as variant_name, 
+                       c.hsn_code as category_hsn_code
                 FROM order_items oi 
-                JOIN products p ON oi.product_id = p.id 
-                LEFT JOIN categories c ON p.category_id = c.id
                 LEFT JOIN product_variants pv ON oi.variant_id = pv.id
+                LEFT JOIN fabric_customizations fc ON oi.customization_id = fc.id
+                LEFT JOIN products p ON p.id = COALESCE(oi.product_id, pv.product_id, fc.fabric_id)
+                LEFT JOIN categories c ON p.category_id = c.id
                 LEFT JOIN (SELECT product_id, MIN(image_path) as image_path FROM product_images WHERE is_primary = 1 GROUP BY product_id) pi ON p.id = pi.product_id
                 WHERE oi.order_id IN ($placeholders)
             ");
@@ -248,17 +255,20 @@ class DashboardController extends Controller
             $this->redirect('/dashboard/orders');
         }
 
-        if (in_array($order['status'], ['placed', 'packed'])) {
+        $ruleModel = new \App\Models\CancellationRule();
+        $rule = $ruleModel->getRuleForOrder($order);
+
+        if ($rule['eligible']) {
             $stmt = $db->prepare("UPDATE orders SET status = 'cancelled', cancelled_by_role = 'buyer', cancelled_at = NOW() WHERE id = ?");
             $stmt->execute([$orderId]);
             
             // Restore inventory stock
-            $orderModel = new Order();
+            $orderModel = new \App\Models\Order();
             $orderModel->restoreStockForOrderId($orderId);
             
             Session::setFlash('success', 'Order cancelled successfully.');
         } else {
-            Session::setFlash('error', 'This order cannot be cancelled anymore.');
+            Session::setFlash('error', 'This order cannot be cancelled under its current status.');
         }
 
         $this->redirect('/dashboard/orders');

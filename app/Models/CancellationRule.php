@@ -110,44 +110,63 @@ class CancellationRule
      */
     public function getRuleForOrder(array $order): array
     {
-        // Normalize payment method to 'cod' or 'prepaid'
         $pm = strtolower($order['payment_method'] ?? '');
         $pmType = ($pm === 'cod') ? 'cod' : 'prepaid';
         
-        $status = strtolower($order['status'] ?? 'pending');
+        $status = strtolower(trim($order['status'] ?? 'pending'));
+
+        // Prevent cancellation if order is already cancelled or refund is already in progress/done
+        if (in_array($status, ['cancelled', 'refund_pending', 'refund_processing', 'refund_completed', 'refund_rejected'])) {
+            return [
+                'eligible'          => false,
+                'cancellation_fee'  => 0.00,
+                'refund_percentage' => 0,
+                'sla_days'          => 0,
+                'reason'            => 'Order is already ' . str_replace('_', ' ', $status)
+            ];
+        }
+
+        // Build status aliases
+        $statuses = [$status];
+        if ($status === 'shipped') $statuses[] = 'shipping';
+        if ($status === 'shipping') $statuses[] = 'shipped';
+        if ($status === 'delivered') $statuses[] = 'delivery';
+        if ($status === 'delivery') $statuses[] = 'delivered';
+        if ($status === 'out_for_delivery') $statuses[] = 'out of delivery';
+        if ($status === 'out of delivery') $statuses[] = 'out_for_delivery';
+
+        $placeholders = implode(',', array_fill(0, count($statuses), '?'));
 
         $stmt = $this->db->prepare("
             SELECT * FROM cancellation_rules 
             WHERE is_active = 1 
-              AND payment_method = :pm 
-              AND rule_name = :status
+              AND (payment_method = ? OR payment_method = 'all' OR payment_method = 'prepaid')
+              AND LOWER(TRIM(rule_name)) IN ($placeholders)
+            ORDER BY id DESC
             LIMIT 1
         ");
-        $stmt->execute([
-            'pm'     => $pmType,
-            'status' => $status
-        ]);
         
+        $stmt->execute(array_merge([$pmType], $statuses));
         $rule = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         if ($rule) {
             return [
                 'eligible'          => true,
                 'cancellation_fee'  => (float)$rule['cancellation_fee'],
-                'refund_percentage' => (int)$rule['refund_percentage'],
-                'sla_days'          => (int)$rule['sla_days'],
-                'reason'            => ''
+                'refund_percentage' => (int)($rule['refund_percentage'] ?? 100),
+                'sla_days'          => (int)($rule['sla_days'] ?? 0),
+                'reason'            => '',
+                'rule_name'         => $rule['rule_name']
             ];
         }
 
-        // Default behavior if no active rule maps to this status
-        // Assume cancellation is allowed with 0 fee if not explicitly denied by a rule
+        // If no active rule is configured by admin for this status, cancellation is not allowed
         return [
-            'eligible'          => true,
+            'eligible'          => false,
             'cancellation_fee'  => 0.00,
-            'refund_percentage' => 100,
-            'sla_days'          => 2,
-            'reason'            => ''
+            'refund_percentage' => 0,
+            'sla_days'          => 0,
+            'reason'            => 'No active cancellation rule configured for status: ' . $status
         ];
     }
 }

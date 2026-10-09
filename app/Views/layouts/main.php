@@ -1722,7 +1722,6 @@ if ($hasDynamicNavbar) {
                         </p>` : '';
                     relHtml += `
                         <div class="product-card shrink-0 snap-start rounded-2xl overflow-hidden border border-gray-100 flex flex-col relative group bg-white shadow-xs h-full" style="width: calc(50% - 6px) !important; min-width: calc(50% - 6px) !important; max-width: calc(50% - 6px) !important; flex: 0 0 calc(50% - 6px) !important;">
-                            ${rp.is_unlocked_offer ? '<span class="absolute top-1.5 left-1.5 bg-[#F25996] text-white text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded shadow-xs uppercase tracking-wider z-10">Offer</span>' : ''}
                             <button onclick="toggleWishlist(${rp.id}, this); event.stopPropagation();" data-wishlist-btn-id="${rp.id}" class="wishlist-btn absolute top-1.5 right-1.5 w-6 h-6 hover:opacity-80 transition-opacity rounded-full flex items-center justify-center z-10 shadow-sm bg-white" title="Wishlist">
                                 <svg class="w-3 h-3 text-gray-400 fill-none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                             </button>

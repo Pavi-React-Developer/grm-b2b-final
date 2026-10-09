@@ -12,7 +12,7 @@ class Review extends Model
     {
         $sql = "
             SELECT 
-                oi.product_id,
+                COALESCE(oi.product_id, pv.product_id, fc.fabric_id) AS product_id,
                 oi.order_id,
                 p.name AS product_name,
                 (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS primary_image,
@@ -20,17 +20,18 @@ class Review extends Model
                 o.created_at AS order_date
             FROM order_items oi
             JOIN orders o ON oi.order_id = o.id
-            JOIN products p ON oi.product_id = p.id
+            LEFT JOIN product_variants pv ON oi.variant_id = pv.id
+            LEFT JOIN fabric_customizations fc ON oi.customization_id = fc.id
+            JOIN products p ON p.id = COALESCE(oi.product_id, pv.product_id, fc.fabric_id)
             WHERE o.user_id = ? 
-              AND o.payment_status = 'paid'
-              AND o.status = 'delivered'
+              AND LOWER(TRIM(o.status)) = 'delivered'
               AND NOT EXISTS (
                   SELECT 1 FROM reviews r 
-                  WHERE r.product_id = oi.product_id 
+                  WHERE r.product_id = p.id 
                     AND r.user_id = o.user_id 
                     AND r.order_id = o.id
               )
-            GROUP BY oi.product_id, oi.order_id, p.name, o.order_number, o.created_at
+            GROUP BY COALESCE(oi.product_id, pv.product_id, fc.fabric_id), oi.order_id, p.id, p.name, o.order_number, o.created_at
             ORDER BY o.created_at DESC
         ";
         
@@ -85,7 +86,7 @@ class Review extends Model
                 p.name AS product_name,
                 (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS primary_image
             FROM reviews r
-            JOIN products p ON r.product_id = p.id
+            LEFT JOIN products p ON r.product_id = p.id
             WHERE r.user_id = ?
             ORDER BY r.created_at DESC
         ";

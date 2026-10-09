@@ -759,11 +759,31 @@ class Order extends Model
     }
 
     /**
-     * The set of statuses where a user may still request cancellation/refund.
+     * The set of statuses where a user may request cancellation/refund based on active cancellation rules.
      */
     public static function getRefundEligibleStatuses(): array
     {
-        return ['placed', 'packed'];
+        try {
+            $db = \Core\Database::getInstance();
+            $stmt = $db->query("SELECT DISTINCT LOWER(TRIM(rule_name)) as rule_name FROM cancellation_rules WHERE is_active = 1");
+            $rules = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+            if (!empty($rules)) {
+                $aliases = [];
+                foreach ($rules as $r) {
+                    $aliases[] = $r;
+                    if ($r === 'shipping') $aliases[] = 'shipped';
+                    if ($r === 'shipped') $aliases[] = 'shipping';
+                    if ($r === 'delivery') $aliases[] = 'delivered';
+                    if ($r === 'delivered') $aliases[] = 'delivery';
+                    if ($r === 'out_for_delivery') $aliases[] = 'out of delivery';
+                    if ($r === 'out of delivery') $aliases[] = 'out_for_delivery';
+                }
+                return array_values(array_unique($aliases));
+            }
+        } catch (\Exception $e) {
+            // fallback
+        }
+        return ['placed', 'packed', 'shipping', 'shipped', 'out_for_delivery', 'delivered'];
     }
 
     public function getOrdersByUser(int $userId, int $limit = 10, int $offset = 0)

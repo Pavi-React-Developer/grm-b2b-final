@@ -45,7 +45,7 @@ if ($currentUserId) {
 if ($currentUserRole === 'super_admin') {
     $roleBadgeText = 'Super Admin';
     $roleBadgeIcon = '🛡️';
-    $roleBadgeClass = 'bg-rose-50 text-rose-700 border-rose-200';
+    $roleBadgeClass = 'bg-pink-50 text-[#F25996] border-pink-200';
     $avatarGradient = 'bg-gradient-to-tr from-[#F25996] to-[#d94480]';
 } elseif ($currentUserRole === 'staff') {
     $roleTitle = !empty($currentCustomRole) ? $currentCustomRole : 'Staff';
@@ -1292,13 +1292,13 @@ if ($currentUserRole === 'super_admin') {
         <!-- Bottom / Profile & Logout -->
         <div class="p-3 border-t border-gray-100 overflow-hidden flex flex-col space-y-2">
             <!-- User Summary Pill in Sidebar -->
-            <div class="flex items-center px-2 py-1.5 rounded-xl bg-gray-50 border border-gray-100 min-w-max">
-                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0 <?= $avatarGradient ?>">
+            <div class="flex items-center px-2.5 py-2 rounded-xl bg-white border border-pink-100 min-w-max shadow-sm">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0 <?= $avatarGradient ?> shadow-xs">
                     <?= strtoupper(substr($currentUserName, 0, 1)) ?>
                 </div>
                 <div class="ml-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col min-w-0">
                     <span class="text-xs font-bold text-gray-900 truncate max-w-[130px]"><?= htmlspecialchars($currentUserName) ?></span>
-                    <span class="text-[10px] font-bold uppercase tracking-wider <?= ($currentUserRole === 'super_admin') ? 'text-rose-600' : (($currentUserRole === 'staff') ? 'text-indigo-600' : 'text-amber-600') ?>">
+                    <span class="text-[10px] font-bold uppercase tracking-wider <?= ($currentUserRole === 'super_admin') ? 'text-[#F25996]' : (($currentUserRole === 'staff') ? 'text-indigo-600' : 'text-amber-600') ?>">
                         <?= $roleBadgeIcon ?> <?= htmlspecialchars($roleBadgeText) ?>
                     </span>
                 </div>
