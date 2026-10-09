@@ -114,7 +114,6 @@ class CloudinaryUploader
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
-        curl_close($ch);
 
         if ($curlError) {
             error_log("Cloudinary CURL Error: " . $curlError);
@@ -176,7 +175,6 @@ class CloudinaryUploader
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         if ($httpCode >= 200 && $httpCode < 300) {
             return true;
