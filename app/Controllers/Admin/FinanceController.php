@@ -21,9 +21,9 @@ class FinanceController extends Controller
             return;
         }
 
-        if ($role === 'vendor' && !is_vendor_module_enabled()) {
-            Session::setFlash('error', 'Vendor operations and portal access are currently disabled by platform administration.');
-            $this->redirect('/login');
+        if (!is_vendor_module_enabled()) {
+            Session::setFlash('error', 'Finance module is unavailable because the vendor module is disabled.');
+            $this->redirect('/admin/dashboard');
             return;
         }
         $this->financeModel = new Finance();

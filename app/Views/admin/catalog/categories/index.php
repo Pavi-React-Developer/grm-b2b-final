@@ -21,6 +21,11 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Export Excel
                 </button>
+                <?php if (is_vendor_module_enabled()): ?>
+                <button onclick="openCategoryRequestModal('category')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-5 py-3 rounded-full font-bold text-sm shadow-sm transition-all flex items-center uppercase tracking-widest gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>+ Add Request</span>
+                </button>
                 <?php if (empty($isCustomize)): ?>
                 <?php
                 $reqModel = new \App\Models\CategoryRequest();
@@ -33,6 +38,7 @@
                         <span class="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-black"><?= $pendingCatReqCount ?></span>
                     <?php endif; ?>
                 </a>
+                <?php endif; ?>
                 <?php endif; ?>
                 <?php if ($this->hasPermission('categories', 'create')): ?>
                 <button onclick="document.getElementById('add-modal').classList.remove('hidden')" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-full font-bold text-sm shadow-md transition-all flex items-center uppercase tracking-widest">
@@ -555,3 +561,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <?php include __DIR__ . '/../../media/_selector_modal.php'; ?>
+<?php include __DIR__ . '/../_category_request_modal.php'; ?>

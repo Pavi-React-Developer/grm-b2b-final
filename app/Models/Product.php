@@ -10,8 +10,26 @@ class Product extends Model
         $sql = "
             SELECT p.*, c.name AS category_name, c.moq AS category_moq, c.sgst AS category_sgst, c.cgst AS category_cgst, c.hsn_code AS category_hsn_code,
                    sc_chart.title AS size_chart_title,
-                   vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name, vp.unique_vendor_id,
-                   u_v.name AS vendor_name,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN vp.store_name 
+                       ELSE NULL 
+                   END AS vendor_store_name,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN vp.company_name 
+                       ELSE NULL 
+                   END AS vendor_company_name,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN vp.unique_vendor_id 
+                       ELSE NULL 
+                   END AS unique_vendor_id,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN u_v.name 
+                       ELSE NULL 
+                   END AS vendor_name,
                    COALESCE(
                        (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
                        GREATEST(p.stock_quantity, 0)
@@ -48,10 +66,6 @@ class Product extends Model
             ) pv_agg ON pv_agg.product_id = p.id
             WHERE p.status = 'active' AND (p.approval_status = 'approved' OR p.approval_status IS NULL)
         ";
-        
-        if (!is_vendor_module_enabled()) {
-            $sql .= " AND (p.vendor_id IS NULL OR p.vendor_id = 0)";
-        }
         
         $params = [];
 
@@ -157,7 +171,7 @@ class Product extends Model
             LEFT JOIN product_variants pv ON p.id = pv.product_id
             LEFT JOIN categories c ON p.category_id = c.id
             WHERE p.status = 'active' AND (p.approval_status = 'approved' OR p.approval_status IS NULL)
-              AND (p.is_customizable = 0 OR p.is_customizable IS NULL) " . (!is_vendor_module_enabled() ? " AND (p.vendor_id IS NULL OR p.vendor_id = 0) " : "") . "
+              AND (p.is_customizable = 0 OR p.is_customizable IS NULL)
               AND (p.name LIKE :query1 OR pv.sku LIKE :query2 OR c.name LIKE :query3)
             ORDER BY p.created_at DESC
             LIMIT 10
@@ -317,8 +331,26 @@ class Product extends Model
         $stmt = $this->db->prepare("
             SELECT p.*, c.name AS category_name, c.moq AS category_moq, c.sgst AS category_sgst, c.cgst AS category_cgst,
                    sc_chart.title AS size_chart_title,
-                   vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name, vp.unique_vendor_id,
-                   u_v.name AS vendor_name,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN vp.store_name 
+                       ELSE NULL 
+                   END AS vendor_store_name,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN vp.company_name 
+                       ELSE NULL 
+                   END AS vendor_company_name,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN vp.unique_vendor_id 
+                       ELSE NULL 
+                   END AS unique_vendor_id,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN u_v.name 
+                       ELSE NULL 
+                   END AS vendor_name,
                    COALESCE(
                        (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
                        GREATEST(p.stock_quantity, 0)
@@ -341,8 +373,26 @@ class Product extends Model
         $stmt = $this->db->prepare("
             SELECT p.*, c.name AS category_name, c.moq AS category_moq, c.sgst AS category_sgst, c.cgst AS category_cgst,
                    sc_chart.title AS size_chart_title,
-                   vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name, vp.unique_vendor_id,
-                   u_v.name AS vendor_name,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN vp.store_name 
+                       ELSE NULL 
+                   END AS vendor_store_name,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN vp.company_name 
+                       ELSE NULL 
+                   END AS vendor_company_name,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN vp.unique_vendor_id 
+                       ELSE NULL 
+                   END AS unique_vendor_id,
+                   CASE 
+                       WHEN (u_v.status IN ('active', 'approved') AND (p.vendor_id IS NOT NULL AND p.vendor_id > 0) AND COALESCE((SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1), '1') != '0') 
+                       THEN u_v.name 
+                       ELSE NULL 
+                   END AS vendor_name,
                    COALESCE(
                        (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
                        GREATEST(p.stock_quantity, 0)

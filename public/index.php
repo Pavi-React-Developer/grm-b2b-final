@@ -310,6 +310,8 @@ $router->get('/admin/vendors/pending', 'App\Controllers\Admin\VendorAdminControl
 $router->get('/admin/vendors/view', 'App\Controllers\Admin\VendorAdminController@view');
 $router->post('/admin/vendors/approve', 'App\Controllers\Admin\VendorAdminController@approve');
 $router->post('/admin/vendors/reject', 'App\Controllers\Admin\VendorAdminController@reject');
+$router->post('/admin/vendors/toggle-status', 'App\Controllers\Admin\VendorAdminController@toggleStatus');
+$router->post('/admin/vendors/toggle-block', 'App\Controllers\Admin\VendorAdminController@toggleStatus');
 
 // Vendor Portal Shortcut & Direct Alias Routes
 $router->get('/vendor', 'App\Controllers\Admin\DashboardController@vendorPortalRedirect');

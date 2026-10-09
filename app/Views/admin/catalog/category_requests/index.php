@@ -13,6 +13,10 @@
             </div>
             
             <div class="flex items-center space-x-3 ml-auto">
+                <button onclick="openCategoryRequestModal('category')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-5 py-3 rounded-full font-bold text-sm shadow-sm transition-all flex items-center uppercase tracking-widest gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>+ Add Request</span>
+                </button>
                 <a href="<?= BASE_URL ?>/admin/catalog/categories" class="bg-white hover:bg-gray-50 text-gray-700 px-6 py-3 rounded-full font-bold text-sm shadow-sm border border-gray-200 transition-all flex items-center uppercase tracking-widest">
                     <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                     Manage Categories
@@ -259,3 +263,5 @@ function promptReject(id, name) {
     });
 }
 </script>
+
+<?php include __DIR__ . '/../_category_request_modal.php'; ?>

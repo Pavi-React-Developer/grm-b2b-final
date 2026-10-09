@@ -38,10 +38,12 @@
                         <div>
                             <div class="flex items-center justify-between gap-2 mb-1.5">
                                 <label class="block text-sm font-bold text-gray-800">Category <span class="text-red-500">*</span></label>
+                                <?php if (is_vendor_module_enabled() && \Core\Session::get('user_role') === 'vendor'): ?>
                                 <button type="button" onclick="openCategoryRequestModal('category')" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-lg border border-brand-200 transition-colors shrink-0 flex items-center gap-1">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                     <span>Request New</span>
                                 </button>
+                                <?php endif; ?>
                             </div>
                             <select name="category_id" id="category_id" required class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
                                 <option value="">Select Category...</option>
@@ -53,10 +55,12 @@
                         <div>
                             <div class="flex items-center justify-between gap-2 mb-1.5">
                                 <label class="block text-sm font-bold text-gray-800">Subcategory</label>
+                                <?php if (is_vendor_module_enabled() && \Core\Session::get('user_role') === 'vendor'): ?>
                                 <button type="button" onclick="openCategoryRequestModal('subcategory')" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors shrink-0 flex items-center gap-1">
                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                     <span>Request New</span>
                                 </button>
+                                <?php endif; ?>
                             </div>
                             <select name="sub_category_id" id="sub_category_id" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs <?= empty($subCategories) ? 'opacity-50' : '' ?>" <?= empty($subCategories) ? 'disabled' : '' ?>>
                                 <option value="">Select Category first...</option>

@@ -861,13 +861,14 @@ if ($globalNavbar) {
                 <!-- Dropdown Options -->
                 <div class="catalog-dropdown ml-4 pl-4 border-l border-gray-100 space-y-1 mt-1">
                     <?php
-                    $sidebarCatReqCount = (new \App\Models\CategoryRequest())->getPendingCount();
+                    $sidebarCatReqCount = is_vendor_module_enabled() ? (new \App\Models\CategoryRequest())->getPendingCount() : 0;
                     $sidebarProdPendingCount = is_vendor_module_enabled() ? (new \App\Models\Product())->getPendingApprovalCount() : 0;
                     $isGeneralCatalog = (!isset($_GET['module']) || $_GET['module'] !== 'customize');
                     ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/categories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/categories') === 0 && $isGeneralCatalog) ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Categories</span>
                     </a>
+                    <?php if (is_vendor_module_enabled()): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/category-requests" class="flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/catalog/category-requests') === 0 ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center justify-between w-full">
                             Category Requests
@@ -876,6 +877,7 @@ if ($globalNavbar) {
                             <?php endif; ?>
                         </span>
                     </a>
+                    <?php endif; ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/subcategories" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/subcategories') === 0 && $isGeneralCatalog) ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Sub Categories</span>
                     </a>
@@ -1066,6 +1068,7 @@ if ($globalNavbar) {
             <?php endif; ?>
 
             <!-- ================= VENDOR MODULE ================= -->
+            <?php if (is_vendor_module_enabled()): ?>
             <p class="px-3 text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-6 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap h-0 group-hover:h-auto">Vendor</p>
 
             <style>
@@ -1080,7 +1083,7 @@ if ($globalNavbar) {
                     transform: rotate(180deg);
                 }
             </style>
-            <?php if (is_vendor_module_enabled() && (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('all_vendors') || $this->hasAnyPermission('pending_vendors') || $this->hasAnyPermission('vendor_analytics'))): ?>
+            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('all_vendors') || $this->hasAnyPermission('pending_vendors') || $this->hasAnyPermission('vendor_analytics')): ?>
             <div class="relative vendors-menu">
                 <div class="flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors min-w-max text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer <?= strpos($currentUri, '/admin/vendors') === 0 ? 'text-brand-600' : '' ?>">
                     <svg class="w-6 h-6 flex-shrink-0 <?= strpos($currentUri, '/admin/vendors') === 0 ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
@@ -1122,7 +1125,8 @@ if ($globalNavbar) {
                     transform: rotate(180deg);
                 }
             </style>
-            <div class="relative finance-menu <?= (is_vendor_module_enabled() && (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('all_vendors') || $this->hasAnyPermission('pending_vendors') || $this->hasAnyPermission('vendor_analytics'))) ? 'mt-1' : '' ?>">
+            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('payments') || $this->hasAnyPermission('commissions') || \Core\Session::get('user_role') === 'vendor'): ?>
+            <div class="relative finance-menu mt-1">
                 <div class="flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors min-w-max text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer <?= strpos($currentUri, '/admin/finance') === 0 ? 'text-brand-600' : '' ?>">
                     <svg class="w-6 h-6 flex-shrink-0 <?= strpos($currentUri, '/admin/finance') === 0 ? 'text-brand-600' : 'text-gray-400' ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     <span class="ml-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex-1 flex items-center justify-between">
@@ -1138,7 +1142,6 @@ if ($globalNavbar) {
                     <a href="<?= BASE_URL ?>/admin/finance/payments" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= $currentUri === '/admin/finance/payments' || $currentUri === '/admin/finance' ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">💳 Payments Overview</span>
                     </a>
-                    <?php if (is_vendor_module_enabled()): ?>
                     <a href="<?= BASE_URL ?>/admin/finance/withdrawals" class="flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/finance/withdrawals') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center justify-between w-full">
                             <span>🏦 Withdrawal Requests</span>
@@ -1152,13 +1155,14 @@ if ($globalNavbar) {
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">⚙️ Commission Settings</span>
                     </a>
                     <?php endif; ?>
-                    <?php endif; ?>
                     <a href="<?= BASE_URL ?>/admin/finance/transactions" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/finance/transactions') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📜 Financial Ledger</span>
                     </a>
                 </div>
             </div>
+            <?php endif; ?>
 
+            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('support') || \Core\Session::get('user_role') === 'vendor'): ?>
             <?php $adminOpenTicketsCount = (new \App\Models\SupportTicket())->getCounts()['open']; ?>
             <a href="<?= BASE_URL ?>/admin/support" class="flex items-center justify-between px-3 py-3 mt-1 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/support') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' ?>">
                 <div class="flex items-center">
@@ -1169,6 +1173,9 @@ if ($globalNavbar) {
                     <span class="opacity-0 group-hover:opacity-100 transition-opacity bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full ml-1" title="<?= $adminOpenTicketsCount ?> open support queries"><?= $adminOpenTicketsCount ?></span>
                 <?php endif; ?>
             </a>
+            <?php endif; ?>
+
+            <?php endif; ?>
 
             <?php endif; ?>
 

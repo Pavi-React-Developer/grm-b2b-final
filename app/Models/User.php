@@ -178,7 +178,7 @@ class User extends Model
                    vp.city, vp.state, vp.bank_name, vp.account_number, vp.commission_rate
             FROM users u
             JOIN vendor_profiles vp ON u.id = vp.user_id
-            WHERE u.role = 'vendor' AND u.status IN ('active', 'approved', 'blocked')
+            WHERE u.role = 'vendor' AND u.status IN ('active', 'approved', 'blocked', 'deactivated')
             ORDER BY u.created_at DESC
         ";
         $stmt = $this->db->prepare($sql);
@@ -220,6 +220,9 @@ class User extends Model
 
         $stmt = $this->db->query("SELECT COUNT(*) FROM users WHERE role = 'vendor' AND status IN ('active', 'approved')");
         $stats['active_vendors'] = (int)$stmt->fetchColumn();
+
+        $stmt = $this->db->query("SELECT COUNT(*) FROM users WHERE role = 'vendor' AND status IN ('blocked', 'deactivated')");
+        $stats['disabled_vendors'] = (int)$stmt->fetchColumn();
 
         $stmt = $this->db->query("SELECT COUNT(*) FROM users WHERE role = 'vendor' AND status = 'pending'");
         $stats['pending_vendors'] = (int)$stmt->fetchColumn();

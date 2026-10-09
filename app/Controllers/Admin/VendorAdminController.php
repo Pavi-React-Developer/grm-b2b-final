@@ -453,4 +453,72 @@ class VendorAdminController extends Controller
         Session::setFlash('success', 'Vendor type removed successfully.');
         $this->redirect('/admin/vendors/types');
     }
+
+    /**
+     * Toggle Vendor Account Status (Enable / Disable / Block)
+     * When disabled, the vendor portal access is suspended, but their catalog products
+     * remain live on the storefront UI as desired.
+     */
+    public function toggleStatus()
+    {
+        $this->requirePermission('all_vendors', 'edit');
+        $id = (int)($_POST['id'] ?? $_POST['user_id'] ?? 0);
+        $action = $_POST['action'] ?? null; // Optional explicit 'block' or 'unblock'
+
+        if (!$id) {
+            if ($this->isAjax()) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Invalid vendor ID.']);
+                exit;
+            }
+            Session::setFlash('error', 'Invalid vendor ID.');
+            $this->redirect('/admin/vendors');
+            return;
+        }
+
+        $userModel = new User();
+        $user = $userModel->findById($id);
+
+        if (!$user || $user['role'] !== 'vendor') {
+            if ($this->isAjax()) {
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Vendor not found.']);
+                exit;
+            }
+            Session::setFlash('error', 'Vendor not found.');
+            $this->redirect('/admin/vendors');
+            return;
+        }
+
+        if ($action === 'block' || $action === 'disable') {
+            $newStatus = 'blocked';
+        } elseif ($action === 'unblock' || $action === 'enable' || $action === 'activate') {
+            $newStatus = 'active';
+        } else {
+            // Auto toggle based on current status
+            $isCurrentlyActive = in_array($user['status'], ['active', 'approved']);
+            $newStatus = $isCurrentlyActive ? 'blocked' : 'active';
+        }
+
+        $userModel->updateStatus($id, $newStatus);
+
+        $statusLabel = ($newStatus === 'active') ? 'Enabled (Active)' : 'Disabled (Blocked)';
+
+        if ($this->isAjax()) {
+            header('Content-Type: application/json');
+            echo json_encode([
+                'success' => true,
+                'user_id' => $id,
+                'status' => $newStatus,
+                'is_active' => ($newStatus === 'active'),
+                'label' => $statusLabel,
+                'message' => "Vendor \"{$user['name']}\" is now {$statusLabel}."
+            ]);
+            exit;
+        }
+
+        Session::setFlash('success', "Vendor \"{$user['name']}\" has been {$statusLabel}.");
+        $returnUrl = $_POST['return_url'] ?? '/admin/vendors';
+        $this->redirect($returnUrl);
+    }
 }

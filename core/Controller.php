@@ -251,4 +251,13 @@ class Controller
         echo json_encode($data);
         exit;
     }
+
+    /**
+     * Check if current request is AJAX or expects JSON
+     */
+    protected function isAjax(): bool
+    {
+        return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
+            || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+    }
 }

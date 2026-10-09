@@ -104,6 +104,7 @@
                         <th class="py-3.5 px-4">Contact Info</th>
                         <th class="py-3.5 px-4">Location</th>
                         <th class="py-3.5 px-4">GST / PAN</th>
+                        <th class="py-3.5 px-4 text-center">Status</th>
                         <th class="py-3.5 px-4 text-right">Gross Sales</th>
                         <th class="py-3.5 px-6 text-right">Actions</th>
                     </tr>
@@ -111,7 +112,7 @@
                 <tbody class="divide-y divide-gray-100 text-xs">
                     <?php if (empty($vendors)): ?>
                         <tr>
-                            <td colspan="7" class="py-12 text-center text-gray-400">No active vendors found.</td>
+                            <td colspan="8" class="py-12 text-center text-gray-400">No active or registered vendors found.</td>
                         </tr>
                     <?php else: ?>
                         <?php 
@@ -125,8 +126,9 @@
                         ?>
                         <?php foreach ($vendors as $v): 
                             $vRev = $revMap[$v['id']] ?? 0.0;
+                            $isActive = in_array($v['status'], ['active', 'approved']);
                         ?>
-                            <tr class="hover:bg-gray-50/80 transition">
+                            <tr class="hover:bg-gray-50/80 transition" id="vendor-row-<?= $v['id'] ?>">
                                 <td class="py-4 px-6 font-mono font-bold text-indigo-600">
                                     <?= htmlspecialchars($v['unique_vendor_id'] ?? ('VN' . str_pad($v['id'], 5, '0', STR_PAD_LEFT))) ?>
                                 </td>
@@ -150,15 +152,35 @@
                                     <?php endif; ?>
                                     <div>PAN: <?= htmlspecialchars($v['pan_number'] ?? 'N/A') ?></div>
                                 </td>
+                                <td class="py-4 px-4 text-center">
+                                    <span id="vendor-badge-<?= $v['id'] ?>" class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-full <?= $isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200' ?>">
+                                        <span class="w-1.5 h-1.5 rounded-full <?= $isActive ? 'bg-emerald-500' : 'bg-rose-500' ?>"></span>
+                                        <span class="badge-label"><?= $isActive ? 'Active' : 'Disabled' ?></span>
+                                    </span>
+                                </td>
                                 <td class="py-4 px-4 text-right">
                                     <span class="font-black text-gray-900 text-sm">₹<?= number_format($vRev, 2) ?></span>
                                     <span class="text-[10px] text-emerald-600 block font-semibold">Revenue</span>
                                 </td>
                                 <td class="py-4 px-6 text-right">
-                                    <a href="<?= BASE_URL ?>/admin/vendors/view?id=<?= $v['id'] ?>" 
-                                       class="px-3.5 py-1.5 bg-gray-100 hover:bg-[#1a50a8] hover:text-white text-gray-700 text-xs font-bold rounded-lg transition inline-flex items-center gap-1 shadow-sm">
-                                        View Details
-                                    </a>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <!-- Super Admin Quick Toggle Option -->
+                                        <form action="<?= BASE_URL ?>/admin/vendors/toggle-status" method="POST" class="inline vendor-toggle-form" data-vendor-id="<?= $v['id'] ?>" onsubmit="return handleVendorToggle(event, this, <?= $v['id'] ?>)">
+                                            <input type="hidden" name="id" value="<?= $v['id'] ?>">
+                                            <input type="hidden" name="return_url" value="/admin/vendors">
+                                            <button type="submit" 
+                                                    id="btn-toggle-vendor-<?= $v['id'] ?>" 
+                                                    title="<?= $isActive ? 'Disable vendor portal access (Products stay live on UI)' : 'Enable and activate vendor' ?>"
+                                                    class="px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all border flex items-center gap-1 cursor-pointer <?= $isActive ? 'border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100' : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100' ?>">
+                                                <span><?= $isActive ? 'Disable' : 'Enable' ?></span>
+                                            </button>
+                                        </form>
+
+                                        <a href="<?= BASE_URL ?>/admin/vendors/view?id=<?= $v['id'] ?>" 
+                                           class="px-3 py-1.5 bg-gray-100 hover:bg-[#1a50a8] hover:text-white text-gray-700 text-xs font-bold rounded-lg transition inline-flex items-center gap-1 shadow-sm">
+                                            View
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -168,3 +190,53 @@
         </div>
     </div>
 </div>
+
+<script>
+function handleVendorToggle(event, form, vendorId) {
+    event.preventDefault();
+    const btn = document.getElementById('btn-toggle-vendor-' + vendorId);
+    const badge = document.getElementById('vendor-badge-' + vendorId);
+    const formData = new FormData(form);
+
+    btn.disabled = true;
+    btn.classList.add('opacity-50');
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50');
+        if (data.success) {
+            const isNowActive = data.is_active;
+            // Update button
+            if (isNowActive) {
+                btn.className = 'px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all border flex items-center gap-1 cursor-pointer border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100';
+                btn.innerHTML = '<span>Disable</span>';
+                btn.title = 'Disable vendor portal access (Products stay live on UI)';
+                badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span><span class="badge-label">Active</span>';
+            } else {
+                btn.className = 'px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all border flex items-center gap-1 cursor-pointer border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100';
+                btn.innerHTML = '<span>Enable</span>';
+                btn.title = 'Enable and activate vendor';
+                badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-full bg-rose-50 text-rose-700 border border-rose-200';
+                badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span><span class="badge-label">Disabled</span>';
+            }
+        } else {
+            alert(data.message || 'Failed to update vendor status.');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.classList.remove('opacity-50');
+        // Fallback to normal form submit if fetch fails
+        form.submit();
+    });
+
+    return false;
+}
+</script>

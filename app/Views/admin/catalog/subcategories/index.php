@@ -21,6 +21,25 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Export Excel
                 </button>
+                <?php if (is_vendor_module_enabled()): ?>
+                <button onclick="openCategoryRequestModal('subcategory')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-5 py-3 rounded-full font-bold text-sm shadow-sm transition-all flex items-center uppercase tracking-widest gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>+ Add Request</span>
+                </button>
+                <?php if (empty($isCustomize)): ?>
+                <?php
+                $subReqModel = new \App\Models\CategoryRequest();
+                $pendingSubCatReqCount = $subReqModel->getPendingCount();
+                ?>
+                <a href="<?= BASE_URL ?>/admin/catalog/category-requests" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 px-5 py-3 rounded-full font-bold text-sm shadow-sm transition-all flex items-center uppercase tracking-widest gap-2">
+                    <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                    <span>Requests</span>
+                    <?php if ($pendingSubCatReqCount > 0): ?>
+                        <span class="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-black"><?= $pendingSubCatReqCount ?></span>
+                    <?php endif; ?>
+                </a>
+                <?php endif; ?>
+                <?php endif; ?>
                 <?php if ($this->hasPermission('subcategories', 'create')): ?>
                 <button onclick="document.getElementById('add-modal').classList.remove('hidden')" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-full font-bold text-sm shadow-md transition-all flex items-center uppercase tracking-widest">
                     <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
@@ -360,3 +379,5 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
+
+<?php include __DIR__ . '/../_category_request_modal.php'; ?>

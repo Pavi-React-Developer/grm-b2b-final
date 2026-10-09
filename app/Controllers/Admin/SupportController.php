@@ -26,6 +26,18 @@ class SupportController extends Controller
             }
             Session::setFlash('error', 'Unauthorized access.');
             $this->redirect('/login');
+            return;
+        }
+
+        if (!is_vendor_module_enabled()) {
+            if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
+                if (!headers_sent()) { header('Content-Type: application/json'); }
+                echo json_encode(['success' => false, 'message' => 'Support Desk is unavailable because the vendor module is disabled.']);
+                exit;
+            }
+            Session::setFlash('error', 'Support Desk is unavailable because the vendor module is disabled.');
+            $this->redirect('/admin/dashboard');
+            return;
         }
     }
 

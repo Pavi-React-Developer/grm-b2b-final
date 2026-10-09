@@ -76,6 +76,12 @@ $safeProducts = array_map(function($p) {
                     <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Export Excel
                 </button>
+                <?php if (is_vendor_module_enabled()): ?>
+                <button onclick="openCategoryRequestModal('category')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-5 py-2.5 rounded-full font-bold text-xs shadow-sm transition-all flex items-center uppercase tracking-widest gap-1.5 cursor-pointer">
+                    <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span>+ Add Request</span>
+                </button>
+                <?php endif; ?>
                 <?php if ($this->hasPermission('products', 'create')): ?>
                 <a href="<?= BASE_URL ?>/admin/catalog/products/create<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-full font-bold text-xs shadow-md transition-all flex items-center uppercase tracking-widest">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
@@ -675,3 +681,5 @@ function escapeHtml(str) {
 // Initial render
 document.addEventListener('DOMContentLoaded', renderTable);
 </script>
+
+<?php include __DIR__ . '/../_category_request_modal.php'; ?>

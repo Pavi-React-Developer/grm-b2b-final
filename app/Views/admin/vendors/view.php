@@ -392,9 +392,21 @@
                 </div>
             </div>
 
-            <!-- Approval / Rejection Box -->
+            <!-- Approval / Status Management Box -->
             <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                <h3 class="text-base font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4">Application Decision</h3>
+                <h3 class="text-base font-bold text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center justify-between">
+                    <span>Vendor Status &amp; Access</span>
+                    <span class="px-2.5 py-0.5 text-xs font-bold rounded-full capitalize
+                        <?php if ($vendor['status'] === 'active' || $vendor['status'] === 'approved'): ?>
+                            bg-emerald-100 text-emerald-800
+                        <?php elseif ($vendor['status'] === 'pending'): ?>
+                            bg-amber-100 text-amber-800
+                        <?php else: ?>
+                            bg-rose-100 text-rose-800
+                        <?php endif; ?>">
+                        <?= htmlspecialchars($vendor['status']) ?>
+                    </span>
+                </h3>
                 
                 <?php if ($vendor['status'] === 'pending'): ?>
                     <form action="<?= BASE_URL ?>/admin/vendors/approve" method="POST" class="mb-4">
@@ -414,15 +426,55 @@
                         </button>
                     </form>
                 <?php elseif ($vendor['status'] === 'active' || $vendor['status'] === 'approved'): ?>
-                    <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-800 text-xs font-semibold text-center">
-                        This vendor has been approved and is active.
+                    <div class="space-y-4">
+                        <div class="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-medium flex items-start gap-2">
+                            <svg class="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <div>
+                                <span class="font-bold block text-emerald-900">Vendor is Active</span>
+                                Vendor can log in to portal and manage products. Products are live on storefront.
+                            </div>
+                        </div>
+
+                        <!-- Super Admin Toggle to Disable Vendor -->
+                        <form action="<?= BASE_URL ?>/admin/vendors/toggle-status" method="POST" class="border-t border-gray-100 pt-3">
+                            <input type="hidden" name="id" value="<?= $vendor['id'] ?>">
+                            <input type="hidden" name="return_url" value="/admin/vendors/view?id=<?= $vendor['id'] ?>">
+                            <div class="bg-amber-50/60 p-3 rounded-xl border border-amber-200/80 mb-3 text-xs text-amber-900 leading-relaxed">
+                                <span class="font-bold block text-amber-950 mb-1 flex items-center gap-1">
+                                    <svg class="w-3.5 h-3.5 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    Super Admin Control
+                                </span>
+                                Disabling this vendor suspends their vendor portal login access. <strong>All active products remain visible and purchasable on the storefront UI.</strong>
+                            </div>
+                            <button type="submit" id="btn-toggle-vendor-view" onclick="return confirm('Are you sure you want to DISABLE this vendor? Their portal access will be suspended, but products will remain visible on the UI.')" class="w-full py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs rounded-xl transition shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
+                                <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                Disable Vendor Portal Access
+                            </button>
+                        </form>
                     </div>
                 <?php else: ?>
-                    <div class="p-4 bg-rose-50 border border-rose-100 rounded-xl text-rose-800 text-xs text-center">
-                        <strong>Rejected Application</strong>
+                    <div class="space-y-4">
+                        <div class="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-medium flex items-start gap-2">
+                            <svg class="w-4 h-4 text-rose-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <div>
+                                <span class="font-bold block text-rose-950">Vendor is Disabled (Blocked)</span>
+                                Portal login is blocked. Storefront catalog products remain active.
+                            </div>
+                        </div>
+
                         <?php if (!empty($vendor['rejection_reason'])): ?>
-                            <p class="mt-1 italic">Reason: <?= htmlspecialchars($vendor['rejection_reason']) ?></p>
+                            <p class="text-xs text-gray-500 italic bg-gray-50 p-2 rounded-lg">Reason: <?= htmlspecialchars($vendor['rejection_reason']) ?></p>
                         <?php endif; ?>
+
+                        <!-- Super Admin Toggle to Enable Vendor -->
+                        <form action="<?= BASE_URL ?>/admin/vendors/toggle-status" method="POST" class="border-t border-gray-100 pt-3">
+                            <input type="hidden" name="id" value="<?= $vendor['id'] ?>">
+                            <input type="hidden" name="return_url" value="/admin/vendors/view?id=<?= $vendor['id'] ?>">
+                            <button type="submit" id="btn-toggle-vendor-view" onclick="return confirm('Enable this vendor and restore portal access?')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow flex items-center justify-center gap-1.5 cursor-pointer">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                Enable &amp; Activate Vendor
+                            </button>
+                        </form>
                     </div>
                 <?php endif; ?>
             </div>
