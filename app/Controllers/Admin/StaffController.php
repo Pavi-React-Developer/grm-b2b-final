@@ -12,24 +12,17 @@ class StaffController extends Controller
         'Dashboard' => [
             'dashboard' => ['label' => 'Dashboard Overview', 'actions' => ['view']],
         ],
-        'Vendors' => [
-            'all_vendors' => ['label' => 'All Vendors Directory', 'actions' => ['view', 'edit', 'delete']],
-            'pending_vendors' => ['label' => 'Pending Vendor Approvals', 'actions' => ['view', 'edit']],
-            'vendor_analytics' => ['label' => 'Vendor Revenue Analytics', 'actions' => ['view', 'edit']],
-            'vendor_staff' => ['label' => 'Vendor Staff & Sub-Accounts', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'bulk_catalog' => ['label' => 'Bulk CSV Catalog Import', 'actions' => ['view', 'create', 'edit']],
-            'volume_pricing' => ['label' => 'Volume Pricing Tier Matrix', 'actions' => ['view', 'create', 'edit', 'delete']],
-        ],
-        'Finance' => [
-            'payments' => ['label' => 'Payments & Wallet', 'actions' => ['view', 'edit']],
-            'withdrawals' => ['label' => 'Withdrawal Requests & Payouts', 'actions' => ['view', 'edit']],
-            'commissions' => ['label' => 'Commission Settings', 'actions' => ['view', 'create', 'edit']],
-            'transactions' => ['label' => 'Financial Ledger & Transactions', 'actions' => ['view']],
+        'Buyers' => [
+            'all_buyers' => ['label' => 'All Buyers', 'actions' => ['view', 'edit']],
+            'pending_buyers' => ['label' => 'Pending Buyers', 'actions' => ['view', 'edit']],
         ],
         'Orders' => [
             'all_orders' => ['label' => 'All Orders', 'actions' => ['view', 'edit']],
             'pending_payments' => ['label' => 'Pending Payments', 'actions' => ['view', 'edit']],
             'bill_modifications' => ['label' => 'Bill Modifications', 'actions' => ['view', 'edit']],
+        ],
+        'Reviews' => [
+            'reviews' => ['label' => 'Reviews', 'actions' => ['view', 'edit', 'delete']],
         ],
         'Cancellations' => [
             'all_cancellations' => ['label' => 'All Cancellations', 'actions' => ['view', 'edit']],
@@ -42,19 +35,12 @@ class StaffController extends Controller
             'attributes' => ['label' => 'Attributes', 'actions' => ['view', 'create', 'edit', 'delete']],
             'products' => ['label' => 'Products', 'actions' => ['view', 'create', 'edit', 'delete']],
         ],
-        'Inventory' => [
-            'inventory' => ['label' => 'Inventory Management', 'actions' => ['view', 'edit']],
-        ],
         'Customize' => [
             'fabric_customizations' => ['label' => 'Fabric Customization Rules', 'actions' => ['view', 'create', 'edit', 'delete']],
             'custom_orders' => ['label' => 'Customized Orders', 'actions' => ['view', 'edit']],
         ],
-        'Reviews' => [
-            'reviews' => ['label' => 'Reviews', 'actions' => ['view', 'edit', 'delete']],
-        ],
-        'Buyers' => [
-            'all_buyers' => ['label' => 'All Buyers', 'actions' => ['view', 'edit']],
-            'pending_buyers' => ['label' => 'Pending Buyers', 'actions' => ['view', 'edit']],
+        'Inventory' => [
+            'inventory' => ['label' => 'Inventory Management', 'actions' => ['view', 'edit']],
         ],
         'Rules' => [
             'order_rules' => ['label' => 'Order Rules', 'actions' => ['view', 'create', 'edit', 'delete']],
@@ -67,11 +53,25 @@ class StaffController extends Controller
         'Media' => [
             'media_manager' => ['label' => 'Media Manager', 'actions' => ['view', 'create', 'delete']],
         ],
-        'Support' => [
-            'support' => ['label' => 'Support & Helpdesk', 'actions' => ['view', 'create', 'edit', 'delete']],
-        ],
         'Settings' => [
             'settings' => ['label' => 'System & Backup Settings', 'actions' => ['view', 'edit']],
+        ],
+        'Vendors' => [
+            'vendor_analytics' => ['label' => 'Vendor Revenue Analytics', 'actions' => ['view', 'edit']],
+            'all_vendors' => ['label' => 'All Vendors Directory', 'actions' => ['view', 'edit', 'delete']],
+            'pending_vendors' => ['label' => 'Pending Vendor Approvals', 'actions' => ['view', 'edit']],
+            'vendor_staff' => ['label' => 'Vendor Staff & Sub-Accounts', 'actions' => ['view', 'create', 'edit', 'delete']],
+            'bulk_catalog' => ['label' => 'Bulk CSV Catalog Import', 'actions' => ['view', 'create', 'edit']],
+            'volume_pricing' => ['label' => 'Volume Pricing Tier Matrix', 'actions' => ['view', 'create', 'edit', 'delete']],
+        ],
+        'Finance' => [
+            'payments' => ['label' => 'Payments & Wallet', 'actions' => ['view', 'edit']],
+            'withdrawals' => ['label' => 'Withdrawal Requests & Payouts', 'actions' => ['view', 'edit']],
+            'commissions' => ['label' => 'Commission Settings', 'actions' => ['view', 'create', 'edit']],
+            'transactions' => ['label' => 'Financial Ledger & Transactions', 'actions' => ['view']],
+        ],
+        'Support' => [
+            'support' => ['label' => 'Support & Helpdesk', 'actions' => ['view', 'create', 'edit', 'delete']],
         ]
     ];
 

@@ -164,174 +164,31 @@ if (!function_exists('format_price')) {
 }
 
 if (!function_exists('render_discount_starburst')) {
-    function render_discount_starburst($pct, $extraClass = '') {
-        $pct = (int)$pct;
-        if ($pct <= 0) return '';
-        $uid = uniqid('lux_');
-        $fontSize = ($pct >= 100) ? '28' : '34';
-        return '<div class="luxury-discount-badge ' . htmlspecialchars($extraClass) . ' pointer-events-none select-none" style="filter: drop-shadow(0 3px 6px rgba(0,0,0,0.3)) drop-shadow(0 2px 8px rgba(0,168,204,0.35)); aspect-ratio: 160/210;">
-            <svg viewBox="0 0 160 210" class="w-full h-full block" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
-                <defs>
-                    <!-- Main Body Gradient: Deep Rich Royal Teal -->
-                    <linearGradient id="bodyGrad_' . $uid . '" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#026d88" />
-                        <stop offset="35%" stop-color="#035d75" />
-                        <stop offset="70%" stop-color="#02475a" />
-                        <stop offset="100%" stop-color="#01313f" />
-                    </linearGradient>
+    function render_discount_starburst($pct = 0, $extraClass = '') {
+        $pctVal = (int)$pct;
 
-                    <!-- Top Rod Cylindrical Gradient -->
-                    <linearGradient id="rodGrad_' . $uid . '" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#22d3ee" />
-                        <stop offset="30%" stop-color="#00a8cc" />
-                        <stop offset="70%" stop-color="#026982" />
-                        <stop offset="100%" stop-color="#013b4a" />
-                    </linearGradient>
+        // 10-lobed scalloped flower rosette path (viewBox 0 0 200 200)
+        $scallopPath = "M 100 22 A 26.5 26.5 0 0 1 145.85 36.9 A 26.5 26.5 0 0 1 174.18 75.9 A 26.5 26.5 0 0 1 174.18 124.1 A 26.5 26.5 0 0 1 145.85 163.1 A 26.5 26.5 0 0 1 100 178 A 26.5 26.5 0 0 1 54.15 163.1 A 26.5 26.5 0 0 1 25.82 124.1 A 26.5 26.5 0 0 1 25.82 75.9 A 26.5 26.5 0 0 1 54.15 36.9 A 26.5 26.5 0 0 1 100 22 Z";
 
-                    <!-- Front Ribbon Gradient -->
-                    <linearGradient id="ribbonGrad_' . $uid . '" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#00b4d8" />
-                        <stop offset="30%" stop-color="#0096c7" />
-                        <stop offset="75%" stop-color="#0077b6" />
-                        <stop offset="100%" stop-color="#023e8a" />
-                    </linearGradient>
+        $pctDisplay = ($pctVal > 0) ? $pctVal . '%' : '';
 
-                    <!-- Back Ribbon Tails Gradient -->
-                    <linearGradient id="tailGrad_' . $uid . '" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#025368" />
-                        <stop offset="50%" stop-color="#013d4d" />
-                        <stop offset="100%" stop-color="#01242e" />
-                    </linearGradient>
+        if ($pctVal > 0) {
+            $textMarkup = '<text x="100" y="98" class="badge-pct-text" font-family="\'Montserrat\', \'Arial Black\', \'Impact\', \'Inter\', sans-serif" font-weight="900" font-size="56" letter-spacing="0.5">' . $pctDisplay . '</text>'
+                        . '<text x="100" y="142" font-family="\'Montserrat\', \'Arial Black\', \'Impact\', \'Inter\', sans-serif" font-weight="900" font-size="28" letter-spacing="2">OFF</text>';
+        } else {
+            $textMarkup = '<text x="100" y="102" class="badge-pct-text" font-family="\'Montserrat\', \'Arial Black\', \'Impact\', \'Inter\', sans-serif" font-weight="900" font-size="44" letter-spacing="1">DEAL</text>'
+                        . '<text x="100" y="140" font-family="\'Montserrat\', \'Arial Black\', \'Impact\', \'Inter\', sans-serif" font-weight="900" font-size="24" letter-spacing="2">OFF</text>';
+        }
 
-                    <!-- Shadow for Under-Folds -->
-                    <linearGradient id="shadowGrad_' . $uid . '" x1="0%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stop-color="#01202a" />
-                        <stop offset="100%" stop-color="#000e13" />
-                    </linearGradient>
-
-                    <!-- Pure Brilliant White Accent Gradient -->
-                    <linearGradient id="whiteGrad_' . $uid . '" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#ffffff" />
-                        <stop offset="50%" stop-color="#f0fdff" />
-                        <stop offset="100%" stop-color="#ffffff" />
-                    </linearGradient>
-                </defs>
-
-                <!-- ================= 1. TOP HORIZONTAL ROD & SIDE FINIALS ================= -->
-                <g>
-                    <!-- Outer Halo / Border for Top Rod -->
-                    <rect x="22" y="11" width="116" height="15" rx="7.5" fill="none" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="2.2" />
-                    <!-- Rod Cylinder Body -->
-                    <rect x="23" y="12" width="114" height="13" rx="6.5" fill="url(#rodGrad_' . $uid . ')" />
-                    <!-- Specular Top Highlight Reflection -->
-                    <path d="M 32,14.5 L 128,14.5" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round" stroke-opacity="0.85" />
-                    <!-- Left Finial Notch (White Chevron) -->
-                    <polygon points="17,18.5 24,14 22,18.5 24,23" fill="url(#whiteGrad_' . $uid . ')" />
-                    <circle cx="15" cy="18.5" r="1.2" fill="url(#whiteGrad_' . $uid . ')" />
-                    <!-- Right Finial Notch (White Chevron) -->
-                    <polygon points="143,18.5 136,14 138,18.5 136,23" fill="url(#whiteGrad_' . $uid . ')" />
-                    <circle cx="145" cy="18.5" r="1.2" fill="url(#whiteGrad_' . $uid . ')" />
-                    <!-- Inner Rolled Sleeve Cavity Openings -->
-                    <ellipse cx="26" cy="18.5" rx="2.5" ry="4.8" fill="url(#shadowGrad_' . $uid . ')" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="0.8" />
-                    <ellipse cx="134" cy="18.5" rx="2.5" ry="4.8" fill="url(#shadowGrad_' . $uid . ')" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="0.8" />
+        return '<div class="scallop-discount-badge ' . htmlspecialchars($extraClass) . ' pointer-events-none select-none" style="aspect-ratio: 1/1; filter: drop-shadow(0 4px 8px rgba(0, 168, 204, 0.35));">
+            <svg viewBox="0 0 200 200" class="w-full h-full block" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+                <!-- Scalloped Rosette Flower Background in Aqua Blue -->
+                <path d="' . $scallopPath . '" fill="#00A8CC" />
+                
+                <!-- White Typography -->
+                <g fill="#ffffff" text-anchor="middle">
+                    ' . $textMarkup . '
                 </g>
-
-                <!-- ================= 2. SWOOPING BACK RIBBON TAILS (LEFT & RIGHT) ================= -->
-                <g>
-                    <!-- Left Tail -->
-                    <path d="M 32,106 C 20,107 13,114 9,132 L 20,123 L 11,111 C 16,102 24,98 34,98 Z" fill="url(#tailGrad_' . $uid . ')" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="1.3" stroke-linejoin="round" />
-                    <path d="M 30,103 C 21,104 15,108 12,116 L 17,121 L 12,126" fill="none" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="0.7" stroke-opacity="0.8" />
-
-                    <!-- Right Tail -->
-                    <path d="M 128,106 C 140,107 147,114 151,132 L 140,123 L 149,111 C 144,102 136,98 126,98 Z" fill="url(#tailGrad_' . $uid . ')" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="1.3" stroke-linejoin="round" />
-                    <path d="M 130,103 C 139,104 145,108 148,116 L 143,121 L 148,126" fill="none" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="0.7" stroke-opacity="0.8" />
-                </g>
-
-                <!-- ================= 3. MAIN VERTICAL BANNER BODY ================= -->
-                <!-- Outer Pennant Shape with White Outline -->
-                <path d="
-                    M 34,22 
-                    L 126,22 
-                    L 126,146 
-                    L 80,195 
-                    L 34,146 
-                    Z
-                " fill="url(#bodyGrad_' . $uid . ')" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="2.2" stroke-linejoin="round" />
-
-                <!-- Inner Inset Parallel White Border Line -->
-                <path d="
-                    M 40,28 
-                    L 120,28 
-                    L 120,143 
-                    L 80,186 
-                    L 40,143 
-                    Z
-                " fill="none" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="1.2" stroke-opacity="0.95" />
-
-                <!-- ================= 4. TOP ROYAL FILIGREE SCROLLWORK ================= -->
-                <g fill="none" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="1.2" stroke-linecap="round">
-                    <!-- Left Filigree Spiral -->
-                    <path d="M 68,42 C 60,37 50,38 52,44 C 54,49 63,48 69,42 C 73,38 77,40 80,43" />
-                    <!-- Right Filigree Spiral -->
-                    <path d="M 92,42 C 100,37 110,38 108,44 C 106,49 97,48 91,42 C 87,38 83,40 80,43" />
-                    <!-- Center Top Diamond -->
-                    <polygon points="80,37 83,41 80,45 77,41" fill="url(#whiteGrad_' . $uid . ')" stroke="none" />
-                    <!-- Subtle Arch Linking -->
-                    <path d="M 72,40 Q 80,36 88,40" stroke-width="0.9" />
-                </g>
-
-                <!-- ================= 5. MAIN PERCENTAGE TEXT ================= -->
-                <text x="80" y="70" font-family="Georgia, \'Times New Roman\', serif" font-weight="bold" font-size="' . $fontSize . '" fill="url(#whiteGrad_' . $uid . ')" text-anchor="middle" dominant-baseline="central" letter-spacing="0.5">' . $pct . '%</text>
-
-                <!-- ================= 6. MIDDLE 3D ARCHED RIBBON BANNER ("O F F") ================= -->
-                <g>
-                    <!-- Dark Under-Fold Shadow Triangles -->
-                    <path d="M 22,122 L 34,122 L 34,132 Z" fill="url(#shadowGrad_' . $uid . ')" />
-                    <path d="M 138,122 L 126,122 L 126,132 Z" fill="url(#shadowGrad_' . $uid . ')" />
-
-                    <!-- Front Ribbon Banner Body (Arched) -->
-                    <path d="M 22,96 Q 80,105 138,96 L 138,122 Q 80,131 22,122 Z" fill="url(#ribbonGrad_' . $uid . ')" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="1.8" stroke-linejoin="round" />
-
-                    <!-- Ribbon White Inset Trim Pinstripes -->
-                    <path d="M 24,100 Q 80,109 136,100" fill="none" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="0.9" stroke-opacity="0.95" />
-                    <path d="M 24,118 Q 80,127 136,118" fill="none" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="0.9" stroke-opacity="0.95" />
-
-                    <!-- Ribbon Spaced Text: "O F F" -->
-                    <text x="80" y="114" font-family="Georgia, \'Times New Roman\', serif" font-weight="bold" font-size="13" fill="url(#whiteGrad_' . $uid . ')" text-anchor="middle" dominant-baseline="central" letter-spacing="4">O F F</text>
-                </g>
-
-                <!-- ================= 7. LOWER SECTION: 5 DOTS DIVIDER ================= -->
-                <g fill="url(#whiteGrad_' . $uid . ')">
-                    <circle cx="68" cy="144" r="1.3" />
-                    <circle cx="74" cy="144" r="1.6" />
-                    <circle cx="80" cy="144" r="2.2" />
-                    <circle cx="86" cy="144" r="1.6" />
-                    <circle cx="92" cy="144" r="1.3" />
-                </g>
-
-                <!-- ================= 8. LOWER SECTION: LAUREL SCALLOPED BEADS & STAR ================= -->
-                <!-- Left Scalloped Laurel Garland -->
-                <g fill="url(#whiteGrad_' . $uid . ')" stroke="url(#whiteGrad_' . $uid . ')">
-                    <path d="M 46,151 Q 54,164 68,175" fill="none" stroke-width="0.8" stroke-opacity="0.6" />
-                    <circle cx="47" cy="151" r="1.6" />
-                    <circle cx="51" cy="157" r="1.8" />
-                    <circle cx="56" cy="163" r="2.0" />
-                    <circle cx="62" cy="169" r="2.2" />
-                    <circle cx="69" cy="175" r="2.3" />
-                </g>
-
-                <!-- Right Scalloped Laurel Garland -->
-                <g fill="url(#whiteGrad_' . $uid . ')" stroke="url(#whiteGrad_' . $uid . ')">
-                    <path d="M 114,151 Q 106,164 92,175" fill="none" stroke-width="0.8" stroke-opacity="0.6" />
-                    <circle cx="113" cy="151" r="1.6" />
-                    <circle cx="109" cy="157" r="1.8" />
-                    <circle cx="104" cy="163" r="2.0" />
-                    <circle cx="98" cy="169" r="2.2" />
-                    <circle cx="91" cy="175" r="2.3" />
-                </g>
-
-                <!-- Bottom 5-Point Crisp White Star -->
-                <polygon points="80,175 82.2,180.2 87.5,180.5 83.4,184 84.8,189.2 80,186.2 75.2,189.2 76.6,184 72.5,180.5 77.8,180.2" fill="url(#whiteGrad_' . $uid . ')" stroke="url(#whiteGrad_' . $uid . ')" stroke-width="0.5" stroke-linejoin="round" />
             </svg>
         </div>';
     }
