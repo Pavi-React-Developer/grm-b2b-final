@@ -1,7 +1,16 @@
 <?php
 $contentData = $contentData ?? [];
 $global = $contentData['global_settings'] ?? [];
-$menuItems = $contentData['menu_items'] ?? [];
+$menuItemsRaw = $contentData['menu_items'] ?? [];
+$menuItems = [];
+foreach ($menuItemsRaw as $item) {
+    $titleCheck = strtolower(trim($item['title'] ?? ''));
+    $urlCheck = strtolower(trim($item['cta_url'] ?? ''));
+    if ($titleCheck === 'size chart' || strpos($titleCheck, 'size chart') !== false || strpos($urlCheck, 'size-chart') !== false || strpos($urlCheck, 'size_chart') !== false) {
+        continue;
+    }
+    $menuItems[] = $item;
+}
 
 $logo = $global['logo'] ?? '';
 $logoCta = $global['logo_cta_url'] ?? '/';

@@ -309,6 +309,24 @@ class CatalogController extends Controller
         $tierStmt->execute([$id]);
         $volumeTiers = $tierStmt->fetchAll(\PDO::FETCH_ASSOC);
 
+        // Fetch Size Chart for this product / category / subcategory
+        $sizeChartModel = new \App\Models\SizeChart();
+        $resolvedSizeCharts = [];
+        if (!empty($product['size_chart_id'])) {
+            $c = $sizeChartModel->getById((int)$product['size_chart_id']);
+            if ($c && (!isset($c['is_active']) || (int)$c['is_active'] === 1)) {
+                $resolvedSizeCharts = [$c];
+            }
+        }
+        if (empty($resolvedSizeCharts)) {
+            $resolvedSizeCharts = $sizeChartModel->getByCategoryAndSubCategory((int)$product['category_id'], (int)($product['sub_category_id'] ?? 0));
+        }
+        foreach ($resolvedSizeCharts as &$sc) {
+            $sc['columns'] = json_decode($sc['columns_json'] ?? '[]', true) ?: [];
+            $sc['rows'] = json_decode($sc['rows_json'] ?? '[]', true) ?: [];
+        }
+        unset($sc);
+
         $this->render('storefront/product_details', [
             'title' => $product['name'],
             'product' => $product,
@@ -320,7 +338,8 @@ class CatalogController extends Controller
             'relatedProducts' => $relatedProducts,
             'wishlistIds' => $wishlistIds,
             'reviews' => $reviews,
-            'volumeTiers' => $volumeTiers
+            'volumeTiers' => $volumeTiers,
+            'sizeCharts' => $resolvedSizeCharts
         ]);
     }
 

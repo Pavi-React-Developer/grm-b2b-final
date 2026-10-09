@@ -357,15 +357,17 @@ if (!empty($variants)) {
                 <form action="<?= BASE_URL ?>/cart/add" method="POST" id="productAddToCartForm">
                     <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
 
-                    <!-- Variant Selection -->
+                    <!-- Variant Selection (Size / Color) -->
                     <?php if (!empty($variants) && count($variants) > 0): ?>
                     <div class="mb-5">
                         <div class="flex items-center justify-between mb-2.5">
-                            <span class="text-sm font-bold text-gray-900">Select Variant</span>
+                            <span class="text-sm font-bold text-gray-900 flex items-center gap-1.5">
+                                <span>Select Size / Color</span>
+                            </span>
                             <div class="flex items-center gap-2">
-                                <button type="button" onclick="openProductSizeChartModal(<?= (int)($product['category_id'] ?? ($category['id'] ?? 0)) ?>, <?= (int)($product['size_chart_id'] ?? 0) ?>, <?= (int)($product['id'] ?? 0) ?>)" class="inline-flex items-center gap-1 text-xs font-bold text-[#f25996] hover:text-[#d94883] bg-[#fdf2f7] hover:bg-[#fce7f1] border border-[#fbaed2] px-2.5 py-1 rounded-lg transition-all shadow-2xs">
-                                    <svg class="w-3.5 h-3.5 text-[#f25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M3 12h18M3 18h18M7 6v3m4-3v2m4-2v3m4-3v2M7 12v3m4-3v2m4-3v3m4-3v2"></path></svg>
-                                    <span>Size Guide</span>
+                                <button type="button" onclick="openProductSizeChartModal(<?= (int)($product['category_id'] ?? ($category['id'] ?? 0)) ?>, <?= (int)($product['size_chart_id'] ?? 0) ?>, <?= (int)($product['id'] ?? 0) ?>)" class="inline-flex items-center gap-1.5 text-xs font-black text-[#f25996] hover:text-white hover:bg-[#f25996] bg-pink-50 border border-pink-200 px-3 py-1.5 rounded-xl transition-all shadow-xs cursor-pointer active:scale-95">
+                                    <svg class="w-4 h-4 text-[#f25996] group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M3 12h18M3 18h18M7 6v3m4-3v2m4-2v3m4-3v2M7 12v3m4-3v2m4-3v3m4-3v2"></path></svg>
+                                    <span>Size Chart</span>
                                 </button>
                                 <span id="selectedVariantName" class="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">1 selected</span>
                             </div>
@@ -582,7 +584,17 @@ if (!empty($variants)) {
                         <span>Description</span>
                     </button>
 
-                    <!-- 2. How to play / How to use Tab -->
+                    <!-- 2. Size Chart Tab (Dynamic from size charts) -->
+                    <?php if (!empty($sizeCharts)): ?>
+                    <button type="button" 
+                            onclick="switchProductInfoTab('tab-size-chart', this)" 
+                            class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-[#f25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                        <svg class="w-4 h-4 text-gray-400 group-hover:text-[#f25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6h18M3 12h18M3 18h18M7 6v3m4-3v2m4-2v3m4-3v2M7 12v3m4-3v2m4-3v3m4-3v2"></path></svg>
+                        <span>Size Chart</span>
+                    </button>
+                    <?php endif; ?>
+
+                    <!-- 3. How to play / How to use Tab -->
                     <button type="button" 
                             onclick="switchProductInfoTab('tab-how-to-use', this)" 
                             class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
@@ -590,7 +602,7 @@ if (!empty($variants)) {
                         <span><?= htmlspecialchars($howToUseTabTitle) ?></span>
                     </button>
 
-                    <!-- 3. Why choose Tab -->
+                    <!-- 4. Why choose Tab -->
                     <button type="button" 
                             onclick="switchProductInfoTab('tab-why-choose', this)" 
                             class="product-info-tab-btn group pb-3.5 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
@@ -639,6 +651,69 @@ if (!empty($variants)) {
                 </div>
 
                 <!-- 2. How to use / How to play Panel -->
+                                <!-- 2. Size Chart Panel -->
+                <?php if (!empty($sizeCharts)): ?>
+                <div id="tab-size-chart" class="product-info-panel hidden transition-opacity duration-300">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-5">
+                        <div>
+                            <h3 class="text-lg sm:text-xl font-bold font-serif text-[#9C6228] tracking-tight">
+                                Size Guide & Measurements
+                            </h3>
+                            <p class="text-xs text-gray-500 mt-0.5">Accurate garment dimensions to assist your wholesale purchasing</p>
+                        </div>
+                        <span class="inline-flex items-center gap-1 text-xs font-bold bg-pink-50 border border-pink-100 text-[#f25996] px-3 py-1.5 rounded-full w-fit">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            <span>Standard Fit (All dimensions in inches)</span>
+                        </span>
+                    </div>
+
+                    <div class="space-y-6">
+                        <?php foreach ($sizeCharts as $chart): ?>
+                            <div class="bg-white rounded-2xl border border-pink-100/90 p-4 sm:p-6 shadow-xs overflow-hidden">
+                                <div class="flex items-center justify-between gap-3 mb-3 border-b border-gray-100 pb-3">
+                                    <h4 class="font-black text-sm sm:text-base text-gray-900 flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full bg-[#f25996]"></span>
+                                        <span><?= htmlspecialchars($chart['title']) ?></span>
+                                    </h4>
+                                    <?php if (!empty($chart['sub_category_name'])): ?>
+                                        <span class="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full"><?= htmlspecialchars($chart['sub_category_name']) ?></span>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <?php if (!empty($chart['columns']) && !empty($chart['rows'])): ?>
+                                <div class="overflow-x-auto rounded-xl border border-gray-200">
+                                    <table class="w-full text-left text-xs sm:text-sm">
+                                        <thead class="bg-gradient-to-r from-pink-50 to-pink-50/50 text-[#f25996] uppercase text-[11px] font-black tracking-wider border-b border-pink-100">
+                                            <tr>
+                                                <?php foreach ($chart['columns'] as $col): ?>
+                                                    <th class="py-3 px-4 font-black"><?= htmlspecialchars($col) ?></th>
+                                                <?php endforeach; ?>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100">
+                                            <?php foreach ($chart['rows'] as $rIdx => $row): ?>
+                                                <tr class="<?= $rIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50/40' ?> hover:bg-pink-50/30 transition-colors">
+                                                    <?php foreach ($chart['columns'] as $cIdx => $col): ?>
+                                                        <td class="py-2.5 px-4 <?= $cIdx === 0 ? 'font-black text-gray-900 bg-gray-50/80' : 'text-gray-700 font-medium' ?>">
+                                                            <?= htmlspecialchars($row[$col] ?? '-') ?>
+                                                        </td>
+                                                    <?php endforeach; ?>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <?php endif; ?>
+
+                                <?php if (!empty($chart['description'])): ?>
+                                    <p class="text-xs text-gray-500 mt-3 italic"><?= htmlspecialchars($chart['description']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
+
                 <div id="tab-how-to-use" class="product-info-panel hidden transition-opacity duration-300">
                     <h3 class="text-lg sm:text-xl font-bold font-serif text-[#9C6228] mb-4 tracking-tight">
                         <?= htmlspecialchars($howToUseTabTitle) ?>
@@ -1917,10 +1992,7 @@ if (!empty($variants)) {
                             </div>
                             <h4 class="font-bold text-gray-800 text-base mb-1">Standard Sizing Applies</h4>
                             <p class="text-xs text-gray-500 max-w-sm mx-auto mb-4">Please refer to our general apparel size guide or contact support for customized dimensions.</p>
-                            <a href="<?= BASE_URL ?>/size-chart" class="inline-flex items-center gap-1.5 px-4 py-2 bg-[#f25996] text-white text-xs font-bold rounded-lg hover:bg-[#d94883] transition-all">
-                                <span>Browse All Size Charts</span>
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-                            </a>
+                            <p class="text-xs text-gray-500 max-w-sm mx-auto">Standard garment sizing applies. For custom tailoring, please contact our support team.</p>
                         </div>
                     `;
                 }
