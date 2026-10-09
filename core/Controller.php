@@ -47,7 +47,11 @@ class Controller
                 // Load RBAC permissions
                 $permissionsJson = !empty($userData['role_permissions']) ? $userData['role_permissions'] : $userData['custom_permissions'];
                 if (!empty($permissionsJson)) {
-                    $this->userPermissions = json_decode($permissionsJson, true) ?? [];
+                    if (is_array($permissionsJson)) {
+                        $this->userPermissions = $permissionsJson;
+                    } else {
+                        $this->userPermissions = json_decode($permissionsJson, true) ?? [];
+                    }
                 }
             }
         }
@@ -164,63 +168,92 @@ class Controller
                 return;
             }
 
-            \Core\Session::setFlash('error', 'You do not have permission to perform this action.');
-            
             $currentUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-            // If they are bouncing back to dashboard (or already on it) but don't have dashboard access
-            if ($currentUri === '/admin/dashboard' || $module === 'dashboard') {
+            $basePath = parse_url(BASE_URL, PHP_URL_PATH) ?? '';
+            if ($basePath !== '/' && $basePath !== '' && strpos($currentUri, $basePath) === 0) {
+                $currentUri = substr($currentUri, strlen($basePath));
+            }
+            $currentUri = rtrim($currentUri, '/') ?: '/';
+
+            // If they are on dashboard (or trying to access dashboard) but don't have dashboard view access
+            if ($currentUri === '/admin/dashboard' || $currentUri === '/admin' || $module === 'dashboard') {
                 
-                // Try to find the first module they DO have view access to
+                // Complete ordered fallback map of all modules to their primary view routes
                 $fallbackRoutes = [
-                    'dashboard'          => '/admin/dashboard',
-                    'all_orders'         => '/admin/orders',
-                    'pending_payments'   => '/admin/orders/pending',
-                    'bill_modifications' => '/admin/order-modifications',
-                    'products'           => '/admin/catalog/products',
-                    'categories'         => '/admin/catalog/categories',
-                    'subcategories'      => '/admin/catalog/subcategories',
-                    'attributes'         => '/admin/catalog/attributes',
-                    'inventory'          => '/admin/inventory',
-                    'all_buyers'         => '/admin/buyers',
-                    'pending_buyers'     => '/admin/buyers/pending',
-                    'all_cancellations'  => '/admin/cancellations',
-                    'refunds'            => '/admin/cancellations/refunds',
-                    'cancellation_rules' => '/admin/cancellations/rules',
-                    'reviews'            => '/admin/reviews',
-                    'all_vendors'        => '/admin/vendors',
-                    'pending_vendors'    => '/admin/vendors/pending',
-                    'vendor_analytics'   => '/admin/vendors/dashboard',
-                    'payments'           => '/admin/finance/payments',
-                    'withdrawals'        => '/admin/finance/withdrawals',
-                    'commissions'        => '/admin/finance/commissions',
-                    'transactions'       => '/admin/finance/transactions',
-                    'order_rules'        => '/admin/order-rules',
-                    'fee_rules'          => '/admin/fee-rules',
+                    'all_buyers'            => '/admin/buyers',
+                    'pending_buyers'        => '/admin/buyers/pending',
+                    'all_orders'            => '/admin/orders',
+                    'pending_payments'      => '/admin/orders/pending',
+                    'bill_modifications'    => '/admin/order-modifications',
+                    'reviews'               => '/admin/reviews',
+                    'all_cancellations'     => '/admin/cancellations',
+                    'refunds'               => '/admin/cancellations/refunds',
+                    'cancellation_rules'    => '/admin/cancellations/rules',
+                    'categories'            => '/admin/catalog/categories',
+                    'subcategories'         => '/admin/catalog/subcategories',
+                    'attributes'            => '/admin/catalog/attributes',
+                    'products'              => '/admin/catalog/products',
                     'fabric_customizations' => '/admin/fabric-customizations',
-                    'custom_orders'      => '/admin/customize/orders',
-                    'staff_management'   => '/admin/staff',
-                    'roles'              => '/admin/staff/roles',
-                    'media_manager'      => '/admin/media',
-                    'support'            => '/admin/support',
-                    'settings'           => '/admin/settings'
+                    'custom_orders'         => '/admin/customize/orders',
+                    'inventory'             => '/admin/inventory',
+                    'order_rules'           => '/admin/order-rules',
+                    'fee_rules'             => '/admin/fee-rules',
+                    'staff_management'      => '/admin/staff',
+                    'roles'                 => '/admin/staff/roles',
+                    'media_manager'         => '/admin/media',
+                    'settings'              => '/admin/settings',
+                    'vendor_analytics'      => '/admin/vendors/dashboard',
+                    'all_vendors'           => '/admin/vendors',
+                    'pending_vendors'       => '/admin/vendors/pending',
+                    'vendor_staff'          => '/admin/vendors',
+                    'bulk_catalog'          => '/admin/catalog/products',
+                    'volume_pricing'        => '/admin/catalog/products',
+                    'payments'              => '/admin/finance/payments',
+                    'withdrawals'           => '/admin/finance/withdrawals',
+                    'commissions'           => '/admin/finance/commissions',
+                    'transactions'          => '/admin/finance/transactions',
+                    'support'               => '/admin/support',
                 ];
                 
                 foreach ($fallbackRoutes as $mod => $route) {
                     if (($this->hasPermission($mod, 'view') || $this->hasAnyPermission($mod)) && $currentUri !== $route) {
                         $this->redirect($route);
+                        return;
                     }
                 }
                 
-                // If they have NO view permissions anywhere
-                echo "<div style='font-family:sans-serif;text-align:center;margin-top:100px;'>
-                        <h2 style='color:#e53e3e;'>Access Denied</h2>
-                        <p>Your account does not have any active permissions assigned.</p>
-                        <form action='".BASE_URL."/logout' method='POST'>
-                            <button type='submit' style='padding:10px 20px; background:#2d5939; color:white; border:none; border-radius:5px; cursor:pointer;'>Logout</button>
+                // If they truly have NO view permissions anywhere
+                echo "<!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset='utf-8'>
+                    <meta name='viewport' content='width=device-width, initial-scale=1'>
+                    <title>Access Denied - " . APP_NAME . "</title>
+                    <link href='https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap' rel='stylesheet'>
+                    <style>
+                        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; }
+                        .card { background: white; border: 1px solid #f3f4f6; border-radius: 20px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05); padding: 40px; max-width: 440px; width: 100%; text-align: center; }
+                        .icon { width: 64px; height: 64px; background: #fef2f2; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 20px; color: #ef4444; font-size: 28px; }
+                        h2 { font-size: 22px; font-weight: 800; color: #111827; margin: 0 0 10px; }
+                        p { font-size: 14px; color: #6b7280; line-height: 1.6; margin: 0 0 24px; }
+                        .btn { display: inline-flex; align-items: center; justify-content: center; width: 100%; padding: 12px 20px; background: #F25996; color: white; border: none; border-radius: 12px; font-weight: 700; font-size: 14px; cursor: pointer; text-decoration: none; transition: background 0.2s; }
+                        .btn:hover { background: #e04481; }
+                    </style>
+                </head>
+                <body>
+                    <div class='card'>
+                        <div class='icon'>🔒</div>
+                        <h2>Access Restricted</h2>
+                        <p>Your staff account does not currently have permissions assigned to view any admin modules. Please contact your Super Administrator to configure your role.</p>
+                        <form action='" . BASE_URL . "/logout' method='POST'>
+                            <button type='submit' class='btn'>Log Out</button>
                         </form>
-                      </div>";
+                    </div>
+                </body>
+                </html>";
                 exit;
             } else {
+                \Core\Session::setFlash('error', 'You do not have permission to perform this action.');
                 $this->redirect('/admin/dashboard');
             }
         }

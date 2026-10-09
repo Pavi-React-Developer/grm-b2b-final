@@ -87,6 +87,70 @@ class AuthController extends Controller
             
             // If they are admin/manager/vendor, redirect to admin panel
             if (in_array($user['role'], ['super_admin', 'manager', 'staff', 'vendor'])) {
+                if ($user['role'] === 'staff') {
+                    // Check if staff has dashboard permission, else redirect directly to first authorized module
+                    $db = \Core\Database::getInstance();
+                    $stmt = $db->prepare("
+                        SELECT u.permissions AS custom_permissions, r.permissions AS role_permissions
+                        FROM users u
+                        LEFT JOIN roles r ON u.role_id = r.id
+                        WHERE u.id = ?
+                    ");
+                    $stmt->execute([$user['id']]);
+                    $pRow = $stmt->fetch();
+                    $permsJson = !empty($pRow['role_permissions']) ? $pRow['role_permissions'] : ($pRow['custom_permissions'] ?? null);
+                    $perms = is_array($permsJson) ? $permsJson : (json_decode($permsJson ?? '', true) ?? []);
+                    
+                    if (empty($perms['dashboard']['view'])) {
+                        $fallbackRoutes = [
+                            'all_buyers'            => '/admin/buyers',
+                            'pending_buyers'        => '/admin/buyers/pending',
+                            'all_orders'            => '/admin/orders',
+                            'pending_payments'      => '/admin/orders/pending',
+                            'bill_modifications'    => '/admin/order-modifications',
+                            'reviews'               => '/admin/reviews',
+                            'all_cancellations'     => '/admin/cancellations',
+                            'refunds'               => '/admin/cancellations/refunds',
+                            'cancellation_rules'    => '/admin/cancellations/rules',
+                            'categories'            => '/admin/catalog/categories',
+                            'subcategories'         => '/admin/catalog/subcategories',
+                            'attributes'            => '/admin/catalog/attributes',
+                            'products'              => '/admin/catalog/products',
+                            'fabric_customizations' => '/admin/fabric-customizations',
+                            'custom_orders'         => '/admin/customize/orders',
+                            'inventory'             => '/admin/inventory',
+                            'order_rules'           => '/admin/order-rules',
+                            'fee_rules'             => '/admin/fee-rules',
+                            'staff_management'      => '/admin/staff',
+                            'roles'                 => '/admin/staff/roles',
+                            'media_manager'         => '/admin/media',
+                            'settings'              => '/admin/settings',
+                            'vendor_analytics'      => '/admin/vendors/dashboard',
+                            'all_vendors'           => '/admin/vendors',
+                            'pending_vendors'       => '/admin/vendors/pending',
+                            'vendor_staff'          => '/admin/vendors',
+                            'bulk_catalog'          => '/admin/catalog/products',
+                            'volume_pricing'        => '/admin/catalog/products',
+                            'payments'              => '/admin/finance/payments',
+                            'withdrawals'           => '/admin/finance/withdrawals',
+                            'commissions'           => '/admin/finance/commissions',
+                            'transactions'          => '/admin/finance/transactions',
+                            'support'               => '/admin/support',
+                        ];
+                        foreach ($fallbackRoutes as $mod => $route) {
+                            if (!empty($perms[$mod])) {
+                                $hasAny = false;
+                                foreach (['view', 'create', 'edit', 'delete'] as $act) {
+                                    if (!empty($perms[$mod][$act])) { $hasAny = true; break; }
+                                }
+                                if ($hasAny) {
+                                    $this->redirect($route);
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
                 $this->redirect('/admin/dashboard');
                 return;
             }
