@@ -83,6 +83,7 @@ class AuthController extends Controller
             Session::set('user_role', $user['role']);
             Session::set('user_status', $user['status']);
             Session::set('user_name', $user['name']);
+            Session::set('user_email', $user['email'] ?? '');
             
             // If they are admin/manager/vendor, redirect to admin panel
             if (in_array($user['role'], ['super_admin', 'manager', 'staff', 'vendor'])) {
