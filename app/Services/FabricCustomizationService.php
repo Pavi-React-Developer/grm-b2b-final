@@ -77,20 +77,21 @@ class FabricCustomizationService
 
         $isMinMet = ($totalPieces >= $minPieces);
         $isMaxMet = ($maxPieces === null || $totalPieces <= $maxPieces);
-        $isStockSufficient = ($stock >= $requiredFabric);
+        $isStockSufficient = ($stock >= $fabricQuantity);
 
         $errors = [];
         if ($totalPieces === 0) {
-            $errors[] = "Please select at least 1 size with quantity.";
+            $errors[] = "Please select size variants. A minimum of {$minPieces} pieces is required to enable payment.";
         } elseif (!$isMinMet) {
-            $errors[] = "Minimum order quantity is {$minPieces} pieces. You currently have {$totalPieces} pieces.";
+            $remaining = $minPieces - $totalPieces;
+            $errors[] = "Minimum {$minPieces} pieces required to enable payment. You currently have {$totalPieces} pieces (Please select {$remaining} more pcs).";
         }
         if (!$isMaxMet && $maxPieces !== null) {
             $errors[] = "Maximum order quantity is {$maxPieces} pieces. You currently have {$totalPieces} pieces.";
         }
         if (!$isStockSufficient) {
-            $shortage = round($requiredFabric - $stock, 2);
-            $errors[] = "Fabric Stock Exceeded: Selected sizes require {$requiredFabric} {$unit} (including {$wastagePct}% wastage), but only {$stock} {$unit} are available in inventory (Shortage: {$shortage} {$unit}). Larger sizes (such as 3XL/4XL) require higher fabric consumption per piece. Please reduce piece quantities.";
+            $shortage = (int)($fabricQuantity - $stock);
+            $errors[] = "Fabric Stock Exceeded: You selected {$fabricQuantity} Sets, but only {$stock} {$unit} are available in inventory.";
         }
 
         $isValid = empty($errors) && $totalPieces > 0;
@@ -120,7 +121,7 @@ class FabricCustomizationService
      */
     public function calculatePricing(float $pricePerUnit, float $requiredFabric, float $stitchingPerPiece = 0.00, int $totalPieces = 0, float $gstRate = 5.0)
     {
-        $fabricCost = round($pricePerUnit * $requiredFabric, 2);
+        $fabricCost = round($pricePerUnit * $totalPieces, 2);
         $stitchingCost = round($stitchingPerPiece * $totalPieces, 2);
         $subtotal = $fabricCost + $stitchingCost;
         $gstAmount = round($subtotal * ($gstRate / 100.0), 2);

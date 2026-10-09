@@ -9,10 +9,10 @@ class HomeController extends Controller
     public function index()
     {
         $productModel = new Product();
-        $products = $productModel->getAllActive();
+        $products = $productModel->getAllActive(null, null, null, [], 'newest', 0);
 
         $categoryModel = new \App\Models\Category();
-        $categories = $categoryModel->getAll();
+        $categories = $categoryModel->getAll(0);
 
         // Attach variants to each product
         foreach ($products as &$product) {

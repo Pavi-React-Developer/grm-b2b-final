@@ -139,9 +139,11 @@
                                 <div class="flex items-center gap-4 text-xs text-gray-500 mt-1">
                                     <span>Fabric: <strong class="text-gray-800"><?= htmlspecialchars($r['fabric_name']) ?></strong> (SKU: <?= htmlspecialchars($r['fabric_sku'] ?? 'N/A') ?>)</span>
                                     <span>•</span>
-                                    <span>Stock: <strong class="text-gray-800"><?= (int)$r['fabric_stock'] ?> <?= htmlspecialchars($r['unit']) ?></strong></span>
+                                    <span>Stock: <strong class="text-gray-800"><?= (int)$r['fabric_stock'] ?> Qty</strong></span>
                                     <span>•</span>
-                                    <span>Wholesale Rate: <strong class="text-gray-800">₹<?= number_format($r['fabric_price'], 2) ?>/<?= htmlspecialchars($r['unit']) ?></strong></span>
+                                    <span>Min to Order: <strong class="text-amber-700 font-bold"><?= (int)($r['minimum_pieces'] ?? 10) ?> Pcs</strong></span>
+                                    <span>•</span>
+                                    <span>Wholesale Rate: <strong class="text-gray-800">₹<?= number_format($r['fabric_price'], 2) ?></strong></span>
                                 </div>
                             </div>
                         </div>

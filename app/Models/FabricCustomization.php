@@ -197,6 +197,7 @@ class FabricCustomization
                 WHERE fc.status = 'active' 
                   AND fc.customization_enabled = 1 
                   AND p.status = 'active'
+                  AND p.is_customizable = 1
                   AND p.stock_quantity > 0";
 
         $params = [];

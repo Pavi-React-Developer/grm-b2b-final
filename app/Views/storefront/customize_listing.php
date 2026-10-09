@@ -197,7 +197,7 @@
                         $rawImg = !empty($f['primary_image']) ? get_image_url($f['primary_image']) : '';
                         $fallbackImg = 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80';
                         $imgSrc = !empty($rawImg) ? $rawImg : $fallbackImg;
-                        $unitLabel = htmlspecialchars($f['unit'] ?? 'Meter');
+                        $unitLabel = htmlspecialchars($f['unit'] ?? 'Qty');
                     ?>
                     <div class="bg-white rounded-2xl sm:rounded-[22px] border border-gray-100 overflow-hidden shadow-xs hover:shadow-xl hover:border-pink-200 transition-all duration-300 flex flex-col group transform hover:-translate-y-1">
                         
@@ -242,23 +242,27 @@
                             </div>
                         </div>
 
-                        <!-- Circular Variant Swatches Overlapping Border -->
+                        <!-- Circular Variant Swatches Overlapping Border (only when multiple images exist) -->
+                        <?php 
+                            $validImages = !empty($f['images']) && is_array($f['images']) ? array_values(array_filter($f['images'])) : [];
+                            if (count($validImages) > 1):
+                        ?>
                         <div class="-mt-4 sm:-mt-6 mb-1.5 sm:mb-2 px-2.5 sm:px-5 flex items-center gap-1.5 sm:gap-2 relative z-20 overflow-x-auto scrollbar-none pb-0.5">
                             <?php 
-                                $swatchImages = !empty($f['images']) ? array_slice($f['images'], 0, 4) : [];
-                                if (empty($swatchImages)) {
-                                    $swatchImages = [$imgSrc];
-                                }
-                                foreach ($swatchImages as $idx => $swImg):
+                                foreach (array_slice($validImages, 0, 4) as $idx => $swImg):
                                     $swUrl = get_image_url($swImg, 100, 100);
                                     $fullSwUrl = get_image_url($swImg);
                             ?>
                                 <img src="<?= htmlspecialchars($swUrl) ?>" 
-                                     alt="Swatch <?= $idx+1 ?>" 
+                                     alt="" 
+                                     onerror="this.style.display='none';"
                                      onclick="document.getElementById('fabric-main-img-<?= $f['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
                                      class="w-7 h-7 sm:w-11 sm:h-11 rounded-full border-2 border-white shadow-sm sm:shadow-md object-cover cursor-pointer hover:scale-110 transition-transform flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
                             <?php endforeach; ?>
                         </div>
+                        <?php else: ?>
+                        <div class="h-2 sm:h-3"></div>
+                        <?php endif; ?>
 
                         <!-- Card Content Body -->
                         <div class="px-2.5 sm:px-5 pt-0 pb-3 sm:pb-5 flex-1 flex flex-col justify-between">

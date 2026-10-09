@@ -67,8 +67,8 @@ class FabricCustomizationController extends Controller
     public function create()
     {
         $products = $this->model->getAvailableFabricsForDropdown();
-        $categories = $this->categoryModel->getAllActive();
-        $subCategories = $this->subCategoryModel->getAllActive();
+        $categories = $this->categoryModel->getAllActive(null, 1);
+        $subCategories = $this->subCategoryModel->getAllActive(1);
         
         // Standard default size presets
         $defaultSizes = [
@@ -112,7 +112,7 @@ class FabricCustomizationController extends Controller
         $minPieces = (int)($_POST['minimum_pieces'] ?? 10);
         $maxPieces = !empty($_POST['maximum_pieces']) ? (int)$_POST['maximum_pieces'] : null;
         $wastagePct = (float)($_POST['wastage_percentage'] ?? 0.00);
-        $unit = trim($_POST['unit'] ?? 'Meter');
+        $unit = trim($_POST['unit'] ?? 'Qty');
         $status = $_POST['status'] ?? 'active';
 
         // Validation
@@ -186,8 +186,8 @@ class FabricCustomizationController extends Controller
         }
 
         $products = $this->model->getAvailableFabricsForDropdown($id);
-        $categories = $this->categoryModel->getAllActive();
-        $subCategories = $this->subCategoryModel->getAllActive();
+        $categories = $this->categoryModel->getAllActive(null, 1);
+        $subCategories = $this->subCategoryModel->getAllActive(1);
 
         $this->render('admin/fabric_customizations/edit', [
             'title'         => 'Edit Fabric Rule: ' . htmlspecialchars($rule['program_name']),
@@ -222,7 +222,7 @@ class FabricCustomizationController extends Controller
         $minPieces = (int)($_POST['minimum_pieces'] ?? 10);
         $maxPieces = !empty($_POST['maximum_pieces']) ? (int)$_POST['maximum_pieces'] : null;
         $wastagePct = (float)($_POST['wastage_percentage'] ?? 0.00);
-        $unit = trim($_POST['unit'] ?? 'Meter');
+        $unit = trim($_POST['unit'] ?? 'Qty');
         $status = $_POST['status'] ?? 'active';
 
         if (!$id || !$fabricId || empty($programName) || empty($garmentType)) {
