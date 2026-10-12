@@ -25,12 +25,14 @@ if (isset($global['bg_color'])) {
 
 $textColor = $global['text_color'] ?? '#8C6A4F';
 
-function getInlineStyleStr($property, $value) {
-    if (strpos($value, ':') !== false) {
-        $val = trim($value);
-        return htmlspecialchars($val) . (substr($val, -1) === ';' ? '' : ';');
+if (!function_exists('getInlineStyleStr')) {
+    function getInlineStyleStr($property, $value) {
+        if (strpos($value, ':') !== false) {
+            $val = trim($value);
+            return htmlspecialchars($val) . (substr($val, -1) === ';' ? '' : ';');
+        }
+        return htmlspecialchars($property) . ': ' . htmlspecialchars($value) . ';';
     }
-    return htmlspecialchars($property) . ': ' . htmlspecialchars($value) . ';';
 }
 $bgInline = getInlineStyleStr('background', $bgColorVal);
 $textInline = getInlineStyleStr('color', $textColor);

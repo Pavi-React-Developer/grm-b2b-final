@@ -7,6 +7,14 @@ class SubCategory extends Model
 {
     public function getAll(?int $isCustomizable = null)
     {
+        $cacheKey = 'subcat_all_' . ($isCustomizable ?? 'null');
+        if (class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
         $sql = "
             SELECT s.*, COALESCE(c.name, 'Unassigned') as category_name 
             FROM sub_categories s
@@ -35,11 +43,24 @@ class SubCategory extends Model
                 $uniqueSubCategories[] = $sub;
             }
         }
+
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set($cacheKey, $uniqueSubCategories, 3600);
+        }
+
         return $uniqueSubCategories;
     }
     
     public function getAllActive(?int $isCustomizable = null)
     {
+        $cacheKey = 'subcat_active_' . ($isCustomizable ?? 'null');
+        if (class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
         $sql = "
             SELECT s.*, COALESCE(c.name, 'Unassigned') as category_name 
             FROM sub_categories s
@@ -69,6 +90,11 @@ class SubCategory extends Model
                 $uniqueSubCategories[] = $sub;
             }
         }
+
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set($cacheKey, $uniqueSubCategories, 3600);
+        }
+
         return $uniqueSubCategories;
     }
 
@@ -116,9 +142,20 @@ class SubCategory extends Model
 
     public function findById($id)
     {
+        $cacheKey = 'subcat_by_id_' . (int)$id;
+        if (class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
         $stmt = $this->db->prepare("SELECT * FROM sub_categories WHERE id = :id");
         $stmt->execute(['id' => $id]);
-        return $stmt->fetch();
+        $res = $stmt->fetch();
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set($cacheKey, $res, 3600);
+        }
+        return $res;
     }
 
     public function generateUniqueSlug(string $nameOrSlug, ?int $excludeId = null): string
@@ -167,7 +204,9 @@ class SubCategory extends Model
             'is_customizable' => !empty($data['is_customizable']) ? 1 : 0
         ]);
         
-        return $this->db->lastInsertId();
+        $insertedId = $this->db->lastInsertId();
+        $this->invalidateSubCategoryCaches();
+        return $insertedId;
     }
 
     public function update(int $id, array $data)
@@ -181,7 +220,7 @@ class SubCategory extends Model
             WHERE id = :id
         ");
         
-        return $stmt->execute([
+        $res = $stmt->execute([
             'id' => $id,
             'category_id' => $data['category_id'],
             'name' => $data['name'],
@@ -189,6 +228,8 @@ class SubCategory extends Model
             'status' => $data['status'] ?? 'active',
             'is_customizable' => !empty($data['is_customizable']) ? 1 : 0
         ]);
+        $this->invalidateSubCategoryCaches();
+        return $res;
     }
 
     public function delete(int $id)
@@ -231,9 +272,7 @@ class SubCategory extends Model
                 $this->db->commit();
             }
 
-            if (class_exists('\Core\Cache')) {
-                \Core\Cache::delete('catalog_active');
-            }
+            $this->invalidateSubCategoryCaches();
             return $result;
         } catch (\Exception $e) {
             $this->db->exec("SET FOREIGN_KEY_CHECKS=1");
@@ -241,6 +280,20 @@ class SubCategory extends Model
                 $this->db->rollBack();
             }
             throw $e;
+        }
+    }
+
+    private function invalidateSubCategoryCaches()
+    {
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::delete('subcat_all_null');
+            \Core\Cache::delete('subcat_all_0');
+            \Core\Cache::delete('subcat_all_1');
+            \Core\Cache::delete('subcat_active_null');
+            \Core\Cache::delete('subcat_active_0');
+            \Core\Cache::delete('subcat_active_1');
+            \Core\Cache::delete('layout_mega_categories_data');
+            \Core\Cache::delete('catalog_active');
         }
     }
 }

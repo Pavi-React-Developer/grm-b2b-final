@@ -175,6 +175,9 @@ class Review extends Model
             
             if ($review) {
                 $this->recalculateProductRating($review['product_id']);
+                if (class_exists('\Core\Cache')) {
+                    \Core\Cache::delete('approved_reviews_' . $review['product_id']);
+                }
             }
         }
         
@@ -213,6 +216,14 @@ class Review extends Model
      */
     public function getApprovedProductReviews(int $productId)
     {
+        $cacheKey = 'approved_reviews_' . $productId;
+        if (class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
         $sql = "
             SELECT 
                 r.*,
@@ -225,6 +236,12 @@ class Review extends Model
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$productId]);
-        return $stmt->fetchAll();
+        $reviews = $stmt->fetchAll();
+
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set($cacheKey, $reviews, 3600);
+        }
+
+        return $reviews;
     }
 }

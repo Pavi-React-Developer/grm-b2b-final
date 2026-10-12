@@ -7,6 +7,14 @@ class Category extends Model
 {
     public function getAllActive($search = null, ?int $isCustomizable = null)
     {
+        $cacheKey = ($search === null) ? ('cat_active_' . ($isCustomizable ?? 'null')) : null;
+        if ($cacheKey && class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
         $sql = "SELECT * FROM categories WHERE status = 'active'";
         $params = [];
         
@@ -39,11 +47,24 @@ class Category extends Model
                 $uniqueCategories[] = $cat;
             }
         }
+
+        if ($cacheKey && class_exists('\Core\Cache')) {
+            \Core\Cache::set($cacheKey, $uniqueCategories, 3600);
+        }
+
         return $uniqueCategories;
     }
     
     public function getAll(?int $isCustomizable = null)
     {
+        $cacheKey = 'cat_all_' . ($isCustomizable ?? 'null');
+        if (class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
         $sql = "SELECT c.*, COUNT(p.id) as product_count 
                 FROM categories c 
                 LEFT JOIN products p ON p.category_id = c.id";
@@ -73,6 +94,11 @@ class Category extends Model
                 $uniqueCategories[] = $cat;
             }
         }
+
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set($cacheKey, $uniqueCategories, 3600);
+        }
+
         return $uniqueCategories;
     }
 
@@ -149,14 +175,27 @@ class Category extends Model
             'is_customizable' => !empty($data['is_customizable']) ? 1 : 0
         ]);
         
-        return $this->db->lastInsertId();
+        $insertedId = $this->db->lastInsertId();
+        $this->invalidateCategoryCaches();
+        return $insertedId;
     }
 
     public function findById($id)
     {
+        $cacheKey = 'cat_by_id_' . (int)$id;
+        if (class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
         $stmt = $this->db->prepare("SELECT * FROM categories WHERE id = :id");
         $stmt->execute(['id' => $id]);
-        return $stmt->fetch();
+        $res = $stmt->fetch();
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set($cacheKey, $res, 3600);
+        }
+        return $res;
     }
 
     public function getById($id)
@@ -199,6 +238,7 @@ class Category extends Model
             'status' => $data['status'] ?? 'active',
             'is_customizable' => !empty($data['is_customizable']) ? 1 : 0
         ]);
+        $this->invalidateCategoryCaches();
     }
 
     public function getProductCount(int $id): int
@@ -271,9 +311,7 @@ class Category extends Model
                 $this->db->commit();
             }
 
-            if (class_exists('\Core\Cache')) {
-                \Core\Cache::delete('catalog_active');
-            }
+            $this->invalidateCategoryCaches();
             return $result;
         } catch (\Exception $e) {
             $this->db->exec("SET FOREIGN_KEY_CHECKS=1");
@@ -281,6 +319,21 @@ class Category extends Model
                 $this->db->rollBack();
             }
             throw $e;
+        }
+    }
+
+    private function invalidateCategoryCaches()
+    {
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::delete('cat_active_null');
+            \Core\Cache::delete('cat_active_0');
+            \Core\Cache::delete('cat_active_1');
+            \Core\Cache::delete('cat_all_null');
+            \Core\Cache::delete('cat_all_0');
+            \Core\Cache::delete('cat_all_1');
+            \Core\Cache::delete('catalog_all_categories_list');
+            \Core\Cache::delete('layout_mega_categories_data');
+            \Core\Cache::delete('catalog_active');
         }
     }
 }

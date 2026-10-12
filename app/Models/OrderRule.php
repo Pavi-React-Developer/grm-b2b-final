@@ -25,13 +25,22 @@ class OrderRule
     
     public function getActiveRules()
     {
+        $cached = class_exists('\Core\Cache') ? \Core\Cache::get('order_rules_active') : null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
         $sql = "
             SELECT r.*, c.name as category_name 
             FROM order_rules r
             JOIN categories c ON r.category_id = c.id
             WHERE r.status = 'active'
         ";
-        return $this->db->query($sql)->fetchAll();
+        $rules = $this->db->query($sql)->fetchAll();
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set('order_rules_active', $rules, 3600);
+        }
+        return $rules;
     }
 
     public function findById($id)
@@ -59,6 +68,10 @@ class OrderRule
             'status' => $data['status'] ?? 'active'
         ]);
         
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::delete('order_rules_active');
+        }
+
         return $this->db->lastInsertId();
     }
 
@@ -77,19 +90,31 @@ class OrderRule
                 WHERE id = :id";
                 
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([
+        $res = $stmt->execute([
             'category_id' => $data['category_id'],
             'second_category_rules' => $data['second_category_rules'] ?: null,
             'min_amount' => $data['min_amount'],
             'status' => $data['status'] ?? 'active',
             'id' => $id
         ]);
+
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::delete('order_rules_active');
+        }
+
+        return $res;
     }
 
     public function delete($id)
     {
         $stmt = $this->db->prepare("DELETE FROM order_rules WHERE id = :id");
-        return $stmt->execute(['id' => $id]);
+        $res = $stmt->execute(['id' => $id]);
+
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::delete('order_rules_active');
+        }
+
+        return $res;
     }
 
     private function ruleExists($categoryId, $excludeId = null)

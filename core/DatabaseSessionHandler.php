@@ -22,6 +22,8 @@ class DatabaseSessionHandler implements \SessionHandlerInterface
         }
     }
 
+    private array $readHashes = [];
+
     public function open(string $path, string $name): bool
     {
         return true;
@@ -41,7 +43,8 @@ class DatabaseSessionHandler implements \SessionHandlerInterface
                 $stmt->execute(['id' => $id]);
                 $result = $stmt->fetchColumn();
                 if ($result !== false) {
-                    $this->writeFileFallback($id, $result);
+                    $this->readHashes[$id] = md5((string)$result);
+                    $this->writeFileFallback($id, (string)$result);
                     return $result;
                 }
             }
@@ -50,7 +53,9 @@ class DatabaseSessionHandler implements \SessionHandlerInterface
         }
 
         // Fallback to local file cache
-        return $this->readFileFallback($id);
+        $fallback = $this->readFileFallback($id);
+        $this->readHashes[$id] = md5((string)$fallback);
+        return $fallback;
     }
 
     public function write(string $id, string $data): bool
@@ -58,6 +63,12 @@ class DatabaseSessionHandler implements \SessionHandlerInterface
         $timestamp = time();
         // Always write to local fallback cache first for instant safety
         $this->writeFileFallback($id, $data);
+
+        // Optimization: If session data did not change during this request, skip remote network write
+        $currentHash = md5($data);
+        if (isset($this->readHashes[$id]) && $this->readHashes[$id] === $currentHash) {
+            return true;
+        }
 
         try {
             $db = $this->getDb();
@@ -72,6 +83,7 @@ class DatabaseSessionHandler implements \SessionHandlerInterface
                     'data' => $data,
                     'timestamp' => $timestamp
                 ]);
+                $this->readHashes[$id] = $currentHash;
             }
         } catch (\Throwable $e) {
             // DB write failed (e.g. DNS drop), file fallback already saved data

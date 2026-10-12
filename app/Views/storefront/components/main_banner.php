@@ -492,26 +492,42 @@ foreach ($sectionsData as $data) {
     }
 }
 
-if ($needProducts) {
-    $stmt = $db->query("SELECT p.*, (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image FROM products p JOIN categories c ON p.category_id = c.id AND c.status = 'active' WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) ORDER BY p.id DESC LIMIT 4");
-    $dynamicData['product_carousel'] = $stmt->fetchAll();
-}
-if ($needCategories) {
-    $stmt = $db->query("SELECT * FROM categories WHERE status = 'active' ORDER BY id ASC LIMIT 4");
-    $dynamicData['category_grid'] = $stmt->fetchAll();
-}
-if (!empty($selProdIds)) {
-    $ids = implode(',', array_map('intval', array_unique($selProdIds)));
-    $stmt = $db->query("SELECT p.*, (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image FROM products p JOIN categories c ON p.category_id = c.id AND c.status = 'active' WHERE p.id IN ($ids) AND p.status = 'active' AND p.category_id IS NOT NULL");
-    foreach ($stmt->fetchAll() as $p) {
-        $dynamicData['selected_products'][$p['id']] = $p;
+$mbCacheKey = 'mb_dyn_' . md5(json_encode([$needProducts, $needCategories, $selProdIds, $selCatIds]));
+$dynamicData = (empty($_GET['preview']) && class_exists('\Core\Cache')) ? \Core\Cache::get($mbCacheKey) : null;
+
+if ($dynamicData === null) {
+    $dynamicData = [
+        'product_carousel' => [], 
+        'category_grid' => [],
+        'selected_products' => [],
+        'selected_categories' => []
+    ];
+
+    if ($needProducts) {
+        $stmt = $db->query("SELECT p.*, (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image FROM products p JOIN categories c ON p.category_id = c.id AND c.status = 'active' WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) ORDER BY p.id DESC LIMIT 4");
+        $dynamicData['product_carousel'] = $stmt->fetchAll();
     }
-}
-if (!empty($selCatIds)) {
-    $ids = implode(',', array_map('intval', array_unique($selCatIds)));
-    $stmt = $db->query("SELECT * FROM categories WHERE id IN ($ids) AND status = 'active'");
-    foreach ($stmt->fetchAll() as $c) {
-        $dynamicData['selected_categories'][$c['id']] = $c;
+    if ($needCategories) {
+        $stmt = $db->query("SELECT * FROM categories WHERE status = 'active' ORDER BY id ASC LIMIT 4");
+        $dynamicData['category_grid'] = $stmt->fetchAll();
+    }
+    if (!empty($selProdIds)) {
+        $ids = implode(',', array_map('intval', array_unique($selProdIds)));
+        $stmt = $db->query("SELECT p.*, (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image FROM products p JOIN categories c ON p.category_id = c.id AND c.status = 'active' WHERE p.id IN ($ids) AND p.status = 'active' AND p.category_id IS NOT NULL");
+        foreach ($stmt->fetchAll() as $p) {
+            $dynamicData['selected_products'][$p['id']] = $p;
+        }
+    }
+    if (!empty($selCatIds)) {
+        $ids = implode(',', array_map('intval', array_unique($selCatIds)));
+        $stmt = $db->query("SELECT * FROM categories WHERE id IN ($ids) AND status = 'active'");
+        foreach ($stmt->fetchAll() as $c) {
+            $dynamicData['selected_categories'][$c['id']] = $c;
+        }
+    }
+
+    if (empty($_GET['preview']) && class_exists('\Core\Cache')) {
+        \Core\Cache::set($mbCacheKey, $dynamicData, 3600);
     }
 }
 

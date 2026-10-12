@@ -52,43 +52,54 @@ $db = \Core\Database::getInstance();
 $catProducts = [];
 $catProductCounts = [];
 if (!empty($category_ids)) {
-    // We fetch products for these categories. Note that there might be no category_id in products table directly if it's many-to-many, but in this schema it seems to be category_id.
-    // Let's check if category_id exists. It usually does.
     $ids = implode(',', array_map('intval', $category_ids));
-    try {
-        $stmt = $db->query("
-            SELECT p.*, 
-                   c.sgst as category_sgst, c.cgst as category_cgst, c.moq as category_moq,
-                   (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
-                   pv_agg.base_price,
-                   pv_agg.discount_price
-            FROM products p 
-            JOIN categories c ON c.id = p.category_id AND c.status = 'active'
-            LEFT JOIN (
-                SELECT product_id,
-                       MIN(base_price) AS base_price,
-                       MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price
-                FROM product_variants
-                GROUP BY product_id
-            ) pv_agg ON pv_agg.product_id = p.id
-            WHERE p.category_id IN ($ids) AND p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL)
-            ORDER BY p.id DESC
-        ");
-        $productsRaw = $stmt->fetchAll();
-        
-        foreach ($productsRaw as $p) {
-            $cId = $p['category_id'];
-            if (!isset($catProducts[$cId])) {
-                $catProducts[$cId] = [];
-                $catProductCounts[$cId] = 0;
+    $cgCacheKey = 'catgrid_products_' . md5($ids);
+    $cachedData = (empty($_GET['preview']) && class_exists('\Core\Cache')) ? \Core\Cache::get($cgCacheKey) : null;
+    if ($cachedData !== null) {
+        $catProducts = $cachedData['products'] ?? [];
+        $catProductCounts = $cachedData['counts'] ?? [];
+    } else {
+        try {
+            $stmt = $db->query("
+                SELECT p.*, 
+                       c.sgst as category_sgst, c.cgst as category_cgst, c.moq as category_moq,
+                       (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
+                       pv_agg.base_price,
+                       pv_agg.discount_price
+                FROM products p 
+                JOIN categories c ON c.id = p.category_id AND c.status = 'active'
+                LEFT JOIN (
+                    SELECT product_id,
+                           MIN(base_price) AS base_price,
+                           MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price
+                    FROM product_variants
+                    GROUP BY product_id
+                ) pv_agg ON pv_agg.product_id = p.id
+                WHERE p.category_id IN ($ids) AND p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL)
+                ORDER BY p.id DESC
+            ");
+            $productsRaw = $stmt->fetchAll();
+            
+            foreach ($productsRaw as $p) {
+                $cId = $p['category_id'];
+                if (!isset($catProducts[$cId])) {
+                    $catProducts[$cId] = [];
+                    $catProductCounts[$cId] = 0;
+                }
+                if (count($catProducts[$cId]) < 12) { // keep up to 12 for horizontal slider track
+                    $catProducts[$cId][] = $p;
+                }
+                $catProductCounts[$cId]++;
             }
-            if (count($catProducts[$cId]) < 12) { // keep up to 12 for horizontal slider track
-                $catProducts[$cId][] = $p;
+            if (empty($_GET['preview']) && class_exists('\Core\Cache')) {
+                \Core\Cache::set($cgCacheKey, [
+                    'products' => $catProducts,
+                    'counts' => $catProductCounts
+                ], 3600);
             }
-            $catProductCounts[$cId]++;
+        } catch (\Exception $e) {
+            // Fallback or ignore if query fails (e.g. wrong schema)
         }
-    } catch (\Exception $e) {
-        // Fallback or ignore if query fails (e.g. wrong schema)
     }
 }
 ?>
