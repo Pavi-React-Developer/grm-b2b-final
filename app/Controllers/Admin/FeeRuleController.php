@@ -61,7 +61,7 @@ class FeeRuleController extends Controller
                 'payment_method' => $_POST['payment_method'] ?? 'Both',
                 'minimum_order_amount' => !empty($_POST['minimum_order_amount']) ? (float)$_POST['minimum_order_amount'] : null,
                 'maximum_order_amount' => !empty($_POST['maximum_order_amount']) ? (float)$_POST['maximum_order_amount'] : null,
-                'active' => isset($_POST['active']) ? 1 : 0,
+                'active' => !empty($_POST['active']) && $_POST['active'] == '1' ? 1 : 0,
                 'weight_slabs' => $weightSlabs
             ];
 
@@ -133,7 +133,7 @@ class FeeRuleController extends Controller
                 'payment_method' => $_POST['payment_method'] ?? 'Both',
                 'minimum_order_amount' => !empty($_POST['minimum_order_amount']) ? (float)$_POST['minimum_order_amount'] : null,
                 'maximum_order_amount' => !empty($_POST['maximum_order_amount']) ? (float)$_POST['maximum_order_amount'] : null,
-                'active' => isset($_POST['active']) ? 1 : 0,
+                'active' => !empty($_POST['active']) && $_POST['active'] == '1' ? 1 : 0,
                 'weight_slabs' => $weightSlabs
             ];
 

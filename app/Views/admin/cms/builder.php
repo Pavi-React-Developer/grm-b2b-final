@@ -165,40 +165,40 @@ if (!empty($inactiveComponents)) {
                                 <!-- Actions: Edit + Delete + Eye toggle -->
                                 <div class="flex items-center gap-1 flex-shrink-0">
                                     <?php if ($isHeroBanner): ?>
-                                        <a href="<?= BASE_URL ?>/admin/cms/hero-banners/edit?id=<?= $cmp['id'] ?>" class="p-1.5 rounded-md hover:bg-blue-50 transition-colors text-blue-500 hover:text-blue-700" title="Edit Hero Banner">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        <a href="<?= BASE_URL ?>/admin/cms/hero-banners/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit Hero Banner">
+                                            <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php elseif ($isMainBanner): ?>
-                                        <a href="<?= BASE_URL ?>/admin/cms/main-banners/edit?id=<?= $cmp['id'] ?>" class="p-1.5 rounded-md hover:bg-blue-50 transition-colors text-blue-500 hover:text-blue-700" title="Edit Main Banner">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        <a href="<?= BASE_URL ?>/admin/cms/main-banners/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit Main Banner">
+                                            <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php elseif ($isProductCarousel): ?>
-                                        <a href="<?= BASE_URL ?>/admin/cms/product-carousels/edit?id=<?= $cmp['id'] ?>" class="p-1.5 rounded-md hover:bg-blue-50 transition-colors text-blue-500 hover:text-blue-700" title="Edit Product Carousel">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        <a href="<?= BASE_URL ?>/admin/cms/product-carousels/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit Product Carousel">
+                                            <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php elseif ($isCategoryCarousel): ?>
-                                        <a href="<?= BASE_URL ?>/admin/cms/category-carousels/edit?id=<?= $cmp['id'] ?>" class="p-1.5 rounded-md hover:bg-blue-50 transition-colors text-blue-500 hover:text-blue-700" title="Edit Category Carousel">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        <a href="<?= BASE_URL ?>/admin/cms/category-carousels/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit Category Carousel">
+                                            <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php elseif ($isCategoriesGrid): ?>
-                                        <a href="<?= BASE_URL ?>/admin/cms/categories-grid/edit?id=<?= $cmp['id'] ?>" class="p-1.5 rounded-md hover:bg-blue-50 transition-colors text-blue-500 hover:text-blue-700" title="Edit Categories Grid">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        <a href="<?= BASE_URL ?>/admin/cms/categories-grid/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit Categories Grid">
+                                            <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php elseif ($isNavbar): ?>
-                                        <a href="<?= BASE_URL ?>/admin/cms/navbars/edit?id=<?= $cmp['id'] ?>" class="p-1.5 rounded-md hover:bg-blue-50 transition-colors text-blue-500 hover:text-blue-700" title="Edit Navbar">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        <a href="<?= BASE_URL ?>/admin/cms/navbars/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit Navbar">
+                                            <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php elseif ($isTopBar): ?>
-                                        <a href="<?= BASE_URL ?>/admin/cms/topbars/edit?id=<?= $cmp['id'] ?>" class="p-1.5 rounded-md hover:bg-blue-50 transition-colors text-blue-500 hover:text-blue-700" title="Edit Top Bar">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        <a href="<?= BASE_URL ?>/admin/cms/topbars/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit Top Bar">
+                                            <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php elseif ($isFooter): ?>
-                                        <a href="<?= BASE_URL ?>/admin/cms/footers/edit?id=<?= $cmp['id'] ?>" class="p-1.5 rounded-md hover:bg-blue-50 transition-colors text-blue-500 hover:text-blue-700" title="Edit Footer">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        <a href="<?= BASE_URL ?>/admin/cms/footers/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit Footer">
+                                            <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php elseif ($isAboutUs): ?>
-                                        <a href="<?= BASE_URL ?>/admin/cms/about-us/edit?id=<?= $cmp['id'] ?>" class="p-1.5 rounded-md hover:bg-blue-50 transition-colors text-blue-500 hover:text-blue-700" title="Edit About Us">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                        <a href="<?= BASE_URL ?>/admin/cms/about-us/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit About Us">
+                                            <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php endif; ?>
                                     <!-- Delete button (always visible now) -->

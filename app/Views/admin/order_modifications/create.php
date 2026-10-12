@@ -27,11 +27,7 @@ foreach ($items as $item) {
         </div>
     </div>
 
-    <!-- Warning -->
-    <div class="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 flex items-start gap-3">
-        <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-        <p class="text-sm text-amber-800">Changes will be sent to the buyer for review. The buyer has <strong>48 hours</strong> to accept or reject. If rejected, the order will be cancelled automatically.</p>
-    </div>
+
 
     <form action="<?= BASE_URL ?>/admin/order-modifications/store" method="POST" id="modForm" enctype="multipart/form-data">
         <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
@@ -284,13 +280,13 @@ foreach ($items as $item) {
         </div>
 
         <!-- Submit -->
-        <div class="flex gap-4">
-            <a href="<?= BASE_URL ?>/admin/order-modifications" class="px-6 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
+        <div class="flex items-center gap-4">
+            <a href="<?= BASE_URL ?>/admin/order-modifications" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">
                 Cancel
             </a>
-            <button type="submit" class="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors flex items-center justify-center gap-2">
+            <button type="submit" class="flex-1 px-8 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Update Bill & Apply Changes
+                <span>Update Bill & Apply Changes</span>
             </button>
         </div>
 

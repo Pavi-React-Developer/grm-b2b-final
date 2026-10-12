@@ -36,10 +36,10 @@ class Wishlist
                    (SELECT image_path FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC, id ASC LIMIT 1) as primary_image
             FROM wishlists w
             JOIN products p ON w.product_id = p.id
-            LEFT JOIN categories c ON p.category_id = c.id
+            JOIN categories c ON p.category_id = c.id AND c.status = 'active'
             LEFT JOIN users u ON p.vendor_id = u.id
             LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
-            WHERE w.user_id = ?
+            WHERE w.user_id = ? AND p.status = 'active' AND p.category_id IS NOT NULL
             ORDER BY w.created_at DESC
         ");
         $stmt->execute([$userId]);

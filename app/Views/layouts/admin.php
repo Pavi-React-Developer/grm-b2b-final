@@ -83,9 +83,25 @@ if ($currentUserRole === 'super_admin') {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
     <!-- Cloudinary CDN preconnect -->
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
+    
+    <!-- Global HTML Sanitization Helpers -->
+    <script>
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+        function escapeHtmlStr(str) {
+            return escapeHtml(str);
+        }
+        window.escapeHtml = escapeHtml;
+        window.escapeHtmlStr = escapeHtmlStr;
+    </script>
     
     <!-- Compiled Tailwind CSS -->
     <link rel="stylesheet" href="<?= BASE_URL ?>/css/app.css?v=<?= APP_VERSION ?>">
@@ -297,15 +313,10 @@ if ($currentUserRole === 'super_admin') {
            Crisp blue hover with soft blue background
            ========================================================= */
         a[href*="/edit"]:not(.btn-pill):not([class*="px-5"]):not([class*="py-2.5"]):not([class*="rounded-full"]):not([class*="group-hover:text-indigo-600"]),
-        a[href*="/order-modifications/create"]:not(.btn-pill):not([class*="px-5"]):not([class*="py-2.5"]):not([class*="rounded-full"]),
         a[title*="Edit"]:not(.btn-pill):not([class*="rounded-full"]),
         a[title*="edit"]:not(.btn-pill):not([class*="rounded-full"]),
-        a[title*="Modify"]:not(.btn-pill):not([class*="rounded-full"]),
-        a[title*="modify"]:not(.btn-pill):not([class*="rounded-full"]),
         button[title*="Edit"]:not(.btn-pill):not([class*="rounded-full"]),
         button[title*="edit"]:not(.btn-pill):not([class*="rounded-full"]),
-        button[title*="Modify"]:not(.btn-pill):not([class*="rounded-full"]),
-        button[title*="modify"]:not(.btn-pill):not([class*="rounded-full"]),
         button[onclick*="openEdit"]:not(.btn-pill):not([class*="rounded-full"]),
         button[onclick*="edit"]:not(.btn-pill):not([class*="rounded-full"]),
         .btn-action-edit {
@@ -325,15 +336,10 @@ if ($currentUserRole === 'super_admin') {
         }
 
         a[href*="/edit"]:not(.btn-pill):not([class*="px-5"]):not([class*="py-2.5"]):not([class*="rounded-full"]):not([class*="group-hover:text-indigo-600"]):hover,
-        a[href*="/order-modifications/create"]:not(.btn-pill):not([class*="px-5"]):not([class*="py-2.5"]):not([class*="rounded-full"]):hover,
         a[title*="Edit"]:not(.btn-pill):not([class*="rounded-full"]):hover,
         a[title*="edit"]:not(.btn-pill):not([class*="rounded-full"]):hover,
-        a[title*="Modify"]:not(.btn-pill):not([class*="rounded-full"]):hover,
-        a[title*="modify"]:not(.btn-pill):not([class*="rounded-full"]):hover,
         button[title*="Edit"]:not(.btn-pill):not([class*="rounded-full"]):hover,
         button[title*="edit"]:not(.btn-pill):not([class*="rounded-full"]):hover,
-        button[title*="Modify"]:not(.btn-pill):not([class*="rounded-full"]):hover,
-        button[title*="modify"]:not(.btn-pill):not([class*="rounded-full"]):hover,
         button[onclick*="openEdit"]:not(.btn-pill):not([class*="rounded-full"]):hover,
         button[onclick*="edit"]:not(.btn-pill):not([class*="rounded-full"]):hover,
         .btn-action-edit:hover {
@@ -345,15 +351,10 @@ if ($currentUserRole === 'super_admin') {
         }
 
         a[href*="/edit"]:not(.btn-pill) svg,
-        a[href*="/order-modifications/create"] svg,
         a[title*="Edit"] svg,
         a[title*="edit"] svg,
-        a[title*="Modify"] svg,
-        a[title*="modify"] svg,
         button[title*="Edit"] svg,
         button[title*="edit"] svg,
-        button[title*="Modify"] svg,
-        button[title*="modify"] svg,
         button[onclick*="openEdit"] svg,
         button[onclick*="edit"] svg,
         .btn-action-edit svg {
@@ -466,18 +467,18 @@ if ($currentUserRole === 'super_admin') {
         select option[value=""],
         select option[disabled],
         select option:disabled {
-            background-color: #F25996 !important;
-            color: #ffffff !important;
-            font-weight: 700 !important;
+            background-color: #f9fafb !important;
+            color: #6b7280 !important;
+            font-weight: 600 !important;
         }
 
         select option:hover,
         select option:focus,
         select option:checked,
         select option:active {
-            background-color: #F25996 !important;
-            background: #F25996 !important;
-            color: #ffffff !important;
+            background-color: #fdf2f7 !important;
+            background: #fdf2f7 !important;
+            color: #be185d !important;
             font-weight: 600 !important;
         }
 
@@ -536,7 +537,7 @@ if ($currentUserRole === 'super_admin') {
             background: #ffffff;
             border: 1.5px solid #fbcfe8;
             border-radius: 1rem;
-            box-shadow: 0 10px 25px -5px rgba(242, 89, 150, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
             z-index: 99999;
             max-height: 260px;
             overflow-y: auto;
@@ -555,14 +556,15 @@ if ($currentUserRole === 'super_admin') {
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Top / Header Option - Solid Pink with Rounded Top */
+        /* Top / Header Option - Clean Soft Style */
         .grm-select-option:first-child,
         .grm-select-option.is-header {
-            background-color: #F25996 !important;
-            color: #ffffff !important;
-            font-weight: 700 !important;
+            background-color: #f9fafb !important;
+            color: #6b7280 !important;
+            font-weight: 600 !important;
             border-top-left-radius: 0.85rem;
             border-top-right-radius: 0.85rem;
+            border-bottom: 1px solid #f3f4f6;
             padding: 10px 14px;
         }
 
@@ -570,7 +572,7 @@ if ($currentUserRole === 'super_admin') {
             padding: 9px 14px;
             font-size: 0.875rem;
             font-weight: 500;
-            color: #1f2937;
+            color: #374151;
             cursor: pointer;
             transition: all 0.15s ease;
             display: flex;
@@ -580,20 +582,20 @@ if ($currentUserRole === 'super_admin') {
         }
 
         .grm-select-option:hover:not(.is-header) {
-            background-color: #F25996 !important;
-            color: #ffffff !important;
+            background-color: #fdf2f7 !important;
+            color: #db2777 !important;
             font-weight: 600;
         }
 
         .grm-select-option.is-selected:not(:first-child) {
-            background-color: #fdf2f7;
-            color: #F25996;
+            background-color: #fce7f1;
+            color: #be185d;
             font-weight: 700;
         }
 
         .grm-select-option.is-selected:hover:not(:first-child) {
-            background-color: #F25996 !important;
-            color: #ffffff !important;
+            background-color: #fce7f1 !important;
+            color: #be185d !important;
         }
 
         /* Custom Dropdown Menus & Popups in Admin */
@@ -980,7 +982,17 @@ if ($currentUserRole === 'super_admin') {
             </div>
             <?php endif; ?>
 
-            <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasAnyPermission('fabric_customizations') || $this->hasAnyPermission('custom_orders')): ?>
+            <?php 
+            $canAccessCustomize = \Core\Session::get('user_role') === 'super_admin' 
+                || $this->hasAnyPermission('customize_categories')
+                || $this->hasAnyPermission('customize_subcategories')
+                || $this->hasAnyPermission('customize_attributes')
+                || $this->hasAnyPermission('customize_products')
+                || $this->hasAnyPermission('customization_labels')
+                || $this->hasAnyPermission('custom_orders')
+                || $this->hasAnyPermission('fabric_customizations');
+            ?>
+            <?php if ($canAccessCustomize): ?>
             <style>
                 .customize-dropdown {
                     display: none;
@@ -994,7 +1006,7 @@ if ($currentUserRole === 'super_admin') {
                 }
             </style>
             <?php 
-            $isCustomizeActive = (isset($_GET['module']) && $_GET['module'] === 'customize') || strpos($currentUri, '/admin/customize') === 0 || strpos($currentUri, '/admin/fabric-customizations') === 0;
+            $isCustomizeActive = (isset($_GET['module']) && $_GET['module'] === 'customize') || strpos($currentUri, '/admin/customize') === 0 || strpos($currentUri, '/admin/fabric-customizations') === 0 || strpos($currentUri, '/admin/customization-labels') === 0;
             ?>
             <div class="relative customize-menu mt-1">
                 <div class="flex items-center px-3 py-3 text-sm font-medium rounded-lg transition-colors min-w-max text-gray-600 hover:bg-gray-50 hover:text-gray-900 cursor-pointer <?= $isCustomizeActive ? 'text-amber-600 font-bold' : '' ?>">
@@ -1006,7 +1018,7 @@ if ($currentUserRole === 'super_admin') {
                 </div>
                 
                 <div class="customize-dropdown ml-4 pl-4 border-l border-pink-200 space-y-1 mt-1">
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('categories', 'view') || $this->hasAnyPermission('categories')): ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('customize_categories', 'view') || $this->hasAnyPermission('customize_categories')): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/categories?module=customize" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/categories') === 0 && (isset($_GET['module']) && $_GET['module'] === 'customize')) ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
                             <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
@@ -1014,7 +1026,7 @@ if ($currentUserRole === 'super_admin') {
                         </span>
                     </a>
                     <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('subcategories', 'view') || $this->hasAnyPermission('subcategories')): ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('customize_subcategories', 'view') || $this->hasAnyPermission('customize_subcategories')): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/subcategories?module=customize" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/subcategories') === 0 && (isset($_GET['module']) && $_GET['module'] === 'customize')) ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
                             <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
@@ -1022,7 +1034,7 @@ if ($currentUserRole === 'super_admin') {
                         </span>
                     </a>
                     <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('attributes', 'view') || $this->hasAnyPermission('attributes')): ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('customize_attributes', 'view') || $this->hasAnyPermission('customize_attributes')): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/attributes?module=customize" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/attributes') === 0 && (isset($_GET['module']) && $_GET['module'] === 'customize')) ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
                             <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
@@ -1030,7 +1042,7 @@ if ($currentUserRole === 'super_admin') {
                         </span>
                     </a>
                     <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('products', 'view') || $this->hasAnyPermission('products')): ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('customize_products', 'view') || $this->hasAnyPermission('customize_products')): ?>
                     <a href="<?= BASE_URL ?>/admin/catalog/products?module=customize" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= (strpos($currentUri, '/admin/catalog/products') === 0 && (isset($_GET['module']) && $_GET['module'] === 'customize')) ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
                             <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
@@ -1038,11 +1050,11 @@ if ($currentUserRole === 'super_admin') {
                         </span>
                     </a>
                     <?php endif; ?>
-                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('fabric_customizations', 'view') || $this->hasAnyPermission('fabric_customizations')): ?>
-                    <a href="<?= BASE_URL ?>/admin/fabric-customizations" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/fabric-customizations') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('customization_labels', 'view') || $this->hasAnyPermission('customization_labels')): ?>
+                    <a href="<?= BASE_URL ?>/admin/customization-labels" class="flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/customization-labels') === 0 ? 'bg-pink-100 text-pink-900 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-2">
-                            <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L11.758 4.758a3 3 0 114.242 4.242L12 12z"/></svg>
-                            Fabric Rules
+                            <svg class="w-4 h-4 text-pink-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                            Customization Labels
                         </span>
                     </a>
                     <?php endif; ?>

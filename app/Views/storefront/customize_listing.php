@@ -131,7 +131,7 @@
                 <!-- Right 5 Cols: Exact Artwork Illustration Fills Right Side Naturally -->
                 <div class="md:col-span-5 lg:col-span-5 flex items-center justify-center md:justify-end">
                     <div class="relative w-full max-w-[420px] lg:max-w-[480px] xl:max-w-[500px]">
-                        <img src="<?= BASE_URL ?>/assets/images/customize_hero_art_transparent.png" 
+                        <img src="<?= get_image_url('https://res.cloudinary.com/typqb5pd/image/upload/v1791616562/customization_hub_hero_women_art.png') ?>" 
                              alt="Custom Maternity & Wholesale Fabric Production" 
                              class="w-full h-auto max-h-[320px] sm:max-h-[350px] lg:max-h-[380px] object-contain drop-shadow-sm mx-auto md:ml-auto">
                     </div>
@@ -334,7 +334,7 @@
                                         <div class="text-right flex-shrink-0">
                                             <span class="text-[8px] sm:text-[9px] uppercase font-bold text-gray-400 block tracking-wider">Min Stitch</span>
                                             <span class="px-1.5 sm:px-2 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] sm:text-[11px] rounded-md inline-block mt-0.5">
-                                                10 Pcs
+                                                <?= (int)($f['minimum_pieces'] ?? 10) ?> Pcs
                                             </span>
                                         </div>
                                     </div>

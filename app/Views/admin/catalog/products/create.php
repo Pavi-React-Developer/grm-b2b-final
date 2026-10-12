@@ -165,16 +165,17 @@
                             document.getElementById('primary_image_path').value = rawUrl; 
                             document.getElementById('image_preview').src = displayUrl; 
                             document.getElementById('image_preview_container').classList.remove('hidden'); 
-                        })" class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-200">
-                            Select Media
+                        })" class="inline-flex items-center gap-2 px-6 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs cursor-pointer">
+                            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            <span>Select Media</span>
                         </button>
 
                         <div id="image_preview_container" class="mt-4 hidden relative inline-block group">
                             <p class="text-xs text-gray-500 mb-2">Preview:</p>
                             <div class="relative inline-block group" id="primary_preview_wrapper">
                                 <img id="image_preview" src="#" alt="Image Preview" class="w-32 h-32 object-cover rounded-xl border border-gray-200 shadow-sm">
-                                <button type="button" onclick="document.getElementById('primary_image_path').value=''; document.getElementById('image_preview_container').classList.add('hidden');" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 shadow-md hover:bg-red-600 transition-colors">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                <button type="button" onclick="document.getElementById('primary_image_path').value=''; document.getElementById('image_preview_container').classList.add('hidden');" class="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md hover:scale-110 active:scale-95 transition-all cursor-pointer" title="Remove Image">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
                             </div>
                         </div>
@@ -183,13 +184,81 @@
             </div>
         </div>
 
+        <?php if (!empty($isCustomize)): ?>
+        <!-- Customization Style Labels / Templates -->
+        <div class="bg-white p-6 rounded-2xl border border-pink-100 shadow-xs space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-xl bg-pink-50 text-pink-700 flex items-center justify-center text-sm font-black shadow-2xs">🏷️</span>
+                        <span>Assign Customization Style Labels / Templates</span>
+                    </h3>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        Select which template labels (e.g. <code>Maternity -&gt; Feeding -&gt; Full Sleeve</code>) apply to this fabric. On the storefront customization workshop, customers can allocate piece quantities to each chosen style.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <button type="button" onclick="selectAllCustomLabels(true)" class="px-2.5 py-1 text-xs font-bold text-pink-700 bg-pink-50 hover:bg-pink-100 rounded-lg border border-pink-200 transition-colors cursor-pointer">Select All</button>
+                    <button type="button" onclick="selectAllCustomLabels(false)" class="px-2.5 py-1 text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors cursor-pointer">Clear</button>
+                    <a href="<?= BASE_URL ?>/admin/customization-labels/create" target="_blank" class="px-3 py-1 bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1">
+                        + New Label
+                    </a>
+                </div>
+            </div>
+
+            <?php if (empty($allLabels)): ?>
+                <div class="p-6 bg-pink-50/50 rounded-xl border border-pink-100 text-center">
+                    <p class="text-xs text-gray-600 mb-2">No customization labels created yet.</p>
+                    <a href="<?= BASE_URL ?>/admin/customization-labels/create" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-pink-600 hover:underline">
+                        + Create your first template label (e.g. Maternity -&gt; Feeding -&gt; Full Sleeve)
+                    </a>
+                </div>
+            <?php else: ?>
+                <?php
+                    $groupedLabels = [];
+                    foreach ($allLabels as $lbl) {
+                        $grp = $lbl['group_name'] ?: 'General / Standard';
+                        $groupedLabels[$grp][] = $lbl;
+                    }
+                ?>
+                <div class="space-y-4">
+                    <?php foreach ($groupedLabels as $grpName => $lblGroup): ?>
+                        <div class="bg-gray-50/80 p-4 rounded-xl border border-gray-200/70">
+                            <div class="text-xs font-extrabold text-gray-900 uppercase tracking-wider mb-2.5 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                                <span><?= htmlspecialchars($grpName) ?></span>
+                                <span class="text-[10px] font-bold text-gray-400 bg-white px-1.5 py-0.5 rounded border border-gray-200"><?= count($lblGroup) ?> styles</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                <?php foreach ($lblGroup as $lbl): ?>
+                                    <label class="flex items-start gap-2.5 p-2.5 bg-white rounded-xl border border-gray-200 hover:border-pink-300 hover:bg-pink-50/20 transition-all cursor-pointer select-none">
+                                        <input type="checkbox" name="label_ids[]" value="<?= $lbl['id'] ?>" class="fabric-label-checkbox rounded border-gray-300 text-pink-600 focus:ring-pink-500 mt-0.5">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-xs font-bold text-gray-900 flex items-center gap-1 truncate">
+                                                <span>🏷️</span>
+                                                <span class="truncate"><?= htmlspecialchars($lbl['display_label']) ?></span>
+                                            </div>
+                                            <?php if (!empty($lbl['description'])): ?>
+                                                <p class="text-[10.5px] text-gray-400 truncate mt-0.5"><?= htmlspecialchars($lbl['description']) ?></p>
+                                            <?php endif; ?>
+                                        </div>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
+
         <!-- Attributes -->
         <div id="attributes-section">
             <div class="flex items-center justify-between mb-4 border-b border-gray-100 pb-2">
                 <div class="flex items-center space-x-3">
                     <h3 class="text-lg font-semibold text-gray-900">✨ Custom Specifications</h3>
-                    <button type="button" onclick="openAttributeModal()" class="inline-flex items-center px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-bold transition-colors shadow-sm">
-                        <svg class="w-3.5 h-3.5 mr-1 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    <button type="button" onclick="openAttributeModal()" class="inline-flex items-center px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-[#F25996] border border-pink-200 rounded-lg text-xs font-bold transition-colors shadow-sm">
+                        <svg class="w-3.5 h-3.5 mr-1 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                         Add Attribute
                     </button>
                 </div>
@@ -219,9 +288,127 @@
             </div>
         </div>
 
-        <div class="pt-6 border-t border-gray-100 flex justify-end space-x-4">
-            <a href="<?= BASE_URL ?>/admin/catalog/products<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</a>
-            <button type="submit" class="px-5 py-2.5 bg-brand-600 text-white rounded-lg text-sm font-medium hover:bg-brand-700 transition-colors"><?= !empty($isCustomize) ? 'Save Fabric' : 'Save Product' ?></button>
+        <?php if (!empty($isCustomize)): ?>
+        <!-- Section: Fabric Size Variants & Quantity Limits -->
+        <div class="bg-white p-6 rounded-2xl border border-amber-100 shadow-xs space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                <div>
+                    <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                        <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-black shadow-2xs">📏</span>
+                        <span>Fabric Size Variants & Quantity Limits</span>
+                    </h3>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        Define sizes, default buy quantities (e.g. 2 pcs), and maximum allowed pieces per size (e.g. max 4 pcs for 4XL). Buyers customize piece counts within these limits.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="syncFabricSizesFromVariants()" class="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-700 text-xs font-bold rounded-lg border border-gray-200 transition-colors flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        <span>Sync from Variants</span>
+                    </button>
+                    <button type="button" onclick="addCustomFabricSizeRow()" class="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold rounded-lg border border-amber-200 transition-colors flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>Add Size Variant</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Required Pieces & Customization Settings -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-amber-50/40 rounded-xl border border-amber-100">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                        Required Pieces to Enable Payment <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="number" name="minimum_pieces" value="<?= htmlspecialchars($_POST['minimum_pieces'] ?? 10) ?>" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-gray-900 pr-14">
+                        <span class="absolute right-3.5 top-2 text-xs text-gray-400 font-semibold">Pcs</span>
+                    </div>
+                    <p class="text-[11px] text-gray-500 mt-1">
+                        Minimum total stitch pieces buyer must select before the online payment button is enabled on storefront.
+                    </p>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                        Rule Status
+                    </label>
+                    <select name="customization_status" class="w-full px-4 py-2 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium text-gray-800">
+                        <option value="active" <?= ($_POST['customization_status'] ?? 'active') === 'active' ? 'selected' : '' ?>>Active (Enabled on Storefront)</option>
+                        <option value="inactive" <?= ($_POST['customization_status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactive (Hidden / Draft)</option>
+                    </select>
+                    <p class="text-[11px] text-gray-500 mt-1">
+                        Controls whether customization order workflow is active for this fabric.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Text Parser & Presets -->
+            <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-3">
+                <!-- Text input parser -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <div class="relative flex-1">
+                        <input type="text" id="quickShorthandInput" placeholder="Quick paste e.g. M-2, L-2, XL-2, XXL-2, 3XL-2, 4XL-4 (or M:2/4, L:2/4)" class="w-full px-3.5 py-2 text-xs bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-gray-800">
+                    </div>
+                    <button type="button" onclick="applyShorthandInput()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 shrink-0">
+                        <span>⚡ Parse & Generate</span>
+                    </button>
+                </div>
+
+                <!-- Presets Buttons -->
+                <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-200/60">
+                    <span class="text-[11px] font-bold text-amber-900 uppercase tracking-wider mr-1">Quick Presets:</span>
+                    <button type="button" onclick="applySizeVariantPreset('standard_m_4xl')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-200 transition-all shadow-2xs cursor-pointer">
+                        + Standard (M to 4XL: Base 2 / Max 4)
+                    </button>
+                    <button type="button" onclick="applySizeVariantPreset('all_s_xxl')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-200 transition-all shadow-2xs cursor-pointer">
+                        + S to XXL (Base 2 / Max 4)
+                    </button>
+                    <button type="button" onclick="applySizeVariantPreset('plus_3xl_6xl')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-200 transition-all shadow-2xs cursor-pointer">
+                        + Plus (3XL to 6XL: Base 2 / Max 4)
+                    </button>
+                    <button type="button" onclick="applySizeVariantPreset('freesize')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-200 transition-all shadow-2xs cursor-pointer">
+                        + Free Size (Base 2 / Max 10)
+                    </button>
+                    <button type="button" onclick="clearAllFabricSizes()" class="px-2.5 py-1 bg-white hover:bg-red-50 text-red-600 text-xs font-bold rounded-lg border border-red-200 transition-all shadow-2xs ml-auto cursor-pointer">
+                        Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Size Variant Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm" id="sizesTable">
+                    <thead>
+                        <tr class="text-[11px] uppercase font-bold text-gray-400 border-b border-gray-100">
+                            <th class="py-2.5 px-3">Size Variant</th>
+                            <th class="py-2.5 px-3">Default / Base Qty</th>
+                            <th class="py-2.5 px-3">Max Allowed Qty (Buyer Limit)</th>
+                            <th class="py-2.5 px-3 text-center">Status</th>
+                            <th class="py-2.5 px-3 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50" id="fabricSizesTbody">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary Bar -->
+            <div class="bg-gray-50 p-3.5 rounded-xl border border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-4">
+                    <span>Active Size Variants: <strong class="text-gray-900" id="adminActiveVariantsCount">0</strong></span>
+                    <span>•</span>
+                    <span>Total Base Pieces: <strong class="text-amber-800" id="adminTotalBasePieces">0</strong> pcs</span>
+                </div>
+                <div class="text-gray-500 italic">
+                    Buyers can adjust quantities up to the configured Max Allowed Limit for each size.
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
+
+        <div class="pt-6 border-t border-gray-100 flex items-center justify-end space-x-4">
+            <a href="<?= BASE_URL ?>/admin/catalog/products<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">Cancel</a>
+            <button type="submit" class="px-7 py-2.5 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"><?= !empty($isCustomize) ? 'Save Fabric' : 'Save Product' ?></button>
         </div>
     </form>
 </div>
@@ -286,6 +473,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let currentAttributes = [];
 
+    function escapeHtml(unsafe) {
+        if (unsafe === 0 || unsafe === '0') return '0';
+        return (unsafe || '').toString()
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+    }
+
     function getColorHex(colorName) {
         const colors = {
             'red': '#ef4444', 'blue': '#3b82f6', 'green': '#22c55e', 
@@ -293,8 +490,60 @@ document.addEventListener('DOMContentLoaded', function() {
             'pink': '#ec4899', 'black': '#000000', 'white': '#ffffff',
             'gray': '#6b7280', 'brown': '#D9A05B', 'nude': '#E5D3B3', 'wood': '#A06D41'
         };
-        const key = colorName.toLowerCase().trim();
+        const key = (colorName || '').toLowerCase().trim();
         return colors[key] || '#D9A05B'; 
+    }
+
+    function captureCurrentAttributeValues() {
+        const liveValues = {};
+        if (!attributesContainer) return liveValues;
+
+        // Checkboxes (colors, chips, picklists)
+        attributesContainer.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            const name = cb.name; // e.g. attributes[12][] or attributes[12]
+            const match = name.match(/attributes\[(\d+)\]/);
+            if (match) {
+                const attrId = match[1];
+                if (!liveValues[attrId]) liveValues[attrId] = { picklistIds: [], text: '', checked: false };
+                if (cb.checked) {
+                    if (name.includes('[]')) {
+                        liveValues[attrId].picklistIds.push(String(cb.value));
+                    } else {
+                        liveValues[attrId].checked = true;
+                    }
+                }
+            }
+        });
+
+        // Select dropdowns / multiselects
+        attributesContainer.querySelectorAll('select').forEach(sel => {
+            const name = sel.name;
+            const match = name.match(/attributes\[(\d+)\]/);
+            if (match) {
+                const attrId = match[1];
+                if (!liveValues[attrId]) liveValues[attrId] = { picklistIds: [], text: '', checked: false };
+                if (sel.multiple) {
+                    Array.from(sel.selectedOptions).forEach(opt => {
+                        if (opt.value) liveValues[attrId].picklistIds.push(String(opt.value));
+                    });
+                } else if (sel.value) {
+                    liveValues[attrId].picklistIds.push(String(sel.value));
+                }
+            }
+        });
+
+        // Text inputs, textareas, datepickers, numbers
+        attributesContainer.querySelectorAll('input[type="text"], input[type="number"], input[type="date"], textarea').forEach(inp => {
+            const name = inp.name;
+            const match = name.match(/attributes\[(\d+)\]/);
+            if (match) {
+                const attrId = match[1];
+                if (!liveValues[attrId]) liveValues[attrId] = { picklistIds: [], text: '', checked: false };
+                liveValues[attrId].text = inp.value;
+            }
+        });
+
+        return liveValues;
     }
 
     function fetchAttributes() {
@@ -307,6 +556,9 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('variant-management-section').style.display = 'none';
             return;
         }
+
+        // Capture already-selected values in the DOM before reloading so they are not wiped out
+        const savedLiveValues = captureCurrentAttributeValues();
 
         attributesContainer.innerHTML = '<p class="text-sm text-gray-500 italic">Loading attributes...</p>';
 
@@ -322,13 +574,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (currentAttributes.length === 0) {
                     attributesContainer.innerHTML = `
-                        <div class="bg-amber-50/60 border border-dashed border-amber-200 rounded-xl p-5 text-center">
-                            <div class="w-10 h-10 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center mx-auto mb-2 font-bold text-lg">✨</div>
+                        <div class="bg-pink-50/60 border border-dashed border-pink-200 rounded-2xl p-6 text-center">
+                            <div class="w-10 h-10 bg-pink-100 text-[#F25996] rounded-full flex items-center justify-center mx-auto mb-2 font-bold text-lg">✨</div>
                             <p class="text-sm font-bold text-gray-800 mb-1">No custom specifications configured for this category yet.</p>
-                            <p class="text-xs text-gray-500 mb-3">Add attributes like Size, Color, or Material to generate product variants, or check "No Attributes (Simple Product)".</p>
-                            <button type="button" onclick="openAttributeModal()" class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-bold shadow-sm transition-all">
+                            <p class="text-xs text-gray-500 mb-4 max-w-md mx-auto">Add attributes like Size, Color, or Material to generate product variants, or check "No Attributes (Simple Product)".</p>
+                            <button type="button" onclick="openAttributeModal()" class="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#F25996] hover:bg-[#e04481] text-white rounded-full text-xs font-bold shadow-sm transition-all cursor-pointer">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-                                Add Specification Attribute
+                                + Add Specification Attribute
                             </button>
                         </div>
                     `;
@@ -347,9 +599,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Only show on product form
                     if (attr.show_on_product_form == 0) return;
 
-                    html += `<div><label class="block text-sm font-medium text-gray-900 mb-1">${attr.name} ${attr.is_required ? '<span class="text-red-500">*</span>' : ''}</label>`;
+                    const savedAttr = savedLiveValues[attr.id];
+                    const savedPicklist = savedAttr ? savedAttr.picklistIds.map(String) : [];
+                    const savedText = savedAttr ? savedAttr.text : '';
+
+                    html += `<div><label class="block text-sm font-medium text-gray-900 mb-1">${escapeHtml(attr.name)} ${attr.is_required ? '<span class="text-red-500">*</span>' : ''}</label>`;
                     if(attr.description) {
-                        html += `<p class="text-xs text-gray-500 mb-2">${attr.description}</p>`;
+                        html += `<p class="text-xs text-gray-500 mb-2">${escapeHtml(attr.description)}</p>`;
                     }
                     
                     let req = attr.is_required ? 'required' : '';
@@ -358,44 +614,45 @@ document.addEventListener('DOMContentLoaded', function() {
                     let nameSingle = `attributes[${attr.id}]`;
                     let nameMultiple = `attributes[${attr.id}][]`;
                     
-                    // Add a data-attr-id so we can easily fetch values for variants
                     let inputDataAttr = `data-attr-id="${attr.id}"`;
 
                     switch(attr.input_type) {
                         case 'textbox':
                         case 'fileurl':
                         case 'imageurl':
-                            html += `<input type="text" name="${nameSingle}" ${inputDataAttr} ${req} class="${baseClass} attr-input">`;
+                            html += `<input type="text" name="${nameSingle}" value="${escapeHtml(savedText)}" ${inputDataAttr} ${req} class="${baseClass} attr-input">`;
                             break;
                         case 'number':
-                            html += `<input type="text" step="any" name="${nameSingle}" ${inputDataAttr} ${req} class="${baseClass} attr-input">`;
+                            html += `<input type="text" step="any" name="${nameSingle}" value="${escapeHtml(savedText)}" ${inputDataAttr} ${req} class="${baseClass} attr-input">`;
                             break;
                         case 'colorpicker':
                             html += `<div class="flex flex-wrap gap-2.5 p-3 border border-gray-200 rounded-xl bg-gray-50/80 attr-input" ${inputDataAttr}>`;
                             if(attr.values) {
                                 attr.values.forEach(v => {
                                     let colorHex = v.color_code || getColorHex(v.value);
+                                    let isChecked = savedPicklist.includes(String(v.id)) ? 'checked' : '';
                                     html += `
-                                    <label class="relative cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-gray-200 hover:border-gray-400 has-[:checked]:border-[#c9080d] has-[:checked]:bg-[#fdf4f5] has-[:checked]:ring-1 has-[:checked]:ring-[#c9080d] transition-all shadow-xs select-none" title="${v.value} (${colorHex})">
-                                        <input type="checkbox" name="${nameMultiple}" value="${v.id}" data-text="${v.value}" data-color="${colorHex}" class="sr-only variant-checkbox">
+                                    <label class="relative cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-gray-200 hover:border-gray-400 has-[:checked]:border-[#c9080d] has-[:checked]:bg-[#fdf4f5] has-[:checked]:ring-1 has-[:checked]:ring-[#c9080d] transition-all shadow-xs select-none" title="${escapeHtml(v.value)} (${colorHex})">
+                                        <input type="checkbox" name="${nameMultiple}" value="${v.id}" data-text="${escapeHtml(v.value)}" data-color="${colorHex}" ${isChecked} class="sr-only variant-checkbox">
                                         <span class="w-4 h-4 rounded-full border border-gray-300 shadow-xs shrink-0" style="background-color: ${colorHex}"></span>
-                                        <span class="text-xs font-semibold text-gray-800">${v.value}</span>
+                                        <span class="text-xs font-semibold text-gray-800">${escapeHtml(v.value)}</span>
                                     </label>`;
                                 });
                             }
                             html += `</div>`;
                             break;
                         case 'datepicker':
-                            html += `<input type="date" name="${nameSingle}" ${inputDataAttr} ${req} class="${baseClass} attr-input">`;
+                            html += `<input type="date" name="${nameSingle}" value="${escapeHtml(savedText)}" ${inputDataAttr} ${req} class="${baseClass} attr-input">`;
                             break;
                         case 'textarea':
-                            html += `<textarea name="${nameSingle}" ${inputDataAttr} ${req} class="${baseClass} attr-input" rows="3"></textarea>`;
+                            html += `<textarea name="${nameSingle}" ${inputDataAttr} ${req} class="${baseClass} attr-input" rows="3">${escapeHtml(savedText)}</textarea>`;
                             break;
                         case 'dropdown':
                             html += `<select name="${nameSingle}" ${inputDataAttr} ${req} class="${baseClass} attr-input"><option value="">Select...</option>`;
                             if(attr.values) {
                                 attr.values.forEach(v => {
-                                    html += `<option value="${v.id}" data-text="${v.value}">${v.value}</option>`;
+                                    let isSelected = savedPicklist.includes(String(v.id)) ? 'selected' : '';
+                                    html += `<option value="${v.id}" data-text="${escapeHtml(v.value)}" ${isSelected}>${escapeHtml(v.value)}</option>`;
                                 });
                             }
                             html += `</select>`;
@@ -404,7 +661,8 @@ document.addEventListener('DOMContentLoaded', function() {
                             html += `<select name="${nameMultiple}" ${inputDataAttr} multiple ${req} class="${baseClass} h-32 attr-input">`;
                             if(attr.values) {
                                 attr.values.forEach(v => {
-                                    html += `<option value="${v.id}" data-text="${v.value}">${v.value}</option>`;
+                                    let isSelected = savedPicklist.includes(String(v.id)) ? 'selected' : '';
+                                    html += `<option value="${v.id}" data-text="${escapeHtml(v.value)}" ${isSelected}>${escapeHtml(v.value)}</option>`;
                                 });
                             }
                             html += `</select>`;
@@ -413,22 +671,24 @@ document.addEventListener('DOMContentLoaded', function() {
                             html += `<div class="space-y-2 max-h-40 overflow-y-auto p-3 border border-gray-100 rounded-lg bg-gray-50 attr-input" ${inputDataAttr}>`;
                             if(attr.values) {
                                 attr.values.forEach(v => {
+                                    let isChecked = savedPicklist.includes(String(v.id)) ? 'checked' : '';
                                     html += `<label class="flex items-center space-x-3 cursor-pointer">
-                                                <input type="checkbox" name="${nameMultiple}" value="${v.id}" data-text="${v.value}" class="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500 variant-checkbox">
-                                                <span class="text-sm text-gray-700">${v.value}</span>
+                                                <input type="checkbox" name="${nameMultiple}" value="${v.id}" data-text="${escapeHtml(v.value)}" ${isChecked} class="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500 variant-checkbox">
+                                                <span class="text-sm text-gray-700">${escapeHtml(v.value)}</span>
                                              </label>`;
                                 });
                             }
                             html += `</div>`;
                             break;
                         case 'toggle':
+                            let isToggled = (savedAttr && savedAttr.checked) ? 'checked' : '';
                             html += `<label class="flex items-center cursor-pointer">
-                                        <input type="checkbox" name="${nameSingle}" ${inputDataAttr} value="1" class="sr-only peer attr-input">
+                                        <input type="checkbox" name="${nameSingle}" ${inputDataAttr} value="1" ${isToggled} class="sr-only peer attr-input">
                                         <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600 relative"></div>
                                      </label>`;
                             break;
                         default:
-                            html += `<input type="text" name="${nameSingle}" ${inputDataAttr} ${req} class="${baseClass} attr-input">`;
+                            html += `<input type="text" name="${nameSingle}" value="${escapeHtml(savedText)}" ${inputDataAttr} ${req} class="${baseClass} attr-input">`;
                     }
                     
                     html += `</div>`;
@@ -461,6 +721,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.querySelectorAll('select.attr-input').forEach(sel => {
                     sel.addEventListener('change', triggerVariantSync);
                 });
+
+                // If user had existing selections, preserve active sync
+                const anyChecked = document.querySelectorAll('.variant-checkbox:checked').length > 0;
+                if (anyChecked) {
+                    triggerVariantSync();
+                }
             })
             .catch(err => {
                 console.error(err);
@@ -756,6 +1022,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Run calculation on each variant
         document.querySelectorAll('.variant-base-price').forEach(el => calculateGst(el));
 
+        // Sync fabric sizes when variants are rendered
+        if (typeof syncFabricSizesFromVariants === 'function') {
+            syncFabricSizesFromVariants();
+        }
+
         // Re-attach refresh listener
         document.getElementById('btn-refresh-variants').addEventListener('click', () => {
             btnGenerateVariants.click();
@@ -956,6 +1227,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
 
+                <?php if (empty($isCustomize)): ?>
                 if (!weightInput || isNaN(weight) || weight <= 0) {
                     e.preventDefault();
                     alert(`Weight is required and must be greater than 0 kg for variant #${idx + 1}.`);
@@ -963,6 +1235,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     hasError = true;
                     return;
                 }
+                <?php endif; ?>
 
                 if (!sku) {
                     e.preventDefault();
@@ -993,7 +1266,218 @@ document.addEventListener('DOMContentLoaded', function() {
     if (categorySelect && categorySelect.value) {
         categorySelect.dispatchEvent(new Event('change'));
     }
+    // Fabric Size Variants & Limits JS Logic
+    let fabricSizeIndex = 0;
+
+    function escapeHtmlStr(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    window.addCustomFabricSizeRow = function(sizeName = '', baseQty = 2, maxQty = 4, enabled = true) {
+        const tbody = document.getElementById('fabricSizesTbody');
+        if (!tbody) return;
+        const tr = document.createElement('tr');
+        tr.className = 'fabric-size-row group';
+        tr.innerHTML = `
+            <td class="py-2.5 px-3">
+                <input type="text" name="fabric_sizes[${fabricSizeIndex}][size_name]" value="${escapeHtmlStr(sizeName)}" required placeholder="e.g. M" class="fabric-size-name-input w-28 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white font-bold text-gray-800">
+            </td>
+            <td class="py-2.5 px-3">
+                <div class="flex items-center gap-2">
+                    <input type="number" name="fabric_sizes[${fabricSizeIndex}][base_quantity]" value="${baseQty}" min="0" required class="fabric-size-base-qty w-28 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white font-bold text-gray-800" oninput="updateFabricVariantSummary()">
+                    <span class="text-xs text-gray-400 font-semibold">pcs</span>
+                </div>
+            </td>
+            <td class="py-2.5 px-3">
+                <div class="flex items-center gap-2">
+                    <input type="number" name="fabric_sizes[${fabricSizeIndex}][max_quantity]" value="${maxQty}" min="1" required class="fabric-size-max-qty w-28 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white font-bold text-amber-700" oninput="updateFabricVariantSummary()">
+                    <span class="text-xs text-gray-400 font-semibold">max pcs</span>
+                </div>
+            </td>
+            <td class="py-2.5 px-3 text-center">
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="fabric_sizes[${fabricSizeIndex}][enabled]" value="1" ${enabled ? 'checked' : ''} class="sr-only peer" onchange="updateFabricVariantSummary()">
+                    <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                </label>
+            </td>
+            <td class="py-2.5 px-3 text-right">
+                <button type="button" onclick="removeFabricSizeRow(this)" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="Delete variant">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+        fabricSizeIndex++;
+        updateFabricVariantSummary();
+    };
+
+    window.removeFabricSizeRow = function(btn) {
+        const rows = document.querySelectorAll('.fabric-size-row');
+        if (rows.length <= 1) {
+            alert('You must have at least one size variant configured.');
+            return;
+        }
+        btn.closest('tr').remove();
+        updateFabricVariantSummary();
+    };
+
+    window.clearAllFabricSizes = function() {
+        if (confirm('Clear all size variant rows?')) {
+            const tbody = document.getElementById('fabricSizesTbody');
+            if (tbody) tbody.innerHTML = '';
+            addCustomFabricSizeRow('M', 2, 4);
+        }
+    };
+
+    window.applySizeVariantPreset = function(type) {
+        const presets = {
+            'standard_m_4xl': [
+                { name: 'M', base: 2, max: 4 },
+                { name: 'L', base: 2, max: 4 },
+                { name: 'XL', base: 2, max: 4 },
+                { name: 'XXL', base: 2, max: 4 },
+                { name: '3XL', base: 2, max: 4 },
+                { name: '4XL', base: 2, max: 4 }
+            ],
+            'all_s_xxl': [
+                { name: 'S', base: 2, max: 4 },
+                { name: 'M', base: 2, max: 4 },
+                { name: 'L', base: 2, max: 4 },
+                { name: 'XL', base: 2, max: 4 },
+                { name: 'XXL', base: 2, max: 4 }
+            ],
+            'plus_3xl_6xl': [
+                { name: '3XL', base: 2, max: 4 },
+                { name: '4XL', base: 2, max: 4 },
+                { name: '5XL', base: 2, max: 4 },
+                { name: '6XL', base: 2, max: 4 }
+            ],
+            'freesize': [
+                { name: 'Free Size', base: 2, max: 10 }
+            ]
+        };
+
+        const items = presets[type];
+        if (!items) return;
+
+        const tbody = document.getElementById('fabricSizesTbody');
+        if (tbody) tbody.innerHTML = '';
+        fabricSizeIndex = 0;
+        items.forEach(it => {
+            addCustomFabricSizeRow(it.name, it.base, it.max, true);
+        });
+    };
+
+    window.applyShorthandInput = function() {
+        const input = document.getElementById('quickShorthandInput');
+        if (!input) return;
+        const val = input.value.trim();
+        if (!val) {
+            alert('Please enter shorthand sizes (e.g. M-2, L-2, XL-2, XXL-2, 3XL-2, 4XL-4)');
+            return;
+        }
+
+        const tokens = val.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean);
+        if (tokens.length === 0) return;
+
+        const tbody = document.getElementById('fabricSizesTbody');
+        if (tbody) tbody.innerHTML = '';
+        fabricSizeIndex = 0;
+
+        tokens.forEach(tok => {
+            let name = tok;
+            let base = 2;
+            let max = 4;
+
+            if (tok.includes(':')) {
+                const parts = tok.split(':');
+                name = parts[0].trim();
+                if (parts[1]) {
+                    if (parts[1].includes('/')) {
+                        const qParts = parts[1].split('/');
+                        base = parseInt(qParts[0]) || 2;
+                        max = parseInt(qParts[1]) || (base * 2);
+                    } else {
+                        base = parseInt(parts[1]) || 2;
+                        max = base * 2;
+                    }
+                }
+            } else if (tok.includes('-')) {
+                const parts = tok.split('-');
+                if (parts.length >= 3) {
+                    name = parts.slice(0, -2).join('-');
+                    base = parseInt(parts[parts.length - 2]) || 2;
+                    max = parseInt(parts[parts.length - 1]) || (base * 2);
+                } else if (parts.length === 2) {
+                    name = parts[0].trim();
+                    base = parseInt(parts[1]) || 2;
+                    max = Math.max(4, base * 2);
+                }
+            }
+
+            if (name) {
+                addCustomFabricSizeRow(name.toUpperCase(), base, max, true);
+            }
+        });
+
+        input.value = '';
+    };
+
+    window.updateFabricVariantSummary = function() {
+        const rows = document.querySelectorAll('.fabric-size-row');
+        let active = 0;
+        let totalBase = 0;
+
+        rows.forEach(r => {
+            const chk = r.querySelector('input[type="checkbox"]');
+            const baseNum = parseInt(r.querySelector('.fabric-size-base-qty')?.value) || 0;
+            if (chk && chk.checked) {
+                active++;
+                totalBase += baseNum;
+            }
+        });
+
+        const activeEl = document.getElementById('adminActiveVariantsCount');
+        const totalEl = document.getElementById('adminTotalBasePieces');
+        if (activeEl) activeEl.textContent = active;
+        if (totalEl) totalEl.textContent = totalBase;
+    };
+
+    window.syncFabricSizesFromVariants = function() {
+        const sizeNames = [];
+        document.querySelectorAll('input[name^="variants["][name$="[name]"], input[name^="new_variants["][name$="[name]"]').forEach(inp => {
+            const val = inp.value.trim();
+            if (val && !sizeNames.includes(val)) {
+                sizeNames.push(val);
+            }
+        });
+
+        if (sizeNames.length === 0) {
+            ['M', 'L', 'XL', 'XXL', '3XL', '4XL'].forEach(sz => sizeNames.push(sz));
+        }
+
+        const tbody = document.getElementById('fabricSizesTbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        fabricSizeIndex = 0;
+
+        sizeNames.forEach(sz => {
+            addCustomFabricSizeRow(sz, 2, 4, true);
+        });
+    };
+
+    // Auto-populate initial sizes for customizable fabric
+    <?php if (!empty($isCustomize)): ?>
+    syncFabricSizesFromVariants();
+    <?php endif; ?>
 });
+
+function selectAllCustomLabels(checked) {
+    document.querySelectorAll('.fabric-label-checkbox').forEach(cb => {
+        cb.checked = checked;
+    });
+}
 </script>
 <?php include __DIR__ . '/../../media/_selector_modal.php'; ?>
 <?php include __DIR__ . '/../_category_request_modal.php'; ?>

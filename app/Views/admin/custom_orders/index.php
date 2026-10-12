@@ -23,13 +23,13 @@
             <p class="text-sm text-gray-500 mt-1">Manage wholesale fabric customization configurations, stitching orders, and quote requests.</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="<?= BASE_URL ?>/admin/fabric-customizations" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-xl shadow-xs transition-colors">
-                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L11.758 4.758a3 3 0 114.242 4.242L12 12z"/></svg>
-                <span>Fabric Rules (<?= count($orders) ?> Active)</span>
+            <a href="<?= BASE_URL ?>/admin/catalog/products?module=customize" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-xl shadow-xs transition-colors">
+                <svg class="w-4 h-4 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                <span>Customizable Fabrics</span>
             </a>
-            <a href="<?= BASE_URL ?>/admin/fabric-customizations/create" class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all">
+            <a href="<?= BASE_URL ?>/admin/catalog/products/create?module=customize" class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                <span>+ New Fabric Rule</span>
+                <span>+ Add Customizable Fabric</span>
             </a>
         </div>
     </div>
@@ -114,6 +114,7 @@
                             </div>
                             
                             <!-- Status Selector -->
+                            <?php if ($this->hasPermission('custom_orders', 'edit')): ?>
                             <div class="flex items-center gap-2">
                                 <label class="text-xs font-bold text-gray-500">Status:</label>
                                 <select onchange="updateOrderStatus('<?= $order['id'] ?>', this.value)" class="bg-gray-50 border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-bold text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-500">
@@ -127,6 +128,14 @@
                                     <option value="cancelled" <?= $order['status'] === 'cancelled' ? 'selected' : '' ?>>❌ Cancelled</option>
                                 </select>
                             </div>
+                            <?php else: ?>
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs font-bold text-gray-500">Status:</label>
+                                <span class="px-2.5 py-1 rounded-xl text-xs font-bold bg-gray-100 text-gray-800 border border-gray-200">
+                                    <?= ucfirst(str_replace('_', ' ', $order['status'] ?? 'placed')) ?>
+                                </span>
+                            </div>
+                            <?php endif; ?>
 
                             <a href="<?= BASE_URL ?>/admin/orders/view?id=<?= $order['order_number'] ?>" class="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors" title="View Full Order">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
@@ -198,6 +207,26 @@
                                                         <?= number_format($sz['total_consumption'] ?? ($sz['quantity'] * ($sz['consumption_per_piece'] ?? 0)), 2) ?> <?= htmlspecialchars($cData['fabric_unit'] ?? $cData['unit'] ?? 'm') ?>
                                                     </div>
                                                 </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
+
+                                <!-- Custom Style Labels Allocation Breakdown -->
+                                <?php if (!empty($cData['label_quantities']) || !empty($cData['labels'])): ?>
+                                    <?php $lbls = !empty($cData['label_quantities']) ? $cData['label_quantities'] : $cData['labels']; ?>
+                                    <div class="mt-4 pt-3 border-t border-amber-200/60">
+                                        <div class="text-xs font-extrabold uppercase tracking-wider text-amber-900 mb-2 flex items-center gap-1.5">
+                                            <span>🏷️ Tailoring Style & Template Quantities:</span>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                            <?php foreach ($lbls as $l): ?>
+                                                <?php if (!empty($l['quantity']) && (int)$l['quantity'] > 0): ?>
+                                                    <div class="bg-white p-2.5 rounded-xl border border-pink-200 shadow-2xs flex items-center justify-between gap-2">
+                                                        <span class="text-xs font-bold text-gray-800 truncate">🏷️ <?= htmlspecialchars($l['label_name'] ?? $l['name'] ?? 'Custom Style') ?></span>
+                                                        <span class="px-2 py-0.5 rounded-md bg-pink-100 text-pink-800 text-xs font-black shrink-0"><?= (int)$l['quantity'] ?> pcs</span>
+                                                    </div>
+                                                <?php endif; ?>
                                             <?php endforeach; ?>
                                         </div>
                                     </div>

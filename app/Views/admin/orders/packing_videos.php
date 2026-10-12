@@ -235,19 +235,18 @@ function formatStorageSize($bytes) {
                             <!-- Actions Column -->
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="<?= BASE_URL ?>/admin/orders/invoice?order=<?= htmlspecialchars($ord['order_number']) ?>" target="_blank" class="p-2 text-slate-600 hover:text-slate-900 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors" title="Download Tax Invoice PDF">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    <a href="<?= BASE_URL ?>/admin/orders/invoice?order=<?= htmlspecialchars($ord['order_number']) ?>" target="_blank" class="inline-flex items-center justify-center p-1 text-[#F25996] hover:text-[#e04481] transition-colors" title="Download Tax Invoice PDF">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                     </a>
 
                                     <?php if ($this->hasPermission('all_orders', 'edit') && in_array($ord['status'], ['placed', 'packed'])): ?>
-                                    <button type="button" onclick="openPackingModal('<?= htmlspecialchars($ord['order_number']) ?>')" class="px-3 py-1.5 bg-[#F25996] hover:bg-[#d94480] text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                        <?= $hasAny ? 'Update' : 'Upload' ?>
+                                    <button type="button" onclick="openPackingModal('<?= htmlspecialchars($ord['order_number']) ?>')" class="inline-flex items-center justify-center p-1 text-purple-600 hover:text-purple-800 transition-colors" title="<?= $hasAny ? 'Update Packing Videos' : 'Upload Packing Videos' ?>">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                     </button>
                                     <?php endif; ?>
 
-                                    <a href="<?= BASE_URL ?>/admin/orders/view?id=<?= htmlspecialchars($ord['order_number']) ?>" class="p-2 text-brand-600 hover:text-brand-800 bg-brand-50 hover:bg-brand-100 border border-brand-200 rounded-lg transition-colors" title="View Order Details">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                    <a href="<?= BASE_URL ?>/admin/orders/view?id=<?= htmlspecialchars($ord['order_number']) ?>" class="inline-flex items-center justify-center p-1 text-emerald-600 hover:text-emerald-800 transition-colors" title="View Details">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     </a>
                                 </div>
                             </td>

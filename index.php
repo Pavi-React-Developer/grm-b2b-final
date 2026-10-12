@@ -93,17 +93,7 @@ spl_autoload_register(function ($className) {
 require_once CORE_PATH . '/Session.php';
 Core\Session::init();
 
-// Sync user status in real-time if logged in (for blocking/price protection)
-if (Core\Session::get('user_id')) {
-    require_once CORE_PATH . '/Database.php';
-    $db = Core\Database::getInstance();
-    $stmt = $db->prepare("SELECT status FROM users WHERE id = ?");
-    $stmt->execute([Core\Session::get('user_id')]);
-    $status = $stmt->fetchColumn();
-    if ($status) {
-        Core\Session::set('user_status', $status);
-    }
-}
+// Note: Real-time user status, permissions, and block enforcement are handled centrally in Core\Controller::__construct()
 
 // 4. Initialize Router
 $router = new Core\Router();
@@ -179,7 +169,9 @@ $router->get('/logout', 'App\Controllers\Storefront\AuthController@logout');
 
 // Storefront Fabric Customization Routes
 $router->get('/customize', 'App\Controllers\Storefront\FabricCustomizationController@customizeListing');
+$router->get('/customize/fabric/{id}', 'App\Controllers\Storefront\FabricCustomizationController@customizeWorkshop');
 $router->get('/fabrics/customize', 'App\Controllers\Storefront\FabricCustomizationController@customizeWorkshop');
+$router->get('/fabrics/customize/{id}', 'App\Controllers\Storefront\FabricCustomizationController@customizeWorkshop');
 $router->post('/fabrics/customization/calculate', 'App\Controllers\Storefront\FabricCustomizationController@calculateAjax');
 $router->post('/fabrics/customization/request-order', 'App\Controllers\Storefront\FabricCustomizationController@requestOrderAjax');
 $router->post('/fabrics/customization/razorpay-init', 'App\Controllers\Storefront\FabricCustomizationController@razorpayInitAjax');
@@ -486,6 +478,16 @@ $router->post('/admin/fabric-customizations/update', 'App\Controllers\Admin\Fabr
 $router->post('/admin/fabric-customizations/delete', 'App\Controllers\Admin\FabricCustomizationController@delete');
 $router->post('/admin/fabric-customizations/toggle-status', 'App\Controllers\Admin\FabricCustomizationController@toggleStatus');
 $router->get('/admin/fabric-customizations/ajax-product-info', 'App\Controllers\Admin\FabricCustomizationController@ajaxProductInfo');
+
+// Admin Customization Labels & Templates
+$router->get('/admin/customization-labels', 'App\Controllers\Admin\CustomizationLabelController@index');
+$router->get('/admin/customization-labels/create', 'App\Controllers\Admin\CustomizationLabelController@create');
+$router->post('/admin/customization-labels/store', 'App\Controllers\Admin\CustomizationLabelController@store');
+$router->get('/admin/customization-labels/edit', 'App\Controllers\Admin\CustomizationLabelController@edit');
+$router->post('/admin/customization-labels/update', 'App\Controllers\Admin\CustomizationLabelController@update');
+$router->post('/admin/customization-labels/delete', 'App\Controllers\Admin\CustomizationLabelController@delete');
+$router->post('/admin/customization-labels/toggle-status', 'App\Controllers\Admin\CustomizationLabelController@toggleStatus');
+$router->post('/admin/customization-labels/quick-add', 'App\Controllers\Admin\CustomizationLabelController@quickAddAjax');
 
 // Admin Customize Orders
 $router->get('/admin/customize/orders', 'App\Controllers\Admin\CustomOrderController@index');

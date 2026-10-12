@@ -146,9 +146,9 @@ class OrderModificationController extends Controller
         $iStmt->execute([$order['id']]);
         $items = $iStmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        // Get categories for the modal dropdown
-        $catStmt = $db->query("SELECT id, name FROM categories ORDER BY name ASC");
-        $categories = $catStmt->fetchAll(\PDO::FETCH_ASSOC);
+        // Get categories for the modal dropdown (only catalog management categories)
+        $categoryModel = new \App\Models\Category();
+        $categories = $categoryModel->getAllActive(null, 0);
 
         $this->render('admin/order_modifications/create', [
             'title'      => 'Create Bill Modification — Order ' . $orderNumber,
@@ -441,7 +441,7 @@ class OrderModificationController extends Controller
                 FROM products p
                 LEFT JOIN product_variants pv ON p.id = pv.product_id
                 LEFT JOIN categories c ON p.category_id = c.id
-                WHERE p.category_id = :cid AND p.status = 'active'
+                WHERE p.category_id = :cid AND p.status = 'active' AND (c.is_customizable = 0 OR c.is_customizable IS NULL)
             ";
             $params = ['cid' => $categoryId];
             
@@ -561,7 +561,13 @@ class OrderModificationController extends Controller
         }
 
         $db = \Core\Database::getInstance();
-        $stmt = $db->prepare("SELECT id, name FROM sub_categories WHERE category_id = :cid ORDER BY name ASC");
+        $stmt = $db->prepare("
+            SELECT sc.id, sc.name 
+            FROM sub_categories sc 
+            JOIN categories c ON sc.category_id = c.id
+            WHERE sc.category_id = :cid AND (c.is_customizable = 0 OR c.is_customizable IS NULL)
+            ORDER BY sc.name ASC
+        ");
         $stmt->execute(['cid' => $categoryId]);
         $subCategories = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 

@@ -151,7 +151,7 @@ $categoriesList = $categories ?? [];
                     <input type="hidden" name="active" value="0">
                     <label class="flex items-center gap-3 cursor-pointer group">
                         <input type="checkbox" name="active" value="1" id="active_toggle"
-                               <?= ($rule['active'] ?? 1) ? 'checked' : '' ?>
+                               <?= (isset($rule['active']) ? ((int)$rule['active'] === 1) : true) ? 'checked' : '' ?>
                                class="w-5 h-5 rounded text-[#F25996] border-gray-300 focus:ring-[#F25996] transition-colors">
                         <span class="text-xs font-bold text-gray-900 uppercase tracking-wider">Active Status</span>
                     </label>

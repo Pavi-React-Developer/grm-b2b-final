@@ -31,7 +31,7 @@ class Product extends Model
                    pv_agg.sgst AS variant_sgst,
                    pv_agg.cgst AS variant_cgst
             FROM products p
-            LEFT JOIN categories c ON p.category_id = c.id
+            JOIN categories c ON p.category_id = c.id AND c.status = 'active'
             LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
             LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
             LEFT JOIN users u_v ON p.vendor_id = u_v.id
@@ -46,7 +46,7 @@ class Product extends Model
                 FROM product_variants
                 GROUP BY product_id
             ) pv_agg ON pv_agg.product_id = p.id
-            WHERE p.status = 'active' AND (p.approval_status = 'approved' OR p.approval_status IS NULL)
+            WHERE p.status = 'active' AND (p.approval_status = 'approved' OR p.approval_status IS NULL) AND p.category_id IS NOT NULL
         ";
         
         if (!is_vendor_module_enabled()) {
@@ -155,8 +155,8 @@ class Product extends Model
                    (SELECT MIN(CASE WHEN max_amount > 0 THEN max_amount ELSE NULL END) FROM product_variants WHERE product_id = p.id) as max_amount
             FROM products p
             LEFT JOIN product_variants pv ON p.id = pv.product_id
-            LEFT JOIN categories c ON p.category_id = c.id
-            WHERE p.status = 'active' AND (p.approval_status = 'approved' OR p.approval_status IS NULL)
+            JOIN categories c ON p.category_id = c.id AND c.status = 'active'
+            WHERE p.status = 'active' AND (p.approval_status = 'approved' OR p.approval_status IS NULL) AND p.category_id IS NOT NULL
               AND (p.is_customizable = 0 OR p.is_customizable IS NULL) " . (!is_vendor_module_enabled() ? " AND (p.vendor_id IS NULL OR p.vendor_id = 0) " : "") . "
               AND (p.name LIKE :query1 OR pv.sku LIKE :query2 OR c.name LIKE :query3)
             ORDER BY p.created_at DESC
@@ -854,6 +854,69 @@ class Product extends Model
         unset($v);
 
         return $variants;
+    }
+
+    /**
+     * Batch fetch variants for multiple products in a SINGLE database query.
+     * Eliminates N+1 database queries when listing products in Catalog or Home.
+     *
+     * @param array $productIds List of product IDs
+     * @return array [ product_id => [ variant1, variant2, ... ] ]
+     */
+    public function getInventoryVariantsForProducts(array $productIds): array
+    {
+        $cleanIds = array_values(array_filter(array_map('intval', $productIds), fn($id) => $id > 0));
+        if (empty($cleanIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($cleanIds), '?'));
+        $sql = "
+            SELECT pv.*,
+                   pv.current_stock,
+                   (SELECT image_path FROM product_images
+                    WHERE variant_id = pv.id AND is_primary = 1 LIMIT 1) AS image_path,
+                   (SELECT av.color_code 
+                    FROM product_variant_attributes pva 
+                    JOIN attribute_values av ON pva.attribute_value_id = av.id 
+                    WHERE pva.variant_id = pv.id AND av.color_code IS NOT NULL AND av.color_code != '' 
+                    LIMIT 1) AS color_code,
+                   (SELECT av.value 
+                    FROM product_variant_attributes pva 
+                    JOIN attribute_values av ON pva.attribute_value_id = av.id 
+                    JOIN attributes a ON av.attribute_id = a.id
+                    WHERE pva.variant_id = pv.id AND a.input_type = 'colorpicker' 
+                    LIMIT 1) AS color_name,
+                   GROUP_CONCAT(
+                       pi_all.image_path
+                       ORDER BY pi_all.is_primary DESC, pi_all.id ASC
+                       SEPARATOR '||'
+                   ) AS images_concat
+            FROM product_variants pv
+            LEFT JOIN product_images pi_all ON pi_all.variant_id = pv.id
+            WHERE pv.product_id IN ({$placeholders})
+            GROUP BY pv.id
+            ORDER BY pv.product_id ASC, pv.id ASC
+        ";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($cleanIds);
+        $allVariants = $stmt->fetchAll();
+
+        $result = [];
+        foreach ($cleanIds as $pId) {
+            $result[$pId] = [];
+        }
+
+        foreach ($allVariants as $v) {
+            $v['images'] = !empty($v['images_concat'])
+                ? explode('||', $v['images_concat'])
+                : [];
+            unset($v['images_concat']);
+            $result[$v['product_id']][] = $v;
+        }
+
+        return $result;
     }
 
     /**

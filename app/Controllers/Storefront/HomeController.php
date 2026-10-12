@@ -14,9 +14,11 @@ class HomeController extends Controller
         $categoryModel = new \App\Models\Category();
         $categories = $categoryModel->getAll(0);
 
-        // Attach variants to each product
+        // Attach variants to each product (batch loaded in a single query to eliminate N+1 latency)
+        $pIds = array_column($products, 'id');
+        $variantsMap = $productModel->getInventoryVariantsForProducts($pIds);
         foreach ($products as &$product) {
-            $product['variants'] = $productModel->getInventoryProductVariants($product['id']);
+            $product['variants'] = $variantsMap[$product['id']] ?? [];
         }
 
         $wishlistIds = [];

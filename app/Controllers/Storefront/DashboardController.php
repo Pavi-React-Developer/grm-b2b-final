@@ -201,6 +201,7 @@ class DashboardController extends Controller
                     'fee_amount'    => $feeAmount,
                     'refund_amount' => $refundAmount,
                     'eligible'      => $rule['eligible'],
+                    'sla_days'      => (int)($rule['sla_days'] ?? 0),
                 ];
             }
             

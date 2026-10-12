@@ -119,6 +119,7 @@ class Order extends Model
             SELECT o.*, 
                    u.name as user_name, u.email as user_email, u.phone as user_phone,
                    (SELECT COUNT(*) FROM order_modifications om WHERE om.order_id = o.id AND om.status IN ('accepted', 'applied') AND om.created_at >= o.created_at) as has_modification,
+                   (SELECT COUNT(*) FROM orders o_prev WHERE o_prev.user_id = o.user_id AND o_prev.payment_status = 'paid' AND o_prev.id < o.id) as repeat_count,
                    (SELECT GROUP_CONCAT(DISTINCT vp.store_name SEPARATOR ', ') 
                     FROM order_items oi 
                     JOIN products p ON oi.product_id = p.id 
@@ -136,7 +137,7 @@ class Order extends Model
 
         // Calculate repeat order badge
         foreach ($orders as &$order) {
-            $order['repeat_count'] = $this->getPreviousOrderCount($order['user_id'], $order['id']);
+            $order['repeat_count'] = (int)($order['repeat_count'] ?? 0);
             $order['has_modification'] = (int)$order['has_modification'] > 0;
         }
 
@@ -316,6 +317,7 @@ class Order extends Model
             SELECT o.*, 
                    u.name as user_name, u.email as user_email, u.phone as user_phone,
                    (SELECT COUNT(*) FROM order_modifications om WHERE om.order_id = o.id AND om.status IN ('accepted', 'applied') AND om.created_at >= o.created_at) as has_modification,
+                   (SELECT COUNT(*) FROM orders o_prev WHERE o_prev.user_id = o.user_id AND o_prev.payment_status = 'paid' AND o_prev.id < o.id) as repeat_count,
                    (SELECT SUM(oi.quantity) FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = o.id AND p.vendor_id = :vendor_id1) as vendor_item_qty,
                    (SELECT SUM(oi.total_price) FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = o.id AND p.vendor_id = :vendor_id2) as vendor_subtotal,
                    (SELECT GROUP_CONCAT(DISTINCT p.name SEPARATOR ', ') FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = o.id AND p.vendor_id = :vendor_id3) as vendor_product_names
@@ -335,7 +337,7 @@ class Order extends Model
         $orders = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         foreach ($orders as &$order) {
-            $order['repeat_count'] = $this->getPreviousOrderCount($order['user_id'], $order['id']);
+            $order['repeat_count'] = (int)($order['repeat_count'] ?? 0);
             $order['has_modification'] = (int)$order['has_modification'] > 0;
         }
 

@@ -246,10 +246,9 @@
                                 <option value="Others">Others</option>
                             </select>
                         </div>
-                        <div id="add_district_container">
+                        <!-- When TN: District Select Dropdown beside State -->
+                        <div id="add_tn_district_container">
                             <label id="add_district_label" class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">District / City <span class="text-red-500">*</span></label>
-                            
-                            <!-- Dropdown for Tamil Nadu -->
                             <select id="add_district_select" name="city" required class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900 hidden">
                                 <option value="">Select District</option>
                                 <option value="Ariyalur">Ariyalur</option>
@@ -291,13 +290,18 @@
                                 <option value="Viluppuram">Viluppuram</option>
                                 <option value="Virudhunagar">Virudhunagar</option>
                             </select>
-                            
-                            <!-- Text Input for Others -->
-                            <input id="add_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900 hidden" disabled>
                         </div>
-                        <div id="add_other_state_container" class="hidden sm:col-span-2">
+
+                        <!-- When Others: State Name Input beside State (UP) -->
+                        <div id="add_other_state_container" class="hidden">
                             <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">State Name <span class="text-red-500">*</span></label>
                             <input id="add_other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter state name (e.g. Kerala, Karnataka)" autocomplete="off" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900" disabled>
+                        </div>
+
+                        <!-- When Others: District/City Input below State & State Name (DOWN) -->
+                        <div id="add_other_district_container" class="hidden sm:col-span-2">
+                            <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">District / City <span class="text-red-500">*</span></label>
+                            <input id="add_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900" disabled>
                         </div>
                     </div>
                     
@@ -367,10 +371,9 @@
                                 <option value="Others">Others</option>
                             </select>
                         </div>
-                        <div id="edit_district_container">
+                        <!-- When TN: District Select Dropdown beside State -->
+                        <div id="edit_tn_district_container">
                             <label id="edit_district_label" class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">District / City <span class="text-red-500">*</span></label>
-                            
-                            <!-- Dropdown for Tamil Nadu -->
                             <select id="edit_district_select" name="city" required class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900 hidden">
                                 <option value="">Select District</option>
                                 <option value="Ariyalur">Ariyalur</option>
@@ -412,13 +415,18 @@
                                 <option value="Viluppuram">Viluppuram</option>
                                 <option value="Virudhunagar">Virudhunagar</option>
                             </select>
-                            
-                            <!-- Text Input for Others -->
-                            <input id="edit_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900 hidden" disabled>
                         </div>
-                        <div id="edit_other_state_container" class="hidden sm:col-span-2">
+
+                        <!-- When Others: State Name Input beside State (UP) -->
+                        <div id="edit_other_state_container" class="hidden">
                             <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">State Name <span class="text-red-500">*</span></label>
                             <input id="edit_other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter state name (e.g. Kerala, Karnataka)" autocomplete="off" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900" disabled>
+                        </div>
+
+                        <!-- When Others: District/City Input below State & State Name (DOWN) -->
+                        <div id="edit_other_district_container" class="hidden sm:col-span-2">
+                            <label class="block text-xs sm:text-sm font-bold text-[#1d1d1f] mb-1.5">District / City <span class="text-red-500">*</span></label>
+                            <input id="edit_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="w-full px-3.5 py-2.5 sm:px-4 sm:py-2.5 rounded-xl border border-gray-200 focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] outline-none transition-colors text-xs sm:text-sm bg-white font-medium text-gray-900" disabled>
                         </div>
                     </div>
                     
@@ -592,16 +600,20 @@ function initAddrCustomSelect(sel) {
 
 function toggleAddDistrictFields() {
     const stateVal = document.getElementById('add_state').value;
+    const tnContainer = document.getElementById('add_tn_district_container');
     const selectEl = document.getElementById('add_district_select');
+    const otherDistContainer = document.getElementById('add_other_district_container');
     const textEl   = document.getElementById('add_district_text');
     const otherContainer = document.getElementById('add_other_state_container');
     const otherInput = document.getElementById('add_other_state_name');
 
     if (stateVal === 'Tamil Nadu') {
+        if (tnContainer) tnContainer.classList.remove('hidden');
         selectEl.classList.remove('hidden');
         selectEl.disabled = false;
         selectEl.required = true;
 
+        if (otherDistContainer) otherDistContainer.classList.add('hidden');
         textEl.classList.add('hidden');
         textEl.disabled = true;
         textEl.required = false;
@@ -609,22 +621,26 @@ function toggleAddDistrictFields() {
         if (otherContainer) otherContainer.classList.add('hidden');
         if (otherInput) { otherInput.disabled = true; otherInput.required = false; }
     } else if (stateVal === 'Others') {
-        textEl.classList.remove('hidden');
-        textEl.disabled = false;
-        textEl.required = true;
-        textEl.placeholder = "Enter District / City Name";
-
+        if (tnContainer) tnContainer.classList.add('hidden');
         selectEl.classList.add('hidden');
         selectEl.disabled = true;
         selectEl.required = false;
 
         if (otherContainer) otherContainer.classList.remove('hidden');
         if (otherInput) { otherInput.disabled = false; otherInput.required = true; }
+
+        if (otherDistContainer) otherDistContainer.classList.remove('hidden');
+        textEl.classList.remove('hidden');
+        textEl.disabled = false;
+        textEl.required = true;
+        textEl.placeholder = "Enter District / City Name";
     } else {
+        if (tnContainer) tnContainer.classList.remove('hidden');
         selectEl.classList.add('hidden');
         selectEl.disabled = true;
         selectEl.required = false;
 
+        if (otherDistContainer) otherDistContainer.classList.add('hidden');
         textEl.classList.remove('hidden');
         textEl.disabled = true;
         textEl.required = false;
@@ -639,16 +655,20 @@ function toggleAddDistrictFields() {
 
 function toggleEditDistrictFields() {
     const stateVal = document.getElementById('edit_state').value;
+    const tnContainer = document.getElementById('edit_tn_district_container');
     const selectEl = document.getElementById('edit_district_select');
+    const otherDistContainer = document.getElementById('edit_other_district_container');
     const textEl   = document.getElementById('edit_district_text');
     const otherContainer = document.getElementById('edit_other_state_container');
     const otherInput = document.getElementById('edit_other_state_name');
 
     if (stateVal === 'Tamil Nadu') {
+        if (tnContainer) tnContainer.classList.remove('hidden');
         selectEl.classList.remove('hidden');
         selectEl.disabled = false;
         selectEl.required = true;
 
+        if (otherDistContainer) otherDistContainer.classList.add('hidden');
         textEl.classList.add('hidden');
         textEl.disabled = true;
         textEl.required = false;
@@ -656,22 +676,26 @@ function toggleEditDistrictFields() {
         if (otherContainer) otherContainer.classList.add('hidden');
         if (otherInput) { otherInput.disabled = true; otherInput.required = false; }
     } else if (stateVal === 'Others') {
-        textEl.classList.remove('hidden');
-        textEl.disabled = false;
-        textEl.required = true;
-        textEl.placeholder = "Enter District / City Name";
-
+        if (tnContainer) tnContainer.classList.add('hidden');
         selectEl.classList.add('hidden');
         selectEl.disabled = true;
         selectEl.required = false;
 
         if (otherContainer) otherContainer.classList.remove('hidden');
         if (otherInput) { otherInput.disabled = false; otherInput.required = true; }
+
+        if (otherDistContainer) otherDistContainer.classList.remove('hidden');
+        textEl.classList.remove('hidden');
+        textEl.disabled = false;
+        textEl.required = true;
+        textEl.placeholder = "Enter District / City Name";
     } else {
+        if (tnContainer) tnContainer.classList.remove('hidden');
         selectEl.classList.add('hidden');
         selectEl.disabled = true;
         selectEl.required = false;
 
+        if (otherDistContainer) otherDistContainer.classList.add('hidden');
         textEl.classList.remove('hidden');
         textEl.disabled = true;
         textEl.required = false;

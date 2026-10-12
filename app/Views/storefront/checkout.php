@@ -121,7 +121,7 @@
                         <div id="review-address-display" class="ml-9 mt-2 hidden"></div>
                     </div>
                     <div class="p-4 sm:p-6 block" id="content-step-1">
-                        <form id="shipping-form" onsubmit="event.preventDefault(); proceedFromAddress();">
+                        <form id="shipping-form" novalidate onsubmit="event.preventDefault(); proceedFromAddress();">
                             <?php if (!empty($addresses)): ?>
                                 <!-- Saved Address Cards -->
                                 <p class="text-sm font-semibold text-gray-700 mb-3">Select a delivery address</p>
@@ -198,10 +198,10 @@
                                                 <option value="Others">Others</option>
                                             </select>
                                         </div>
-                                        <div id="ship_district_container">
+                                        <!-- When TN: District Select Dropdown beside State -->
+                                        <div id="ship_tn_district_container">
                                             <label class="form-label" id="ship_district_label">District/City <span class="text-[#F25996]">*</span></label>
-                                            <!-- Dropdown for Tamil Nadu -->
-                                            <select id="ship_district_select" name="city" class="form-input hidden">
+                                            <select id="ship_district_select" name="city" class="form-input">
                                                 <option value="">Select District</option>
                                                 <option value="Ariyalur">Ariyalur</option>
                                                 <option value="Chengalpattu">Chengalpattu</option>
@@ -242,12 +242,18 @@
                                                 <option value="Viluppuram">Viluppuram</option>
                                                 <option value="Virudhunagar">Virudhunagar</option>
                                             </select>
-                                            
-                                            <!-- Text Inputs for Others (District & City) -->
-                                            <div id="ship_others_container" class="hidden flex flex-col sm:flex-row gap-3 w-full">
-                                                <input id="ship_district_text" name="district" type="text" placeholder="District" class="form-input flex-1 w-full min-h-[44px]">
-                                                <input id="ship_city_text" name="city" type="text" placeholder="City" class="form-input flex-1 w-full min-h-[44px]">
-                                            </div>
+                                        </div>
+
+                                        <!-- When Others: State Name Input beside State (UP) -->
+                                        <div id="ship_other_state_container" class="hidden">
+                                            <label class="form-label">State Name <span class="text-[#F25996]">*</span></label>
+                                            <input id="ship_other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter state name (e.g. Kerala, Karnataka)" autocomplete="off" class="form-input w-full" disabled>
+                                        </div>
+
+                                        <!-- When Others: District/City Input below State & State Name (DOWN) -->
+                                        <div id="ship_other_district_container" class="hidden sm:col-span-2">
+                                            <label class="form-label">District/City <span class="text-[#F25996]">*</span></label>
+                                            <input id="ship_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="form-input w-full" disabled>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -291,10 +297,10 @@
                                                 <option value="Others">Others</option>
                                             </select>
                                         </div>
-                                        <div id="ship_fallback_district_container">
-                                            <label class="form-label" id="ship_fallback_district_label">District/City</label>
-                                            <!-- Dropdown for Tamil Nadu -->
-                                            <select id="ship_fallback_district_select" name="city" required class="form-input hidden">
+                                        <!-- When TN: District Select Dropdown beside State -->
+                                        <div id="ship_fallback_tn_district_container">
+                                            <label class="form-label" id="ship_fallback_district_label">District/City <span class="text-[#F25996]">*</span></label>
+                                            <select id="ship_fallback_district_select" name="city" class="form-input">
                                                 <option value="">Select District</option>
                                                 <option value="Ariyalur">Ariyalur</option>
                                                 <option value="Chengalpattu">Chengalpattu</option>
@@ -335,18 +341,34 @@
                                                 <option value="Viluppuram">Viluppuram</option>
                                                 <option value="Virudhunagar">Virudhunagar</option>
                                             </select>
-                                            <!-- Text Inputs for Others -->
-                                            <div id="ship_fallback_others_container" class="hidden flex flex-col sm:flex-row gap-3 w-full">
-                                                <input id="ship_fallback_district_text" name="district" type="text" placeholder="District" class="form-input flex-1 w-full min-h-[44px]">
-                                                <input id="ship_fallback_city_text" name="city" type="text" placeholder="City" class="form-input flex-1 w-full min-h-[44px]">
-                                            </div>
+                                        </div>
+
+                                        <!-- When Others: State Name Input beside State (UP) -->
+                                        <div id="ship_fallback_other_state_container" class="hidden">
+                                            <label class="form-label" id="ship_fallback_other_state_label">State Name <span class="text-[#F25996]">*</span></label>
+                                            <input id="ship_fallback_other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter state name (e.g. Kerala, Karnataka)" autocomplete="off" class="form-input w-full" disabled>
+                                        </div>
+
+                                        <!-- When Others: District/City Input below State & State Name (DOWN) -->
+                                        <div id="ship_fallback_other_district_container" class="hidden sm:col-span-2">
+                                            <label class="form-label">District/City <span class="text-[#F25996]">*</span></label>
+                                            <input id="ship_fallback_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="form-input w-full" disabled>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label class="form-label">Pincode</label>
-                                            <input type="text" id="ship_pincode" required pattern="[0-9]{6}" class="form-input">
+                                            <label class="form-label">Pincode <span class="text-[#F25996]">*</span></label>
+                                            <input type="text" id="ship_pincode" pattern="[0-9]{6}" maxlength="6" oninput="this.value=this.value.replace(/\D/g,'')" class="form-input" placeholder="6-digit pincode">
                                         </div>
+                                    </div>
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-gray-100">
+                                        <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                                            <input type="checkbox" id="save_fallback_address_check" checked class="w-4 h-4 rounded text-[#F25996] accent-[#F25996] focus:ring-0">
+                                            <span class="text-xs sm:text-sm font-semibold text-gray-700">Save this address to my profile</span>
+                                        </label>
+                                        <button type="button" id="save-fallback-addr-btn" onclick="saveManualAddressAjax()" class="text-xs sm:text-sm font-bold text-[#F25996] hover:text-[#d8407d] hover:underline cursor-pointer inline-flex items-center gap-1 self-start sm:self-auto py-1">
+                                            <span>+ Save Address to Profile</span>
+                                        </button>
                                     </div>
                                 </div>
                             <?php endif; ?>
@@ -725,20 +747,29 @@
                     return;
                 }
             } else if (state === 'Others') {
-                const dist = ((document.getElementById('ship_fallback_district_text') || {}).value || '').trim();
-                const cty  = ((document.getElementById('ship_fallback_city_text') || {}).value || '').trim();
+                city = ((document.getElementById('ship_fallback_district_text') || {}).value || '').trim();
+                const otherSt = ((document.getElementById('ship_fallback_other_state_name') || {}).value || '').trim();
                 
-                if (!dist || !cty) {
+                if (!city) {
                     if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter both District and City' });
+                        Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter your District / City' });
                     } else {
-                        alert('Please enter both District and City');
+                        alert('Please enter your District / City');
+                    }
+                    return;
+                }
+
+                if (!otherSt) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'warning', title: 'Missing State Name', text: 'Please enter your State Name' });
+                    } else {
+                        alert('Please enter your State Name');
                     }
                     return;
                 }
 
                 const tnRegex = /tamil\s*nadu/i;
-                if (tnRegex.test(dist) || tnRegex.test(cty)) {
+                if (tnRegex.test(city) || tnRegex.test(otherSt)) {
                     if (typeof Swal !== 'undefined') {
                         Swal.fire({
                             icon: 'error',
@@ -750,8 +781,6 @@
                     }
                     return;
                 }
-                
-                city = [dist, cty].filter(Boolean).join(', ');
             }
             
             const pin   = ((document.getElementById('ship_pincode') || {}).value || '').trim();
@@ -768,7 +797,9 @@
 
             fullAddr = [name, line1, city + ' - ' + pin].filter(Boolean).join('\n');
             
-            document.getElementById('final_is_new_address').value = '1';
+            const fallbackSave = document.getElementById('save_fallback_address_check');
+            const shouldSaveFallback = fallbackSave ? (fallbackSave.checked ? '1' : '0') : '1';
+            document.getElementById('final_is_new_address').value = shouldSaveFallback;
             document.getElementById('final_new_addr_line1').value = line1;
             document.getElementById('final_new_addr_line2').value = '';
             document.getElementById('final_new_addr_city').value = city;
@@ -791,17 +822,18 @@
                 const nm = (document.getElementById('ship_name') || {}).value || '';
                 const st = (document.getElementById('ship_state') || {}).value || '';
                 let ct = '';
+                let displayState = st;
                 if (st === 'Tamil Nadu') {
                     ct = (document.getElementById('ship_district_select') || document.getElementById('ship_fallback_district_select') || {}).value || '';
                 } else if (st === 'Others') {
-                    const dist = (document.getElementById('ship_district_text') || document.getElementById('ship_fallback_district_text') || {}).value || '';
-                    const cityText = (document.getElementById('ship_city_text') || document.getElementById('ship_fallback_city_text') || {}).value || '';
-                    ct = [dist, cityText].filter(Boolean).join(', ');
+                    ct = (document.getElementById('ship_district_text') || document.getElementById('ship_fallback_district_text') || {}).value || '';
+                    const otherSt = (document.getElementById('ship_other_state_name') || document.getElementById('ship_fallback_other_state_name') || {}).value || '';
+                    displayState = otherSt || '';
                 }
                 const pn = (document.getElementById('ship_pincode') || {}).value || '';
                 
                 p1 = [nm, l1].filter(Boolean).join(', ');
-                p2 = [ct, (st === 'Others' ? '' : st), pn].filter(Boolean).join(' - ').replace(/^[ \-]+|[ \-]+$/g, '').replace(/ -  - /g, ' - ');
+                p2 = [ct, displayState, pn].filter(Boolean).join(' - ').replace(/^[ \-]+|[ \-]+$/g, '').replace(/ -  - /g, ' - ');
             }
 
             reviewEl.innerHTML = `
@@ -819,12 +851,22 @@
         let state = '';
         if (selectedRadio) {
             if (selectedRadio.value === 'new') {
-                state = (document.getElementById('ship_state') || {}).value || '';
+                const stVal = (document.getElementById('ship_state') || {}).value || '';
+                if (stVal === 'Others') {
+                    state = ((document.getElementById('ship_other_state_name') || {}).value || '').trim() || 'Others';
+                } else {
+                    state = stVal;
+                }
             } else {
                 state = selectedRadio.dataset.state || '';
             }
         } else {
-            state = (document.getElementById('ship_state') || {}).value || '';
+            const stVal = (document.getElementById('ship_state') || {}).value || '';
+            if (stVal === 'Others') {
+                state = ((document.getElementById('ship_other_state_name') || document.getElementById('ship_fallback_other_state_name') || {}).value || '').trim() || 'Others';
+            } else {
+                state = stVal;
+            }
         }
         const stateEl = document.getElementById('final_shipping_state');
         if (stateEl) {
@@ -893,7 +935,12 @@
             return radio.dataset.state || '';
         }
         const stateInput = document.getElementById('ship_state');
-        return stateInput ? stateInput.value : '';
+        const val = stateInput ? stateInput.value : '';
+        if (val === 'Others') {
+            const otherInput = document.getElementById('ship_other_state_name') || document.getElementById('ship_fallback_other_state_name');
+            return (otherInput && otherInput.value.trim()) ? otherInput.value.trim() : 'Others';
+        }
+        return val;
     }
 
     function recalculateFees(state, paymentMethod) {
@@ -1049,7 +1096,7 @@
         }
     })();
     function saveManualAddressAjax() {
-        const line1 = ((document.getElementById('ship_line1') || {}).value || '').trim();
+        const line1 = ((document.getElementById('ship_line1') || document.getElementById('ship_address') || {}).value || '').trim();
         const line2 = ((document.getElementById('ship_line2') || {}).value || '').trim();
         const state = ((document.getElementById('ship_state') || {}).value || '').trim();
         const pin   = ((document.getElementById('ship_pincode') || {}).value || '').trim();
@@ -1057,9 +1104,9 @@
 
         if (!line1) {
             if (typeof Swal !== 'undefined') {
-                Swal.fire({ icon: 'warning', title: 'Missing Address', text: 'Please enter Address Line 1' });
+                Swal.fire({ icon: 'warning', title: 'Missing Address', text: 'Please enter Address Line 1 / Complete Address' });
             } else {
-                alert('Please enter Address Line 1');
+                alert('Please enter Address Line 1 / Complete Address');
             }
             return;
         }
@@ -1074,8 +1121,9 @@
         }
 
         let city = '';
+        let otherStateName = '';
         if (state === 'Tamil Nadu') {
-            city = ((document.getElementById('ship_district_select') || {}).value || '').trim();
+            city = ((document.getElementById('ship_district_select') || document.getElementById('ship_fallback_district_select') || {}).value || '').trim();
             if (!city) {
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({ icon: 'warning', title: 'Missing District', text: 'Please select your District' });
@@ -1085,20 +1133,29 @@
                 return;
             }
         } else if (state === 'Others') {
-            const dist = ((document.getElementById('ship_district_text') || {}).value || '').trim();
-            const cty  = ((document.getElementById('ship_city_text') || {}).value || '').trim();
+            city = ((document.getElementById('ship_district_text') || document.getElementById('ship_fallback_district_text') || {}).value || '').trim();
+            otherStateName = ((document.getElementById('ship_other_state_name') || document.getElementById('ship_fallback_other_state_name') || {}).value || '').trim();
             
-            if (!dist || !cty) {
+            if (!city) {
                 if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter both District and City' });
+                    Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter District / City' });
                 } else {
-                    alert('Please enter both District and City');
+                    alert('Please enter District / City');
+                }
+                return;
+            }
+
+            if (!otherStateName) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'warning', title: 'Missing State Name', text: 'Please enter your State Name' });
+                } else {
+                    alert('Please enter your State Name');
                 }
                 return;
             }
 
             const tnRegex = /tamil\s*nadu/i;
-            if (tnRegex.test(dist) || tnRegex.test(cty)) {
+            if (tnRegex.test(city) || tnRegex.test(otherStateName)) {
                 if (typeof Swal !== 'undefined') {
                     Swal.fire({
                         icon: 'error',
@@ -1110,8 +1167,6 @@
                 }
                 return;
             }
-            
-            city = [dist, cty].filter(Boolean).join(', ');
         }
 
         if (!pin || pin.length !== 6) {
@@ -1123,7 +1178,7 @@
             return;
         }
 
-        const saveBtn = document.getElementById('save-manual-addr-btn');
+        const saveBtn = document.getElementById('save-manual-addr-btn') || document.getElementById('save-fallback-addr-btn');
         const origText = saveBtn ? saveBtn.innerHTML : '';
         if (saveBtn) {
             saveBtn.disabled = true;
@@ -1135,6 +1190,9 @@
         formData.append('line1', line1);
         formData.append('line2', line2);
         formData.append('state', state);
+        if (otherStateName) {
+            formData.append('other_state_name', otherStateName);
+        }
         formData.append('city', city);
         formData.append('postal_code', pin);
         formData.append('country', country);
@@ -1192,64 +1250,73 @@
     function toggleShipDistrictFields() {
         const stateEl = document.getElementById('ship_state');
         const state = stateEl ? stateEl.value : '';
+        const tnContainer = document.getElementById('ship_tn_district_container') || document.getElementById('ship_fallback_tn_district_container');
         const select = document.getElementById('ship_district_select') || document.getElementById('ship_fallback_district_select');
-        const othersContainer = document.getElementById('ship_others_container') || document.getElementById('ship_fallback_others_container');
+        const otherStateContainer = document.getElementById('ship_other_state_container') || document.getElementById('ship_fallback_other_state_container');
+        const otherStateInput = document.getElementById('ship_other_state_name') || document.getElementById('ship_fallback_other_state_name');
+        const otherDistContainer = document.getElementById('ship_other_district_container') || document.getElementById('ship_fallback_other_district_container');
         const distText = document.getElementById('ship_district_text') || document.getElementById('ship_fallback_district_text');
-        const cityText = document.getElementById('ship_city_text') || document.getElementById('ship_fallback_city_text');
-        const label = document.getElementById('ship_district_label') || document.getElementById('ship_fallback_district_label');
 
         if (state === 'Tamil Nadu') {
-            if (label) label.innerText = 'District/City';
-            if (select) { select.classList.remove('hidden'); select.required = true; }
-            if (othersContainer) othersContainer.classList.add('hidden');
-            if (distText) distText.required = false;
-            if (cityText) cityText.required = false;
+            if (tnContainer) tnContainer.classList.remove('hidden');
+            if (select) { select.classList.remove('hidden'); select.disabled = false; select.required = true; }
+            if (otherStateContainer) otherStateContainer.classList.add('hidden');
+            if (otherStateInput) { otherStateInput.disabled = true; otherStateInput.required = false; }
+            if (otherDistContainer) otherDistContainer.classList.add('hidden');
+            if (distText) { distText.disabled = true; distText.required = false; }
         } else if (state === 'Others') {
-            if (label) label.innerText = 'District & City';
-            if (select) { select.classList.add('hidden'); select.required = false; select.value = ''; }
-            if (othersContainer) othersContainer.classList.remove('hidden');
-            if (distText) distText.required = true;
-            if (cityText) cityText.required = true;
+            if (tnContainer) tnContainer.classList.add('hidden');
+            if (select) { select.classList.add('hidden'); select.disabled = true; select.required = false; select.value = ''; }
+            if (otherStateContainer) otherStateContainer.classList.remove('hidden');
+            if (otherStateInput) { otherStateInput.disabled = false; otherStateInput.required = true; }
+            if (otherDistContainer) otherDistContainer.classList.remove('hidden');
+            if (distText) { distText.disabled = false; distText.required = true; distText.placeholder = 'Enter District / City Name'; }
         } else {
-            if (label) label.innerText = 'District/City';
-            if (select) { select.classList.remove('hidden'); select.required = false; }
-            if (othersContainer) othersContainer.classList.add('hidden');
-            if (distText) distText.required = false;
-            if (cityText) cityText.required = false;
+            if (tnContainer) tnContainer.classList.remove('hidden');
+            if (select) { select.classList.remove('hidden'); select.disabled = true; select.required = false; select.value = ''; }
+            if (otherStateContainer) otherStateContainer.classList.add('hidden');
+            if (otherStateInput) { otherStateInput.disabled = true; otherStateInput.required = false; }
+            if (otherDistContainer) otherDistContainer.classList.add('hidden');
+            if (distText) { distText.disabled = true; distText.required = false; }
         }
 
         if (typeof recalculateFees === 'function') {
-            recalculateFees(state, typeof selectedPaymentMethod !== 'undefined' ? selectedPaymentMethod : 'Online');
+            const feeState = (state === 'Others' && otherStateInput && otherStateInput.value.trim()) ? otherStateInput.value.trim() : state;
+            recalculateFees(feeState, typeof selectedPaymentMethod !== 'undefined' ? selectedPaymentMethod : 'Online');
         }
     }
 
     function toggleEditShipDistrictFields() {
         const stateEl = document.getElementById('edit_state');
         const state = stateEl ? stateEl.value : '';
+        const tnContainer = document.getElementById('edit_tn_district_container');
         const select = document.getElementById('edit_district_select');
-        const othersContainer = document.getElementById('edit_others_container');
+        const otherStateContainer = document.getElementById('edit_other_state_container');
+        const otherStateInput = document.getElementById('edit_other_state_name');
+        const otherDistContainer = document.getElementById('edit_other_district_container');
         const distText = document.getElementById('edit_district_text');
-        const cityText = document.getElementById('edit_city_text');
-        const label = document.getElementById('edit_district_label');
 
         if (state === 'Tamil Nadu') {
-            if (label) label.innerHTML = 'District/City <span class="text-[#F25996]">*</span>';
-            if (select) { select.classList.remove('hidden'); select.required = true; }
-            if (othersContainer) othersContainer.classList.add('hidden');
-            if (distText) distText.required = false;
-            if (cityText) cityText.required = false;
+            if (tnContainer) tnContainer.classList.remove('hidden');
+            if (select) { select.classList.remove('hidden'); select.disabled = false; select.required = true; }
+            if (otherStateContainer) otherStateContainer.classList.add('hidden');
+            if (otherStateInput) { otherStateInput.disabled = true; otherStateInput.required = false; }
+            if (otherDistContainer) otherDistContainer.classList.add('hidden');
+            if (distText) { distText.disabled = true; distText.required = false; }
         } else if (state === 'Others') {
-            if (label) label.innerHTML = 'District & City <span class="text-[#F25996]">*</span>';
-            if (select) { select.classList.add('hidden'); select.required = false; select.value = ''; }
-            if (othersContainer) othersContainer.classList.remove('hidden');
-            if (distText) distText.required = true;
-            if (cityText) cityText.required = true;
+            if (tnContainer) tnContainer.classList.add('hidden');
+            if (select) { select.classList.add('hidden'); select.disabled = true; select.required = false; select.value = ''; }
+            if (otherStateContainer) otherStateContainer.classList.remove('hidden');
+            if (otherStateInput) { otherStateInput.disabled = false; otherStateInput.required = true; }
+            if (otherDistContainer) otherDistContainer.classList.remove('hidden');
+            if (distText) { distText.disabled = false; distText.required = true; distText.placeholder = 'Enter District / City Name'; }
         } else {
-            if (label) label.innerHTML = 'District/City <span class="text-[#F25996]">*</span>';
-            if (select) { select.classList.remove('hidden'); select.required = false; }
-            if (othersContainer) othersContainer.classList.add('hidden');
-            if (distText) distText.required = false;
-            if (cityText) cityText.required = false;
+            if (tnContainer) tnContainer.classList.remove('hidden');
+            if (select) { select.classList.remove('hidden'); select.disabled = true; select.required = false; }
+            if (otherStateContainer) otherStateContainer.classList.add('hidden');
+            if (otherStateInput) { otherStateInput.disabled = true; otherStateInput.required = false; }
+            if (otherDistContainer) otherDistContainer.classList.add('hidden');
+            if (distText) { distText.disabled = true; distText.required = false; }
         }
     }
 
@@ -1275,8 +1342,8 @@
         }
         const distText = document.getElementById('edit_district_text');
         if (distText) distText.value = '';
-        const cityText = document.getElementById('edit_city_text');
-        if (cityText) cityText.value = '';
+        const otherStateInput = document.getElementById('edit_other_state_name');
+        if (otherStateInput) otherStateInput.value = '';
 
         document.getElementById('editAddressModal').classList.remove('hidden');
         document.body.style.overflow = 'hidden';
@@ -1292,40 +1359,40 @@
         document.getElementById('edit_pincode').value = addr.postal_code || '';
         document.getElementById('edit_is_default').checked = (addr.is_default == 1 || addr.is_default === true || addr.is_default === '1');
         
-        const stateSelect = document.getElementById('edit_state');
-        const stateLower = (addr.state || '').toLowerCase().replace(/[\s\-_]/g, '');
+        const rawCity = (addr.city || '').trim();
+        const rawState = (addr.state || '').trim();
+        const stateLower = rawState.toLowerCase().replace(/[\s\-_]/g, '');
         const isTN = (stateLower === 'tamilnadu' || stateLower === 'tn');
+        
+        const stateSelect = document.getElementById('edit_state');
         stateSelect.value = isTN ? 'Tamil Nadu' : 'Others';
         stateSelect.dispatchEvent(new Event('change', { bubbles: true }));
         
         toggleEditShipDistrictFields();
 
+        const districtSel = document.getElementById('edit_district_select');
+        const distText = document.getElementById('edit_district_text');
+        const otherStateInput = document.getElementById('edit_other_state_name');
+
         if (isTN) {
-            const districtSel = document.getElementById('edit_district_select');
             if (districtSel) {
-                const opt = Array.from(districtSel.options).find(o => o.value.toLowerCase() === (addr.city || '').toLowerCase());
+                const opt = Array.from(districtSel.options).find(o => o.value.toLowerCase() === rawCity.toLowerCase());
                 if (opt) {
                     districtSel.value = opt.value;
                 } else {
-                    districtSel.value = addr.city || '';
+                    districtSel.value = rawCity;
                 }
                 districtSel.dispatchEvent(new Event('change', { bubbles: true }));
             }
-            const distText = document.getElementById('edit_district_text');
             if (distText) distText.value = '';
-            const cityText = document.getElementById('edit_city_text');
-            if (cityText) cityText.value = '';
+            if (otherStateInput) otherStateInput.value = '';
         } else {
-            const districtSel = document.getElementById('edit_district_select');
             if (districtSel) {
                 districtSel.value = "";
                 districtSel.dispatchEvent(new Event('change', { bubbles: true }));
             }
-            let cityParts = (addr.city || '').split(',').map(s => s.trim());
-            const distText = document.getElementById('edit_district_text');
-            if (distText) distText.value = cityParts[0] || '';
-            const cityText = document.getElementById('edit_city_text');
-            if (cityText) cityText.value = cityParts[1] || '';
+            if (distText) distText.value = rawCity;
+            if (otherStateInput) otherStateInput.value = (rawState.toLowerCase() !== 'others' ? rawState : '');
         }
 
         document.getElementById('editAddressModal').classList.remove('hidden');
@@ -1365,6 +1432,7 @@
                 }
 
                 let city = '';
+                let otherState = '';
                 if (state === 'Tamil Nadu') {
                     city = (document.getElementById('edit_district_select') || {}).value || '';
                     if (!city) {
@@ -1376,17 +1444,25 @@
                         return;
                     }
                 } else if (state === 'Others') {
-                    const dist = ((document.getElementById('edit_district_text') || {}).value || '').trim();
-                    const cty = ((document.getElementById('edit_city_text') || {}).value || '').trim();
-                    if (!dist || !cty) {
+                    city = ((document.getElementById('edit_district_text') || {}).value || '').trim();
+                    otherState = ((document.getElementById('edit_other_state_name') || {}).value || '').trim();
+                    if (!city) {
                         if (typeof Swal !== 'undefined') {
-                            Swal.fire({ icon: 'warning', title: 'Missing Details', text: 'Please enter both District and City' });
+                            Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter District / City' });
                         } else {
-                            alert('Please enter both District and City');
+                            alert('Please enter District / City');
                         }
                         return;
                     }
-                    if (/tamil\s*nadu/i.test(dist) || /tamil\s*nadu/i.test(cty)) {
+                    if (!otherState) {
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({ icon: 'warning', title: 'Missing State Name', text: 'Please enter State Name' });
+                        } else {
+                            alert('Please enter State Name');
+                        }
+                        return;
+                    }
+                    if (/tamil\s*nadu/i.test(city) || /tamil\s*nadu/i.test(otherState)) {
                         if (typeof Swal !== 'undefined') {
                             Swal.fire({ icon: 'error', title: 'Invalid State Entry', text: 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.' });
                         } else {
@@ -1394,7 +1470,6 @@
                         }
                         return;
                     }
-                    city = [dist, cty].filter(Boolean).join(', ');
                 }
 
                 if (!pin.trim() || pin.trim().length !== 6) {
@@ -1408,6 +1483,9 @@
 
                 const formData = new FormData(this);
                 formData.set('city', city);
+                if (state === 'Others' && otherState) {
+                    formData.set('other_state_name', otherState);
+                }
 
                 const addrId = formData.get('address_id');
                 const baseUrlEndpoint = typeof BASE_URL_JS !== 'undefined' ? BASE_URL_JS : '<?= BASE_URL ?>';
@@ -1548,10 +1626,10 @@
                             <option value="Others">Others</option>
                         </select>
                     </div>
-                    <div>
+                    <!-- When TN: District Select Dropdown beside State -->
+                    <div id="edit_tn_district_container">
                         <label class="form-label" id="edit_district_label">District/City <span class="text-[#F25996]">*</span></label>
-                        <!-- Dropdown for Tamil Nadu -->
-                        <select id="edit_district_select" name="city" class="form-input hidden">
+                        <select id="edit_district_select" name="city" class="form-input">
                             <option value="">Select District</option>
                             <option value="Ariyalur">Ariyalur</option>
                             <option value="Chengalpattu">Chengalpattu</option>
@@ -1592,11 +1670,18 @@
                             <option value="Viluppuram">Viluppuram</option>
                             <option value="Virudhunagar">Virudhunagar</option>
                         </select>
-                        <!-- Text Inputs for Others -->
-                        <div id="edit_others_container" class="hidden flex flex-col sm:flex-row gap-3 w-full">
-                            <input id="edit_district_text" name="district" type="text" placeholder="District" class="form-input flex-1 w-full min-h-[44px]">
-                            <input id="edit_city_text" name="city_text" type="text" placeholder="City" class="form-input flex-1 w-full min-h-[44px]">
-                        </div>
+                    </div>
+
+                    <!-- When Others: State Name Input beside State (UP) -->
+                    <div id="edit_other_state_container" class="hidden">
+                        <label class="form-label">State Name <span class="text-[#F25996]">*</span></label>
+                        <input id="edit_other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter state name (e.g. Kerala, Karnataka)" autocomplete="off" class="form-input w-full" disabled>
+                    </div>
+
+                    <!-- When Others: District/City Input below State & State Name (DOWN) -->
+                    <div id="edit_other_district_container" class="hidden sm:col-span-2">
+                        <label class="form-label">District/City <span class="text-[#F25996]">*</span></label>
+                        <input id="edit_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="form-input w-full" disabled>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

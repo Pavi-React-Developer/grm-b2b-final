@@ -22,9 +22,9 @@ class AttributeController extends Controller
 
     public function index()
     {
-        $this->requirePermission('attributes', 'view');
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'view');
 
         $attributeModel = new Attribute();
         $attributes = $attributeModel->getAll($isCustomize ? 1 : 0);
@@ -44,9 +44,9 @@ class AttributeController extends Controller
 
     public function create()
     {
-        $this->requirePermission('attributes', 'create');
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'create');
 
         $categoryModel = new Category();
         $categories = $categoryModel->getAllActive(null, $isCustomize ? 1 : 0);
@@ -61,10 +61,10 @@ class AttributeController extends Controller
 
     public function edit()
     {
-        $this->requirePermission('attributes', 'edit');
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'edit');
 
         $attributeModel = new Attribute();
         $attribute = $attributeModel->findById($id);
@@ -99,7 +99,9 @@ class AttributeController extends Controller
 
     public function store()
     {
-        $this->requirePermission('attributes', 'create');
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'create');
         $isJson = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
             || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
 
@@ -213,9 +215,9 @@ class AttributeController extends Controller
 
     public function update()
     {
-        $this->requirePermission('attributes', 'edit');
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'edit');
         $redirectListUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -308,9 +310,9 @@ class AttributeController extends Controller
 
     public function delete()
     {
-        $this->requirePermission('attributes', 'delete');
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'delete');
         $redirectListUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -372,9 +374,11 @@ class AttributeController extends Controller
 
     public function storeValue()
     {
-        $this->requirePermission('attributes', 'create');
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'create');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/attributes');
+            $this->redirect('/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : ''));
         }
 
         $attributeId = (int)($_POST['attribute_id'] ?? 0);
@@ -382,7 +386,7 @@ class AttributeController extends Controller
 
         if ($attributeId <= 0 || empty($value)) {
             Session::setFlash('error', 'Attribute and Value are required.');
-            $this->redirect('/admin/catalog/attributes');
+            $this->redirect('/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : ''));
         }
 
         try {
@@ -393,14 +397,14 @@ class AttributeController extends Controller
             Session::setFlash('error', 'Error adding value: ' . $e->getMessage());
         }
 
-        $this->redirect('/admin/catalog/attributes');
+        $this->redirect('/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : ''));
     }
 
     public function deleteValue()
     {
-        $this->requirePermission('attributes', 'delete');
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'delete');
         $redirectUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

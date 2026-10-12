@@ -1,11 +1,17 @@
 <?php
 // Global Product Card Settings - CSS Variable Injector
 // Include this in the <head> of main.php to apply product card styles globally.
-$db = \Core\Database::getInstance();
-$stmt = $db->prepare("SELECT setting_value FROM settings WHERE setting_key = 'product_card_settings'");
-$stmt->execute();
-$row = $stmt->fetch();
-$pcs = $row ? (json_decode($row['setting_value'], true) ?? []) : [];
+$pcs = class_exists('\Core\Cache') ? \Core\Cache::get('setting_product_card_settings') : null;
+if ($pcs === null) {
+    $db = \Core\Database::getInstance();
+    $stmt = $db->prepare("SELECT setting_value FROM settings WHERE setting_key = 'product_card_settings'");
+    $stmt->execute();
+    $row = $stmt->fetch();
+    $pcs = $row ? (json_decode($row['setting_value'], true) ?? []) : [];
+    if (class_exists('\Core\Cache')) {
+        \Core\Cache::set('setting_product_card_settings', $pcs, 86400);
+    }
+}
 
 $d = $pcs['desktop'] ?? [];
 $m = $pcs['mobile'] ?? [];

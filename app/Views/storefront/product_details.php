@@ -316,8 +316,8 @@ if (!empty($variants)) {
                     <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#e0b0ce] rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
                     
                     <div class="flex items-start gap-4 relative z-10">
-                        <div class="w-10 h-10 rounded-full bg-[#f4e2ec] flex items-center justify-center flex-shrink-0">
-                            <svg class="w-5 h-5 text-[#b94a3e]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        <div class="w-10 h-10 rounded-full bg-pink-50 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                         </div>
                         <div>
                             <p class="font-bold text-gray-900 text-[0.95rem] mb-1">Wholesale Pricing Locked</p>
@@ -325,7 +325,7 @@ if (!empty($variants)) {
                         </div>
                     </div>
                     
-                    <a href="<?= BASE_URL ?>/login" class="relative z-10 flex items-center justify-center gap-2 bg-[#b94a3e] hover:bg-[#a03d32] text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm shrink-0 w-full md:w-auto">
+                    <a href="<?= BASE_URL ?>/login" class="relative z-10 flex items-center justify-center gap-2 bg-[#F25996] hover:bg-[#d8407d] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm shrink-0 w-full md:w-auto">
                         Login / Register
                     </a>
                 </div>
@@ -341,23 +341,23 @@ if (!empty($variants)) {
 
                 <!-- B2B Category-to-Subcategory Offer Callout -->
                 <?php if (!empty($categoryOfferRule)): ?>
-                <div class="mb-5 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-50 border border-amber-300/80 rounded-2xl p-4 shadow-sm">
+                <div class="mb-5 bg-gradient-to-br from-pink-500/10 via-rose-500/5 to-pink-50/80 border border-pink-200/90 rounded-2xl p-4 shadow-xs">
                     <div class="flex items-start gap-2.5">
                         <span class="text-xl flex-shrink-0">🎁</span>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2">
-                                <h4 class="text-xs font-black text-amber-950 uppercase tracking-wider">B2B Combo Offer Available</h4>
-                                <span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">Tier ₹<?= number_format($categoryOfferRule['min_amount']) ?></span>
+                                <h4 class="text-xs font-black text-[#8a184e] uppercase tracking-wider">B2B Combo Offer Available</h4>
+                                <span class="text-[10px] font-bold text-[#F25996] bg-pink-100/90 border border-pink-200 px-2.5 py-0.5 rounded-full shadow-2xs">Tier ₹<?= number_format($categoryOfferRule['min_amount']) ?></span>
                             </div>
-                            <p class="text-xs text-amber-900 leading-snug mt-1">
+                            <p class="text-xs text-[#521330] leading-snug mt-1">
                                 Order <strong>₹<?= number_format($categoryOfferRule['min_amount']) ?></strong> or more from <em><?= htmlspecialchars($categoryOfferRule['main_category_name']) ?></em> to unlock special low order minimums on:
                             </p>
                             <?php if (!empty($categoryOfferRule['secondary_offers'])): ?>
                             <div class="mt-2.5 flex flex-wrap gap-1.5">
                                 <?php foreach($categoryOfferRule['secondary_offers'] as $so): ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-amber-900 rounded-lg text-[11px] font-bold border border-amber-200 shadow-2xs">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-[#8a184e] rounded-xl text-[11px] font-bold border border-pink-200 shadow-2xs hover:border-pink-300 transition-colors">
                                         <span>✨ <?= htmlspecialchars($so['name']) ?></span>
-                                        <span class="text-amber-700 font-semibold">(Min ₹<?= number_format($so['min_amount']) ?>)</span>
+                                        <span class="text-[#F25996] font-semibold">(Min ₹<?= number_format($so['min_amount']) ?>)</span>
                                     </span>
                                 <?php endforeach; ?>
                             </div>
@@ -434,27 +434,7 @@ if (!empty($variants)) {
                         <input type="hidden" name="variant_ids[]" value="">
                     <?php endif; ?>
 
-                    <?php if (!empty($volumeTiers) && $canAddToCart): ?>
-                    <!-- Volume / Wholesale Pricing Tiers -->
-                    <div class="mb-5 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-amber-50 border border-amber-300/80 rounded-2xl p-4 shadow-sm">
-                        <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900 mb-2.5">
-                            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                            <span>Volume Pricing (Buy More, Save More)</span>
-                        </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            <?php foreach($volumeTiers as $tier): ?>
-                                <?php 
-                                $rangeText = !empty($tier['max_qty']) ? $tier['min_qty'] . ' - ' . $tier['max_qty'] . ' pcs' : $tier['min_qty'] . '+ pcs';
-                                ?>
-                                <div class="bg-white p-2.5 rounded-xl border border-amber-200/80 shadow-2xs text-center">
-                                    <div class="font-semibold text-gray-500 text-[11px] mb-0.5"><?= htmlspecialchars($rangeText) ?></div>
-                                    <div class="font-black text-amber-700 text-sm">₹<?= format_price($tier['tier_price']) ?></div>
-                                    <div class="text-[10px] text-gray-400 font-medium">/ piece</div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <?php endif; ?>
+
 
                 <!-- Quantity + Add to Cart Row -->
                 <?php 
@@ -585,9 +565,9 @@ if (!empty($variants)) {
         <!-- ===== PRODUCT INFORMATION TABS (Description, How to play, Why Choose, etc.) ===== -->
         <div class="mt-8 mb-12 bg-white rounded-3xl border border-pink-100/90 p-5 sm:p-8 md:p-10 shadow-sm">
             
-            <!-- Tab Navigation Header (Smooth Horizontal Scrollable, No Arrows, No Dots) -->
-            <div class="border-b border-pink-100 pb-0 mb-8 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
-                <nav class="flex items-center space-x-4 sm:space-x-8 min-w-max px-1" aria-label="Product Information Tabs">
+            <!-- Tab Navigation Header (Smooth Horizontal Scrollable, Centered) -->
+            <div class="border-b border-pink-100 pb-0 mb-8 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none flex justify-center" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
+                <nav class="flex items-center justify-center space-x-4 sm:space-x-8 min-w-max px-1 mx-auto" aria-label="Product Information Tabs">
                     <!-- 1. Description Tab (Default Active) -->
                     <button type="button" 
                             onclick="switchProductInfoTab('tab-description', this)" 
@@ -596,21 +576,6 @@ if (!empty($variants)) {
                         <span class="whitespace-nowrap">Description</span>
                     </button>
 
-                    <!-- 2. How to play / How to use Tab -->
-                    <button type="button" 
-                            onclick="switchProductInfoTab('tab-how-to-use', this)" 
-                            class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
-                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
-                        <span class="whitespace-nowrap"><?= htmlspecialchars($howToUseTabTitle) ?></span>
-                    </button>
-
-                    <!-- 3. Why choose Tab -->
-                    <button type="button" 
-                            onclick="switchProductInfoTab('tab-why-choose', this)" 
-                            class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
-                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
-                        <span class="whitespace-nowrap">Why choose</span>
-                    </button>
 
                     <!-- 4. Dynamic Additional Custom Field Tabs -->
                     <?php if (!empty($filteredCustomTabs)): ?>
@@ -655,69 +620,6 @@ if (!empty($variants)) {
                     </div>
                 </div>
 
-                <!-- 2. How to use / How to play Panel -->
-                <div id="tab-how-to-use" class="product-info-panel hidden transition-opacity duration-300">
-                    <div class="text-center max-w-3xl mx-auto">
-                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-4 tracking-tight flex items-center justify-center gap-2 text-center">
-                            <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
-                            <span><?= htmlspecialchars($howToUseTabTitle) ?></span>
-                        </h3>
-                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4 text-center">
-                            <?php 
-                            $howText = trim($product['how_to_use'] ?? '');
-                            if (!empty($howText)) {
-                                $howParagraphs = explode("\n", $howText);
-                                foreach ($howParagraphs as $hp) {
-                                    $hp = trim($hp);
-                                    if ($hp !== '') {
-                                        echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($hp) . '</p>';
-                                    }
-                                }
-                            } else {
-                                echo '<div class="space-y-2 text-gray-700">';
-                                if ($isToyContext) {
-                                    echo '<p class="leading-relaxed">1. Unpack all components safely on a clean, flat surface.</p>';
-                                    echo '<p class="leading-relaxed">2. Guide children through hands-on discovery, letter recognition, and creative problem-solving.</p>';
-                                    echo '<p class="leading-relaxed">3. Store safely in a dry place after playtime to maintain wood finish and longevity.</p>';
-                                } else {
-                                    echo '<p class="leading-relaxed">Follow product care instructions and handle with care. For detailed usage assistance or bulk customization guidelines, please contact our support team.</p>';
-                                }
-                                echo '</div>';
-                            }
-                            ?>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. Why choose Panel -->
-                <div id="tab-why-choose" class="product-info-panel hidden transition-opacity duration-300">
-                    <div class="max-w-3xl mx-auto">
-                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-6 tracking-tight flex items-center justify-center gap-2 text-center">
-                            <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
-                            <span>Why choose</span>
-                        </h3>
-                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
-                            <?php 
-                            $whyText = trim($product['why_choose'] ?? '');
-                            if (!empty($whyText)) {
-                                $whyParagraphs = explode("\n", $whyText);
-                                foreach ($whyParagraphs as $wp) {
-                                    $wp = trim($wp);
-                                    if ($wp !== '') {
-                                        echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($wp) . '</p>';
-                                    }
-                                }
-                            } else {
-                                echo '<div class="space-y-3 text-gray-700">';
-                                echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Premium Quality Craftsmanship:</strong> Made with top-grade, eco-friendly materials engineered for longevity.</p></div>';
-                                echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Safe & Non-Toxic:</strong> Smooth child-safe finish with rounded corners and non-toxic food-grade coating.</p></div>';
-                                echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Direct B2B Pricing:</strong> Factory-direct wholesale rates with flexible MOQ and reliable dispatch.</p></div>';
-                                echo '</div>';
-                            }
-                            ?>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- 4. Dynamic Custom Field Panels -->
                 <?php if (!empty($filteredCustomTabs)): ?>
@@ -855,7 +757,7 @@ if (!empty($variants)) {
                                 </div>
                             <?php else: ?>
                                 <div class="pt-2 md:pt-4 border-t border-gray-100">
-                                    <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#b94a3e] font-medium py-1 md:py-2 text-xs md:text-[0.9375rem] hover:underline" onclick="event.stopPropagation();">
+                                    <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-medium py-1 md:py-2 text-xs md:text-[0.9375rem] hover:underline" onclick="event.stopPropagation();">
                                         <svg class="w-3.5 h-3.5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                         Register to view price
                                     </a>

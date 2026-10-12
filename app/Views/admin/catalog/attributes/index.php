@@ -21,7 +21,10 @@
                     <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Export Excel
                 </button>
-                <?php if ($this->hasPermission('attributes', 'create')): ?>
+                <?php 
+                $permAttrMod = !empty($isCustomize) ? 'customize_attributes' : 'attributes';
+                ?>
+                <?php if ($this->hasPermission($permAttrMod, 'create')): ?>
                 <a href="<?= BASE_URL ?>/admin/catalog/attributes/create<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="bg-[#F25996] hover:bg-[#e04481] text-white px-6 py-2.5 rounded-full font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center uppercase tracking-wider">
                     <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     <?= !empty($isCustomize) ? 'Add Customize Attribute' : 'Add Attribute' ?>
@@ -149,7 +152,7 @@
                                         <?php foreach(array_slice($attr['values'], 0, 4) as $val): ?>
                                             <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white border border-gray-200 text-[11px] font-medium text-gray-600 hover:border-brand-200 hover:text-brand-600 hover:shadow-sm transition-all group/val">
                                                 <?= htmlspecialchars($val['value']) ?>
-                                                <?php if ($this->hasPermission('attributes', 'delete')): ?>
+                                                <?php if ($this->hasPermission($permAttrMod, 'delete')): ?>
                                                 <form action="<?= BASE_URL ?>/admin/catalog/attributes/delete-value" method="POST" class="inline-block" onsubmit="return confirm('Are you sure you want to remove this value?');">
                                                     <input type="hidden" name="id" value="<?= $val['id'] ?>">
                                                     <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
@@ -167,7 +170,7 @@
                                         <span class="text-gray-400 italic text-xs">No values</span>
                                     <?php endif; ?>
                                     
-                                    <?php if ($this->hasPermission('attributes', 'create')): ?>
+                                    <?php if ($this->hasPermission($permAttrMod, 'create')): ?>
                                     <button onclick="addValue(<?= $attr['id'] ?>)" class="w-6 h-6 rounded-md bg-brand-50 text-brand-600 hover:bg-brand-600 hover:text-white flex items-center justify-center transition-all ml-1 shadow-sm border border-brand-100" title="Add Value">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                                     </button>
@@ -183,13 +186,13 @@
                             </td>
                             <td class="px-6 py-5 text-right">
                                 <div class="flex justify-end space-x-2">
-                                    <?php if ($this->hasPermission('attributes', 'edit')): ?>
-                                    <a href="<?= BASE_URL ?>/admin/catalog/attributes/edit?id=<?= $attr['id'] ?><?= !empty($isCustomize) ? '&module=customize' : '' ?>" class="p-2 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all duration-200 group/btn" title="Edit">
-                                        <svg class="w-5 h-5 group-hover/btn:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    <?php if ($this->hasPermission($permAttrMod, 'edit')): ?>
+                                    <a href="<?= BASE_URL ?>/admin/catalog/attributes/edit?id=<?= $attr['id'] ?><?= !empty($isCustomize) ? '&module=customize' : '' ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors group/btn inline-flex items-center justify-center" title="Edit">
+                                        <i class="bi bi-pencil-square text-lg group-hover/btn:scale-110 transition-transform"></i>
                                     </a>
                                     <?php endif; ?>
-                                    <?php if ($this->hasPermission('attributes', 'delete')): ?>
-                                    <button onclick="openDeleteModal(<?= $attr['id'] ?>)" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group/btn" title="Delete">
+                                    <?php if ($this->hasPermission($permAttrMod, 'delete')): ?>
+                                    <button onclick="openDeleteModal(<?= $attr['id'] ?>)" class="p-1 text-red-600 hover:text-red-800 transition-colors group/btn inline-flex items-center justify-center" title="Delete">
                                         <svg class="w-5 h-5 group-hover/btn:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     </button>
                                     <?php endif; ?>
@@ -236,11 +239,11 @@
         <h3 class="text-lg font-medium text-gray-900 mb-2">Delete Attribute</h3>
         <p class="text-sm text-gray-500 mb-4">Are you sure you want to delete this attribute and all its values? This action cannot be undone.</p>
         <div id="delete-error-msg" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-left"></div>
-        <form id="attribute-delete-form" action="<?= BASE_URL ?>/admin/catalog/attributes/delete" method="POST" class="flex space-x-3">
+        <form id="attribute-delete-form" action="<?= BASE_URL ?>/admin/catalog/attributes/delete" method="POST" class="flex space-x-3 items-center">
             <input type="hidden" name="id" id="delete-id">
             <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
-            <button type="button" onclick="document.getElementById('delete-modal').classList.add('hidden')" class="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
-            <button type="submit" id="btn-confirm-delete-attr" class="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors">Delete</button>
+            <button type="button" onclick="document.getElementById('delete-modal').classList.add('hidden')" class="flex-1 px-6 py-2.5 bg-white border border-gray-200 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">Cancel</button>
+            <button type="submit" id="btn-confirm-delete-attr" class="flex-1 px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-full text-sm font-semibold shadow-lg shadow-red-500/30 transform hover:-translate-y-0.5 transition-all inline-flex items-center justify-center">Delete</button>
         </form>
     </div>
 </div>

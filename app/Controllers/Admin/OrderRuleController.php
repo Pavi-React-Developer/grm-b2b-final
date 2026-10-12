@@ -34,7 +34,7 @@ class OrderRuleController extends Controller
     {
         $this->requirePermission('order_rules', 'create');
         $categoryModel = new Category();
-        $categories = $categoryModel->getAllActive();
+        $categories = $categoryModel->getAllActive(null, 0);
 
         $this->render('admin/order_rules/create', [
             'title' => 'Create Order Rule',
@@ -52,6 +52,13 @@ class OrderRuleController extends Controller
         $categoryId = (int)($_POST['category_id'] ?? 0);
         $minAmount = (float)($_POST['min_amount'] ?? 0);
         $status = $_POST['status'] ?? 'active';
+
+        $categoryModel = new Category();
+        $cat = $categoryModel->findById($categoryId);
+        if (!$cat || (!empty($cat['is_customizable']) && (int)$cat['is_customizable'] === 1)) {
+            Session::setFlash('error', 'Only catalog management categories can be used for order rules.');
+            $this->redirect('/admin/order-rules/create');
+        }
 
         // Build the JSON rule mapping
         $secondCategoryRules = null;
@@ -104,9 +111,7 @@ class OrderRuleController extends Controller
         }
 
         $categoryModel = new Category();
-        $categories = $categoryModel->getAllActive();
-
-        $allCategories = $categoryModel->getAllActive();
+        $allCategories = $categoryModel->getAllActive(null, 0);
         // Filter for second categories (all except the main one)
         $secondCategories = array_values(array_filter($allCategories, function($cat) use ($rule) {
             return $cat['id'] != $rule['category_id'];
@@ -131,6 +136,13 @@ class OrderRuleController extends Controller
         $categoryId = (int)($_POST['category_id'] ?? 0);
         $minAmount = (float)($_POST['min_amount'] ?? 0);
         $status = $_POST['status'] ?? 'active';
+
+        $categoryModel = new Category();
+        $cat = $categoryModel->findById($categoryId);
+        if (!$cat || (!empty($cat['is_customizable']) && (int)$cat['is_customizable'] === 1)) {
+            Session::setFlash('error', 'Only catalog management categories can be used for order rules.');
+            $this->redirect('/admin/order-rules/edit?id=' . $id);
+        }
 
         // Build the JSON rule mapping
         $secondCategoryRules = null;
@@ -200,7 +212,7 @@ class OrderRuleController extends Controller
         }
 
         $categoryModel = new Category();
-        $allCategories = $categoryModel->getAll();
+        $allCategories = $categoryModel->getAllActive(null, 0);
         
         // Filter out the selected category
         $secondCategories = array_filter($allCategories, function($cat) use ($categoryId) {

@@ -661,10 +661,10 @@ function exportDashboardPDF() {
     
     // Key Metrics
     const metricsData = [
-        ['Total Revenue (Gross/Net)', '₹<?= number_format($totalRevenue, 2, '.', '') ?>'],
-        ['GST Tax Revenue', '₹<?= number_format($totalGstTaxRevenue ?? 0, 2, '.', '') ?> (SGST: ₹<?= number_format($totalSgstRevenue ?? 0, 2, '.', '') ?> + CGST: ₹<?= number_format($totalCgstRevenue ?? 0, 2, '.', '') ?>)'],
-        ['Taxable Base Revenue', '₹<?= number_format($totalBaseRevenue ?? 0, 2, '.', '') ?>'],
-        ['Refunded Amount', '₹<?= number_format($totalRefunds ?? 0, 2, '.', '') ?>'],
+        ['Total Revenue (Gross/Net)', 'Rs. <?= number_format($totalRevenue, 2, '.', '') ?>'],
+        ['GST Tax Revenue', 'Rs. <?= number_format($totalGstTaxRevenue ?? 0, 2, '.', '') ?> (SGST: Rs. <?= number_format($totalSgstRevenue ?? 0, 2, '.', '') ?> + CGST: Rs. <?= number_format($totalCgstRevenue ?? 0, 2, '.', '') ?>)'],
+        ['Taxable Base Revenue', 'Rs. <?= number_format($totalBaseRevenue ?? 0, 2, '.', '') ?>'],
+        ['Refunded Amount', 'Rs. <?= number_format($totalRefunds ?? 0, 2, '.', '') ?>'],
         ['Total Orders', '<?= $totalOrders ?> (<?= number_format($pendingOrders ?? 0) ?> pending)'],
         ['Total Customers', '<?= $totalBuyers ?>'],
         ['Total Products', '<?= $totalProducts ?>']
@@ -689,7 +689,7 @@ function exportDashboardPDF() {
     <?php if(!empty($topSellingProducts)): ?>
     const productsData = [
         <?php foreach($topSellingProducts as $p): ?>
-        ['<?= addslashes($p['name']) ?>', '<?= $p['sold'] ?>', '₹<?= number_format($p['revenue'], 2, '.', '') ?>'],
+        ['<?= addslashes($p['name']) ?>', '<?= $p['sold'] ?>', 'Rs. <?= number_format($p['revenue'], 2, '.', '') ?>'],
         <?php endforeach; ?>
     ];
     
@@ -715,7 +715,7 @@ function exportDashboardPDF() {
     <?php if(!empty($recentOrders)): ?>
     const ordersData = [
         <?php foreach($recentOrders as $o): ?>
-        ['<?= addslashes($o['order_number']) ?>', '<?= addslashes($o['customer_name']) ?>', '₹<?= number_format($o['total'], 2, '.', '') ?>', '<?= addslashes($o['status']) ?>', '<?= date("M d, Y", strtotime($o['created_at'])) ?>'],
+        ['<?= addslashes($o['order_number']) ?>', '<?= addslashes($o['customer_name']) ?>', 'Rs. <?= number_format($o['total'], 2, '.', '') ?>', '<?= addslashes($o['status']) ?>', '<?= date("M d, Y", strtotime($o['created_at'])) ?>'],
         <?php endforeach; ?>
     ];
     
@@ -745,31 +745,32 @@ function exportDashboardCSV() {
     csv.push(["Generated At", new Date().toLocaleString()]);
     csv.push([]);
     csv.push(["KEY METRICS", "VALUE"]);
-    csv.push(["Total Revenue (Gross/Net)", "₹<?= number_format($totalRevenue, 2, '.', '') ?>"]);
-    csv.push(["GST Tax Revenue", "₹<?= number_format($totalGstTaxRevenue ?? 0, 2, '.', '') ?>"]);
-    csv.push(["SGST Revenue", "₹<?= number_format($totalSgstRevenue ?? 0, 2, '.', '') ?>"]);
-    csv.push(["CGST Revenue", "₹<?= number_format($totalCgstRevenue ?? 0, 2, '.', '') ?>"]);
-    csv.push(["Taxable Base Revenue", "₹<?= number_format($totalBaseRevenue ?? 0, 2, '.', '') ?>"]);
-    csv.push(["Refunded Amount", "₹<?= number_format($totalRefunds ?? 0, 2, '.', '') ?>"]);
+    csv.push(["Total Revenue (Gross/Net)", "Rs. <?= number_format($totalRevenue, 2, '.', '') ?>"]);
+    csv.push(["GST Tax Revenue", "Rs. <?= number_format($totalGstTaxRevenue ?? 0, 2, '.', '') ?>"]);
+    csv.push(["SGST Revenue", "Rs. <?= number_format($totalSgstRevenue ?? 0, 2, '.', '') ?>"]);
+    csv.push(["CGST Revenue", "Rs. <?= number_format($totalCgstRevenue ?? 0, 2, '.', '') ?>"]);
+    csv.push(["Taxable Base Revenue", "Rs. <?= number_format($totalBaseRevenue ?? 0, 2, '.', '') ?>"]);
+    csv.push(["Refunded Amount", "Rs. <?= number_format($totalRefunds ?? 0, 2, '.', '') ?>"]);
     csv.push(["Total Orders", "<?= $totalOrders ?>"]);
     csv.push(["Pending Orders", "<?= $pendingOrders ?? 0 ?>"]);
     csv.push(["Total Customers", "<?= $totalBuyers ?>"]);
     csv.push(["Total Products", "<?= $totalProducts ?>"]);
     csv.push([]);
-    csv.push(["TOP SELLING PRODUCTS", "SOLD QTY", "REVENUE (₹)"]);
+    csv.push(["TOP SELLING PRODUCTS", "SOLD QTY", "REVENUE (Rs.)"]);
     <?php foreach($topSellingProducts as $p): ?>
     csv.push([<?= json_encode($p['name']) ?>, <?= (int)$p['sold'] ?>, "<?= number_format($p['revenue'], 2, '.', '') ?>"]);
     <?php endforeach; ?>
     csv.push([]);
-    csv.push(["RECENT ORDERS", "CUSTOMER", "TOTAL (₹)", "STATUS", "DATE"]);
+    csv.push(["RECENT ORDERS", "CUSTOMER", "TOTAL (Rs.)", "STATUS", "DATE"]);
     <?php foreach($recentOrders as $o): ?>
     csv.push([<?= json_encode($o['order_number']) ?>, <?= json_encode($o['customer_name']) ?>, "<?= number_format($o['total'], 2, '.', '') ?>", <?= json_encode($o['status']) ?>, <?= json_encode($o['created_at']) ?>]);
     <?php endforeach; ?>
 
-    let csvContent = "data:text/csv;charset=utf-8," + csv.map(e => e.map(cell => '"' + ('' + (cell ?? '')).replace(/"/g, '""') + '"').join(",")).join("\n");
-    let encodedUri = encodeURI(csvContent);
+    let csvContent = "\uFEFF" + csv.map(e => e.map(cell => '"' + ('' + (cell ?? '')).replace(/"/g, '""') + '"').join(",")).join("\r\n");
+    let blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    let url = URL.createObjectURL(blob);
     let link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
+    link.setAttribute("href", url);
     link.setAttribute("download", "Dashboard_Report_" + startDate + "_to_" + endDate + ".csv");
     document.body.appendChild(link);
     link.click();

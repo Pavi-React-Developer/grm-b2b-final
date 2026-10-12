@@ -62,14 +62,18 @@ class FabricCustomizationController extends Controller
      * Customization Workshop Detail Page (/fabrics/customize?fabric_id=...)
      * Runs based on the Fabric Rules: sizes available, pieces to stitch, consumption per piece
      */
-    public function customizeWorkshop()
+    public function customizeWorkshop($id = null)
     {
-        $fabricId = (int)($_GET['fabric_id'] ?? 0);
+        $fabricId = (int)($id ?: ($_GET['fabric_id'] ?? 0));
         $customizationId = (int)($_GET['id'] ?? 0);
 
         $customization = null;
         if ($fabricId > 0) {
             $customization = $this->model->getByFabricId($fabricId);
+            if (!$customization) {
+                // Also check by customization ID in case $id is the customization ID
+                $customization = $this->model->getById($fabricId);
+            }
         } elseif ($customizationId > 0) {
             $customization = $this->model->getById($customizationId);
         }
@@ -109,6 +113,7 @@ class FabricCustomizationController extends Controller
         $fabricId = (int)($input['fabric_id'] ?? 0);
         $customizationId = (int)($input['customization_id'] ?? 0);
         $sizes = $input['sizes'] ?? [];
+        $sets = $input['sets'] ?? [];
         $fabricQuantity = max(1, (int)($input['fabric_quantity'] ?? 1));
 
         $customization = null;
@@ -127,7 +132,8 @@ class FabricCustomizationController extends Controller
             $customization, 
             $sizes, 
             (float)$customization['fabric_stock'],
-            $fabricQuantity
+            $fabricQuantity,
+            $sets
         );
 
         $pricingResult = $this->service->calculatePricing(
@@ -167,6 +173,7 @@ class FabricCustomizationController extends Controller
         $fabricId = (int)($input['fabric_id'] ?? 0);
         $customizationId = (int)($input['customization_id'] ?? 0);
         $sizes = $input['sizes'] ?? [];
+        $sets = $input['sets'] ?? [];
         $fabricQuantity = max(1, (int)($input['fabric_quantity'] ?? 1));
         $shippingAddress = trim($input['shipping_address'] ?? 'Wholesale Delivery on File');
         $customerNotes = trim($input['notes'] ?? '');
@@ -184,7 +191,7 @@ class FabricCustomizationController extends Controller
         }
 
         // Validate consumption & stock
-        $calc = $this->service->calculateConsumption($customization, $sizes, (float)$customization['fabric_stock'], $fabricQuantity);
+        $calc = $this->service->calculateConsumption($customization, $sizes, (float)$customization['fabric_stock'], $fabricQuantity, $sets);
         if (!$calc['is_valid']) {
             echo json_encode(['success' => false, 'message' => implode(' ', $calc['errors'])]);
             exit;
@@ -197,6 +204,8 @@ class FabricCustomizationController extends Controller
             (int)$calc['total_pieces'],
             5.0
         );
+
+        $labelQuantities = $input['label_quantities'] ?? [];
 
         $userId = (int)Session::get('user_id');
         $db = Database::getInstance();
@@ -227,7 +236,10 @@ class FabricCustomizationController extends Controller
                 'grand_total'         => $pricing['total'],
                 'order_mode'          => 'request_quote',
                 'customer_notes'      => $customerNotes,
-                'sizes'               => $calc['breakdown']
+                'sizes'               => $calc['breakdown'],
+                'sets'                => $sets,
+                'label_quantities'    => $labelQuantities,
+                'labels'              => $labelQuantities
             ];
 
             $orderStmt = $db->prepare("
@@ -313,6 +325,7 @@ class FabricCustomizationController extends Controller
         $fabricId = (int)($input['fabric_id'] ?? 0);
         $customizationId = (int)($input['customization_id'] ?? 0);
         $sizes = $input['sizes'] ?? [];
+        $sets = $input['sets'] ?? [];
         $fabricQuantity = max(1, (int)($input['fabric_quantity'] ?? 1));
         $shippingAddress = trim($input['shipping_address'] ?? 'Wholesale Delivery');
         $customerNotes = trim($input['notes'] ?? '');
@@ -329,7 +342,7 @@ class FabricCustomizationController extends Controller
             exit;
         }
 
-        $calc = $this->service->calculateConsumption($customization, $sizes, (float)$customization['fabric_stock'], $fabricQuantity);
+        $calc = $this->service->calculateConsumption($customization, $sizes, (float)$customization['fabric_stock'], $fabricQuantity, $sets);
         if (!$calc['is_valid']) {
             echo json_encode(['success' => false, 'message' => implode(' ', $calc['errors'])]);
             exit;
@@ -407,6 +420,7 @@ class FabricCustomizationController extends Controller
         $fabricId = (int)($input['fabric_id'] ?? 0);
         $customizationId = (int)($input['customization_id'] ?? 0);
         $sizes = $input['sizes'] ?? [];
+        $sets = $input['sets'] ?? [];
         $fabricQuantity = max(1, (int)($input['fabric_quantity'] ?? 1));
         $shippingAddress = trim($input['shipping_address'] ?? 'Wholesale Delivery');
         $customerNotes = trim($input['notes'] ?? '');
@@ -431,7 +445,7 @@ class FabricCustomizationController extends Controller
             exit;
         }
 
-        $calc = $this->service->calculateConsumption($customization, $sizes, (float)$customization['fabric_stock'], $fabricQuantity);
+        $calc = $this->service->calculateConsumption($customization, $sizes, (float)$customization['fabric_stock'], $fabricQuantity, $sets);
         if (!$calc['is_valid']) {
             echo json_encode(['success' => false, 'message' => implode(' ', $calc['errors'])]);
             exit;
@@ -455,6 +469,8 @@ class FabricCustomizationController extends Controller
                 exit;
             }
         }
+
+        $labelQuantities = $input['label_quantities'] ?? [];
 
         $userId = (int)Session::get('user_id');
         $db = Database::getInstance();
@@ -487,7 +503,10 @@ class FabricCustomizationController extends Controller
                 'razorpay_payment_id' => $razorpayPaymentId,
                 'razorpay_order_id'   => $razorpayOrderId,
                 'customer_notes'      => $customerNotes,
-                'sizes'               => $calc['breakdown']
+                'sizes'               => $calc['breakdown'],
+                'sets'                => $sets,
+                'label_quantities'    => $labelQuantities,
+                'labels'              => $labelQuantities
             ];
 
             $orderStmt = $db->prepare("

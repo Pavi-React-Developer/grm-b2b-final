@@ -70,7 +70,7 @@ function orderStatusLabel(string $status): string
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                     </svg>
                     <p class="text-base sm:text-lg font-medium">You haven't placed any orders yet.</p>
-                    <a href="<?= BASE_URL ?>/catalog" class="text-[#25D366] font-bold hover:underline mt-2 inline-block text-sm">Browse Catalog</a>
+                    <a href="<?= BASE_URL ?>/catalog" class="text-[#F25996] hover:text-[#d8407d] font-bold hover:underline mt-2 inline-block text-sm">Browse Catalog</a>
                 </div>
             <?php else: ?>
                 <!-- Mobile View (Card List) -->
@@ -113,7 +113,7 @@ function orderStatusLabel(string $status): string
                                 <?php if (!empty($orderRules[$order['id']]['eligible']) && !$refundReq && $cancellationsEnabled): ?>
                                     <?php $listRuleData = $orderRules[$order['id']]; ?>
                                     <button type="button" 
-                                        onclick="openCancelModal(<?= $order['id'] ?>, '<?= htmlspecialchars($order['order_number']) ?>', <?= number_format($order['grand_total'] ?? $order['total_amount'], 2, '.', '') ?>, <?= number_format($listRuleData['refund_amount'], 2, '.', '') ?>, <?= number_format($listRuleData['fee_amount'], 2, '.', '') ?>, <?= $listRuleData['fee_percent'] ?>, '<?= number_format($order['weight_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['packaging_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['shipping_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['platform_fee'] ?? 0, 2, '.', '') ?>')"
+                                        onclick="openCancelModal(<?= $order['id'] ?>, '<?= htmlspecialchars($order['order_number']) ?>', <?= number_format($order['grand_total'] ?? $order['total_amount'], 2, '.', '') ?>, <?= number_format($listRuleData['refund_amount'], 2, '.', '') ?>, <?= number_format($listRuleData['fee_amount'], 2, '.', '') ?>, <?= $listRuleData['fee_percent'] ?>, '<?= number_format($order['weight_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['packaging_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['shipping_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['platform_fee'] ?? 0, 2, '.', '') ?>', <?= (int)($listRuleData['sla_days'] ?? 0) ?>)"
                                         class="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 rounded-xl text-xs font-bold transition-colors shadow-sm whitespace-nowrap">
                                         Cancel Order
                                     </button>
@@ -216,7 +216,7 @@ function orderStatusLabel(string $status): string
                                                 <?php if (!empty($orderRules[$order['id']]['eligible']) && !$refundReq && $cancellationsEnabled): ?>
                                                     <?php $listRuleData = $orderRules[$order['id']]; ?>
                                                     <button type="button" 
-                                                        onclick="openCancelModal(<?= $order['id'] ?>, '<?= htmlspecialchars($order['order_number']) ?>', <?= number_format($order['grand_total'] ?? $order['total_amount'], 2, '.', '') ?>, <?= number_format($listRuleData['refund_amount'], 2, '.', '') ?>, <?= number_format($listRuleData['fee_amount'], 2, '.', '') ?>, <?= $listRuleData['fee_percent'] ?>, '<?= number_format($order['weight_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['packaging_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['shipping_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['platform_fee'] ?? 0, 2, '.', '') ?>')"
+                                                        onclick="openCancelModal(<?= $order['id'] ?>, '<?= htmlspecialchars($order['order_number']) ?>', <?= number_format($order['grand_total'] ?? $order['total_amount'], 2, '.', '') ?>, <?= number_format($listRuleData['refund_amount'], 2, '.', '') ?>, <?= number_format($listRuleData['fee_amount'], 2, '.', '') ?>, <?= $listRuleData['fee_percent'] ?>, '<?= number_format($order['weight_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['packaging_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['shipping_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['platform_fee'] ?? 0, 2, '.', '') ?>', <?= (int)($listRuleData['sla_days'] ?? 0) ?>)"
                                                         class="text-red-600 font-bold bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-2 rounded-lg transition-colors shadow-sm text-xs">
                                                         Cancel Order
                                                     </button>
@@ -670,7 +670,7 @@ function orderStatusLabel(string $status): string
                             <?php if (!empty($orderRules[$order['id']]['eligible']) && !$refundReq && $cancellationsEnabled): ?>
                                 <?php $ruleData = $orderRules[$order['id']]; ?>
                                 <button
-                                    onclick="closeOrderModal('<?= $order['id'] ?>'); openCancelModal(<?= $order['id'] ?>, '<?= htmlspecialchars($order['order_number']) ?>', <?= number_format($order['grand_total'] ?? $order['total_amount'], 2, '.', '') ?>, <?= number_format($ruleData['refund_amount'], 2, '.', '') ?>, <?= number_format($ruleData['fee_amount'], 2, '.', '') ?>, <?= $ruleData['fee_percent'] ?>, '<?= number_format($order['weight_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['packaging_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['shipping_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['platform_fee'] ?? 0, 2, '.', '') ?>')"
+                                    onclick="closeOrderModal('<?= $order['id'] ?>'); openCancelModal(<?= $order['id'] ?>, '<?= htmlspecialchars($order['order_number']) ?>', <?= number_format($order['grand_total'] ?? $order['total_amount'], 2, '.', '') ?>, <?= number_format($ruleData['refund_amount'], 2, '.', '') ?>, <?= number_format($ruleData['fee_amount'], 2, '.', '') ?>, <?= $ruleData['fee_percent'] ?>, '<?= number_format($order['weight_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['packaging_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['shipping_fee'] ?? 0, 2, '.', '') ?>', '<?= number_format($order['platform_fee'] ?? 0, 2, '.', '') ?>', <?= (int)($ruleData['sla_days'] ?? 0) ?>)"
                                     class="text-red-600 hover:text-red-800 transition-colors text-xs sm:text-sm font-bold underline decoration-red-200 underline-offset-4 hover:decoration-red-600 py-1">
                                     Cancel Order
                                 </button>
@@ -798,6 +798,17 @@ function orderStatusLabel(string $status): string
                             <span id="refund-details-hint-text">The refund amount will be sent to this UPI ID.</span>
                         </p>
                     </div>
+
+                    <!-- Dynamic Refund SLA Notice -->
+                    <div id="cancel-sla-notice" class="p-3 sm:p-3.5 bg-gradient-to-r from-pink-50/80 via-rose-50/60 to-pink-50/80 border border-pink-200/90 rounded-xl text-xs flex items-center gap-2.5 text-gray-700 shadow-2xs">
+                        <div class="w-8 h-8 rounded-full bg-pink-100/80 border border-pink-200 flex items-center justify-center text-[#F25996] flex-shrink-0 shadow-2xs">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <span class="font-bold text-gray-900 text-xs sm:text-[13px] block">Estimated Refund Timeline</span>
+                            <span class="text-gray-600 text-[11px] sm:text-xs leading-snug" id="cancel-sla-text">Refund will be processed and credited within <strong>3 business days</strong>.</span>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Footer -->
@@ -833,16 +844,25 @@ function closeOrderModal(id) {
 // ── Cancel / Refund modal ─────────────────────────────────────────────────────
 let _cancelOrderId = null;
 
-function openCancelModal(orderId, orderNumber, totalPaid, refundAmount, feeAmount, feePercent, weightFee, packagingFee, shippingFee, platformFee) {
+function openCancelModal(orderId, orderNumber, totalPaid, refundAmount, feeAmount, feePercent, weightFee, packagingFee, shippingFee, platformFee, slaDays) {
     _cancelOrderId = orderId;
     document.getElementById('cancel-order-id').value   = orderId;
     document.getElementById('cancel-modal-subtitle').textContent = 'Order #' + orderNumber;
     
-    console.log('openCancelModal called with:', {totalPaid, refundAmount, feeAmount, weightFee, packagingFee, shippingFee, platformFee});
+    console.log('openCancelModal called with:', {totalPaid, refundAmount, feeAmount, weightFee, packagingFee, shippingFee, platformFee, slaDays});
 
     // Display Amounts
     document.getElementById('cancel-total-paid').textContent = '₹' + parseFloat(totalPaid).toLocaleString('en-IN', {minimumFractionDigits: 2});
     document.getElementById('cancel-modal-amount').textContent = '₹' + parseFloat(refundAmount).toLocaleString('en-IN', {minimumFractionDigits: 2});
+
+    // Dynamic SLA Days display
+    const slaTextEl = document.getElementById('cancel-sla-text');
+    const slaDaysInt = parseInt(slaDays, 10);
+    if (!isNaN(slaDaysInt) && slaDaysInt > 0) {
+        slaTextEl.innerHTML = `Your refund will be processed and credited within <strong class="text-[#F25996] font-bold">${slaDaysInt} ${slaDaysInt === 1 ? 'business day' : 'business days'}</strong> to your selected refund method.`;
+    } else {
+        slaTextEl.innerHTML = `Your refund will be processed and credited within <strong class="text-[#F25996] font-bold">1-2 business days</strong> to your selected refund method.`;
+    }
     
     // Display Collected Fees
     const feesSection = document.getElementById('cancel-collected-fees-section');

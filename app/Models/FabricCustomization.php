@@ -71,9 +71,10 @@ class FabricCustomization
         $stmt->execute($params);
         $programs = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Attach sizes to each
+        // Attach sizes and labels to each
         foreach ($programs as &$program) {
             $program['sizes'] = $this->getSizesByCustomizationId($program['id']);
+            $program['labels'] = $this->getLabelsByCustomizationId($program['id']);
         }
 
         return $programs;
@@ -113,6 +114,7 @@ class FabricCustomization
 
         if ($customization) {
             $customization['sizes'] = $this->getSizesByCustomizationId($customization['id']);
+            $customization['labels'] = $this->getLabelsByCustomizationId($customization['id']);
         }
 
         return $customization ?: null;
@@ -156,6 +158,7 @@ class FabricCustomization
 
         if ($customization) {
             $customization['sizes'] = $this->getSizesByCustomizationId($customization['id']);
+            $customization['labels'] = $this->getLabelsByCustomizationId($customization['id']);
             $customization['images'] = $this->getProductImages($fabricId);
         }
 
@@ -245,6 +248,7 @@ class FabricCustomization
 
         foreach ($fabrics as &$fabric) {
             $fabric['sizes'] = $this->getSizesByCustomizationId($fabric['id']);
+            $fabric['labels'] = $this->getLabelsByCustomizationId($fabric['id']);
             $fabric['images'] = $this->getProductImages($fabric['fabric_id']);
             if (empty($fabric['primary_image'])) {
                 $fabric['primary_image'] = !empty($fabric['images'][0]) ? $fabric['images'][0] : '/assets/images/fabric-placeholder.png';
@@ -257,15 +261,57 @@ class FabricCustomization
     /**
      * Get sizes configured for a customization rule
      */
-    public function getSizesByCustomizationId($customizationId)
+    public function getSizesByCustomizationId($customizationId, $onlyEnabled = true)
+    {
+        $sql = "SELECT * FROM fabric_customization_sizes WHERE customization_id = ?";
+        if ($onlyEnabled) {
+            $sql .= " AND enabled = 1";
+        }
+        $sql .= " ORDER BY sort_order ASC, id ASC";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([(int)$customizationId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Get labels/templates assigned to a customization rule
+     */
+    public function getLabelsByCustomizationId($customizationId)
     {
         $stmt = $this->db->prepare("
-            SELECT * FROM fabric_customization_sizes 
-            WHERE customization_id = ? AND enabled = 1 
-            ORDER BY sort_order ASC, id ASC
+            SELECT cl.* 
+            FROM customization_labels cl
+            JOIN fabric_customization_label_rel fclr ON cl.id = fclr.label_id
+            WHERE fclr.customization_id = ? AND cl.status = 'active'
+            ORDER BY cl.group_name ASC, cl.sort_order ASC, cl.id ASC
         ");
         $stmt->execute([(int)$customizationId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Sync assigned labels for a customization rule
+     */
+    public function syncCustomizationLabels($customizationId, array $labelIds)
+    {
+        $customizationId = (int)$customizationId;
+        if (!$customizationId) return;
+
+        $delStmt = $this->db->prepare("DELETE FROM fabric_customization_label_rel WHERE customization_id = ?");
+        $delStmt->execute([$customizationId]);
+
+        if (!empty($labelIds)) {
+            $insStmt = $this->db->prepare("
+                INSERT IGNORE INTO fabric_customization_label_rel (customization_id, label_id) 
+                VALUES (?, ?)
+            ");
+            foreach ($labelIds as $lid) {
+                $lid = (int)$lid;
+                if ($lid > 0) {
+                    $insStmt->execute([$customizationId, $lid]);
+                }
+            }
+        }
     }
 
     /**
@@ -310,11 +356,14 @@ class FabricCustomization
     }
 
     /**
-     * Create a new fabric rule and its size consumption rules
+     * Create a new fabric rule and its size consumption rules + assigned style labels
      */
-    public function create($data, $sizes = [])
+    public function create($data, $sizes = [], $labelIds = [])
     {
-        $this->db->beginTransaction();
+        $inTx = $this->db->inTransaction();
+        if (!$inTx) {
+            $this->db->beginTransaction();
+        }
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO fabric_customizations 
@@ -368,20 +417,30 @@ class FabricCustomization
                 ]);
             }
 
-            $this->db->commit();
+            // Sync labels
+            $this->syncCustomizationLabels($customizationId, $labelIds);
+
+            if (!$inTx) {
+                $this->db->commit();
+            }
             return $customizationId;
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if (!$inTx && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }
 
     /**
-     * Update an existing fabric rule and replace/sync its size consumption rules
+     * Update an existing fabric rule and replace/sync its size consumption rules + labels
      */
-    public function update($id, $data, $sizes = [])
+    public function update($id, $data, $sizes = [], $labelIds = [])
     {
-        $this->db->beginTransaction();
+        $inTx = $this->db->inTransaction();
+        if (!$inTx) {
+            $this->db->beginTransaction();
+        }
         try {
             $stmt = $this->db->prepare("
                 UPDATE fabric_customizations 
@@ -448,10 +507,17 @@ class FabricCustomization
                 ]);
             }
 
-            $this->db->commit();
+            // Sync labels
+            $this->syncCustomizationLabels((int)$id, $labelIds);
+
+            if (!$inTx) {
+                $this->db->commit();
+            }
             return true;
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if (!$inTx && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }
@@ -461,18 +527,28 @@ class FabricCustomization
      */
     public function delete($id)
     {
-        $this->db->beginTransaction();
+        $inTx = $this->db->inTransaction();
+        if (!$inTx) {
+            $this->db->beginTransaction();
+        }
         try {
+            $delLabels = $this->db->prepare("DELETE FROM fabric_customization_label_rel WHERE customization_id = ?");
+            $delLabels->execute([(int)$id]);
+
             $delSizes = $this->db->prepare("DELETE FROM fabric_customization_sizes WHERE customization_id = ?");
             $delSizes->execute([(int)$id]);
 
             $delRule = $this->db->prepare("DELETE FROM fabric_customizations WHERE id = ?");
             $delRule->execute([(int)$id]);
 
-            $this->db->commit();
+            if (!$inTx) {
+                $this->db->commit();
+            }
             return true;
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if (!$inTx && $this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             throw $e;
         }
     }

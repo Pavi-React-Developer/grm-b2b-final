@@ -66,7 +66,7 @@ class EmailService
      */
     public function sendCancellationRequested(array $user, array $order): bool
     {
-        $subject = "Cancellation Request Received — Order #{$order['order_number']}";
+        $subject = "Cancellation Request Received - Order #{$order['order_number']}";
         $body    = $this->buildCancellationRequestedHtml($user, $order);
         return $this->send($user['email'], $user['name'], $subject, $body);
     }
@@ -76,7 +76,7 @@ class EmailService
      */
     public function sendRefundProcessed(array $user, array $order, float $amount): bool
     {
-        $subject = "Refund of ₹" . number_format($amount, 2) . " Processed — Order #{$order['order_number']}";
+        $subject = "Refund of ₹" . number_format($amount, 2) . " Processed - Order #{$order['order_number']}";
         $body    = $this->buildRefundProcessedHtml($user, $order, $amount);
         return $this->send($user['email'], $user['name'], $subject, $body);
     }
@@ -86,7 +86,7 @@ class EmailService
      */
     public function sendRefundRejected(array $user, array $order, string $reason): bool
     {
-        $subject = "Update on Your Cancellation Request — Order #{$order['order_number']}";
+        $subject = "Update on Your Cancellation Request - Order #{$order['order_number']}";
         $body    = $this->buildRefundRejectedHtml($user, $order, $reason);
         return $this->send($user['email'], $user['name'], $subject, $body);
     }
@@ -96,7 +96,7 @@ class EmailService
      */
     public function sendOrderPackedWithInvoice(array $user, array $order, string $pdfBinary, string $pdfFilename, ?string $video1Url = null, ?string $video2Url = null): bool
     {
-        $subject = "Your Order #{$order['order_number']} is Packed & Tax Invoice Attached 📦";
+        $subject = "Your Order #{$order['order_number']} is Packed & Tax Invoice Attached";
         $body    = $this->buildOrderPackedHtml($user, $order, $video1Url, $video2Url);
 
         $attachments = [];
@@ -342,6 +342,9 @@ class EmailService
         if (class_exists(PHPMailer::class)) {
             $mail = new PHPMailer(true);
             try {
+                $mail->CharSet  = 'UTF-8';
+                $mail->Encoding = 'base64';
+
                 $host = defined('SMTP_HOST') ? SMTP_HOST : ($this->envVars['SMTP_HOST'] ?? $this->envVars['MAIL_HOST'] ?? 'smtp.gmail.com');
                 $user = defined('SMTP_USER') ? SMTP_USER : ($this->envVars['SMTP_USER'] ?? $this->envVars['MAIL_USERNAME'] ?? '');
                 $pass = defined('SMTP_PASS') ? SMTP_PASS : ($this->envVars['SMTP_PASS'] ?? $this->envVars['MAIL_PASSWORD'] ?? '');
@@ -398,15 +401,19 @@ class EmailService
         // Fallback to standard mail()
         $headers  = "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $headers .= "Content-Transfer-Encoding: base64\r\n";
         $headers .= "From: {$this->fromName} <{$this->fromEmail}>\r\n";
         $headers .= "Reply-To: {$this->fromEmail}\r\n";
         $headers .= "X-Mailer: PHP/" . phpversion();
 
+        $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+        $encodedBody    = chunk_split(base64_encode($htmlBody));
+
         $to = "{$toName} <{$toEmail}>";
-        $result = @mail($to, $subject, $htmlBody, $headers);
+        $result = @mail($to, $encodedSubject, $encodedBody, $headers);
 
         if (!$result) {
-            error_log("[EmailService mail() Error] Failed to send email to {$toEmail} — Subject: {$subject}");
+            error_log("[EmailService mail() Error] Failed to send email to {$toEmail} - Subject: {$subject}");
         }
 
         return $result;

@@ -102,16 +102,28 @@ $renderItems = function($items) use ($textColor, $globalFontSize, $globalIconSiz
             ?>
             <div class="absolute top-full <?= $isMega ? 'left-1/2 -translate-x-1/2 origin-top w-[750px] max-w-[90vw]' : 'left-0 origin-top-left min-w-[260px] w-auto max-w-sm' ?> mt-2 shadow-2xl border border-gray-100 rounded-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform overflow-hidden" style="background-color: <?= htmlspecialchars($dropdownBg) ?>;">
                 <?php if (!empty($catIds)): 
-                    $db = \Core\Database::getInstance();
-                    $inClause = implode(',', $catIds);
-                    $subCats = $db->query("SELECT id, name, slug FROM categories WHERE id IN ($inClause) AND status = 'active' ORDER BY name ASC")->fetchAll();
-                    if (count($subCats) > 0):
+                    $navDropCacheKey = 'nav_drop_' . md5(implode(',', $catIds));
+                    $navDropData = class_exists('\Core\Cache') ? \Core\Cache::get($navDropCacheKey) : null;
+                    if ($navDropData === null) {
+                        $db = \Core\Database::getInstance();
+                        $inClause = implode(',', array_map('intval', $catIds));
+                        $subCats = $db->query("SELECT id, name, slug FROM categories WHERE id IN ($inClause) AND status = 'active' ORDER BY name ASC")->fetchAll();
+                        $navDropData = [];
+                        foreach ($subCats as $subCat) {
+                            $stmt = $db->prepare("SELECT id, name, slug FROM products WHERE category_id = ? AND status = 'active' AND (is_customizable = 0 OR is_customizable IS NULL) ORDER BY name ASC LIMIT 10");
+                            $stmt->execute([$subCat['id']]);
+                            $subCat['products'] = $stmt->fetchAll();
+                            $navDropData[] = $subCat;
+                        }
+                        if (class_exists('\Core\Cache')) {
+                            \Core\Cache::set($navDropCacheKey, $navDropData, 3600);
+                        }
+                    }
+                    if (count($navDropData) > 0):
                 ?>
                     <div class="<?= $isMega ? 'p-6 sm:p-8 flex flex-wrap gap-x-10 gap-y-8' : 'p-5 flex flex-col' ?> overflow-y-auto overflow-x-hidden" style="max-height: 75vh;">
-                        <?php foreach ($subCats as $subCat): 
-                            $stmt = $db->prepare("SELECT id, name, slug FROM products WHERE category_id = ? AND status = 'active' ORDER BY name ASC LIMIT 10");
-                            $stmt->execute([$subCat['id']]);
-                            $products = $stmt->fetchAll();
+                        <?php foreach ($navDropData as $subCat): 
+                            $products = $subCat['products'] ?? [];
                         ?>
                         <div class="flex flex-col <?= $isMega ? 'flex-1 min-w-[180px] max-w-[260px]' : 'w-full' ?>">
                             <a href="<?= BASE_URL ?>/catalog?category_id=<?= htmlspecialchars($subCat['id']) ?>" class="block font-bold uppercase mb-3 hover:opacity-80 transition-opacity border-b border-gray-200/80 pb-2.5 text-xs sm:text-sm tracking-wider" style="color: <?= htmlspecialchars($dropdownText) ?>;">

@@ -269,28 +269,51 @@ $vType = $savedVerification['type'] ?? ($buyer['gst_flag'] ? 'gst' : 'pan');
         $shopPhotos = array_values(array_filter($buyer['media'] ?? [], function($m) {
             return empty($m['purpose']) || $m['purpose'] === 'shop_verification';
         }));
+        $slotLabels = [
+            'Photo 1: Shop Front / Outside',
+            'Photo 2: Inside Shop / Space',
+            'Photo 3: Stock / Racks',
+            'Photo 4: Counter / Signboard'
+        ];
     ?>
     <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden flex flex-col">
         <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-            <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Verification Photos</h3>
-            <span class="text-xs font-medium text-gray-500"><?= count($shopPhotos) ?> photo(s)</span>
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V10C19 8.89543 18.1046 8 17 8H7C5.89543 8 5 8.89543 5 10V21M3 21H21M9 21V16H15V21M6 8L7.5 4H16.5L18 8M6 8H18"></path></svg>
+                <h3 class="text-sm font-bold text-gray-900 uppercase tracking-wider">Shop Verification Photos</h3>
+            </div>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-full <?= count($shopPhotos) >= 2 ? 'bg-pink-50 text-[#F25996] border border-pink-200' : 'bg-gray-100 text-gray-600' ?>">
+                <?= count($shopPhotos) ?> / 4 Photo(s)
+            </span>
         </div>
         <div class="p-6 flex-1">
             <?php if (empty($shopPhotos)): ?>
                 <div class="h-full min-h-[200px] flex items-center justify-center bg-gray-50 rounded-xl text-gray-500 border-2 border-gray-200 border-dashed">
                     <div class="text-center">
                         <svg class="w-8 h-8 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <p class="text-sm font-medium">No photos uploaded.</p>
+                        <p class="text-sm font-medium">No shop photos uploaded.</p>
                     </div>
                 </div>
             <?php else: ?>
-                <div class="grid grid-cols-2 gap-4">
-                    <?php foreach($shopPhotos as $media): ?>
-                        <div class="border rounded-xl overflow-hidden bg-gray-100 group relative aspect-[4/3] shadow-sm">
-                            <img src="<?= htmlspecialchars(get_image_url($media['file_path'])) ?>" alt="Shop Photo" class="w-full h-full object-cover" loading="lazy" decoding="async">
-                            <a href="<?= htmlspecialchars(get_image_url($media['file_path'])) ?>" target="_blank" class="absolute inset-0 bg-transparent hover:bg-black/40 transition-all flex items-center justify-center rounded-xl no-pill" style="background-color: transparent !important; border-radius: 0.75rem !important;">
-                                <span class="text-white opacity-0 group-hover:opacity-100 font-bold tracking-wider text-xs uppercase bg-black/75 px-4 py-2 rounded-full transform translate-y-2 group-hover:translate-y-0 transition-all shadow-md pointer-events-none">View Full Size</span>
-                            </a>
+                <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <?php foreach($shopPhotos as $idx => $media): ?>
+                        <?php $slotTitle = $slotLabels[$idx] ?? ('Photo ' . ($idx + 1)); ?>
+                        <div class="border border-pink-100 rounded-2xl overflow-hidden bg-gray-50 group relative shadow-xs flex flex-col hover:shadow-md transition-all">
+                            <div class="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
+                                <img src="<?= htmlspecialchars(get_image_url($media['file_path'])) ?>" alt="<?= htmlspecialchars($slotTitle) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" decoding="async">
+                                <span class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 text-white font-black text-[10px] shadow-sm backdrop-blur-xs">
+                                    #<?= $idx + 1 ?>
+                                </span>
+                                <a href="<?= htmlspecialchars(get_image_url($media['file_path'])) ?>" target="_blank" class="absolute inset-0 bg-transparent hover:bg-black/40 transition-all flex items-center justify-center rounded-2xl no-pill" style="background-color: transparent !important;">
+                                    <span class="text-white opacity-0 group-hover:opacity-100 font-bold tracking-wider text-[11px] uppercase bg-black/80 px-3 py-1.5 rounded-full transform translate-y-2 group-hover:translate-y-0 transition-all shadow-md pointer-events-none flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                        Full Size
+                                    </span>
+                                </a>
+                            </div>
+                            <div class="p-2.5 bg-white border-t border-gray-100">
+                                <p class="text-xs font-bold text-gray-900 truncate" title="<?= htmlspecialchars($slotTitle) ?>"><?= htmlspecialchars($slotTitle) ?></p>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -634,35 +657,67 @@ function verifyGstPan(type, value, userId) {
 
 function promptReject(userId, businessName) {
     Swal.fire({
-        title: 'Reject Registration',
-        html: `<p class="text-sm text-gray-600 mb-2">Rejecting application from: <strong class="text-gray-900">${businessName}</strong></p><p class="text-xs text-gray-500">Please enter the reason for rejection:</p>`,
-        input: 'textarea',
-        inputPlaceholder: 'e.g., Documents provided are unclear or invalid...',
-        icon: 'warning',
+        html: `
+            <div class="text-center">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center mb-3.5 shadow-sm">
+                    <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 font-display mb-1">Reject Registration</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Rejecting application for <span class="font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">${businessName}</span>
+                </p>
+
+                <div class="text-left mb-3">
+                    <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Quick Reasons</label>
+                    <div class="flex flex-wrap gap-1.5 mb-3">
+                        <button type="button" onclick="setRejectReason('Unclear or invalid shop photos provided.')" class="text-[11px] font-medium px-2.5 py-1 bg-gray-50 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-gray-200 rounded-full text-gray-600 transition-all cursor-pointer">📸 Unclear Shop Photos</button>
+                        <button type="button" onclick="setRejectReason('Invalid or expired GST/PAN document.')" class="text-[11px] font-medium px-2.5 py-1 bg-gray-50 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-gray-200 rounded-full text-gray-600 transition-all cursor-pointer">📄 Invalid GST/PAN</button>
+                        <button type="button" onclick="setRejectReason('Business details and tax registration do not match.')" class="text-[11px] font-medium px-2.5 py-1 bg-gray-50 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-gray-200 rounded-full text-gray-600 transition-all cursor-pointer">🏢 Business Mismatch</button>
+                        <button type="button" onclick="setRejectReason('Incomplete shop address or contact verification failed.')" class="text-[11px] font-medium px-2.5 py-1 bg-gray-50 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-gray-200 rounded-full text-gray-600 transition-all cursor-pointer">📍 Incomplete Address</button>
+                    </div>
+                </div>
+
+                <div class="text-left">
+                    <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Reason for Rejection <span class="text-red-500">*</span></label>
+                    <textarea id="swal-rejection-reason" rows="3" placeholder="Please enter the reason for rejection..." class="w-full text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all resize-none"></textarea>
+                    <p class="text-[11px] text-gray-400 mt-1">This reason will be recorded and emailed to the applicant.</p>
+                </div>
+            </div>
+        `,
         showCancelButton: true,
         confirmButtonText: 'Confirm Rejection',
         cancelButtonText: 'Cancel',
         buttonsStyling: false,
         customClass: {
-            popup: 'rounded-3xl p-6 md:p-8 shadow-2xl border border-gray-100 bg-white',
-            title: 'text-2xl font-black text-gray-900 font-display',
-            htmlContainer: 'text-sm text-gray-600',
-            input: 'rounded-2xl border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 text-sm p-4 w-full text-gray-800',
-            actions: 'flex items-center justify-center gap-3 mt-6',
-            confirmButton: 'inline-flex items-center justify-center px-7 py-3 font-bold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-95 rounded-full shadow-md transition-all cursor-pointer',
-            cancelButton: 'inline-flex items-center justify-center px-7 py-3 font-bold text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 active:scale-95 border border-gray-200 rounded-full shadow-sm transition-all cursor-pointer'
+            popup: 'rounded-2xl p-6 sm:p-7 shadow-2xl border border-gray-100 bg-white max-w-md w-full',
+            actions: 'flex items-center justify-end gap-2.5 mt-5 pt-3 border-t border-gray-100 w-full',
+            confirmButton: 'inline-flex items-center justify-center px-5 py-2.5 font-bold text-xs text-white bg-red-600 hover:bg-red-700 active:scale-95 rounded-xl shadow-md transition-all cursor-pointer',
+            cancelButton: 'inline-flex items-center justify-center px-4 py-2.5 font-semibold text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-95 rounded-xl transition-all cursor-pointer'
         },
-        inputValidator: (value) => {
-            if (!value || value.trim().length === 0) {
-                return 'You need to write a rejection reason!';
+        preConfirm: () => {
+            const reason = document.getElementById('swal-rejection-reason')?.value.trim();
+            if (!reason) {
+                Swal.showValidationMessage('Please provide a reason for rejection.');
+                return false;
             }
+            return reason;
         }
     }).then((result) => {
-        if (result.isConfirmed) {
+        if (result.isConfirmed && result.value) {
             document.getElementById('reject-user-id').value = userId;
             document.getElementById('reject-reason-input').value = result.value;
             document.getElementById('reject-form').submit();
         }
     });
+}
+
+function setRejectReason(text) {
+    const el = document.getElementById('swal-rejection-reason');
+    if (el) {
+        el.value = text;
+        el.focus();
+    }
 }
 </script>

@@ -24,9 +24,11 @@ class CatalogController extends Controller
         
         $products = $productModel->getAllActive($searchQuery, $categoryId, $subCategoryId, $attributeFilters, $sort);
         
-        // Attach variants to each product
+        // Attach variants to each product (batch loaded in a single query to eliminate N+1 latency)
+        $pIds = array_column($products, 'id');
+        $variantsMap = $productModel->getInventoryVariantsForProducts($pIds);
         foreach ($products as &$product) {
-            $product['variants'] = $productModel->getInventoryProductVariants($product['id']);
+            $product['variants'] = $variantsMap[$product['id']] ?? [];
         }
         
         $categoryModel = new Category();
@@ -176,8 +178,18 @@ class CatalogController extends Controller
             $this->redirect('/catalog');
         }
 
+        // Customizable fabrics belong ONLY to the customization module
+        if (!empty($product['is_customizable'])) {
+            $this->redirect('/customize/fabric/' . (int)$product['id']);
+            return;
+        }
+
         $categoryModel = new Category();
-        $category = $categoryModel->findById($product['category_id']);
+        $category = !empty($product['category_id']) ? $categoryModel->findById($product['category_id']) : null;
+        if (empty($category) || ($category['status'] ?? '') !== 'active') {
+            $this->redirect('/catalog');
+            return;
+        }
         $subCategory = !empty($product['sub_category_id']) ? $categoryModel->findById($product['sub_category_id']) : null;
 
         $images = $productModel->getImages($id);
@@ -208,9 +220,9 @@ class CatalogController extends Controller
         // Fast random sampling: avoids ORDER BY RAND() full table scan
         // Uses primary key index for near-instant random selection
         $db = \Core\Database::getInstance();
-        $maxStmt = $db->query("SELECT MAX(id) FROM products WHERE status = 'active'");
+        $maxStmt = $db->query("SELECT MAX(p.id) FROM products p JOIN categories c ON p.category_id = c.id AND c.status = 'active' WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL)");
         $maxId   = (int) $maxStmt->fetchColumn();
-        $randomOffset = max(0, rand(0, $maxId - 10));
+        $randomOffset = max(0, rand(0, max(0, $maxId - 10)));
 
         $stmt = $db->prepare("
             SELECT p.*, c.name AS category_name,
@@ -218,7 +230,7 @@ class CatalogController extends Controller
                    pv_agg.base_price,
                    pv_agg.discount_price
             FROM products p
-            JOIN categories c ON p.category_id = c.id
+            JOIN categories c ON p.category_id = c.id AND c.status = 'active'
             LEFT JOIN product_images img ON img.product_id = p.id AND img.is_primary = 1
             LEFT JOIN (
                 SELECT product_id, 
@@ -226,7 +238,7 @@ class CatalogController extends Controller
                        MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price 
                 FROM product_variants GROUP BY product_id
             ) pv_agg ON pv_agg.product_id = p.id
-            WHERE p.status = 'active' AND p.id != :id AND p.id >= :offset
+            WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) AND p.id != :id AND p.id >= :offset
             LIMIT 4
         ");
         $stmt->execute(['id' => $id, 'offset' => $randomOffset]);
@@ -240,7 +252,7 @@ class CatalogController extends Controller
                         pv_agg.base_price,
                         pv_agg.discount_price
                  FROM products p
-                 JOIN categories c ON p.category_id = c.id
+                 JOIN categories c ON p.category_id = c.id AND c.status = 'active'
                  LEFT JOIN product_images img ON img.product_id = p.id AND img.is_primary = 1
                  LEFT JOIN (
                      SELECT product_id, 
@@ -248,7 +260,7 @@ class CatalogController extends Controller
                             MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price 
                      FROM product_variants GROUP BY product_id
                  ) pv_agg ON pv_agg.product_id = p.id
-                 WHERE p.status = 'active' AND p.id != :id
+                 WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) AND p.id != :id
                 LIMIT 4
             ");
             $stmt->execute(['id' => $id]);

@@ -215,11 +215,19 @@ class Category extends Model
         return (int)$stmt->fetchColumn();
     }
 
+    public function getAttributeCount(int $id): int
+    {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM attributes WHERE category_id = :id");
+        $stmt->execute(['id' => $id]);
+        return (int)$stmt->fetchColumn();
+    }
+
     public function getCounts(int $id): array
     {
         return [
             'product_count' => $this->getProductCount($id),
-            'subcategory_count' => $this->getSubCategoryCount($id)
+            'subcategory_count' => $this->getSubCategoryCount($id),
+            'attribute_count' => $this->getAttributeCount($id)
         ];
     }
 
@@ -235,7 +243,8 @@ class Category extends Model
             $this->db->exec("SET FOREIGN_KEY_CHECKS=0");
 
             // 1. Unassign all products belonging to this category (do NOT delete products)
-            $stmtProd = $this->db->prepare("UPDATE products SET category_id = NULL WHERE category_id = :id");
+            // Also reset sub_category_id on products linked to subcategories of this category
+            $stmtProd = $this->db->prepare("UPDATE products SET category_id = NULL, sub_category_id = NULL WHERE category_id = :id");
             $stmtProd->execute(['id' => $id]);
 
             // 2. Unassign all subcategories belonging to this category (do NOT delete subcategories)

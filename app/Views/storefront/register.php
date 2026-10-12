@@ -567,11 +567,16 @@
                         
                         <!-- Upload Section -->
                         <div class="mb-6">
-                            <label class="flex items-center text-sm font-bold text-gray-700 mb-1">
-                                <svg class="w-4 h-4 mr-2" style="color: #F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                Upload Shop Photos <span class="text-red-500 ml-1">*</span>
-                            </label>
-                            <p class="text-sm text-gray-500 font-medium mb-3 ml-6">Please upload at least 2 photos (inside and outside).</p>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="flex items-center text-sm font-bold text-gray-700">
+                                    <svg class="w-4 h-4 mr-2" style="color: #F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    Upload Shop Photos <span class="text-red-500 ml-1">*</span>
+                                </label>
+                                <span id="shop_photos_counter_badge" class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-pink-100 text-[#F25996] border border-pink-200">
+                                    0 / 4 Uploaded
+                                </span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-gray-500 font-medium mb-3 ml-6">Please upload 2 to 4 photos (inside & outside views, display, and stock areas).</p>
                             
                             <div id="dropzone_container" class="border-2 border-dashed border-gray-300 rounded-2xl p-6 md:p-8 text-center bg-gray-50/50 hover:bg-[#FDBFDD]/20 transition-colors relative group">
                                 <input id="shop_photos" name="shop_photos[]" type="file" multiple accept="image/jpeg, image/png, image/webp" required class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="updateFileName(this)" onclick="this.value=null;">
@@ -579,21 +584,25 @@
                                 <div id="upload_icon" class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300" style="background-color: rgba(253, 191, 221, 0.5);">
                                     <svg class="w-6 h-6" style="color: #F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                                 </div>
-                                <h4 id="upload_text" class="text-gray-900 font-bold mb-1 text-base">Click or drag & drop to upload</h4>
-                                <p id="upload_subtext" class="text-xs text-gray-500 font-medium mb-6">JPG, PNG or WEBP (Max size 5MB each)</p>
+                                <h4 id="upload_text" class="text-gray-900 font-bold mb-1 text-base">Click or drag & drop to upload (Max 4 Photos)</h4>
+                                <p id="upload_subtext" class="text-xs text-gray-500 font-medium mb-5">JPG, PNG or WEBP (Max size 5MB each)</p>
 
-                                <div class="flex flex-col sm:flex-row items-center justify-center gap-4 relative z-0">
-                                    <div class="flex-1 bg-white border border-gray-200 rounded-xl py-3 px-4 flex items-center text-xs font-semibold text-gray-600 w-full shadow-sm">
-                                        <div class="w-8 h-8 rounded flex items-center justify-center mr-3 shrink-0" style="background-color: #FDBFDD; color: #F25996;">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V10C19 8.89543 18.1046 8 17 8H7C5.89543 8 5 8.89543 5 10V21M3 21H21M9 21V16H15V21M6 8L7.5 4H16.5L18 8M6 8H18"></path></svg>
-                                        </div>
-                                        Photo 1: Shop Front / Outside View
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 relative z-0">
+                                    <div class="bg-white border border-gray-200 rounded-xl py-2 px-2.5 flex items-center text-[11px] font-semibold text-gray-700 shadow-2xs">
+                                        <div class="w-6 h-6 rounded flex items-center justify-center mr-2 shrink-0 bg-pink-100 text-[#F25996] font-bold text-xs">1</div>
+                                        <span class="truncate">Photo 1: Shop Front</span>
                                     </div>
-                                    <div class="flex-1 bg-white border border-gray-200 rounded-xl py-3 px-4 flex items-center text-xs font-semibold text-gray-600 w-full shadow-sm">
-                                        <div class="w-8 h-8 rounded flex items-center justify-center mr-3 shrink-0" style="background-color: #FDBFDD; color: #F25996;">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                                        </div>
-                                        Photo 2: Inside Shop / Business Space
+                                    <div class="bg-white border border-gray-200 rounded-xl py-2 px-2.5 flex items-center text-[11px] font-semibold text-gray-700 shadow-2xs">
+                                        <div class="w-6 h-6 rounded flex items-center justify-center mr-2 shrink-0 bg-pink-100 text-[#F25996] font-bold text-xs">2</div>
+                                        <span class="truncate">Photo 2: Inside View</span>
+                                    </div>
+                                    <div class="bg-white border border-gray-200 rounded-xl py-2 px-2.5 flex items-center text-[11px] font-semibold text-gray-700 shadow-2xs">
+                                        <div class="w-6 h-6 rounded flex items-center justify-center mr-2 shrink-0 bg-pink-100 text-[#F25996] font-bold text-xs">3</div>
+                                        <span class="truncate">Photo 3: Stock / Racks</span>
+                                    </div>
+                                    <div class="bg-white border border-gray-200 rounded-xl py-2 px-2.5 flex items-center text-[11px] font-semibold text-gray-700 shadow-2xs">
+                                        <div class="w-6 h-6 rounded flex items-center justify-center mr-2 shrink-0 bg-pink-100 text-[#F25996] font-bold text-xs">4</div>
+                                        <span class="truncate">Photo 4: Sign / Counter</span>
                                     </div>
                                 </div>
                             </div>
@@ -602,8 +611,8 @@
                                 <span id="shop_photos-error-text">Please upload at least 2 photos (inside and outside views).</span>
                             </div>
                             
-                            <!-- Image Previews Container -->
-                            <div id="image_previews" class="flex flex-wrap gap-3 mt-4 empty:hidden"></div>
+                            <!-- Dynamic 4-Slot Image Previews Container with Remove Actions -->
+                            <div id="image_previews" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 empty:hidden"></div>
                         </div>
 
                         <hr class="border-gray-100 mb-6">
@@ -1211,12 +1220,39 @@ function _liveValidate(id, fieldIdForValidate) {
 });
 
 let selectedFiles = [];
+const MAX_SHOP_PHOTOS = 4;
+const SHOP_SLOT_LABELS = [
+    'Photo 1: Shop Front / Outside',
+    'Photo 2: Inside Shop / Space',
+    'Photo 3: Stock / Racks',
+    'Photo 4: Counter / Signboard'
+];
 
 function updateFileName(input) {
     if (input.files) {
+        let addedCount = 0;
+        let excessCount = 0;
         Array.from(input.files).forEach(file => {
-            selectedFiles.push(file);
+            if (selectedFiles.length < MAX_SHOP_PHOTOS) {
+                // Check if file already added
+                const exists = selectedFiles.some(f => f.name === file.name && f.size === file.size);
+                if (!exists) {
+                    selectedFiles.push(file);
+                    addedCount++;
+                }
+            } else {
+                excessCount++;
+            }
         });
+
+        if (excessCount > 0) {
+            Swal.fire({
+                title: 'Photo Limit Reached',
+                text: `You can upload a maximum of 4 shop photos. The first 4 selected photos have been kept.`,
+                icon: 'warning',
+                confirmButtonColor: '#F25996'
+            });
+        }
     }
     
     syncInputFiles();
@@ -1235,6 +1271,7 @@ function removeFile(index) {
 
 function syncInputFiles() {
     const input = document.getElementById('shop_photos');
+    if (!input) return;
     const dt = new DataTransfer();
     selectedFiles.forEach(file => dt.items.add(file));
     input.files = dt.files;
@@ -1242,17 +1279,44 @@ function syncInputFiles() {
 
 function renderPreviews() {
     const previewContainer = document.getElementById('image_previews');
+    const badgeCounter = document.getElementById('shop_photos_counter_badge');
+    if (!previewContainer) return;
+
     previewContainer.innerHTML = '';
+    
+    if (badgeCounter) {
+        badgeCounter.textContent = `${selectedFiles.length} / 4 Uploaded`;
+        if (selectedFiles.length >= 2 && selectedFiles.length <= 4) {
+            badgeCounter.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200';
+        } else if (selectedFiles.length > 4) {
+            badgeCounter.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200';
+        } else {
+            badgeCounter.className = 'text-xs font-bold px-2.5 py-0.5 rounded-full bg-pink-100 text-[#F25996] border border-pink-200';
+        }
+    }
     
     selectedFiles.forEach((file, index) => {
         const url = URL.createObjectURL(file);
+        const slotName = SHOP_SLOT_LABELS[index] || `Photo ${index + 1}`;
+        const sizeKb = Math.round(file.size / 1024);
+        const sizeFormatted = sizeKb > 1024 ? (sizeKb / 1024).toFixed(1) + ' MB' : sizeKb + ' KB';
+
         const div = document.createElement('div');
-        div.className = 'relative group rounded-lg overflow-hidden border border-gray-200 w-24 h-24 shadow-sm shrink-0';
+        div.className = 'relative group rounded-2xl overflow-hidden border-2 border-pink-200 bg-white shadow-sm flex flex-col transition-all hover:shadow-md';
         div.innerHTML = `
-            <img src="${url}" class="w-full h-full object-cover">
-            <button type="button" onclick="removeFile(${index})" class="absolute top-1 right-1 bg-white text-red-500 rounded-full p-1 shadow hover:bg-red-500 hover:text-white transition-colors z-20">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
+            <div class="relative w-full aspect-square bg-gray-100 overflow-hidden">
+                <img src="${url}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                <div class="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/70 text-white font-bold text-[10px] backdrop-blur-xs">
+                    #${index + 1}
+                </div>
+                <button type="button" onclick="removeFile(${index})" title="Remove Photo" class="absolute top-2 right-2 bg-white/95 text-red-500 hover:bg-red-500 hover:text-white rounded-full p-1.5 shadow-md transition-colors z-20 cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="p-2.5 bg-white border-t border-gray-100 flex flex-col">
+                <span class="text-[11px] font-bold text-gray-900 truncate" title="${slotName}">${slotName}</span>
+                <span class="text-[10px] text-gray-400 font-medium">${sizeFormatted}</span>
+            </div>
         `;
         previewContainer.appendChild(div);
     });
@@ -1264,13 +1328,13 @@ function updateDropzoneUI() {
     const iconElement = document.getElementById('upload_icon');
     
     if (selectedFiles.length > 0) {
-        textElement.textContent = selectedFiles.length + " file(s) selected";
+        textElement.textContent = `${selectedFiles.length} of 4 photo(s) selected`;
         textElement.style.color = '#F25996';
-        subtextElement.textContent = "Ready to upload";
+        subtextElement.textContent = selectedFiles.length >= 2 ? "Ready to upload (Click or drag to add more)" : "Please add at least 1 more photo";
         iconElement.innerHTML = '<svg class="w-6 h-6" style="color: #F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
         iconElement.style.backgroundColor = 'rgba(253, 191, 221, 0.5)';
     } else {
-        textElement.textContent = "Click or drag & drop to upload";
+        textElement.textContent = "Click or drag & drop to upload (Max 4 Photos)";
         textElement.style.color = '';
         subtextElement.textContent = "JPG, PNG or WEBP (Max size 5MB each)";
         iconElement.innerHTML = '<svg class="w-6 h-6" style="color: #F25996;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>';

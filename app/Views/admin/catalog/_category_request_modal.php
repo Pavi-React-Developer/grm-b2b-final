@@ -92,10 +92,10 @@
                 </div>
 
                 <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">
-                    <button type="button" onclick="closeCategoryRequestModal()" class="px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button type="button" onclick="closeCategoryRequestModal()" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="btnSubmitCat" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                    <button type="submit" id="btnSubmitCat" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
                         <span>Submit for Approval</span>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </button>
@@ -149,10 +149,10 @@
                 </div>
 
                 <div class="pt-3 border-t border-gray-100 flex items-center justify-end gap-3">
-                    <button type="button" onclick="closeCategoryRequestModal()" class="px-4 py-2.5 border border-gray-300 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
+                    <button type="button" onclick="closeCategoryRequestModal()" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">
                         Cancel
                     </button>
-                    <button type="submit" id="btnSubmitSub" class="px-5 py-2.5 bg-[#F25996] hover:bg-[#e04481] text-white rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
+                    <button type="submit" id="btnSubmitSub" class="px-6 py-2.5 bg-[#F25996] hover:bg-[#e04481] text-white rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center gap-2">
                         <span>Submit Subcategory</span>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
                     </button>

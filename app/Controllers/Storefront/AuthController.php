@@ -273,9 +273,14 @@ class AuthController extends Controller
             }
         }
 
-        // Validate photos (at least 2 required)
+        // Validate photos (at least 2 required, maximum 4 allowed)
         if (!isset($_FILES['shop_photos']) || count($_FILES['shop_photos']['name']) < 2 || $_FILES['shop_photos']['error'][0] === UPLOAD_ERR_NO_FILE) {
             Session::setFlash('error', 'Please upload at least 2 shop photos for verification.');
+            $this->redirect('/register');
+        }
+
+        if (count($_FILES['shop_photos']['name']) > 4) {
+            Session::setFlash('error', 'You can upload a maximum of 4 shop photos.');
             $this->redirect('/register');
         }
 
@@ -307,8 +312,10 @@ class AuthController extends Controller
 
         $tempFiles = [];
         $uploader = new CloudinaryUploader();
+        $uploadedCount = 0;
 
         foreach ($_FILES['shop_photos']['tmp_name'] as $key => $tmpName) {
+            if ($uploadedCount >= 4) break; // Enforce maximum 4 shop photos
             if ($_FILES['shop_photos']['error'][$key] === UPLOAD_ERR_OK) {
                 $ext = strtolower(pathinfo($_FILES['shop_photos']['name'][$key], PATHINFO_EXTENSION));
                 if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) continue;
@@ -320,6 +327,7 @@ class AuthController extends Controller
                         'path' => $cloudinaryResponse['secure_url'],
                         'type' => 'image/webp'
                     ];
+                    $uploadedCount++;
                 }
             }
         }

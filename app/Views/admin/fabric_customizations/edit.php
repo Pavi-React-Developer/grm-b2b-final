@@ -53,135 +53,27 @@
                     <input type="text" name="garment_type" value="<?= htmlspecialchars($rule['garment_type']) ?>" required class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium">
                 </div>
 
-                <!-- Category -->
+            <!-- Top Row: Program Name, Garment Type -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Program Name -->
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Category
+                        Program Name <span class="text-red-500">*</span>
                     </label>
-                    <select name="category_id" id="categorySelect" class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500">
-                        <option value="">-- Optional Category --</option>
-                        <?php foreach ($categories as $cat): ?>
-                            <option value="<?= $cat['id'] ?>" <?= $cat['id'] == $rule['category_id'] ? 'selected' : '' ?>><?= htmlspecialchars($cat['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <input type="text" name="program_name" value="<?= htmlspecialchars($rule['program_name']) ?>" required class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium">
                 </div>
 
-                <!-- Sub Category -->
+                <!-- Garment Type -->
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Sub Category
+                        Garment Type <span class="text-red-500">*</span>
                     </label>
-                    <select name="sub_category_id" id="subCategorySelect" class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500">
-                        <option value="">-- Optional Sub Category --</option>
-                        <?php foreach ($subCategories as $sc): ?>
-                            <option value="<?= $sc['id'] ?>" <?= $sc['id'] == $rule['sub_category_id'] ? 'selected' : '' ?> data-cat="<?= $sc['category_id'] ?>"><?= htmlspecialchars($sc['name']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+                    <input type="text" name="garment_type" value="<?= htmlspecialchars($rule['garment_type']) ?>" required class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium">
                 </div>
+            </div>
 
-                <!-- Feature Type (Multi-Select) -->
-                <?php
-                $currentFeatures = [];
-                if (!empty($rule['feeding_type'])) {
-                    if (strpos($rule['feeding_type'], '[') === 0) {
-                        $decoded = json_decode($rule['feeding_type'], true);
-                        $currentFeatures = is_array($decoded) ? $decoded : [$rule['feeding_type']];
-                    } else {
-                        $currentFeatures = array_filter(array_map('trim', explode(',', $rule['feeding_type'])));
-                    }
-                }
-                if (empty($currentFeatures)) {
-                    $currentFeatures = ['Non-Feeding'];
-                }
-                ?>
-                <div class="relative">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
-                            <span>Feature Type</span>
-                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 font-bold border border-amber-200">Multi-Select</span>
-                        </label>
-                        <button type="button" onclick="openAddFeedingOptionModal()" class="text-xs font-bold text-amber-700 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded-md border border-amber-200 transition-colors flex items-center gap-1 shadow-2xs cursor-pointer">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                            + Add / Manage Options
-                        </button>
-                    </div>
-
-                    <!-- Multi-Select Trigger Box -->
-                    <div id="featureMultiSelectBox" onclick="toggleFeatureDropdown(event)" class="min-h-[42px] w-full px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-xl hover:border-amber-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-amber-500/20 focus-within:border-amber-500 cursor-pointer flex flex-wrap items-center gap-1.5 transition-all">
-                        <div id="selectedFeatureBadges" class="flex flex-wrap items-center gap-1.5">
-                            <!-- Selected pills will be rendered here -->
-                        </div>
-                        <span id="featurePlaceholderText" class="text-xs text-gray-400 font-medium py-1">Select feature types...</span>
-                        <div class="ml-auto text-gray-400 pl-1">
-                            <svg class="w-4 h-4 transform transition-transform" id="featureDropdownArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                        </div>
-                    </div>
-
-                    <!-- Hidden inputs container for form submission -->
-                    <div id="featureHiddenInputs">
-                        <?php foreach ($currentFeatures as $cf): ?>
-                            <input type="hidden" name="feeding_type[]" value="<?= htmlspecialchars($cf) ?>">
-                        <?php endforeach; ?>
-                    </div>
-
-                    <!-- Dropdown Menu -->
-                    <div id="featureDropdownMenu" class="hidden absolute left-0 right-0 top-full mt-1.5 bg-white border border-gray-200 rounded-xl shadow-xl z-50 p-3 max-h-72 overflow-y-auto space-y-3">
-                        <!-- Standard Types -->
-                        <div>
-                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Standard Types</div>
-                            <div class="space-y-1">
-                                <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-50 cursor-pointer text-xs font-semibold text-gray-800 select-none">
-                                    <input type="checkbox" value="Non-Feeding" onchange="toggleFeatureOption(this.value, this.checked)" class="feature-checkbox rounded border-gray-300 text-amber-600 focus:ring-amber-500">
-                                    <span>Non-Feeding (Standard)</span>
-                                </label>
-                                <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-50 cursor-pointer text-xs font-semibold text-gray-800 select-none">
-                                    <input type="checkbox" value="Feeding" onchange="toggleFeatureOption(this.value, this.checked)" class="feature-checkbox rounded border-gray-300 text-amber-600 focus:ring-amber-500">
-                                    <span>Feeding (Maternity / Zips)</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Sleeve & Cut Types -->
-                        <div class="border-t border-gray-100 pt-2">
-                            <div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Sleeve & Cut Types</div>
-                            <div class="space-y-1" id="sleeveOptionsContainer">
-                                <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-50 cursor-pointer text-xs font-semibold text-gray-800 select-none">
-                                    <input type="checkbox" value="Sleeve: Short Sleeve" onchange="toggleFeatureOption(this.value, this.checked)" class="feature-checkbox rounded border-gray-300 text-amber-600 focus:ring-amber-500">
-                                    <span>Sleeve: Short Sleeve</span>
-                                </label>
-                                <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-50 cursor-pointer text-xs font-semibold text-gray-800 select-none">
-                                    <input type="checkbox" value="Sleeve: 3/4th Sleeve" onchange="toggleFeatureOption(this.value, this.checked)" class="feature-checkbox rounded border-gray-300 text-amber-600 focus:ring-amber-500">
-                                    <span>Sleeve: 3/4th Sleeve</span>
-                                </label>
-                                <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-50 cursor-pointer text-xs font-semibold text-gray-800 select-none">
-                                    <input type="checkbox" value="Sleeve: Full Sleeve" onchange="toggleFeatureOption(this.value, this.checked)" class="feature-checkbox rounded border-gray-300 text-amber-600 focus:ring-amber-500">
-                                    <span>Sleeve: Full Sleeve</span>
-                                </label>
-                                <label class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-amber-50 cursor-pointer text-xs font-semibold text-gray-800 select-none">
-                                    <input type="checkbox" value="Sleeve: Sleeveless" onchange="toggleFeatureOption(this.value, this.checked)" class="feature-checkbox rounded border-gray-300 text-amber-600 focus:ring-amber-500">
-                                    <span>Sleeve: Sleeveless</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <!-- Custom Added Options -->
-                        <div class="border-t border-gray-100 pt-2" id="customOptionsSection">
-                            <div class="flex items-center justify-between mb-1.5">
-                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Custom Added Options</span>
-                            </div>
-                            <div class="space-y-1" id="customCheckboxesContainer">
-                                <!-- Populated dynamically with checkboxes and delete icon -->
-                            </div>
-                        </div>
-
-                        <div class="border-t border-gray-100 pt-2">
-                            <button type="button" onclick="openAddFeedingOptionModal()" class="w-full py-1.5 text-center text-xs font-bold text-amber-700 hover:bg-amber-50 rounded-lg border border-dashed border-amber-200 transition-colors cursor-pointer">
-                                + Add Custom Feature Type...
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
+            <!-- Second Row: Required Pieces to Enable Payment, Status -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Required Pieces to Enable Payment -->
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
@@ -207,14 +99,87 @@
                     </select>
                 </div>
             </div>
+            </div>
         </div>
 
-        <!-- Section 2: Size Variants & Quantity Allocation -->
+        <!-- Section 2: Assign Customization Style Labels / Templates -->
         <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
                 <div>
                     <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                        <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-black">2</span>
+                        <span class="w-7 h-7 rounded-lg bg-pink-50 text-pink-700 flex items-center justify-center text-sm font-black">2</span>
+                        <span>Assign Customization Style Labels / Templates</span>
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-0.5">
+                        Select which template labels (e.g. <code>Maternity -&gt; Feeding -&gt; Full Sleeve</code>) apply to this fabric. Users will see input fields to allocate piece quantities to these styles on the storefront.
+                    </p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="selectAllLabels(true)" class="px-2.5 py-1 text-xs font-bold text-pink-700 bg-pink-50 hover:bg-pink-100 rounded-lg border border-pink-200 transition-colors cursor-pointer">Select All</button>
+                    <button type="button" onclick="selectAllLabels(false)" class="px-2.5 py-1 text-xs font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors cursor-pointer">Clear</button>
+                    <a href="<?= BASE_URL ?>/admin/customization-labels/create" target="_blank" class="px-3 py-1 bg-gray-900 hover:bg-gray-800 text-white text-xs font-bold rounded-lg transition-colors flex items-center gap-1">
+                        + New Label
+                    </a>
+                </div>
+            </div>
+
+            <?php if (empty($allLabels)): ?>
+                <div class="p-6 bg-pink-50/50 rounded-xl border border-pink-100 text-center">
+                    <p class="text-xs text-gray-600 mb-2">No customization labels created yet.</p>
+                    <a href="<?= BASE_URL ?>/admin/customization-labels/create" target="_blank" class="inline-flex items-center gap-1 text-xs font-bold text-pink-600 hover:underline">
+                        + Create your first template label (e.g. Maternity -&gt; Feeding -&gt; Full Sleeve)
+                    </a>
+                </div>
+            <?php else: ?>
+                <?php
+                    // Group labels by group_name
+                    $groupedLabels = [];
+                    foreach ($allLabels as $lbl) {
+                        $grp = $lbl['group_name'] ?: 'General / Standard';
+                        $groupedLabels[$grp][] = $lbl;
+                    }
+
+                    $assignedIds = !empty($rule['labels']) ? array_column($rule['labels'], 'id') : [];
+                ?>
+                <div class="space-y-4">
+                    <?php foreach ($groupedLabels as $grpName => $lblGroup): ?>
+                        <div class="bg-gray-50/80 p-4 rounded-xl border border-gray-200/70">
+                            <div class="text-xs font-extrabold text-gray-900 uppercase tracking-wider mb-2.5 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                                <span><?= htmlspecialchars($grpName) ?></span>
+                                <span class="text-[10px] font-bold text-gray-400 bg-white px-1.5 py-0.5 rounded border border-gray-200"><?= count($lblGroup) ?> styles</span>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                                <?php foreach ($lblGroup as $lbl): ?>
+                                    <?php 
+                                        $isChecked = in_array($lbl['id'], $assignedIds);
+                                    ?>
+                                    <label class="flex items-start gap-2.5 p-2.5 bg-white rounded-xl border border-gray-200 hover:border-pink-300 hover:bg-pink-50/20 transition-all cursor-pointer select-none">
+                                        <input type="checkbox" name="label_ids[]" value="<?= $lbl['id'] ?>" <?= $isChecked ? 'checked' : '' ?> class="label-checkbox rounded border-gray-300 text-pink-600 focus:ring-pink-500 mt-0.5">
+                                        <div class="flex-1 min-w-0">
+                                            <div class="text-xs font-bold text-gray-900 flex items-center gap-1 truncate">
+                                                <span>🏷️</span>
+                                                <span class="truncate"><?= htmlspecialchars($lbl['display_label']) ?></span>
+                                            </div>
+                                            <?php if (!empty($lbl['description'])): ?>
+                                                <p class="text-[10.5px] text-gray-400 truncate mt-0.5"><?= htmlspecialchars($lbl['description']) ?></p>
+                                            <?php endif; ?>
+                                        </div>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Section 3: Size Variants & Quantity Allocation -->
+        <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs space-y-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
+                <div>
+                    <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                        <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-black">3</span>
                         <span>Fabric Size Variants & Quantity Limits</span>
                     </h2>
                     <p class="text-xs text-gray-500 mt-0.5">
@@ -341,6 +306,11 @@
 
 <script>
 let sizeIndex = <?= count($sizesList) ?>;
+
+function escapeHtmlStr(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
 
 function addCustomSizeVariant(sizeName = '', baseQty = 2, maxQty = 4, enabled = true) {
     const tbody = document.getElementById('sizesTbody');
@@ -508,320 +478,13 @@ function updateVariantSummary() {
     if (totalEl) totalEl.textContent = totalBase;
 }
 
-// Auto select category/sub if fabric changes
-document.getElementById('fabricSelect').addEventListener('change', function() {
-    const opt = this.options[this.selectedIndex];
-    if (opt) {
-        const catId = opt.getAttribute('data-cat');
-        const subId = opt.getAttribute('data-sub');
-        if (catId) {
-            document.getElementById('categorySelect').value = catId;
-        }
-        if (subId) {
-            document.getElementById('subCategorySelect').value = subId;
-        }
-    }
-});
-
-// --- FEATURE TYPE MULTI-SELECT SYSTEM ---
-let selectedFeatures = <?= json_encode(array_values($currentFeatures)) ?>;
-
-function toggleFeatureDropdown(e) {
-    if (e && e.target && e.target.closest('.feature-badge-remove')) {
-        return;
-    }
-    const menu = document.getElementById('featureDropdownMenu');
-    const arrow = document.getElementById('featureDropdownArrow');
-    const isHidden = menu.classList.contains('hidden');
-    if (isHidden) {
-        menu.classList.remove('hidden');
-        if (arrow) arrow.classList.add('rotate-180');
-    } else {
-        menu.classList.add('hidden');
-        if (arrow) arrow.classList.remove('rotate-180');
-    }
-}
-
-// Close dropdown on outside click
-document.addEventListener('click', function(e) {
-    const box = document.getElementById('featureMultiSelectBox');
-    const menu = document.getElementById('featureDropdownMenu');
-    const modal = document.getElementById('addFeedingOptionModal');
-    if (!box || !menu) return;
-    if (!box.contains(e.target) && !menu.contains(e.target) && (!modal || !modal.contains(e.target))) {
-        menu.classList.add('hidden');
-        const arrow = document.getElementById('featureDropdownArrow');
-        if (arrow) arrow.classList.remove('rotate-180');
-    }
-});
-
-function toggleFeatureOption(value, isChecked) {
-    if (!value) return;
-    if (isChecked) {
-        if (!selectedFeatures.includes(value)) {
-            selectedFeatures.push(value);
-        }
-    } else {
-        selectedFeatures = selectedFeatures.filter(v => v !== value);
-    }
-    renderSelectedFeatureBadges();
-    renderFeatureHiddenInputs();
-    syncFeatureCheckboxes();
-}
-
-function removeSelectedFeature(value, e) {
-    if (e) e.stopPropagation();
-    toggleFeatureOption(value, false);
-}
-
-function renderSelectedFeatureBadges() {
-    const container = document.getElementById('selectedFeatureBadges');
-    const placeholder = document.getElementById('featurePlaceholderText');
-    if (!container) return;
-
-    if (selectedFeatures.length === 0) {
-        container.innerHTML = '';
-        if (placeholder) placeholder.classList.remove('hidden');
-        return;
-    }
-
-    if (placeholder) placeholder.classList.add('hidden');
-
-    let html = '';
-    selectedFeatures.forEach(feat => {
-        const escaped = escapeHtmlStr(feat);
-        const encoded = encodeURIComponent(feat);
-        html += `
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-100 text-amber-900 text-xs font-bold border border-amber-200 shadow-2xs">
-            <span>${escaped}</span>
-            <button type="button" onclick="removeSelectedFeature(decodeURIComponent('${encoded}'), event)" class="feature-badge-remove text-amber-700 hover:text-red-700 hover:bg-amber-200/60 rounded-full w-4 h-4 flex items-center justify-center transition-colors cursor-pointer" title="Remove ${escaped}">
-                &times;
-            </button>
-        </span>`;
+function selectAllLabels(check) {
+    document.querySelectorAll('.label-checkbox').forEach(cb => {
+        cb.checked = check;
     });
-    container.innerHTML = html;
-}
-
-function renderFeatureHiddenInputs() {
-    const container = document.getElementById('featureHiddenInputs');
-    if (!container) return;
-
-    if (selectedFeatures.length === 0) {
-        container.innerHTML = `<input type="hidden" name="feeding_type[]" value="Non-Feeding">`;
-        return;
-    }
-
-    let html = '';
-    selectedFeatures.forEach(feat => {
-        html += `<input type="hidden" name="feeding_type[]" value="${escapeHtmlStr(feat)}">`;
-    });
-    container.innerHTML = html;
-}
-
-function syncFeatureCheckboxes() {
-    document.querySelectorAll('.feature-checkbox').forEach(cb => {
-        cb.checked = selectedFeatures.includes(cb.value);
-    });
-}
-
-function openAddFeedingOptionModal() {
-    const modal = document.getElementById('addFeedingOptionModal');
-    const input = document.getElementById('newFeedingOptionInput');
-    input.value = '';
-    renderModalSavedOptionsList();
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    setTimeout(() => input.focus(), 50);
-}
-
-function closeAddFeedingOptionModal() {
-    const modal = document.getElementById('addFeedingOptionModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-}
-
-function deleteCustomOption(optionValue) {
-    if (!confirm(`Are you sure you want to delete "${optionValue}"?`)) {
-        return;
-    }
-
-    try {
-        let saved = JSON.parse(localStorage.getItem('custom_feeding_options') || '[]');
-        saved = saved.filter(v => v !== optionValue);
-        localStorage.setItem('custom_feeding_options', JSON.stringify(saved));
-    } catch (e) {}
-
-    // Unselect if selected
-    selectedFeatures = selectedFeatures.filter(v => v !== optionValue);
-    
-    renderCustomCheckboxes();
-    renderSelectedFeatureBadges();
-    renderFeatureHiddenInputs();
-    renderModalSavedOptionsList();
-}
-
-function escapeHtmlStr(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-}
-
-function renderCustomCheckboxes() {
-    const container = document.getElementById('customCheckboxesContainer');
-    if (!container) return;
-
-    let saved = [];
-    try {
-        saved = JSON.parse(localStorage.getItem('custom_feeding_options') || '[]');
-    } catch (e) {}
-
-    // Also include custom features already in selectedFeatures that aren't standard
-    const standardOptions = ['Non-Feeding', 'Feeding', 'Sleeve: Short Sleeve', 'Sleeve: 3/4th Sleeve', 'Sleeve: Full Sleeve', 'Sleeve: Sleeveless'];
-    selectedFeatures.forEach(feat => {
-        if (!standardOptions.includes(feat) && !saved.includes(feat)) {
-            saved.push(feat);
-        }
-    });
-
-    if (saved.length === 0) {
-        container.innerHTML = `<p class="text-[11px] text-gray-400 italic px-2 py-1">No custom types added yet</p>`;
-        return;
-    }
-
-    let html = '';
-    saved.forEach(val => {
-        const escaped = escapeHtmlStr(val);
-        const encoded = encodeURIComponent(val);
-        const isChecked = selectedFeatures.includes(val) ? 'checked' : '';
-        html += `
-        <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg hover:bg-amber-50 group">
-            <label class="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-800 flex-1 select-none">
-                <input type="checkbox" value="${escaped}" ${isChecked} onchange="toggleFeatureOption(this.value, this.checked)" class="feature-checkbox rounded border-gray-300 text-amber-600 focus:ring-amber-500">
-                <span>${escaped}</span>
-            </label>
-            <button type="button" onclick="deleteCustomOption(decodeURIComponent('${encoded}'))" class="p-1 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100 transition-all cursor-pointer" title="Delete ${escaped}">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>
-        </div>`;
-    });
-    container.innerHTML = html;
-}
-
-function renderModalSavedOptionsList() {
-    const container = document.getElementById('modalSavedOptionsList');
-    if (!container) return;
-
-    let saved = [];
-    try {
-        saved = JSON.parse(localStorage.getItem('custom_feeding_options') || '[]');
-    } catch (e) {}
-
-    const standardOptions = ['Non-Feeding', 'Feeding', 'Sleeve: Short Sleeve', 'Sleeve: 3/4th Sleeve', 'Sleeve: Full Sleeve', 'Sleeve: Sleeveless'];
-    selectedFeatures.forEach(feat => {
-        if (!standardOptions.includes(feat) && !saved.includes(feat)) {
-            saved.push(feat);
-        }
-    });
-
-    if (saved.length === 0) {
-        container.innerHTML = `<p class="text-xs text-gray-400 italic py-2 text-center">No custom options added yet.</p>`;
-        return;
-    }
-
-    let html = '';
-    saved.forEach(val => {
-        const escaped = escapeHtmlStr(val);
-        const encodedVal = encodeURIComponent(val);
-        html += `
-        <div class="flex items-center justify-between p-2 rounded-lg bg-gray-50 hover:bg-gray-100 border border-gray-200/60 transition-colors group">
-            <span class="text-xs font-semibold text-gray-800">${escaped}</span>
-            <button type="button" onclick="deleteCustomOption(decodeURIComponent('${encodedVal}'))" class="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors cursor-pointer" title="Delete ${escaped}">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-            </button>
-        </div>`;
-    });
-    container.innerHTML = html;
-}
-
-function submitAddFeedingOption() {
-    const input = document.getElementById('newFeedingOptionInput');
-    const val = input.value.trim();
-    if (!val) {
-        alert('Please enter an option name.');
-        input.focus();
-        return;
-    }
-
-    try {
-        let saved = JSON.parse(localStorage.getItem('custom_feeding_options') || '[]');
-        if (!saved.includes(val)) {
-            saved.push(val);
-            localStorage.setItem('custom_feeding_options', JSON.stringify(saved));
-        }
-    } catch (e) {}
-
-    // Automatically check / select this new option
-    if (!selectedFeatures.includes(val)) {
-        selectedFeatures.push(val);
-    }
-
-    renderCustomCheckboxes();
-    renderSelectedFeatureBadges();
-    renderFeatureHiddenInputs();
-    syncFeatureCheckboxes();
-    renderModalSavedOptionsList();
-    closeAddFeedingOptionModal();
-}
-
-function loadSavedFeedingOptions() {
-    renderCustomCheckboxes();
-    renderSelectedFeatureBadges();
-    renderFeatureHiddenInputs();
-    syncFeatureCheckboxes();
 }
 
 document.addEventListener('DOMContentLoaded', function() {
     updateVariantSummary();
-    loadSavedFeedingOptions();
 });
 </script>
-
-<!-- Modal for Adding / Managing Custom Feeding/Feature Option -->
-<div id="addFeedingOptionModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs hidden items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-gray-100 transform transition-all">
-        <div class="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
-            <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                <span class="w-7 h-7 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center text-sm">✨</span>
-                <span>Custom Types & Features</span>
-            </h3>
-            <button type="button" onclick="closeAddFeedingOptionModal()" class="text-gray-400 hover:text-gray-600 rounded-lg p-1 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-        </div>
-        
-        <!-- Add Form -->
-        <div class="space-y-3 mb-5">
-            <div>
-                <label class="block text-xs font-bold text-gray-700 mb-1">Add New Option / Field Name <span class="text-red-500">*</span></label>
-                <div class="flex gap-2">
-                    <input type="text" id="newFeedingOptionInput" placeholder="e.g. normal sleeve, puff sleeve" class="flex-1 px-3.5 py-2 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium" onkeydown="if(event.key==='Enter'){event.preventDefault();submitAddFeedingOption();}">
-                    <button type="button" onclick="submitAddFeedingOption()" class="px-4 py-2 text-xs font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-colors shadow-sm shrink-0">Add & Select</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Manage / Delete List -->
-        <div class="border-t border-gray-100 pt-4">
-            <div class="flex items-center justify-between mb-2">
-                <h4 class="text-xs font-bold text-gray-700 uppercase tracking-wider">Manage / Delete Options</h4>
-                <span class="text-[11px] text-gray-400">Click 🗑️ to remove</span>
-            </div>
-            <div id="modalSavedOptionsList" class="max-h-48 overflow-y-auto space-y-1.5 pr-1">
-                <!-- Populated dynamically with delete buttons -->
-            </div>
-        </div>
-
-        <div class="flex justify-end pt-4 mt-2 border-t border-gray-100">
-            <button type="button" onclick="closeAddFeedingOptionModal()" class="px-4 py-2 text-xs font-bold text-gray-600 hover:bg-gray-100 rounded-xl transition-colors">Close</button>
-        </div>
-    </div>
-</div>

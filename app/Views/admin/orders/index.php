@@ -309,22 +309,22 @@
                             <?php endif; ?>
                         </td>
                         <td class="px-6 py-4 text-right">
-                            <div class="flex justify-end space-x-3">
-                                <a href="<?= BASE_URL ?>/admin/orders/invoice?order=<?= $order['order_number'] ?>" target="_blank" class="text-slate-600 hover:text-slate-900 transition-colors" title="Download Invoice PDF">
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="<?= BASE_URL ?>/admin/orders/invoice?order=<?= $order['order_number'] ?>" target="_blank" class="inline-flex items-center justify-center p-1 text-[#F25996] hover:text-[#e04481] transition-colors" title="Download Invoice PDF">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                 </a>
                                 <?php if ($this->hasPermission('all_orders', 'edit') && in_array($order['status'], ['placed', 'packed'])): ?>
-                                <button type="button" onclick="openPackingModal('<?= $order['order_number'] ?>', document.getElementById('status-btn-<?= $order['order_number'] ?>'))" class="text-purple-600 hover:text-purple-800 transition-colors" title="<?= $order['status'] === 'packed' ? 'Update Packing Videos & Email Invoice' : 'Pack Order & Upload Videos' ?>">
+                                <button type="button" onclick="openPackingModal('<?= $order['order_number'] ?>', document.getElementById('status-btn-<?= $order['order_number'] ?>'))" class="inline-flex items-center justify-center p-1 text-purple-600 hover:text-purple-800 transition-colors" title="<?= $order['status'] === 'packed' ? 'Update Packing Videos & Email Invoice' : 'Pack Order & Upload Videos' ?>">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
                                 </button>
                                 <?php endif; ?>
                                 <?php if ($this->hasPermission('all_orders', 'edit') && empty($isVendor)): ?>
-                                <a href="<?= BASE_URL ?>/admin/order-modifications/create?order=<?= $order['order_number'] ?>" class="text-blue-600 hover:text-blue-800 transition-colors p-1" title="Edit / Modify Order">
-                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                <a href="<?= BASE_URL ?>/admin/order-modifications/create?order=<?= $order['order_number'] ?>" class="inline-flex items-center justify-center p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit / Modify Order">
+                                    <i class="bi bi-pencil-square text-lg"></i>
                                 </a>
                                 <?php endif; ?>
-                                <a href="<?= BASE_URL ?>/admin/orders/view?id=<?= $order['order_number'] ?>" class="text-[#F25996] hover:text-[#e04481] transition-colors p-1" title="View Order">
-                                    <svg class="w-5 h-5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                <a href="<?= BASE_URL ?>/admin/orders/view?id=<?= $order['order_number'] ?>" class="inline-flex items-center justify-center p-1 text-emerald-600 hover:text-emerald-800 transition-colors" title="View Details">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                 </a>
                             </div>
                         </td>

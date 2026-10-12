@@ -127,6 +127,9 @@ class ProductCardSettingsController extends Controller
             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()
         ");
         $stmt->execute([$json]);
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::delete('setting_product_card_settings');
+        }
 
         Session::setFlash('success', 'Product card settings saved successfully!');
         $this->redirect('/admin/cms/product-card-settings');

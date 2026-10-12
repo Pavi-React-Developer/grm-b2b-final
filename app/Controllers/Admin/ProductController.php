@@ -24,12 +24,12 @@ class ProductController extends Controller
 
     public function index()
     {
-        $this->requirePermission('products', 'view');
+        $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'view');
         $isVendor = (Session::get('user_role') === 'vendor');
         $vendorId = $isVendor ? (int)Session::get('user_id') : (!empty($_GET['vendor_id']) ? (int)$_GET['vendor_id'] : null);
         $status = $_GET['status'] ?? 'all';
-        $module = $_GET['module'] ?? '';
-        $isCustomize = ($module === 'customize');
 
         $productModel = new Product();
         $products = $productModel->getAllAdmin($vendorId, $status, $isCustomize ? 1 : 0);
@@ -72,10 +72,10 @@ class ProductController extends Controller
 
     public function create()
     {
-        $this->requirePermission('products', 'create');
-        $isVendor = (Session::get('user_role') === 'vendor');
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'create');
+        $isVendor = (Session::get('user_role') === 'vendor');
 
         $categoryModel = new Category();
         $categories = $categoryModel->getAllActive(null, $isCustomize ? 1 : 0);
@@ -92,6 +92,12 @@ class ProductController extends Controller
             $vendors = $userModel->getActiveVendors();
         }
 
+        $allLabels = [];
+        if ($isCustomize) {
+            $customizationLabelModel = new \App\Models\CustomizationLabel();
+            $allLabels = $customizationLabelModel->getAllActive();
+        }
+
         $this->render('admin/catalog/products/create', [
             'title' => ($module === 'customize') ? 'Add Customizable Product / Fabric' : 'Add Product',
             'categories' => $categories,
@@ -100,16 +106,17 @@ class ProductController extends Controller
             'isVendor' => $isVendor,
             'vendors' => $vendors,
             'module' => $module,
-            'isCustomize' => $isCustomize
+            'isCustomize' => $isCustomize,
+            'allLabels' => $allLabels
         ], 'admin');
     }
 
     public function view()
     {
-        $this->requirePermission('products', 'view');
         $id = $_GET['id'] ?? null;
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'view');
         if (!$id) {
             $this->redirect('/admin/catalog/products' . ($isCustomize ? '?module=customize' : ''));
         }
@@ -166,13 +173,29 @@ class ProductController extends Controller
 
     public function edit()
     {
-        $this->requirePermission('products', 'edit');
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
         $productModel = new Product();
         $product = $productModel->findById($id);
         
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
+
+        if (!$isCustomize && !empty($product['id'])) {
+            if (!empty($product['is_customizable'])) {
+                $isCustomize = true;
+                $module = 'customize';
+            } else {
+                $db = \Core\Database::getInstance();
+                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+                $stmt->execute([(int)$product['id']]);
+                if ($stmt->fetch()) {
+                    $isCustomize = true;
+                    $module = 'customize';
+                }
+            }
+        }
+
+        $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'edit');
 
         if (!$product) {
             Session::setFlash('error', 'Product not found.');
@@ -226,6 +249,30 @@ class ProductController extends Controller
             $vendors = $userModel->getActiveVendors();
         }
 
+        $allLabels = [];
+        $assignedLabelIds = [];
+        $customizationSizes = [];
+        $customizationRule = null;
+        if ($isCustomize && !empty($product['id'])) {
+            $customizationLabelModel = new \App\Models\CustomizationLabel();
+            $allLabels = $customizationLabelModel->getAllActive();
+
+            $fcModel = new \App\Models\FabricCustomization();
+            $db = \Core\Database::getInstance();
+            $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+            $stmt->execute([(int)$product['id']]);
+            $fcRow = $stmt->fetch();
+            if ($fcRow) {
+                $customizationRule = $fcModel->getById($fcRow['id']);
+                if ($customizationRule) {
+                    if (!empty($customizationRule['labels'])) {
+                        $assignedLabelIds = array_column($customizationRule['labels'], 'id');
+                    }
+                    $customizationSizes = $fcModel->getSizesByCustomizationId($customizationRule['id'], false);
+                }
+            }
+        }
+
         $this->render('admin/catalog/products/edit', [
             'title' => ($isCustomize) ? 'Edit Customizable Product / Fabric' : 'Edit Product',
             'product' => $product,
@@ -239,21 +286,22 @@ class ProductController extends Controller
             'isVendor' => $isVendor,
             'vendors' => $vendors,
             'module' => $module,
-            'isCustomize' => $isCustomize
+            'isCustomize' => $isCustomize,
+            'allLabels' => $allLabels,
+            'assignedLabelIds' => $assignedLabelIds,
+            'customizationSizes' => $customizationSizes,
+            'customizationRule' => $customizationRule
         ], 'admin');
     }
 
     public function store()
     {
-        $this->requirePermission('products', 'create');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/products');
-        }
-
-        $isVendor = (Session::get('user_role') === 'vendor');
-        $vendorId = $isVendor ? (int)Session::get('user_id') : (!empty($_POST['vendor_id']) ? (int)$_POST['vendor_id'] : null);
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'create');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/catalog/products' . ($isCustomize ? '?module=customize' : ''));
+        }
 
         $postedVariants = !empty($_POST['variants']) ? $_POST['variants'] : (!empty($_POST['new_variants']) ? $_POST['new_variants'] : []);
 
@@ -444,7 +492,80 @@ class ProductController extends Controller
             if (!empty($primaryImgPath)) {
                 $productModel->addImage($productId, $primaryImgPath, true);
             }
-            
+
+            // Sync customization labels and rule if customizable
+            if ($isCustomize) {
+                $labelIds = !empty($_POST['label_ids']) && is_array($_POST['label_ids']) ? array_map('intval', $_POST['label_ids']) : [];
+                $fcModel = new \App\Models\FabricCustomization();
+                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+                $stmt->execute([$productId]);
+                $existingFc = $stmt->fetch();
+
+                // Build variant sizes from posted fabric_sizes or fallback to posted variants
+                $variantSizes = [];
+                $sort = 1;
+                if (!empty($_POST['fabric_sizes']) && is_array($_POST['fabric_sizes'])) {
+                    foreach ($_POST['fabric_sizes'] as $sData) {
+                        $sName = trim($sData['size_name'] ?? '');
+                        if ($sName !== '') {
+                            $variantSizes[] = [
+                                'size_name' => $sName,
+                                'fabric_consumption' => !empty($sData['fabric_consumption']) ? (float)$sData['fabric_consumption'] : 1.00,
+                                'base_quantity' => isset($sData['base_quantity']) ? max(0, (int)$sData['base_quantity']) : 2,
+                                'max_quantity' => isset($sData['max_quantity']) ? max(1, (int)$sData['max_quantity']) : 4,
+                                'enabled' => isset($sData['enabled']) ? (int)$sData['enabled'] : 1,
+                                'sort_order' => $sort++
+                            ];
+                        }
+                    }
+                } elseif (!empty($postedVariants)) {
+                    foreach ($postedVariants as $vData) {
+                        $vName = trim($vData['name'] ?? '');
+                        if ($vName !== '') {
+                            $variantSizes[] = [
+                                'size_name' => $vName,
+                                'fabric_consumption' => 1.00,
+                                'base_quantity' => 2,
+                                'max_quantity' => 4,
+                                'enabled' => 1,
+                                'sort_order' => $sort++
+                            ];
+                        }
+                    }
+                }
+                if (empty($variantSizes)) {
+                    $variantSizes = [
+                        ['size_name' => 'M', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 1],
+                        ['size_name' => 'L', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 2],
+                        ['size_name' => 'XL', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 3],
+                        ['size_name' => 'XXL', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 4],
+                        ['size_name' => '3XL', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 5],
+                        ['size_name' => '4XL', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 6],
+                    ];
+                }
+
+                $fcData = [
+                    'fabric_id' => $productId,
+                    'program_name' => $data['name'] . ' Customization',
+                    'garment_type' => 'Custom Garment',
+                    'category_id' => $data['category_id'],
+                    'sub_category_id' => $data['sub_category_id'] ?? null,
+                    'feeding_type' => 'Maternity / Non-Feeding',
+                    'minimum_pieces' => !empty($_POST['minimum_pieces']) ? max(1, (int)$_POST['minimum_pieces']) : 10,
+                    'maximum_pieces' => 100,
+                    'wastage_percentage' => 0.00,
+                    'unit' => 'Meter',
+                    'customization_enabled' => 1,
+                    'status' => !empty($_POST['customization_status']) ? $_POST['customization_status'] : 'active'
+                ];
+
+                if ($existingFc) {
+                    $fcModel->update($existingFc['id'], $fcData, $variantSizes, $labelIds);
+                } else {
+                    $fcModel->create($fcData, $variantSizes, $labelIds);
+                }
+            }
+
             $db->commit();
             \Core\Cache::delete('catalog_active');
             Session::setFlash('success', $isVendor ? 'Product submitted successfully! It is now pending administrator review.' : ($isCustomize ? 'Fabric created successfully.' : 'Product created successfully.'));
@@ -460,9 +581,11 @@ class ProductController extends Controller
 
     public function update()
     {
-        $this->requirePermission('products', 'edit');
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'edit');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/products');
+            $this->redirect('/admin/catalog/products' . ($isCustomize ? '?module=customize' : ''));
         }
 
         $id = (int)($_POST['id'] ?? 0);
@@ -746,6 +869,84 @@ class ProductController extends Controller
                 }
             }
 
+            // Sync customization labels and rule if customizable
+            if ($isCustomize) {
+                $labelIds = !empty($_POST['label_ids']) && is_array($_POST['label_ids']) ? array_map('intval', $_POST['label_ids']) : [];
+                $fcModel = new \App\Models\FabricCustomization();
+                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+                $stmt->execute([$id]);
+                $existingFc = $stmt->fetch();
+
+                // Collect all posted variants (existing + new)
+                $allVariants = array_merge(
+                    !empty($_POST['variants']) && is_array($_POST['variants']) ? array_values($_POST['variants']) : [],
+                    !empty($_POST['new_variants']) && is_array($_POST['new_variants']) ? array_values($_POST['new_variants']) : []
+                );
+
+                $variantSizes = [];
+                $sort = 1;
+                if (!empty($_POST['fabric_sizes']) && is_array($_POST['fabric_sizes'])) {
+                    foreach ($_POST['fabric_sizes'] as $sData) {
+                        $sName = trim($sData['size_name'] ?? '');
+                        if ($sName !== '') {
+                            $variantSizes[] = [
+                                'size_name' => $sName,
+                                'fabric_consumption' => !empty($sData['fabric_consumption']) ? (float)$sData['fabric_consumption'] : 1.00,
+                                'base_quantity' => isset($sData['base_quantity']) ? max(0, (int)$sData['base_quantity']) : 2,
+                                'max_quantity' => isset($sData['max_quantity']) ? max(1, (int)$sData['max_quantity']) : 4,
+                                'enabled' => isset($sData['enabled']) ? (int)$sData['enabled'] : 1,
+                                'sort_order' => $sort++
+                            ];
+                        }
+                    }
+                } elseif (!empty($allVariants)) {
+                    foreach ($allVariants as $vData) {
+                        $vName = trim($vData['name'] ?? '');
+                        if ($vName !== '') {
+                            $variantSizes[] = [
+                                'size_name' => $vName,
+                                'fabric_consumption' => 1.00,
+                                'base_quantity' => 2,
+                                'max_quantity' => 4,
+                                'enabled' => 1,
+                                'sort_order' => $sort++
+                            ];
+                        }
+                    }
+                }
+                if (empty($variantSizes)) {
+                    $variantSizes = [
+                        ['size_name' => 'M', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 1],
+                        ['size_name' => 'L', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 2],
+                        ['size_name' => 'XL', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 3],
+                        ['size_name' => 'XXL', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 4],
+                        ['size_name' => '3XL', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 5],
+                        ['size_name' => '4XL', 'fabric_consumption' => 1.00, 'base_quantity' => 2, 'max_quantity' => 4, 'enabled' => 1, 'sort_order' => 6],
+                    ];
+                }
+
+                $fcData = [
+                    'fabric_id' => $id,
+                    'program_name' => $data['name'] . ' Customization',
+                    'garment_type' => 'Custom Garment',
+                    'category_id' => $data['category_id'],
+                    'sub_category_id' => $data['sub_category_id'] ?? null,
+                    'feeding_type' => 'Maternity / Non-Feeding',
+                    'minimum_pieces' => !empty($_POST['minimum_pieces']) ? max(1, (int)$_POST['minimum_pieces']) : 10,
+                    'maximum_pieces' => 100,
+                    'wastage_percentage' => 0.00,
+                    'unit' => 'Meter',
+                    'customization_enabled' => 1,
+                    'status' => !empty($_POST['customization_status']) ? $_POST['customization_status'] : 'active'
+                ];
+
+                if ($existingFc) {
+                    $fcModel->update($existingFc['id'], $fcData, $variantSizes, $labelIds);
+                } else {
+                    $fcModel->create($fcData, $variantSizes, $labelIds);
+                }
+            }
+
             $db->commit();
             \Core\Cache::delete('catalog_active');
             Session::setFlash('success', $isCustomize ? 'Fabric updated successfully.' : 'Product updated successfully.');
@@ -761,9 +962,9 @@ class ProductController extends Controller
 
     public function delete()
     {
-        $this->requirePermission('products', 'delete');
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'delete');
         $redirectUrl = '/admin/catalog/products' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -868,7 +1069,9 @@ class ProductController extends Controller
 
     public function deleteImage()
     {
-        $this->requirePermission('products', 'edit');
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'edit');
         
         $jsonInput = json_decode(file_get_contents('php://input'), true);
         $productId = (int)($_POST['product_id'] ?? ($jsonInput['product_id'] ?? 0));

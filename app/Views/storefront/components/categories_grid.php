@@ -63,7 +63,7 @@ if (!empty($category_ids)) {
                    pv_agg.base_price,
                    pv_agg.discount_price
             FROM products p 
-            LEFT JOIN categories c ON c.id = p.category_id
+            JOIN categories c ON c.id = p.category_id AND c.status = 'active'
             LEFT JOIN (
                 SELECT product_id,
                        MIN(base_price) AS base_price,
@@ -71,7 +71,7 @@ if (!empty($category_ids)) {
                 FROM product_variants
                 GROUP BY product_id
             ) pv_agg ON pv_agg.product_id = p.id
-            WHERE p.category_id IN ($ids) AND p.status = 'active' 
+            WHERE p.category_id IN ($ids) AND p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL)
             ORDER BY p.id DESC
         ");
         $productsRaw = $stmt->fetchAll();
@@ -548,7 +548,7 @@ if (!empty($category_ids)) {
                                         </div>
                                     <?php else: ?>
                                         <div class="mt-auto pt-2 border-t border-gray-100">
-                                            <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#b94a3e] font-semibold py-1 text-xs md:text-[11px] lg:text-xs hover:underline leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                                            <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-semibold py-1 text-xs md:text-[11px] lg:text-xs hover:underline leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
                                                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                                 <span class="truncate">Register to view price</span>
                                             </a>
@@ -676,7 +676,7 @@ if (!empty($category_ids)) {
                                 </form>
                             </div>
                             <?php else: ?>
-                            <a href="<?= BASE_URL ?>/login" style="font-size:0.75rem; color:#b94a3e; font-weight:600; margin-top:auto; display:block; padding-top:0.3rem;">Login to view price</a>
+                            <a href="<?= BASE_URL ?>/login" style="font-size:0.75rem; color:#F25996; font-weight:600; margin-top:auto; display:block; padding-top:0.3rem;">Login to view price</a>
                             <?php endif; ?>
                         </div>
                     </div>

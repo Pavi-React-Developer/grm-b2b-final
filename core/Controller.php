@@ -102,9 +102,25 @@ class Controller
             return false;
         }
 
-        // Check loaded permissions matrix
-        if (isset($this->userPermissions[$module][$action]) && $this->userPermissions[$module][$action] == 1) {
-            return true;
+        // If the specific module key is set in userPermissions, strictly use its configured permissions
+        if (isset($this->userPermissions[$module])) {
+            return !empty($this->userPermissions[$module][$action]);
+        }
+
+        // Fallback mappings for legacy roles
+        $fallbacks = [
+            'customize_categories' => 'categories',
+            'customize_subcategories' => 'subcategories',
+            'customize_attributes' => 'attributes',
+            'customize_products' => 'products',
+            'customization_labels' => 'fabric_customizations',
+            'fabric_customizations' => 'customization_labels',
+            'custom_orders' => 'all_orders'
+        ];
+
+        // If not explicitly set, check fallback module
+        if (isset($fallbacks[$module]) && isset($this->userPermissions[$fallbacks[$module]][$action])) {
+            return !empty($this->userPermissions[$fallbacks[$module]][$action]);
         }
 
         return false;
@@ -137,7 +153,26 @@ class Controller
 
         if (isset($this->userPermissions[$module])) {
             foreach (['view', 'create', 'edit', 'delete'] as $action) {
-                if (isset($this->userPermissions[$module][$action]) && $this->userPermissions[$module][$action] == 1) {
+                if (!empty($this->userPermissions[$module][$action])) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        $fallbacks = [
+            'customize_categories' => 'categories',
+            'customize_subcategories' => 'subcategories',
+            'customize_attributes' => 'attributes',
+            'customize_products' => 'products',
+            'customization_labels' => 'fabric_customizations',
+            'fabric_customizations' => 'customization_labels',
+            'custom_orders' => 'all_orders'
+        ];
+
+        if (isset($fallbacks[$module]) && isset($this->userPermissions[$fallbacks[$module]])) {
+            foreach (['view', 'create', 'edit', 'delete'] as $action) {
+                if (!empty($this->userPermissions[$fallbacks[$module]][$action])) {
                     return true;
                 }
             }
@@ -193,8 +228,13 @@ class Controller
                     'subcategories'         => '/admin/catalog/subcategories',
                     'attributes'            => '/admin/catalog/attributes',
                     'products'              => '/admin/catalog/products',
-                    'fabric_customizations' => '/admin/fabric-customizations',
-                    'custom_orders'         => '/admin/customize/orders',
+                    'customize_categories'    => '/admin/catalog/categories?module=customize',
+                    'customize_subcategories' => '/admin/catalog/subcategories?module=customize',
+                    'customize_attributes'    => '/admin/catalog/attributes?module=customize',
+                    'customize_products'      => '/admin/catalog/products?module=customize',
+                    'customization_labels'    => '/admin/customization-labels',
+                    'custom_orders'           => '/admin/customize/orders',
+                    'fabric_customizations' => '/admin/catalog/products?module=customize',
                     'inventory'             => '/admin/inventory',
                     'order_rules'           => '/admin/order-rules',
                     'fee_rules'             => '/admin/fee-rules',
@@ -267,8 +307,10 @@ class Controller
      */
     protected function render(string $view, array $data = [], string $layout = 'main')
     {
+        $_pageData = $data;
+
         // Extract data to make variables available in the view
-        extract($data);
+        extract($_pageData);
 
         // Capture the view content
         ob_start();
@@ -279,6 +321,9 @@ class Controller
             throw new \Exception("View file not found: {$viewFile}");
         }
         $content = ob_get_clean();
+
+        // Restore original controller data so subcomponents (like CMS blocks) cannot leak or overwrite layout variables
+        extract($_pageData);
 
         // Include the layout and pass the content to it
         $layoutFile = APP_PATH . '/Views/layouts/' . $layout . '.php';
