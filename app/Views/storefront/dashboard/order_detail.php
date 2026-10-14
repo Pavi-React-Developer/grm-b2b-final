@@ -12,19 +12,25 @@ $statusColors = [
     'out_for_delivery' => 'bg-indigo-100 text-indigo-800 border border-indigo-200',
     'delivered'        => 'bg-green-100 text-green-800 border border-green-200',
     'cancelled'        => 'bg-red-100 text-red-800 border border-red-200',
+    'stitching'        => 'bg-blue-100 text-blue-800 border border-blue-200',
+    'in_production'    => 'bg-cyan-100 text-cyan-800 border border-cyan-200',
+    'quality_check'    => 'bg-teal-100 text-teal-800 border border-teal-200',
     'pending'          => 'bg-gray-100 text-gray-700 border border-gray-200',
 ];
 $statusColor  = $statusColors[$order['status']] ?? 'bg-gray-100 text-gray-700 border border-gray-200';
 $statusLabels = [
-    'placed'           => 'Order Placed',
+    'placed'           => 'Placed',
     'packed'           => 'Packed',
     'shipped'          => 'Shipped',
     'out_for_delivery' => 'Out for Delivery',
     'delivered'        => 'Delivered',
     'cancelled'        => 'Cancelled',
+    'stitching'        => 'Stitching',
+    'in_production'    => 'In Production',
+    'quality_check'    => 'Quality Check',
     'pending'          => 'Pending',
 ];
-$statusLabel = $statusLabels[$order['status']] ?? ucfirst($order['status']);
+$statusLabel = $statusLabels[$order['status']] ?? ucwords(str_replace('_', ' ', $order['status']));
 $grandTotal = ($order['grand_total'] ?? 0) > 0 ? $order['grand_total'] : $order['total_amount'];
 ?>
 

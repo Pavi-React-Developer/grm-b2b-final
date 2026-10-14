@@ -9,7 +9,7 @@
 <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
     <h1 class="text-2xl font-bold text-gray-900"><?= htmlspecialchars($title) ?></h1>
     <div class="flex items-center gap-3">
-        <a href="<?= BASE_URL ?>/admin/orders/invoice?order=<?= htmlspecialchars($order['order_number']) ?>" target="_blank"
+        <a href="<?= BASE_URL ?>/admin/orders/invoice?order=<?= htmlspecialchars($order['order_number']) ?>&t=<?= time() ?>" target="_blank"
            class="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-semibold rounded-lg hover:bg-slate-800 transition-colors shadow-sm">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
             Download Invoice PDF
@@ -79,35 +79,46 @@
 
         $totGstRate = $sgstRate + $cgstRate;
 
-        if ($rawBase > 0 && $unitPrice > $rawBase) {
-            $unitTax = round($unitPrice - $rawBase, 2);
-            $unitBase = $rawBase;
-            $lineBase = round($unitBase * $qty, 2);
-            $lineTax = round($unitTax * $qty, 2);
-            $lineSgst = ($totGstRate > 0 && $sgstRate > 0) ? round($lineTax * ($sgstRate / $totGstRate), 2) : round($lineTax / 2, 2);
-            $lineCgst = round($lineTax - $lineSgst, 2);
-        } elseif ($rawBase > 0 && abs($unitPrice - $rawBase) < 0.01) {
+        // Check if price is exclusive of GST (GST added on top)
+        $isPriceExclusive = ((float)($order['grand_total'] ?? 0) > ((float)($order['total_amount'] ?? 0) + 0.01));
+        if (!$isPriceExclusive && (float)($order['grand_total'] ?? 0) > 0 && !empty($items)) {
+            $sumItemsCheck = 0;
+            foreach ($items as $it) { $sumItemsCheck += ((int)($it['quantity'] ?? 0)) * ((float)($it['unit_price'] ?? 0)); }
+            $isPriceExclusive = ((float)$order['grand_total'] > ($sumItemsCheck + 0.01));
+        }
+
+        if ($isPriceExclusive) {
             $unitBase = $unitPrice;
             $lineBase = round($unitBase * $qty, 2);
-            $lineTax = 0.0;
-            $lineSgst = 0.0;
-            $lineCgst = 0.0;
+            $lineTax  = $totGstRate > 0 ? round($lineBase * ($totGstRate / 100), 2) : 0.0;
+            if ($cgstRate + $sgstRate > 0) {
+                $lineCgst = round($lineTax * ($cgstRate / ($cgstRate + $sgstRate)), 2);
+                $lineSgst = round($lineTax - $lineCgst, 2);
+            } else {
+                $lineCgst = 0.0;
+                $lineSgst = 0.0;
+            }
+            $lineTotal = round($lineBase + $lineTax, 2);
         } elseif ($totGstRate > 0) {
             $unitBase = round($unitPrice / (1 + ($totGstRate / 100)), 2);
-            $unitTax = round($unitPrice - $unitBase, 2);
-            $lineBase = round($unitBase * $qty, 2);
-            $lineTax = round($unitTax * $qty, 2);
-            $lineSgst = ($totGstRate > 0 && $sgstRate > 0) ? round($lineTax * ($sgstRate / $totGstRate), 2) : round($lineTax / 2, 2);
-            $lineCgst = round($lineTax - $lineSgst, 2);
+            $lineBase = round(($unitPrice * $qty) / (1 + ($totGstRate / 100)), 2);
+            $lineTax  = round(($unitPrice * $qty) - $lineBase, 2);
+            if ($cgstRate + $sgstRate > 0) {
+                $lineCgst = round($lineTax * ($cgstRate / ($cgstRate + $sgstRate)), 2);
+                $lineSgst = round($lineTax - $lineCgst, 2);
+            } else {
+                $lineCgst = 0.0;
+                $lineSgst = 0.0;
+            }
+            $lineTotal = round($unitPrice * $qty, 2);
         } else {
             $unitBase = $unitPrice;
             $lineBase = round($unitBase * $qty, 2);
             $lineTax = 0.0;
             $lineSgst = 0.0;
             $lineCgst = 0.0;
+            $lineTotal = round($unitPrice * $qty, 2);
         }
-
-        $lineTotal = round($unitPrice * $qty, 2);
 
         $calcTotalBase += $lineBase;
         $calcTotalSgst += $lineSgst;
@@ -219,7 +230,7 @@
                     <?php endif; ?>
                     <div class="flex justify-between items-center text-gray-600 border-t border-gray-200/60 pt-2">
                         <span><?= !empty($isVendor) ? 'Your Items Subtotal (Incl. GST)' : 'Items Total (Incl. GST)' ?></span>
-                        <span class="font-bold text-gray-900">₹<?= number_format(!empty($isVendor) ? ($calcTotalBase + $calcTotalSgst + $calcTotalCgst) : $order['total_amount'], 2) ?></span>
+                        <span class="font-bold text-gray-900">₹<?= number_format($calcTotalBase + $calcTotalSgst + $calcTotalCgst, 2) ?></span>
                     </div>
                     <?php
                     $feeBreakdown = !empty($order['fee_breakdown']) ? json_decode($order['fee_breakdown'], true) : null;
@@ -265,9 +276,12 @@
                         <?php endif; ?>
                     <?php endif; ?>
                     <?php
-                        $unroundedOrderTotal = (float)($order['total_amount'] ?? 0) + (float)($order['shipping_fee'] ?? 0) + (float)($order['weight_fee'] ?? 0) + (float)($order['platform_fee'] ?? 0) + (float)($order['packaging_fee'] ?? 0);
+                        $unroundedOrderTotal = ($calcTotalBase + $calcTotalSgst + $calcTotalCgst) + (float)($order['shipping_fee'] ?? 0) + (float)($order['weight_fee'] ?? 0) + (float)($order['platform_fee'] ?? 0) + (float)($order['packaging_fee'] ?? 0);
                         $grandTotal = ($order['grand_total'] ?? 0) > 0 ? (float)$order['grand_total'] : (float)round($unroundedOrderTotal);
                         $orderRoundOff = round($grandTotal - $unroundedOrderTotal, 2);
+                        if (abs($orderRoundOff) < 0.05) {
+                            $orderRoundOff = 0.0;
+                        }
                     ?>
                     <?php if ($orderRoundOff > 0 || abs($orderRoundOff) > 0.001): ?>
                     <div class="flex justify-between items-center text-gray-600">
@@ -299,69 +313,41 @@
     <!-- Right Column: Customer & Shipping Details -->
     <div class="space-y-6">
         <!-- Status Card -->
+        <?php
+            $isTerminal = in_array($order['status'], ['delivered', 'cancelled']);
+            $viewStatusConfigs = [
+                'placed'           => ['label' => 'Placed',           'icon' => '⏳', 'style' => 'bg-amber-50 text-amber-800 border-amber-200'],
+                'packed'           => ['label' => 'Packed',           'icon' => '📦', 'style' => 'bg-purple-50 text-purple-800 border-purple-200'],
+                'shipped'          => ['label' => 'Shipped',          'icon' => '🚚', 'style' => 'bg-blue-50 text-blue-800 border-blue-200'],
+                'out_for_delivery' => ['label' => 'Out for Delivery', 'icon' => '🛵', 'style' => 'bg-indigo-50 text-indigo-800 border-indigo-200'],
+                'delivered'        => ['label' => 'Delivered',        'icon' => '✅', 'style' => 'bg-emerald-50 text-emerald-800 border-emerald-200'],
+                'cancelled'        => ['label' => 'Cancelled',        'icon' => '❌', 'style' => 'bg-rose-50 text-rose-800 border-rose-200'],
+            ];
+            $vConf = $viewStatusConfigs[$order['status']] ?? ['label' => ucwords(str_replace('_',' ',$order['status'])), 'icon' => '•', 'style' => 'bg-gray-100 text-gray-800 border-gray-200'];
+        ?>
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Current Status</h3>
-            <div class="flex items-center space-x-3">
-                <?php
-                    $isTerminal = in_array($order['status'], ['delivered', 'cancelled']);
-                ?>
+            <div class="flex items-center gap-3 flex-wrap">
                 <?php if ($this->hasPermission('all_orders', 'edit') && !$isTerminal): ?>
-                <div class="relative inline-block w-full">
-                    <select class="status-dropdown text-sm font-bold rounded-xl pl-4 pr-10 py-2.5 border shadow-2xs transition-all duration-200 cursor-pointer appearance-none outline-none focus:ring-2 w-full" data-id="<?= htmlspecialchars($order['order_number']) ?>" data-original="<?= htmlspecialchars($order['status']) ?>">
-                        <?php
-                            $statuses = [
-                                'placed'           => 'Placed',
-                                'packed'           => 'Packed',
-                                'shipped'          => 'Shipped',
-                                'out_for_delivery' => 'Out for Delivery',
-                                'delivered'        => 'Delivered'
-                            ];
-                            
-                            $allowed_next = [
-                                'placed'           => ['placed', 'packed'],
-                                'packed'           => ['packed', 'shipped'],
-                                'shipped'          => ['shipped', 'out_for_delivery'],
-                                'out_for_delivery' => ['out_for_delivery', 'delivered'],
-                                'delivered'        => ['delivered']
-                            ];
-                            
-                            $currentStatus = $order['status'];
-                            $allowedForCurrent = $allowed_next[$currentStatus] ?? [$currentStatus];
-                            
-                            foreach($statuses as $val => $label) {
-                                if (!in_array($val, $allowedForCurrent)) continue;
-                                $sel = ($currentStatus === $val) ? 'selected' : '';
-                                echo "<option value=\"$val\" $sel class=\"bg-white text-slate-900 font-semibold py-2\">$label</option>";
-                            }
-                        ?>
-                    </select>
-                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-current opacity-70">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
-                    </div>
-                </div>
+                <button type="button"
+                        onclick="openViewStatusMenu(event, '<?= htmlspecialchars($order['order_number']) ?>', '<?= $order['status'] ?>')"
+                        id="view-status-btn"
+                        class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border shadow-2xs cursor-pointer transition-colors <?= $vConf['style'] ?>">
+                    <span><?= $vConf['icon'] ?> <?= $vConf['label'] ?></span>
+                    <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                </button>
                 <?php else: ?>
-                    <?php
-                        $statusClass = 'bg-gray-100 text-gray-800 border-gray-200';
-                        if ($order['status'] === 'placed') $statusClass = 'bg-amber-50 text-amber-800 border-amber-200';
-                        elseif ($order['status'] === 'packed') $statusClass = 'bg-purple-50 text-purple-800 border-purple-200';
-                        elseif ($order['status'] === 'shipped') $statusClass = 'bg-blue-50 text-blue-800 border-blue-200';
-                        elseif ($order['status'] === 'out_for_delivery') $statusClass = 'bg-indigo-50 text-indigo-800 border-indigo-200';
-                        elseif ($order['status'] === 'delivered') $statusClass = 'bg-emerald-50 text-emerald-800 border-emerald-200';
-                        elseif ($order['status'] === 'cancelled') $statusClass = 'bg-rose-50 text-rose-800 border-rose-200';
-                        
-                        $formattedStatus = ucwords(str_replace('_', ' ', $order['status']));
-                    ?>
-                    <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border shadow-2xs <?= $statusClass ?>">
-                        <?php if ($order['status'] === 'delivered'): ?>
-                            <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-                        <?php elseif ($order['status'] === 'cancelled'): ?>
-                            <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
-                        <?php endif; ?>
-                        <?= $formattedStatus ?>
-                    </span>
+                <span class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border shadow-2xs <?= $vConf['style'] ?>">
+                    <?php if ($order['status'] === 'delivered'): ?>
+                        <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                    <?php elseif ($order['status'] === 'cancelled'): ?>
+                        <svg class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/></svg>
+                    <?php endif; ?>
+                    <?= $vConf['label'] ?>
+                </span>
                 <?php endif; ?>
             </div>
-            
+
             <?php if ($order['status'] === 'shipped' || $order['status'] === 'out_for_delivery' || $order['status'] === 'delivered'): ?>
             <div class="mt-6 pt-4 border-t border-gray-100">
                 <h4 class="text-xs font-semibold text-gray-500 mb-1">Courier Information</h4>
@@ -371,6 +357,18 @@
                 <?php endif; ?>
             </div>
             <?php endif; ?>
+        </div>
+
+        <!-- Floating Status Portal -->
+        <div id="viewOrderStatusPortal" class="fixed inset-0 z-[9999] hidden">
+            <div class="fixed inset-0 bg-black/10" onclick="closeViewStatusPortal()"></div>
+            <div id="viewOrderStatusCard" class="fixed bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 min-w-[240px] max-w-[280px] z-[10000] ring-1 ring-black/5 flex flex-col gap-1" style="top:0;left:0">
+                <div class="px-3 py-2 border-b border-gray-100 flex items-center justify-between mb-1 bg-gray-50/80 -mx-2 -mt-2 rounded-t-2xl">
+                    <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Change Order Status</span>
+                    <span class="text-[11px] font-mono font-bold text-[#F25996]">#<?= htmlspecialchars($order['order_number']) ?></span>
+                </div>
+                <div id="viewPortalStatusOptions" class="flex flex-col gap-1"></div>
+            </div>
         </div>
 
         <!-- Packing & Verification Videos Card -->
@@ -839,7 +837,17 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         })
-        .then(r => r.json())
+        .then(async response => {
+            const rawText = await response.text();
+            let res;
+            try {
+                res = JSON.parse(rawText);
+            } catch (e) {
+                console.error("Server raw response:", rawText);
+                throw new Error(rawText ? (rawText.length > 150 ? rawText.substring(0, 150) + '...' : rawText) : 'Invalid response from server');
+            }
+            return res;
+        })
         .then(res => {
             document.getElementById('packingUploadStatus').classList.add('hidden');
             document.getElementById('packingSubmitBtn').disabled = false;
@@ -903,4 +911,163 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+</script>
+
+<script>
+// ── View-page floating status portal ──────────────────────────────────────
+(function() {
+    const VIEW_STATUS_CONFIG = {
+        'placed':           { label: 'Placed',           icon: '⏳' },
+        'packed':           { label: 'Packed',           icon: '📦' },
+        'shipped':          { label: 'Shipped',          icon: '🚚' },
+        'out_for_delivery': { label: 'Out for Delivery', icon: '🛵' },
+        'delivered':        { label: 'Delivered',        icon: '✅' },
+        'cancelled':        { label: 'Cancelled',        icon: '❌' }
+    };
+
+    // Forward-only: what each status can advance to
+    const VIEW_ALLOWED = {
+        'placed':           ['packed', 'cancelled'],
+        'packed':           ['shipped', 'cancelled'],
+        'shipped':          ['out_for_delivery'],
+        'out_for_delivery': ['delivered'],
+        'delivered':        [],
+        'cancelled':        []
+    };
+
+    let _activeBtn = null;
+    let _activeOrderId = null;
+    let _activeCurrentStatus = null;
+
+    window.closeViewStatusPortal = function() {
+        const p = document.getElementById('viewOrderStatusPortal');
+        if (p) p.classList.add('hidden');
+    };
+    window.addEventListener('scroll', closeViewStatusPortal, true);
+    window.addEventListener('resize', closeViewStatusPortal);
+
+    window.openViewStatusMenu = function(event, orderId, currentStatus) {
+        if (event) { event.preventDefault(); event.stopPropagation(); }
+        _activeOrderId = orderId;
+        _activeCurrentStatus = currentStatus;
+        _activeBtn = event ? event.currentTarget : document.getElementById('view-status-btn');
+
+        const portal = document.getElementById('viewOrderStatusPortal');
+        const card   = document.getElementById('viewOrderStatusCard');
+        const opts   = document.getElementById('viewPortalStatusOptions');
+        if (!portal || !card || !opts) return;
+
+        const curConf = VIEW_STATUS_CONFIG[currentStatus] || { label: currentStatus, icon: '•' };
+        const allowed = VIEW_ALLOWED[currentStatus] || [];
+
+        let html = `
+            <div class="px-3 py-2 rounded-xl bg-gray-50 flex items-center justify-between border border-gray-200/80 mb-1">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">${curConf.icon}</span>
+                    <span class="text-xs font-bold text-gray-800">${curConf.label}</span>
+                </div>
+                <span class="text-[9px] font-black uppercase tracking-wider bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">Current</span>
+            </div>`;
+
+        if (allowed.length === 0) {
+            html += `<div class="px-3 py-2 text-center text-xs text-gray-400 font-medium">No further transitions available</div>`;
+        } else {
+            html += `<div class="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-2 py-0.5">Advance Status To:</div>`;
+            allowed.forEach(st => {
+                const conf = VIEW_STATUS_CONFIG[st] || { label: st, icon: '•' };
+                const isCancel = st === 'cancelled';
+                const btnCls = isCancel
+                    ? 'hover:bg-red-50 text-red-700 border-red-100 hover:border-red-200'
+                    : 'hover:bg-pink-50 text-gray-800 hover:text-pink-700 border-gray-100 hover:border-pink-200';
+                const actionLabel = isCancel ? 'Cancel Order' : `Advance to ${conf.label}`;
+                html += `
+                    <button type="button"
+                            onclick="selectViewStatusOption('${orderId}', '${currentStatus}', '${st}')"
+                            class="w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold ${btnCls} flex items-center justify-between transition-colors group border shadow-2xs cursor-pointer">
+                        <span class="flex items-center gap-2">
+                            <span class="text-base">${conf.icon}</span>
+                            <span>${actionLabel}</span>
+                        </span>
+                        <svg class="w-4 h-4 text-gray-400 group-hover:text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </button>`;
+            });
+        }
+
+        opts.innerHTML = html;
+        portal.classList.remove('hidden');
+
+        // Position below the button
+        const rect = _activeBtn ? _activeBtn.getBoundingClientRect() : { top: 100, left: 100, bottom: 130 };
+        const cw = 260, ch = card.offsetHeight || 200;
+        let top = rect.bottom + 6, left = rect.left;
+        if (top + ch > window.innerHeight - 15) top = Math.max(15, rect.top - ch - 6);
+        if (left + cw > window.innerWidth - 15) left = Math.max(15, window.innerWidth - cw - 15);
+        card.style.top = top + 'px';
+        card.style.left = left + 'px';
+    };
+
+    window.selectViewStatusOption = function(orderId, currentStatus, newStatus) {
+        closeViewStatusPortal();
+
+        // Packed → open packing modal
+        if (newStatus === 'packed') {
+            if (typeof openPackingModal === 'function') {
+                openPackingModal(orderId, _activeBtn);
+            }
+            return;
+        }
+
+        // Shipped → open tracking modal
+        if (newStatus === 'shipped') {
+            if (typeof openTrackingModal === 'function') {
+                openTrackingModal(orderId, _activeBtn);
+            }
+            return;
+        }
+
+        const curLabel  = (VIEW_STATUS_CONFIG[currentStatus] || {}).label || currentStatus;
+        const nextLabel = (VIEW_STATUS_CONFIG[newStatus] || {}).label || newStatus;
+        const isCancel  = newStatus === 'cancelled';
+
+        Swal.fire({
+            title: isCancel ? 'Cancel this Order?' : 'Update Order Status?',
+            html: `Are you sure you want to transition Order <b>#${orderId}</b> from <span class="text-gray-600 font-semibold">${curLabel}</span> to <span class="text-[#F25996] font-bold">${nextLabel}</span>?`,
+            icon: isCancel ? 'warning' : 'question',
+            showCancelButton: true,
+            confirmButtonColor: isCancel ? '#dc2626' : '#F25996',
+            cancelButtonColor: '#6b7280',
+            confirmButtonText: isCancel ? 'Yes, cancel order' : `Yes, advance to ${nextLabel}`,
+            customClass: { popup: 'rounded-2xl shadow-xl border border-gray-100' }
+        }).then(result => {
+            if (result.isConfirmed) {
+                viewUpdateStatusAjax(orderId, newStatus);
+            }
+        });
+    };
+
+    function viewUpdateStatusAjax(orderId, status) {
+        fetch('<?= BASE_URL ?>/admin/orders/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order_id: orderId, status: status })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Status Updated!',
+                    text: data.message || 'Order status has been updated.',
+                    timer: 1500,
+                    showConfirmButton: false
+                }).then(() => location.reload());
+            } else {
+                Swal.fire({ icon: 'error', title: 'Update Failed', text: data.message || 'Could not update status.' });
+            }
+        })
+        .catch(err => {
+            Swal.fire({ icon: 'error', title: 'Error', text: err.message || 'Network error.' });
+        });
+    }
+})();
 </script>

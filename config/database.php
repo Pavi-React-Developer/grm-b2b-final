@@ -5,23 +5,21 @@ if (!file_exists($envPath) && file_exists(dirname(__DIR__) . '/env')) {
 }
 $envVars = [];
 if (file_exists($envPath)) {
-    $parsed = @parse_ini_file($envPath);
-    if ($parsed !== false && is_array($parsed) && !empty($parsed)) {
-        $envVars = $parsed;
-    } else {
-        $lines = file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        if ($lines) {
-            foreach ($lines as $line) {
-                $line = trim($line);
-                if ($line === '' || str_starts_with($line, '#') || str_starts_with($line, ';') || str_starts_with($line, '//')) {
-                    continue;
-                }
-                if (strpos($line, '=') !== false) {
-                    list($k, $v) = explode('=', $line, 2);
-                    $k = trim($k);
-                    $v = trim(trim($v), "'\"");
-                    $envVars[$k] = $v;
-                }
+    $rawContent = file_get_contents($envPath);
+    // Strip UTF-8 BOM if present
+    $rawContent = preg_replace('/^\xEF\xBB\xBF/', '', $rawContent);
+    $lines = preg_split('/\r\n|\r|\n/', $rawContent);
+    if ($lines) {
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#') || str_starts_with($line, ';') || str_starts_with($line, '//')) {
+                continue;
+            }
+            if (strpos($line, '=') !== false) {
+                list($k, $v) = explode('=', $line, 2);
+                $k = preg_replace('/^\xEF\xBB\xBF/', '', trim($k));
+                $v = trim(trim($v), "'\"");
+                $envVars[$k] = $v;
             }
         }
     }

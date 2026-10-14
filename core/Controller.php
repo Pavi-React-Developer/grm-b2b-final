@@ -53,6 +53,10 @@ class Controller
                         $this->userPermissions = json_decode($permissionsJson, true) ?? [];
                     }
                 }
+            } else {
+                \Core\Session::remove('user_id');
+                \Core\Session::remove('user_role');
+                \Core\Session::remove('user_status');
             }
         }
     }

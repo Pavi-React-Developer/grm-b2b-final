@@ -201,7 +201,8 @@ html body div[id] .mobile-product-card .mobile-img-wrap {
         font-weight: 700 !important;
         line-height: 1.25 !important;
         margin-bottom: 0.15rem !important;
-        min-height: auto !important;
+        min-height: 2.5rem !important;
+        height: 2.5rem !important;
         display: -webkit-box !important;
         -webkit-line-clamp: 2 !important;
         -webkit-box-orient: vertical !important;
@@ -283,8 +284,8 @@ html body div[id] .mobile-product-card .mobile-img-wrap {
     html body div[id] button[onclick*="toggleWishlist"],
     html body .product-card .wishlist-btn,
     html body div[id] .wishlist-btn {
-        width: 1.625rem !important;
-        height: 1.625rem !important;
+        width: 1.875rem !important;
+        height: 1.875rem !important;
         min-width: 0 !important;
         min-height: 0 !important;
         top: 0.5rem !important;
@@ -293,15 +294,32 @@ html body div[id] .mobile-product-card .mobile-img-wrap {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        border-radius: 9999px !important;
+        position: absolute !important;
+        z-index: 15 !important;
         padding: 0 !important;
     }
     html body .product-card button[onclick*="toggleWishlist"] svg,
     html body div[id] button[onclick*="toggleWishlist"] svg,
     html body .product-card .wishlist-btn svg,
     html body div[id] .wishlist-btn svg {
-        width: 0.8rem !important;
-        height: 0.8rem !important;
+        width: 0.95rem !important;
+        height: 0.95rem !important;
         stroke-width: 2 !important;
+    }
+
+    /* Standardized Scalloped Discount Badge on Desktop */
+    html body .product-card .scallop-discount-badge,
+    html body div[id] .product-card .scallop-discount-badge {
+        position: absolute !important;
+        top: 0.5rem !important;
+        left: 0.5rem !important;
+        width: 4rem !important;
+        height: 4rem !important;
+        z-index: 15 !important;
+        pointer-events: none !important;
+        display: block !important;
+        filter: drop-shadow(0 3px 6px rgba(0, 168, 204, 0.35)) !important;
     }
 }
 
@@ -386,7 +404,8 @@ html body div[id] .mobile-product-card .mobile-img-wrap {
         line-height: 1.2 !important;
         margin-bottom: 0.2rem !important;
         color: var(--pc-name) !important;
-        min-height: auto !important;
+        min-height: 1.85rem !important;
+        height: 1.85rem !important;
         display: -webkit-box !important;
         -webkit-line-clamp: 2 !important;
         -webkit-box-orient: vertical !important;
@@ -519,8 +538,8 @@ html body div[id] .mobile-product-card .mobile-img-wrap {
     html body .mobile-product-card button[onclick*="toggleWishlist"],
     html body div[id] .mobile-product-card button[onclick*="toggleWishlist"],
     html body .mobile-product-card .wishlist-btn {
-        width: 1.375rem !important;
-        height: 1.375rem !important;
+        width: 1.5rem !important;
+        height: 1.5rem !important;
         min-width: 0 !important;
         min-height: 0 !important;
         top: 0.35rem !important;
@@ -529,6 +548,9 @@ html body div[id] .mobile-product-card .mobile-img-wrap {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        border-radius: 9999px !important;
+        position: absolute !important;
+        z-index: 15 !important;
         padding: 0 !important;
     }
     html body .product-card button[onclick*="toggleWishlist"] svg,
@@ -538,9 +560,25 @@ html body div[id] .mobile-product-card .mobile-img-wrap {
     html body .mobile-product-card button[onclick*="toggleWishlist"] svg,
     html body div[id] .mobile-product-card button[onclick*="toggleWishlist"] svg,
     html body .mobile-product-card .wishlist-btn svg {
-        width: 0.7rem !important;
-        height: 0.7rem !important;
+        width: 0.75rem !important;
+        height: 0.75rem !important;
         stroke-width: 2 !important;
+    }
+
+    /* Standardized Scalloped Discount Badge on Mobile */
+    html body .product-card .scallop-discount-badge,
+    html body div[id] .product-card .scallop-discount-badge,
+    html body .mobile-product-card .scallop-discount-badge,
+    html body div[id] .mobile-product-card .scallop-discount-badge {
+        position: absolute !important;
+        top: 0.35rem !important;
+        left: 0.35rem !important;
+        width: 3.25rem !important;
+        height: 3.25rem !important;
+        z-index: 15 !important;
+        pointer-events: none !important;
+        display: block !important;
+        filter: drop-shadow(0 3px 6px rgba(0, 168, 204, 0.35)) !important;
     }
 }
 

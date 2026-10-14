@@ -78,6 +78,23 @@ class NavbarController extends Controller
         // Process menu items array
         if (isset($_POST['menu_item_title']) && is_array($_POST['menu_item_title'])) {
             foreach ($_POST['menu_item_title'] as $index => $itemTitle) {
+                $subItems = [];
+                if (isset($_POST['menu_item_sub_title'][$index]) && is_array($_POST['menu_item_sub_title'][$index])) {
+                    foreach ($_POST['menu_item_sub_title'][$index] as $subIdx => $subTitle) {
+                        $subTitle = trim($subTitle);
+                        $subUrl = trim($_POST['menu_item_sub_url'][$index][$subIdx] ?? '');
+                        if ($subTitle !== '') {
+                            $subItems[] = [
+                                'title' => $subTitle,
+                                'url' => $subUrl !== '' ? $subUrl : '#'
+                            ];
+                        }
+                    }
+                }
+
+                $hasAutoFill = !empty($_POST['menu_item_auto_fill'][$index]);
+                $isDropdown = (!empty($_POST['menu_item_is_dropdown'][$index]) || !empty($subItems) || $hasAutoFill) ? 1 : 0;
+
                 $contentDataArray['menu_items'][] = [
                     'title' => $itemTitle,
                     'cta_url' => $_POST['menu_item_cta_url'][$index] ?? '',
@@ -89,10 +106,9 @@ class NavbarController extends Controller
                     'dropdown_text_color' => $_POST['menu_item_dropdown_text_color'][$index] ?? '#111827',
                     'font_size' => $_POST['menu_item_font_size'][$index] ?? '',
                     'icon_size' => $_POST['menu_item_icon_size'][$index] ?? '',
-                    'is_dropdown' => isset($_POST['menu_item_is_dropdown'][$index]) ? 1 : 0,
+                    'is_dropdown' => $isDropdown,
                     'active' => isset($_POST['menu_item_active'][$index]) ? 1 : 0,
-                    // sub_items structure if we add custom ones later
-                    'sub_items' => []
+                    'sub_items' => $subItems
                 ];
             }
         }
@@ -177,6 +193,23 @@ class NavbarController extends Controller
 
         if (isset($_POST['menu_item_title']) && is_array($_POST['menu_item_title'])) {
             foreach ($_POST['menu_item_title'] as $index => $itemTitle) {
+                $subItems = [];
+                if (isset($_POST['menu_item_sub_title'][$index]) && is_array($_POST['menu_item_sub_title'][$index])) {
+                    foreach ($_POST['menu_item_sub_title'][$index] as $subIdx => $subTitle) {
+                        $subTitle = trim($subTitle);
+                        $subUrl = trim($_POST['menu_item_sub_url'][$index][$subIdx] ?? '');
+                        if ($subTitle !== '') {
+                            $subItems[] = [
+                                'title' => $subTitle,
+                                'url' => $subUrl !== '' ? $subUrl : '#'
+                            ];
+                        }
+                    }
+                }
+
+                $hasAutoFill = !empty($_POST['menu_item_auto_fill'][$index]);
+                $isDropdown = (!empty($_POST['menu_item_is_dropdown'][$index]) || !empty($subItems) || $hasAutoFill) ? 1 : 0;
+
                 $contentDataArray['menu_items'][] = [
                     'title' => $itemTitle,
                     'cta_url' => $_POST['menu_item_cta_url'][$index] ?? '',
@@ -188,9 +221,9 @@ class NavbarController extends Controller
                     'dropdown_text_color' => $_POST['menu_item_dropdown_text_color'][$index] ?? '#111827',
                     'font_size' => $_POST['menu_item_font_size'][$index] ?? '',
                     'icon_size' => $_POST['menu_item_icon_size'][$index] ?? '',
-                    'is_dropdown' => isset($_POST['menu_item_is_dropdown'][$index]) ? 1 : 0,
+                    'is_dropdown' => $isDropdown,
                     'active' => isset($_POST['menu_item_active'][$index]) ? 1 : 0,
-                    'sub_items' => []
+                    'sub_items' => $subItems
                 ];
             }
         }

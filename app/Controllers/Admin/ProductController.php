@@ -209,20 +209,6 @@ class ProductController extends Controller
             return;
         }
 
-        if (!$isCustomize && !empty($product['id'])) {
-            if (!empty($product['is_customizable'])) {
-                $isCustomize = true;
-                $module = 'customize';
-            } else {
-                $db = \Core\Database::getInstance();
-                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
-                $stmt->execute([(int)$product['id']]);
-                if ($stmt->fetch()) {
-                    $isCustomize = true;
-                    $module = 'customize';
-                }
-            }
-        }
 
         $categoryModel = new Category();
         $categories = $categoryModel->getAllActive(null, $isCustomize ? 1 : 0);
@@ -406,34 +392,29 @@ class ProductController extends Controller
             $db = \Core\Database::getInstance();
             $db->beginTransaction();
 
-            // --- SKU Validation for Store ---
+            // --- SKU Auto-Disambiguation for Store ---
             $skus = [];
-            foreach ($postedVariants as $vData) {
+            foreach ($postedVariants as &$vData) {
                 $sku = trim($vData['sku'] ?? '');
-                if (in_array($sku, $skus)) {
-                    $db->rollBack();
-                    Session::setFlash('error', 'Duplicate SKU found in the form data: ' . $sku);
-                    $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
+                if (empty($sku)) {
+                    $sku = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $data['slug']), 0, 6)) . '-1';
                 }
+                $sku = $this->ensureUniqueSku($sku, 0, $skus);
                 $skus[] = $sku;
-                
-                $existing = $db->prepare("SELECT id FROM product_variants WHERE sku = ?");
-                $existing->execute([$sku]);
-                if ($existing->fetch()) {
-                    $db->rollBack();
-                    Session::setFlash('error', 'The SKU "' . $sku . '" is already in use by another product.');
-                    $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
-                }
+                $vData['sku'] = $sku;
             }
-            // ----------------------
+            unset($vData);
 
             $productModel = new Product();
             
-            // Check for duplicate slug
+            // Check & auto-disambiguate slug if already exists
             if ($productModel->findBySlug($data['slug'])) {
-                $db->rollBack();
-                Session::setFlash('error', 'A product with this slug already exists. Please choose a different name or manually change the slug to be unique.');
-                $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
+                $baseSlug = $data['slug'];
+                $counter = 1;
+                while ($productModel->findBySlug($data['slug'])) {
+                    $data['slug'] = $baseSlug . '-' . $counter;
+                    $counter++;
+                }
             }
 
             $productId = $productModel->create($data);
@@ -554,7 +535,7 @@ class ProductController extends Controller
                     'minimum_pieces' => !empty($_POST['minimum_pieces']) ? max(1, (int)$_POST['minimum_pieces']) : 10,
                     'maximum_pieces' => 100,
                     'wastage_percentage' => 0.00,
-                    'unit' => 'Meter',
+                    'unit' => 'Quantity',
                     'customization_enabled' => 1,
                     'status' => !empty($_POST['customization_status']) ? $_POST['customization_status'] : 'active'
                 ];
@@ -568,6 +549,9 @@ class ProductController extends Controller
 
             $db->commit();
             \Core\Cache::delete('catalog_active');
+            \Core\Cache::delete('home_active_products');
+            \Core\Cache::delete('customizable_fabrics_default_v2');
+            \Core\Cache::delete('fabric_customization_fid_' . (int)$productId);
             Session::setFlash('success', $isVendor ? 'Product submitted successfully! It is now pending administrator review.' : ($isCustomize ? 'Fabric created successfully.' : 'Product created successfully.'));
         } catch (\Exception $e) {
             if (isset($db)) {
@@ -581,19 +565,31 @@ class ProductController extends Controller
 
     public function update()
     {
-        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
-        $isCustomize = ($module === 'customize');
-        $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'edit');
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/products' . ($isCustomize ? '?module=customize' : ''));
-        }
-
         $id = (int)($_POST['id'] ?? 0);
         $productModel = new Product();
         $existingProduct = $productModel->findById($id);
         if (!$existingProduct) {
             Session::setFlash('error', 'Product not found.');
             $this->redirect('/admin/catalog/products');
+        }
+
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize') 
+            || (!empty($_POST['is_customizable']) && (int)$_POST['is_customizable'] === 1) 
+            || (!empty($existingProduct['is_customizable']));
+
+        if (!$isCustomize && $id > 0) {
+            $dbCheck = \Core\Database::getInstance();
+            $stmtCheck = $dbCheck->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+            $stmtCheck->execute([$id]);
+            if ($stmtCheck->fetch()) {
+                $isCustomize = true;
+            }
+        }
+
+        $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'edit');
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/catalog/products' . ($isCustomize ? '?module=customize' : ''));
         }
 
         $isVendor = (Session::get('user_role') === 'vendor');
@@ -623,20 +619,6 @@ class ProductController extends Controller
         $firstVariantTotalGst = isset($firstVariant['total_gst']) && $firstVariant['total_gst'] !== '' ? (float)$firstVariant['total_gst'] : ($firstVariantSgst + $firstVariantCgst);
         $firstVariantMaxAmount = isset($firstVariant['max_amount']) && $firstVariant['max_amount'] !== '' ? (float)$firstVariant['max_amount'] : null;
 
-        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
-        $isCustomize = ($module === 'customize');
-        if (!$isCustomize && !empty($id)) {
-            if (!empty($existingProduct['is_customizable'])) {
-                $isCustomize = true;
-            } else {
-                $db = \Core\Database::getInstance();
-                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
-                $stmt->execute([(int)$id]);
-                if ($stmt->fetch()) {
-                    $isCustomize = true;
-                }
-            }
-        }
 
         // Extract custom description fields
         $customFields = [];
@@ -738,29 +720,28 @@ class ProductController extends Controller
             
             if (!empty($allVariants)) {
                 $skus = [];
-                foreach ($allVariants as $vId => $vData) {
+                foreach ($allVariants as $vId => &$vData) {
                     $sku = trim($vData['sku'] ?? '');
-                    $variantId = (is_numeric($vId) && strpos($vId, 'new_') === false) ? (int)$vId : 0;
-                    
                     if (empty($sku)) {
-                        $db->rollBack();
-                        Session::setFlash('error', 'Variant SKU cannot be empty.');
-                        $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
+                        $sku = strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $data['slug']), 0, 6)) . '-1';
                     }
-                    if (in_array($sku, $skus)) {
-                        $db->rollBack();
-                        Session::setFlash('error', 'Duplicate SKU found in the form data: ' . $sku);
-                        $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
-                    }
+                    $sku = $this->ensureUniqueSku($sku, $id, $skus);
                     $skus[] = $sku;
-                    
-                    $existing = $db->prepare("SELECT id FROM product_variants WHERE sku = ? AND product_id != ?");
-                    $existing->execute([$sku, $id]);
-                    
-                    if ($existing->fetch()) {
-                        $db->rollBack();
-                        Session::setFlash('error', 'The SKU "' . $sku . '" is already in use by another product.');
-                        $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
+                    $vData['sku'] = $sku;
+                }
+                unset($vData);
+
+                // Update the submitted arrays with unique SKUs
+                foreach ($allVariants as $k => $v) {
+                    if (strpos((string)$k, 'new_') === 0) {
+                        $actualK = substr((string)$k, 4);
+                        if (isset($_POST['new_variants'][$actualK])) {
+                            $_POST['new_variants'][$actualK]['sku'] = $v['sku'];
+                        }
+                    } else {
+                        if (isset($_POST['variants'][$k])) {
+                            $_POST['variants'][$k]['sku'] = $v['sku'];
+                        }
                     }
                 }
             }
@@ -854,9 +835,19 @@ class ProductController extends Controller
             if (isset($_POST['primary_image_path'])) {
                 $primaryImgPath = trim($_POST['primary_image_path']);
                 if (!empty($primaryImgPath)) {
-                    $productModel->deletePrimaryImage($id);
-                    $productModel->addImage($id, $primaryImgPath, true);
-                } else {
+                    $existingImages = $productModel->getImages($id);
+                    $alreadyPrimary = false;
+                    foreach ($existingImages as $img) {
+                        if (!empty($img['is_primary']) && $img['image_path'] === $primaryImgPath) {
+                            $alreadyPrimary = true;
+                            break;
+                        }
+                    }
+                    if (!$alreadyPrimary) {
+                        $productModel->deletePrimaryImage($id);
+                        $productModel->addImage($id, $primaryImgPath, true);
+                    }
+                } elseif (!empty($_POST['remove_primary_image'])) {
                     $productModel->deletePrimaryImage($id);
                     if ($firstVariantImage) {
                         $productModel->addImage($id, $firstVariantImage, true);
@@ -935,7 +926,7 @@ class ProductController extends Controller
                     'minimum_pieces' => !empty($_POST['minimum_pieces']) ? max(1, (int)$_POST['minimum_pieces']) : 10,
                     'maximum_pieces' => 100,
                     'wastage_percentage' => 0.00,
-                    'unit' => 'Meter',
+                    'unit' => 'Quantity',
                     'customization_enabled' => 1,
                     'status' => !empty($_POST['customization_status']) ? $_POST['customization_status'] : 'active'
                 ];
@@ -949,6 +940,9 @@ class ProductController extends Controller
 
             $db->commit();
             \Core\Cache::delete('catalog_active');
+            \Core\Cache::delete('home_active_products');
+            \Core\Cache::delete('customizable_fabrics_default_v2');
+            \Core\Cache::delete('fabric_customization_fid_' . (int)$id);
             Session::setFlash('success', $isCustomize ? 'Fabric updated successfully.' : 'Product updated successfully.');
         } catch (\Exception $e) {
             if (isset($db)) {
@@ -1010,6 +1004,9 @@ class ProductController extends Controller
 
                 $productModel->delete($id);
                 \Core\Cache::delete('catalog_active');
+                \Core\Cache::delete('home_active_products');
+                \Core\Cache::delete('customizable_fabrics_default_v2');
+                \Core\Cache::delete('fabric_customization_fid_' . (int)$id);
                 
                 if ($this->isJsonRequest()) {
                     $this->json(['success' => true, 'message' => ($isCustomize ? 'Fabric' : 'Product') . ' deleted successfully.']);
@@ -1058,6 +1055,7 @@ class ProductController extends Controller
                 } else {
                     $parsed[] = [
                         'attribute_id' => $attrId,
+
                         'attribute_value_id' => null,
                         'value_text' => $val
                     ];
@@ -1218,6 +1216,43 @@ class ProductController extends Controller
     {
         return (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
             || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
+    }
+
+    /**
+     * Ensures an SKU is strictly unique across product_variants and within the current submission.
+     * Auto-disambiguates with an incrementing suffix instead of crashing product creation.
+     */
+    private function ensureUniqueSku(string $sku, int $excludeProductId = 0, array $alreadyUsed = []): string
+    {
+        $db = \Core\Database::getInstance();
+        $baseSku = trim($sku);
+        if ($baseSku === '') {
+            $baseSku = 'SKU-' . strtoupper(substr(uniqid(), -6));
+        }
+        $candidate = $baseSku;
+        $counter = 1;
+
+        while (true) {
+            if (in_array($candidate, $alreadyUsed)) {
+                $candidate = $baseSku . '-' . $counter++;
+                continue;
+            }
+
+            if ($excludeProductId > 0) {
+                $stmt = $db->prepare("SELECT id FROM product_variants WHERE sku = ? AND product_id != ? LIMIT 1");
+                $stmt->execute([$candidate, $excludeProductId]);
+            } else {
+                $stmt = $db->prepare("SELECT id FROM product_variants WHERE sku = ? LIMIT 1");
+                $stmt->execute([$candidate]);
+            }
+
+            if ($stmt->fetch()) {
+                $candidate = $baseSku . '-' . $counter++;
+                continue;
+            }
+
+            return $candidate;
+        }
     }
 }
 

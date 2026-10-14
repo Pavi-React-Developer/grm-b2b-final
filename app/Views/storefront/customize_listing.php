@@ -212,20 +212,25 @@
             <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-7">
                 <?php foreach ($fabrics as $f): ?>
                     <?php
-                        $rawImg = !empty($f['primary_image']) ? get_image_url($f['primary_image']) : '';
-                        $fallbackImg = 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80';
-                        $imgSrc = !empty($rawImg) ? $rawImg : $fallbackImg;
-                        $unitLabel = htmlspecialchars($f['unit'] ?? 'Qty');
+                        $rawImg = !empty($f['primary_image']) ? get_image_url($f['primary_image']) : (!empty($f['images'][0]) ? get_image_url($f['images'][0]) : '');
+                        $imgSrc = $rawImg;
+                        $unitLabel = (!empty($f['unit']) && strtolower($f['unit']) !== 'meter') ? htmlspecialchars($f['unit']) : 'Quantity';
                     ?>
                     <div class="bg-white rounded-2xl sm:rounded-[22px] border border-gray-100 overflow-hidden shadow-xs hover:shadow-xl hover:border-pink-200 transition-all duration-300 flex flex-col group transform hover:-translate-y-1">
                         
                         <!-- Top Image Area -->
-                        <div class="relative h-44 sm:h-64 md:h-72 w-full bg-gray-100 overflow-hidden">
+                        <div class="relative h-44 sm:h-64 md:h-72 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
+                            <?php if (!empty($imgSrc)): ?>
                             <img id="fabric-main-img-<?= $f['id'] ?>" 
                                  src="<?= htmlspecialchars($imgSrc) ?>" 
                                  alt="<?= htmlspecialchars($f['fabric_name']) ?>" 
-                                 onerror="this.onerror=null; this.src='<?= $fallbackImg ?>';"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <?php else: ?>
+                            <div class="w-full h-full flex flex-col items-center justify-center p-4 text-center">
+                                <span class="text-4xl sm:text-5xl mb-2">🧵</span>
+                                <span class="text-xs sm:text-sm font-bold text-gray-700"><?= htmlspecialchars($f['fabric_name']) ?></span>
+                            </div>
+                            <?php endif; ?>
                             
                             <!-- Top Left Badges: CUSTOMIZABLE & Garment Type -->
                             <div class="absolute top-2 left-2 sm:top-3.5 sm:left-3.5 pointer-events-none z-10 flex flex-col gap-1 sm:gap-1.5 items-start">

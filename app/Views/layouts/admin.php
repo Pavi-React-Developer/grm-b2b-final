@@ -308,10 +308,22 @@ if ($currentUserRole === 'super_admin') {
         }
 
         /* =========================================================
-           GLOBAL TABLE & ACTION EDIT BUTTONS (BLUE THEME)
-           Matches reference image: Square rounded icon pad, Blue color,
-           Crisp blue hover with soft blue background
+           GLOBAL TABLE & ACTION EDIT BUTTONS (PURE BLUE ICON)
+           Only the blue pencil-square / edit icon is displayed.
+           Removed background pad, border, and box-shadow.
            ========================================================= */
+        a[href*="/edit"]:not(.btn-pill):not([class*="px-5"]):not([class*="py-2.5"]):not([class*="rounded-full"]):not([class*="group-hover:text-indigo-600"]),
+        a[title*="Edit"]:not(.btn-pill):not([class*="rounded-full"]),
+        a[title*="edit"]:not(.btn-pill):not([class*="rounded-full"]),
+        button[title*="Edit"]:not(.btn-pill):not([class*="rounded-full"]),
+        button[title*="edit"]:not(.btn-pill):not([class*="rounded-full"]),
+        button[onclick*="openEdit"]:not(.btn-pill):not([class*="rounded-full"]),
+        button[onclick*="edit"]:not(.btn-pill):not([class*="rounded-full"]),
+        .btn-action-edit,
+        .bi-pencil-square {
+            color: #2563eb !important;
+        }
+
         a[href*="/edit"]:not(.btn-pill):not([class*="px-5"]):not([class*="py-2.5"]):not([class*="rounded-full"]):not([class*="group-hover:text-indigo-600"]),
         a[title*="Edit"]:not(.btn-pill):not([class*="rounded-full"]),
         a[title*="edit"]:not(.btn-pill):not([class*="rounded-full"]),
@@ -323,15 +335,17 @@ if ($currentUserRole === 'super_admin') {
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
-            width: 2.125rem !important;
-            height: 2.125rem !important;
-            padding: 0.35rem !important;
-            border-radius: 0.625rem !important;
-            color: #3b82f6 !important;
-            background-color: #eff6ff !important;
-            border: 1px solid #dbeafe !important;
-            box-shadow: 0 1px 2px rgba(59, 130, 246, 0.05) !important;
-            transition: all 0.2s ease-in-out !important;
+            width: auto !important;
+            height: auto !important;
+            min-width: 0 !important;
+            min-height: 0 !important;
+            padding: 0.25rem !important;
+            border-radius: 0.25rem !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            transition: color 0.15s ease-in-out, transform 0.15s ease-in-out !important;
             cursor: pointer !important;
         }
 
@@ -342,12 +356,14 @@ if ($currentUserRole === 'super_admin') {
         button[title*="edit"]:not(.btn-pill):not([class*="rounded-full"]):hover,
         button[onclick*="openEdit"]:not(.btn-pill):not([class*="rounded-full"]):hover,
         button[onclick*="edit"]:not(.btn-pill):not([class*="rounded-full"]):hover,
-        .btn-action-edit:hover {
+        .btn-action-edit:hover,
+        .bi-pencil-square:hover {
             color: #1d4ed8 !important;
-            background-color: #dbeafe !important;
-            border-color: #93c5fd !important;
-            transform: scale(1.08) !important;
-            box-shadow: 0 2px 6px rgba(59, 130, 246, 0.2) !important;
+            background: transparent !important;
+            background-color: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            transform: scale(1.15) !important;
         }
 
         a[href*="/edit"]:not(.btn-pill) svg,
@@ -357,10 +373,18 @@ if ($currentUserRole === 'super_admin') {
         button[title*="edit"] svg,
         button[onclick*="openEdit"] svg,
         button[onclick*="edit"] svg,
-        .btn-action-edit svg {
-            width: 1.15rem !important;
-            height: 1.15rem !important;
+        .btn-action-edit svg,
+        a[href*="/edit"]:not(.btn-pill) i,
+        a[title*="Edit"] i,
+        a[title*="edit"] i,
+        button[title*="Edit"] i,
+        button[title*="edit"] i,
+        button[onclick*="openEdit"] i,
+        button[onclick*="edit"] i,
+        .btn-action-edit i {
+            color: inherit !important;
             display: inline-block !important;
+            line-height: 1 !important;
         }
         button[id*="create"]:hover, button[id*="Create"]:hover,
         button.bg-brand-600:hover, a.bg-brand-600:hover,
@@ -1191,6 +1215,12 @@ if ($currentUserRole === 'super_admin') {
                     </a>
                     <a href="<?= BASE_URL ?>/admin/cms/product-card-settings" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/cms/product-card-settings') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Product Card</span>
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/cms/reviews" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/cms/reviews') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Review</span>
+                    </a>
+                    <a href="<?= BASE_URL ?>/admin/cms/projects" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/cms/projects') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Our Project</span>
                     </a>
                 </div>
             </div>

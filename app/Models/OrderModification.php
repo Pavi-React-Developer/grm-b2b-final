@@ -121,8 +121,16 @@ class OrderModification extends Model
                 }
             }
 
-            // Mark order as having a modification and update the revised total
-            $this->db->prepare("UPDATE orders SET grand_total = ?, has_modification = 1 WHERE id = ?")->execute([$revisedTotal, $orderId]);
+            // Calculate revised subtotal (sum of non-removed items)
+            $revisedSubtotal = 0.0;
+            foreach ($modItems as $mItem) {
+                if ($mItem['change_type'] !== 'removed') {
+                    $revisedSubtotal += ((int)$mItem['new_qty']) * ((float)$mItem['new_price']);
+                }
+            }
+
+            // Mark order as having a modification and update total_amount and revised grand total
+            $this->db->prepare("UPDATE orders SET total_amount = ?, grand_total = ?, has_modification = 1 WHERE id = ?")->execute([$revisedSubtotal, $revisedTotal, $orderId]);
 
             $this->db->commit();
             return $modId;

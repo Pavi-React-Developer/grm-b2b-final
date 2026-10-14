@@ -8,23 +8,33 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $productModel = new Product();
-        $products = $productModel->getAllActive(null, null, null, [], 'newest', 0);
+        $cachedProducts = class_exists('\Core\Cache') ? \Core\Cache::get('home_active_products') : null;
+        if ($cachedProducts !== null) {
+            $products = $cachedProducts;
+        } else {
+            $productModel = new Product();
+            $products = $productModel->getAllActive(null, null, null, [], 'newest', 0);
+
+            // Attach variants to each product (batch loaded in a single query to eliminate N+1 latency)
+            $pIds = array_column($products, 'id');
+            $variantsMap = $productModel->getInventoryVariantsForProducts($pIds);
+            foreach ($products as &$product) {
+                $product['variants'] = $variantsMap[$product['id']] ?? [];
+            }
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::set('home_active_products', $products, 600); // 10 minutes cache
+            }
+        }
 
         $categoryModel = new \App\Models\Category();
         $categories = $categoryModel->getAll(0);
-
-        // Attach variants to each product (batch loaded in a single query to eliminate N+1 latency)
-        $pIds = array_column($products, 'id');
-        $variantsMap = $productModel->getInventoryVariantsForProducts($pIds);
-        foreach ($products as &$product) {
-            $product['variants'] = $variantsMap[$product['id']] ?? [];
-        }
 
         $wishlistIds = [];
         if (\Core\Session::get('user_id')) {
             $wishlistModel = new \App\Models\Wishlist();
             $wishlistIds = $wishlistModel->getProductIds(\Core\Session::get('user_id'));
+        } else {
+            \Core\Session::remove('return_to');
         }
 
         // Fetch layout dynamically without curl to avoid PHP dev server deadlock
@@ -178,10 +188,9 @@ class HomeController extends Controller
 
         // 3. If no specific chart was found, fall back to subcategory/category matching
         if (empty($charts)) {
+            $productName = !empty($product['name']) ? $product['name'] : null;
             if ($subCategoryId > 0 || $categoryId > 0) {
-                $charts = $sizeChartModel->getByCategoryAndSubCategory($categoryId, $subCategoryId);
-            } else {
-                $charts = $sizeChartModel->getAllActive();
+                $charts = $sizeChartModel->getByCategoryAndSubCategory($categoryId, $subCategoryId, $productName);
             }
         }
 
@@ -196,6 +205,20 @@ class HomeController extends Controller
         unset($chart);
 
         echo json_encode(['success' => true, 'charts' => $charts]);
+        exit;
+    }
+
+    public function clearCache()
+    {
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::clear();
+        }
+        header('Content-Type: text/html');
+        echo "<div style='font-family:sans-serif;text-align:center;padding:50px;'>
+            <h2 style='color:#16a34a;'>All Application Cache Cleared Successfully!</h2>
+            <p>Database synchronization is complete.</p>
+            <p><a href='" . BASE_URL . "/' style='display:inline-block;padding:10px 20px;background:#16a34a;color:#fff;text-decoration:none;border-radius:6px;'>Return to Storefront</a></p>
+        </div>";
         exit;
     }
 }

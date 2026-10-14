@@ -16,20 +16,47 @@ class AuthController extends Controller
 {
     public function showLogin()
     {
-        if (Session::get('user_id')) {
-            $this->redirect('/');
+        $redirect = $_GET['redirect'] ?? Session::get('return_to');
+        if (!empty($redirect) && is_string($redirect)) {
+            $decoded = rawurldecode($redirect);
+            if (str_starts_with($decoded, '/') && !str_starts_with($decoded, '//')) {
+                Session::set('return_to', $decoded);
+                $redirect = $decoded;
+            } elseif (str_starts_with($redirect, '/') && !str_starts_with($redirect, '//')) {
+                Session::set('return_to', $redirect);
+            } else {
+                $redirect = null;
+            }
+        } else {
+            $redirect = null;
         }
-        $this->render('storefront/login', ['title' => 'Login']);
+
+        if (Session::get('user_id')) {
+            if (!empty($redirect)) {
+                Session::remove('return_to');
+                $this->redirect($redirect);
+                return;
+            }
+            $this->redirect('/');
+            return;
+        }
+
+        $this->render('storefront/login', [
+            'title' => 'Login',
+            'redirect' => $redirect
+        ]);
     }
 
     public function login()
     {
         $loginInput = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
+        $redirect = trim($_POST['redirect'] ?? $_GET['redirect'] ?? Session::get('return_to') ?? '');
+        $redirectParam = !empty($redirect) ? '?redirect=' . urlencode($redirect) : '';
 
         if (empty($loginInput) || empty($password)) {
             Session::setFlash('error', 'Please fill in all fields.');
-            $this->redirect('/login');
+            $this->redirect('/login' . $redirectParam);
             return;
         }
 
@@ -46,7 +73,7 @@ class AuthController extends Controller
         if ($user && password_verify($password, $user['password_hash'])) {
             if ($user['status'] === 'blocked' || $user['status'] === 'inactive' || $user['status'] === 'deactivated') {
                 Session::setFlash('error', 'Your account has been deactivated or blocked by the administrator.');
-                $this->redirect('/login');
+                $this->redirect('/login' . $redirectParam);
                 return;
             }
 
@@ -63,19 +90,19 @@ class AuthController extends Controller
                 }
                 $msg .= 'Please re-register with corrected details.';
                 Session::setFlash('rejected_reason', $msg);
-                $this->redirect('/register');
+                $this->redirect('/register' . $redirectParam);
                 return;
             }
 
             if ($user['status'] === 'pending') {
                 Session::setFlash('error', 'Your registration is pending admin approval. Please check back later.');
-                $this->redirect('/login');
+                $this->redirect('/login' . $redirectParam);
                 return;
             }
 
             if ($user['role'] === 'vendor' && !is_vendor_module_enabled()) {
                 Session::setFlash('error', 'Vendor access and operations are currently disabled by platform administration.');
-                $this->redirect('/login');
+                $this->redirect('/login' . $redirectParam);
                 return;
             }
             
@@ -156,21 +183,53 @@ class AuthController extends Controller
             }
 
             Session::setFlash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
-            $this->redirect('/');
+
+            // Buyer dynamic redirection (e.g. returning to product details after Instagram referral or direct link)
+            Session::remove('return_to');
+            $targetUrl = '/';
+            if (!empty($redirect)) {
+                $decodedRedirect = rawurldecode($redirect);
+                $checkUrl = (str_starts_with($decodedRedirect, '/') && !str_starts_with($decodedRedirect, '//')) ? $decodedRedirect : $redirect;
+                if (str_starts_with($checkUrl, '/') && !str_starts_with($checkUrl, '//')) {
+                    $parsedPath = parse_url($checkUrl, PHP_URL_PATH);
+                    if (!in_array($parsedPath, ['/login', '/logout', '/register', '/register/verify'])) {
+                        $targetUrl = $checkUrl;
+                    }
+                }
+            }
+
+            $this->redirect($targetUrl);
             return;
         } else {
             Session::setFlash('error', 'Invalid email/phone or password. Please try again.');
-            $this->redirect('/login');
+            $this->redirect('/login' . $redirectParam);
             return;
         }
     }
 
     public function showRegister()
     {
-        if (Session::get('user_id')) {
-            $this->redirect('/');
+        $redirect = $_GET['redirect'] ?? Session::get('return_to');
+        if (!empty($redirect) && is_string($redirect)) {
+            $decoded = rawurldecode($redirect);
+            if (str_starts_with($decoded, '/') && !str_starts_with($decoded, '//')) {
+                Session::set('return_to', $decoded);
+            }
         }
-        $this->render('storefront/register', ['title' => 'Register as Buyer']);
+
+        if (Session::get('user_id')) {
+            if (!empty($redirect)) {
+                Session::remove('return_to');
+                $this->redirect($redirect);
+                return;
+            }
+            $this->redirect('/');
+            return;
+        }
+        $this->render('storefront/register', [
+            'title' => 'Register as Buyer',
+            'redirect' => $redirect
+        ]);
     }
 
     public function register()
@@ -688,34 +747,40 @@ class AuthController extends Controller
             ]);
 
             // Handle saving files from session
+            // Handle saving files from session in a single batch query
             $mediaModel = new Media();
+            $batchMedia = [];
 
-            foreach ($regData['temp_files'] as $tempFile) {
-                $mediaModel->create([
-                    'user_id' => $userId,
-                    'file_path' => $tempFile['path'], // Cloudinary URL
-                    'file_type' => $tempFile['type'],
-                    'purpose' => 'shop_verification'
-                ]);
+            if (!empty($regData['temp_files']) && is_array($regData['temp_files'])) {
+                foreach ($regData['temp_files'] as $tempFile) {
+                    $batchMedia[] = [
+                        'user_id' => $userId,
+                        'file_path' => $tempFile['path'],
+                        'file_type' => $tempFile['type'],
+                        'purpose' => 'shop_verification'
+                    ];
+                }
             }
 
             if (!empty($regData['gst_doc_url'])) {
-                $mediaModel->create([
+                $batchMedia[] = [
                     'user_id' => $userId,
                     'file_path' => $regData['gst_doc_url'],
                     'file_type' => 'document',
                     'purpose' => 'gst_document'
-                ]);
+                ];
             }
 
             if (!empty($regData['pan_doc_url'])) {
-                $mediaModel->create([
+                $batchMedia[] = [
                     'user_id' => $userId,
                     'file_path' => $regData['pan_doc_url'],
                     'file_type' => 'document',
                     'purpose' => 'pan_document'
-                ]);
+                ];
             }
+
+            $mediaModel->createBatch($batchMedia);
 
             $db->commit();
 

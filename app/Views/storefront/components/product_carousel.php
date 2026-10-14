@@ -481,7 +481,7 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                         <?php 
                                         $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                                         if ($isLoggedIn && $discPercent > 0) {
-                                            echo render_discount_starburst($discPercent, 'absolute top-1.5 left-1.5 z-10 w-16 sm:w-18 md:w-20 transition-transform duration-300 group-hover:scale-110');
+                                            echo render_discount_starburst($discPercent, 'transition-transform duration-300 group-hover:scale-105');
                                         }
                                         ?>
                                         <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" class="w-full h-full <?= $objectFitClass ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
@@ -502,7 +502,7 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                         <?php endif; ?>
 
                                         <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="product-link block mb-1">
-                                            <h3 class="product-name font-bold leading-snug line-clamp-2" style="font-size: clamp(0.875rem, 3.5vw, 1.25rem);"><?= htmlspecialchars($prod['name']) ?></h3>
+                                            <h3 class="product-name font-bold leading-snug line-clamp-2"><?= htmlspecialchars($prod['name']) ?></h3>
                                         </a>
                                         
                                         <?php if (!empty($prod['sku'])): ?>
@@ -514,14 +514,14 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                             <div class="mt-auto flex flex-col justify-end">
                                                 <!-- Selling Price, Strikethrough & Discount Badge (Same Row) -->
                                                 <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-1">
-                                                    <span class="product-price font-extrabold tracking-tight" style="font-size: clamp(0.95rem, 3.8vw, 1.5rem);">₹<?= format_price($displayPrice) ?></span>
+                                                    <span class="product-price font-extrabold tracking-tight">₹<?= format_price($displayPrice) ?></span>
                                                     <?php if ($displayOriginalPrice && $displayOriginalPrice > $displayPrice): ?>
                                                         <span class="product-orig-price text-[0.6875rem] md:text-sm font-bold text-gray-400 line-through">₹<?= format_price($displayOriginalPrice) ?></span>
                                                     <?php endif; ?>
                                                 </div>
 
                                                 <!-- Row 4: Minimum Order Count -->
-                                                <p class="product-moq-row text-[0.525rem] md:text-[11px] lg:text-xs font-semibold mb-2 md:mb-3 lg:mb-4 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis" style="color: var(--pc-price);">
+                                                <p class="product-moq-row font-semibold flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis">
                                                     <svg class="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                                     <span>Min. Order: <?= htmlspecialchars($moq) ?> Pcs</span>
                                                 </p>
@@ -530,7 +530,7 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                                 <form action="<?= BASE_URL ?>/cart/add" method="POST" onsubmit="ajaxAddToCart(event, this)">
                                                     <input type="hidden" name="product_id" value="<?= $prod['id'] ?>">
                                                     <input type="hidden" name="quantity" value="<?= htmlspecialchars($moq) ?>">
-                                                    <button type="submit" class="product-btn w-full font-bold transition-colors flex items-center justify-center gap-1.5 md:gap-1.5 lg:gap-2 hover:opacity-90 shadow-sm whitespace-nowrap" style="padding: clamp(0.55rem, 1.8vw, 0.9rem); font-size: clamp(0.8125rem, 2.5vw, 1rem); border-radius: 0.75rem;">
+                                                    <button type="submit" class="product-btn w-full font-bold transition-colors flex items-center justify-center gap-1.5 md:gap-1.5 lg:gap-2 hover:opacity-90 shadow-sm whitespace-nowrap">
                                                         <svg class="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                                                         <span class="whitespace-nowrap">Add to Cart</span>
                                                     </button>

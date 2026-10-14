@@ -35,14 +35,18 @@
                         <!-- Product Image -->
                         <div class="w-full sm:w-44 h-44 rounded-2xl bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden flex-shrink-0 border border-gray-100 relative group shadow-sm">
                             <?php 
-                                $rawImg = !empty($customization['images'][0]) ? get_image_url($customization['images'][0]) : '';
-                                $fallbackImg = 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80';
-                                $mainImg = !empty($rawImg) ? $rawImg : $fallbackImg;
+                                $rawImg = !empty($customization['primary_image']) ? get_image_url($customization['primary_image']) : (!empty($customization['images'][0]) ? get_image_url($customization['images'][0]) : '');
                             ?>
-                            <img src="<?= htmlspecialchars($mainImg) ?>" 
+                            <?php if (!empty($rawImg)): ?>
+                            <img src="<?= htmlspecialchars($rawImg) ?>" 
                                  alt="<?= htmlspecialchars($customization['fabric_name']) ?>" 
-                                 onerror="this.onerror=null; this.src='<?= $fallbackImg ?>';"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                            <?php else: ?>
+                            <div class="w-full h-full flex flex-col items-center justify-center p-3 text-center">
+                                <span class="text-3xl mb-1">🧵</span>
+                                <span class="text-xs font-bold text-gray-700 line-clamp-2"><?= htmlspecialchars($customization['fabric_name']) ?></span>
+                            </div>
+                            <?php endif; ?>
                             <span class="absolute top-2 left-2 px-2.5 py-1 bg-[#F25996] text-white font-black text-[10px] uppercase tracking-wider rounded-md shadow-sm">
                                 ✂️ Custom Ready
                             </span>
@@ -185,62 +189,7 @@
                     </div>
                 <?php endif; ?>
 
-                <!-- Shipping Address & Custom Notes -->
-                <div class="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 shadow-xs space-y-5">
-                    <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                        <span>📍 Delivery Address & Special Instructions</span>
-                    </h2>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                            Shipping / Delivery Destination
-                        </label>
-                        <?php 
-                            $formatAddress = function($addr) {
-                                if (empty($addr) || !is_array($addr)) return '';
-                                $line1 = $addr['line1'] ?? $addr['address_line1'] ?? $addr['address'] ?? '';
-                                $line2 = $addr['line2'] ?? $addr['address_line2'] ?? '';
-                                $city = $addr['city'] ?? '';
-                                $state = $addr['state'] ?? '';
-                                $pin = $addr['postal_code'] ?? $addr['pincode'] ?? $addr['zip'] ?? '';
-                                $country = $addr['country'] ?? '';
-                                
-                                $parts = array_filter([
-                                    $line1,
-                                    $line2,
-                                    $city,
-                                    $state ? ($pin ? "$state - $pin" : $state) : $pin,
-                                    $country
-                                ]);
-                                return implode(', ', $parts);
-                            };
-
-                            $defaultAddressStr = !empty($userAddresses[0]) ? $formatAddress($userAddresses[0]) : '';
-                        ?>
-                        <?php if (!empty($userAddresses)): ?>
-                            <select id="shippingAddressSelect" onchange="onAddressSelectChange(this)" class="custom-select-pink w-full">
-                                <?php foreach ($userAddresses as $addr): ?>
-                                    <?php 
-                                        $formatted = $formatAddress($addr);
-                                        $label = !empty($addr['label']) ? $addr['label'] : (!empty($addr['name']) ? $addr['name'] : 'Saved Address');
-                                    ?>
-                                    <option value="<?= htmlspecialchars($formatted) ?>">
-                                        <?= htmlspecialchars($label . ' — ' . $formatted) ?>
-                                    </option>
-                                <?php endforeach; ?>
-                                <option value="">-- Enter Custom / Other Delivery Address --</option>
-                            </select>
-                        <?php endif; ?>
-                        <textarea id="shippingAddressInput" rows="2" placeholder="Enter complete factory / boutique delivery address with PIN code..." class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F25996]/20 focus:border-[#F25996] font-medium"><?= htmlspecialchars($defaultAddressStr) ?></textarea>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                            Tailoring Notes & Custom Specifications
-                        </label>
-                        <textarea id="orderNotesInput" rows="2" placeholder="e.g. Please add custom brand label tags, specific thread contrast, or special packing requirements..." class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#F25996]/20 focus:border-[#F25996] font-medium"></textarea>
-                    </div>
-                </div>
+                <!-- Delivery Address & Special Instructions removed as requested -->
 
             </div>
 
@@ -302,8 +251,11 @@
                             <span class="font-bold text-gray-900" id="summaryFabricCost">₹0.00</span>
                         </div>
                         <div class="flex items-center justify-between text-gray-600">
-                            <span>Applicable GST (5%):</span>
-                            <span class="font-bold text-gray-900" id="summaryGstAmount">₹0.00</span>
+                            <span class="flex items-center gap-1.5">
+                                <span>GST (5% Included):</span>
+                                <span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-200">Included in Price</span>
+                            </span>
+                            <span class="font-bold text-gray-700" id="summaryGstAmount">₹0.00</span>
                         </div>
                         <div class="flex items-center justify-between text-base font-black text-gray-900 pt-2">
                             <span>Estimated Grand Total:</span>
@@ -356,6 +308,15 @@ const LABELS_CONFIG = <?= json_encode($customization['labels'] ?? []) ?>;
 // fabricSets state: array of { setId: 1, labelId: 1, selectedSizes: { 'M': 2, 'L': 2 } }
 let fabricSets = [];
 let currentCalc = null;
+
+function getSizeLimits(sz) {
+    if (!sz) return { baseMin: 1, baseMax: 35 };
+    const rawMax = parseInt(sz.max_quantity);
+    const baseMax = rawMax > 0 ? rawMax : 35;
+    const rawMin = parseInt(sz.base_quantity);
+    const baseMin = (rawMin > 0) ? Math.min(rawMin, baseMax) : Math.min(1, baseMax);
+    return { baseMin, baseMax };
+}
 
 function escapeHtmlStr(str) {
     if (str === null || str === undefined) return '';
@@ -441,6 +402,16 @@ function renderFabricSetContainers() {
 
     fabricSets.forEach((set, setIdx) => {
         const activeSizes = Object.keys(set.selectedSizes);
+        // Auto-clamp active sizes to their allowed baseMax
+        activeSizes.forEach(sName => {
+            const szObj = SIZES_CONFIG.find(s => s.size_name === sName);
+            if (szObj) {
+                const { baseMin, baseMax } = getSizeLimits(szObj);
+                if (set.selectedSizes[sName] > baseMax) {
+                    set.selectedSizes[sName] = baseMax;
+                }
+            }
+        });
         const setPcs = getSetTotalPieces(setIdx);
         const isSetComplete = (setPcs === MIN_PIECES_PER_SET);
         const isSetOver = (setPcs > MIN_PIECES_PER_SET);
@@ -483,9 +454,9 @@ function renderFabricSetContainers() {
                     <!-- Custom Style / Label Dropdown for this Set -->
                     ${LABELS_CONFIG.length > 0 ? `
                     <div class="flex items-center gap-1.5">
-                        <span class="text-[11px] font-bold text-gray-500 hidden md:inline">Style:</span>
-                        <select onchange="onSetLabelChange(${setIdx}, this.value)" class="text-xs font-semibold py-1.5 px-2.5 rounded-xl border ${set.labelId ? 'border-pink-200 bg-pink-50/40 text-gray-800' : 'border-amber-300 bg-amber-50 text-amber-900 font-bold'} focus:outline-none focus:ring-2 focus:ring-[#F25996]/20 cursor-pointer">
-                            <option value="" ${!set.labelId ? 'selected' : ''}>⚠️ Select Style / Label...</option>
+                        <span class="text-[11px] font-bold text-[#F25996] hidden md:inline">Style:</span>
+                        <select onchange="onSetLabelChange(${setIdx}, this.value, this)" class="text-xs font-bold py-1.5 px-3 rounded-xl border-2 ${set.labelId ? 'border-pink-400 bg-pink-50/70 text-[#db2777]' : 'border-pink-300 bg-pink-50/30 text-gray-800'} focus:outline-none focus:ring-2 focus:ring-[#F25996]/20 focus:border-[#F25996] cursor-pointer transition-all shadow-2xs">
+                            <option value="" ${!set.labelId ? 'selected' : ''}>🏷️ Select Style / Label...</option>
                             ${LABELS_CONFIG.map(lbl => `
                                 <option value="${lbl.id}" ${parseInt(set.labelId) === parseInt(lbl.id) ? 'selected' : ''}>
                                     🏷️ ${escapeHtmlStr(lbl.display_label)}
@@ -515,8 +486,7 @@ function renderFabricSetContainers() {
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
                     ${SIZES_CONFIG.map(sz => {
                         const isSelected = !!set.selectedSizes[sz.size_name];
-                        const baseMin = parseInt(sz.base_quantity) > 0 ? parseInt(sz.base_quantity) : 2;
-                        const baseMax = parseInt(sz.max_quantity) > 0 ? parseInt(sz.max_quantity) : 4;
+                        const { baseMin, baseMax } = getSizeLimits(sz);
                         const consumption = parseFloat(sz.fabric_consumption) || 1;
                         const pricePerPc = Math.round(FABRIC_PRICE_PER_UNIT * consumption * 100) / 100;
 
@@ -565,8 +535,7 @@ function renderFabricSetContainers() {
                         </div>
                     ` : activeSizes.map(sName => {
                         const szObj = SIZES_CONFIG.find(s => s.size_name === sName) || {};
-                        const baseMin = parseInt(szObj.base_quantity) > 0 ? parseInt(szObj.base_quantity) : 2;
-                        const baseMax = parseInt(szObj.max_quantity) > 0 ? parseInt(szObj.max_quantity) : 4;
+                        const { baseMin, baseMax } = getSizeLimits(szObj);
                         const qty = parseInt(set.selectedSizes[sName]) || baseMin;
                         const consumption = parseFloat(szObj.fabric_consumption) || 1;
                         const pricePerPc = Math.round(FABRIC_PRICE_PER_UNIT * consumption * 100) / 100;
@@ -641,7 +610,7 @@ function toggleSetSizeVariant(setIdx, sizeName) {
     if (!fabricSets[setIdx]) return;
     const set = fabricSets[setIdx];
     const szObj = SIZES_CONFIG.find(s => s.size_name === sizeName) || {};
-    const baseMin = parseInt(szObj.base_quantity) > 0 ? parseInt(szObj.base_quantity) : 2;
+    const { baseMin, baseMax } = getSizeLimits(szObj);
 
     if (set.selectedSizes[sizeName]) {
         delete set.selectedSizes[sizeName];
@@ -674,7 +643,7 @@ function selectAllSetVariants(setIdx) {
     const set = fabricSets[setIdx];
     let runningTotal = 0;
     SIZES_CONFIG.forEach(sz => {
-        const baseMin = parseInt(sz.base_quantity) > 0 ? parseInt(sz.base_quantity) : 2;
+        const { baseMin } = getSizeLimits(sz);
         if (runningTotal + baseMin <= MAX_PIECES_PER_SET) {
             set.selectedSizes[sz.size_name] = baseMin;
             runningTotal += baseMin;
@@ -699,8 +668,7 @@ function adjustSetSizeQty(setIdx, sizeName, delta) {
     if (!fabricSets[setIdx]) return;
     const set = fabricSets[setIdx];
     const szObj = SIZES_CONFIG.find(s => s.size_name === sizeName) || {};
-    const baseMin = parseInt(szObj.base_quantity) > 0 ? parseInt(szObj.base_quantity) : 2;
-    const baseMax = parseInt(szObj.max_quantity) > 0 ? parseInt(szObj.max_quantity) : 4;
+    const { baseMin, baseMax } = getSizeLimits(szObj);
 
     let currentVal = parseInt(set.selectedSizes[sizeName]) || baseMin;
     let nextVal = currentVal + delta;
@@ -743,8 +711,7 @@ function onSetSizeQtyInput(setIdx, sizeName, inp) {
     if (!fabricSets[setIdx]) return;
     const set = fabricSets[setIdx];
     const szObj = SIZES_CONFIG.find(s => s.size_name === sizeName) || {};
-    const baseMin = parseInt(szObj.base_quantity) > 0 ? parseInt(szObj.base_quantity) : 2;
-    const baseMax = parseInt(szObj.max_quantity) > 0 ? parseInt(szObj.max_quantity) : 4;
+    const { baseMin, baseMax } = getSizeLimits(szObj);
 
     let val = parseInt(inp.value);
     if (isNaN(val) || val < baseMin) val = baseMin;
@@ -782,10 +749,18 @@ function onSetSizeQtyInput(setIdx, sizeName, inp) {
     renderFabricSetContainers();
 }
 
-function onSetLabelChange(setIdx, labelId) {
+function onSetLabelChange(setIdx, labelId, selElem) {
     if (!fabricSets[setIdx]) return;
     fabricSets[setIdx].labelId = parseInt(labelId) || null;
+    if (selElem) {
+        if (fabricSets[setIdx].labelId) {
+            selElem.className = 'text-xs font-bold py-1.5 px-3 rounded-xl border-2 border-pink-400 bg-pink-50/70 text-[#db2777] focus:outline-none focus:ring-2 focus:ring-[#F25996]/20 focus:border-[#F25996] cursor-pointer transition-all shadow-2xs';
+        } else {
+            selElem.className = 'text-xs font-bold py-1.5 px-3 rounded-xl border-2 border-pink-300 bg-pink-50/30 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#F25996]/20 focus:border-[#F25996] cursor-pointer transition-all shadow-2xs';
+        }
+    }
     updateLabelAllocationOverview();
+    triggerLiveRecalc();
 }
 
 function autoDistributeLabelsAcrossSets() {
@@ -850,54 +825,68 @@ function updateLabelAllocationOverview() {
 
     let html = '';
 
-    // If there are unassigned sets that have pieces selected, show warning box
+    // If there are unassigned sets that have pieces selected, show pink guided notification box
     if (unassignedSetsWithPcs.length > 0) {
         html += `
-            <div class="p-4 rounded-2xl border border-amber-300 bg-amber-50/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div class="flex items-start gap-2.5 text-amber-900">
-                    <span class="text-base">⚠️</span>
+            <div class="p-4 rounded-2xl border border-pink-200 bg-pink-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
+                <div class="flex items-start gap-2.5 text-gray-800">
+                    <span class="text-base">🏷️</span>
                     <div>
-                        <strong class="font-bold text-amber-950 block">Unassigned Fabric Set(s)</strong>
+                        <strong class="font-bold text-[#db2777] block">Unassigned Fabric Set(s)</strong>
                         <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                            ${unassignedSetsWithPcs.map(s => `<span class="px-2.5 py-1 rounded-lg bg-white border border-amber-300 font-bold text-amber-900 text-[11px] shadow-2xs">Fabric Set #${s.setId}: ${s.pieces} pcs (Not Assigned)</span>`).join(' ')}
+                            ${unassignedSetsWithPcs.map(s => `<span class="px-2.5 py-1 rounded-lg bg-white border border-pink-200 font-bold text-[#F25996] text-[11px] shadow-2xs">Fabric Set #${s.setId}: ${s.pieces} pcs (Choose Style)</span>`).join(' ')}
                         </div>
                     </div>
                 </div>
-                <span class="text-[11px] font-bold text-amber-800 bg-amber-100/80 px-2.5 py-1 rounded-lg border border-amber-300 shrink-0">
+                <span class="text-[11px] font-bold text-[#F25996] bg-white px-2.5 py-1 rounded-lg border border-pink-200 shrink-0 shadow-2xs">
                     Please choose a style in each fabric container above
                 </span>
             </div>
         `;
     }
 
-    LABELS_CONFIG.forEach(lbl => {
+    // Only display style labels that the user has chosen in at least one fabric set
+    const activeAllocatedLabels = LABELS_CONFIG.filter(lbl => {
         const data = labelBreakdown[lbl.id];
-        const assignedSetsHtml = data.assignedSets.length > 0
-            ? data.assignedSets.map(s => `<span class="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-[#db2777]">Set #${s.setId}: ${s.pieces} pcs</span>`).join(' ')
-            : '<span class="text-[11px] text-gray-400 italic">No fabric sets assigned</span>';
+        return data && data.assignedSets.length > 0;
+    });
 
+    if (activeAllocatedLabels.length === 0) {
         html += `
-            <div class="p-4 rounded-2xl border ${data.assignedSets.length > 0 ? 'border-pink-200 bg-pink-50/20' : 'border-gray-100 bg-gray-50/50'} transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div class="flex-1 min-w-0">
-                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white text-gray-900 text-xs font-bold border border-gray-200 shadow-2xs">
-                        <span>🏷️</span>
-                        <span>${escapeHtmlStr(lbl.display_label)}</span>
-                    </div>
-                    ${lbl.description ? `<p class="text-[11px] text-gray-500 mt-1">${escapeHtmlStr(lbl.description)}</p>` : ''}
-                    <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-                        ${assignedSetsHtml}
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-2 shrink-0">
-                    <span class="text-xs font-bold text-gray-500">Allocated:</span>
-                    <span class="font-black text-sm text-[#F25996] px-3 py-1 bg-white rounded-xl border border-pink-200 shadow-2xs">
-                        ${data.totalPieces} Pcs
-                    </span>
-                </div>
+            <div class="p-6 rounded-2xl border border-dashed border-pink-200 bg-pink-50/20 text-center">
+                <span class="text-2xl mb-1.5 block">🏷️</span>
+                <p class="text-xs font-bold text-gray-800">No Customization Style Selected Yet</p>
+                <p class="text-[11px] text-gray-500 mt-1 max-w-sm mx-auto">Choose a style label in Fabric Set #1 above to dynamically allocate quantities and view the breakdown here.</p>
             </div>
         `;
-    });
+    } else {
+        activeAllocatedLabels.forEach(lbl => {
+            const data = labelBreakdown[lbl.id];
+            const assignedSetsHtml = data.assignedSets.map(s => `<span class="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-[#db2777]">Set #${s.setId}: ${s.pieces} pcs</span>`).join(' ');
+
+            html += `
+                <div class="p-4 rounded-2xl border border-pink-200 bg-pink-50/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                    <div class="flex-1 min-w-0">
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white text-gray-900 text-xs font-bold border border-gray-200 shadow-2xs">
+                            <span>🏷️</span>
+                            <span>${escapeHtmlStr(lbl.display_label)}</span>
+                        </div>
+                        ${lbl.description ? `<p class="text-[11px] text-gray-500 mt-1">${escapeHtmlStr(lbl.description)}</p>` : ''}
+                        <div class="flex items-center gap-1.5 mt-2 flex-wrap">
+                            ${assignedSetsHtml}
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                        <span class="text-xs font-bold text-gray-500">Allocated:</span>
+                        <span class="font-black text-sm text-[#F25996] px-3.5 py-1 bg-white rounded-xl border border-pink-200 shadow-2xs">
+                            ${data.totalPieces} Pcs
+                        </span>
+                    </div>
+                </div>
+            `;
+        });
+    }
 
     listElem.innerHTML = html;
 
@@ -1178,6 +1167,29 @@ function renderCalculation(c, p) {
         btnPay.classList.remove('opacity-40', 'cursor-not-allowed');
         btnPay.classList.add('hover:opacity-95', 'cursor-pointer');
 
+    } else if (c.errors && c.errors.length > 0) {
+        bar.className = 'h-full bg-rose-600 transition-all duration-300';
+        reqFabricContainer.className = 'flex items-center justify-between font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-rose-900';
+        statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shrink-0 whitespace-nowrap';
+        statusBadge.textContent = '⚠️ Check Variant Limits';
+
+        errorBox.innerHTML = `
+            <div class="flex items-start gap-2.5">
+                <span class="text-base">⚠️</span>
+                <div>
+                    <strong class="font-bold block mb-0.5 text-rose-900">Size Variant Limit Issue</strong>
+                    <div class="text-rose-800 text-xs leading-relaxed space-y-1">
+                        ${c.errors.map(err => `<p>• ${err}</p>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        errorBox.classList.remove('hidden');
+
+        btnPay.disabled = true;
+        btnPay.classList.add('opacity-40', 'cursor-not-allowed');
+        btnPay.classList.remove('hover:opacity-95', 'cursor-pointer');
+
     } else {
         bar.className = 'h-full bg-gray-300 transition-all duration-300';
         reqFabricContainer.className = 'flex items-center justify-between font-bold bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-gray-800';
@@ -1193,12 +1205,71 @@ function renderCalculation(c, p) {
 
 function onAddressSelectChange(sel) {
     const input = document.getElementById('shippingAddressInput');
-    if (input) {
-        input.value = sel.value;
-        if (!sel.value) {
-            input.focus();
-        }
+    const previewCard = document.getElementById('savedAddressPreviewCard');
+    const customContainer = document.getElementById('customAddressContainer');
+    const labelElem = document.getElementById('addressCardLabel');
+    const textElem = document.getElementById('addressCardText');
+
+    if (sel.value === '__CUSTOM__' || !sel.value) {
+        enableCustomAddressMode();
+    } else {
+        if (customContainer) customContainer.classList.add('hidden');
+        if (previewCard) previewCard.classList.remove('hidden');
+        if (input) input.value = sel.value;
+
+        const opt = sel.options[sel.selectedIndex];
+        const label = opt ? opt.getAttribute('data-label') || 'Saved Address' : 'Saved Address';
+        if (labelElem) labelElem.textContent = label;
+        if (textElem) textElem.textContent = sel.value;
     }
+}
+
+function enableCustomAddressMode() {
+    const previewCard = document.getElementById('savedAddressPreviewCard');
+    const customContainer = document.getElementById('customAddressContainer');
+    const selectElem = document.getElementById('shippingAddressSelect');
+    const input = document.getElementById('shippingAddressInput');
+
+    if (previewCard) previewCard.classList.add('hidden');
+    if (customContainer) customContainer.classList.remove('hidden');
+    if (selectElem) selectElem.value = '__CUSTOM__';
+    if (input) {
+        input.focus();
+    }
+}
+
+function cancelCustomAddressMode() {
+    const selectElem = document.getElementById('shippingAddressSelect');
+    if (selectElem && selectElem.options.length > 1) {
+        selectElem.selectedIndex = 0;
+        onAddressSelectChange(selectElem);
+    }
+}
+
+function appendTailoringSpec(specText) {
+    const textarea = document.getElementById('orderNotesInput');
+    if (!textarea) return;
+
+    let current = textarea.value.trim();
+    if (current.includes(specText)) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Specification Added',
+                text: 'This specification is already included in your tailoring notes.',
+                confirmButtonColor: '#F25996',
+                timer: 1500
+            });
+        }
+        return;
+    }
+
+    if (current.length > 0) {
+        textarea.value = current + '\n• ' + specText;
+    } else {
+        textarea.value = '• ' + specText;
+    }
+    textarea.focus();
 }
 
 function checkLoginOrPrompt() {
@@ -1224,8 +1295,10 @@ function checkLoginOrPrompt() {
 function getPayload() {
     const aggregatedSizes = getAggregatedSizes();
     const fabricQuantity = getFabricQuantity();
-    const address = document.getElementById('shippingAddressInput').value.trim();
-    const notes = document.getElementById('orderNotesInput').value.trim();
+    const addrElem = document.getElementById('shippingAddressInput');
+    const address = addrElem ? addrElem.value.trim() : '';
+    const notesElem = document.getElementById('orderNotesInput');
+    const notes = notesElem ? notesElem.value.trim() : '';
     const labelQuantities = getSelectedLabelQuantities();
 
     // Prepare clean sets breakdown for backend record keeping

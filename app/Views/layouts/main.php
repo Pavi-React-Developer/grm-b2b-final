@@ -7,14 +7,18 @@ $activeCond = $isPreview ? "" : " AND is_active = 1";
 
 $components = $cacheKey ? \Core\Cache::get($cacheKey) : null;
 if (!$components) {
-    $stmtTb = $db->query("SELECT * FROM cms_components WHERE section_type = 'top_bar' $activeCond ORDER BY id DESC LIMIT 1");
-    $globalTopBar = $stmtTb->fetch();
+    $allCmpStmt = $db->query("SELECT * FROM cms_components WHERE section_type IN ('top_bar', 'navbar', 'footer') $activeCond ORDER BY id DESC");
+    $allCmpRows = $allCmpStmt->fetchAll();
 
-    $stmt = $db->query("SELECT * FROM cms_components WHERE section_type = 'navbar' $activeCond ORDER BY id DESC LIMIT 1");
-    $globalNavbar = $stmt->fetch();
+    $globalTopBar = null;
+    $globalNavbar = null;
+    $globalFooter = null;
 
-    $footerStmt = $db->query("SELECT * FROM cms_components WHERE section_type = 'footer' $activeCond ORDER BY id DESC LIMIT 1");
-    $globalFooter = $footerStmt->fetch();
+    foreach ($allCmpRows as $row) {
+        if ($row['section_type'] === 'top_bar' && !$globalTopBar) $globalTopBar = $row;
+        elseif ($row['section_type'] === 'navbar' && !$globalNavbar) $globalNavbar = $row;
+        elseif ($row['section_type'] === 'footer' && !$globalFooter) $globalFooter = $row;
+    }
 
     $components = [
         'top_bar' => $globalTopBar ?: null,
@@ -1769,7 +1773,7 @@ if ($hasDynamicNavbar) {
                                 <svg class="w-3 h-3 text-gray-400 fill-none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
                             </button>
                             <a href="${baseUrl}/product?id=${rp.id}" class="product-image-wrap block overflow-hidden shrink-0 bg-gray-100 h-28 sm:h-32 relative">
-                                ${discPct > 0 ? renderDiscountStarburstJs(discPct, 'absolute top-1 left-1.5 z-10 w-10 sm:w-11 md:w-12 transition-transform duration-300 group-hover:scale-110', 'dw_' + rp.id) : ''}
+                                ${discPct > 0 ? renderDiscountStarburstJs(discPct, 'transition-transform duration-300 group-hover:scale-105', 'dw_' + rp.id) : ''}
                                 <img src="${rpImg}" alt="${rp.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                             </a>
                             <div class="product-card-body p-2 sm:p-2.5 flex flex-col flex-1 bg-white relative z-10">

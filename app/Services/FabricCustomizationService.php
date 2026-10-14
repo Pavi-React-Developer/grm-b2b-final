@@ -165,14 +165,18 @@ class FabricCustomizationService
 
     /**
      * Compute total pricing breakdown
+     * Note: Fabric price is tax-inclusive (GST is already included in unit price).
+     * No extra GST is added on top of the total.
      */
     public function calculatePricing(float $pricePerUnit, float $requiredFabric, float $stitchingPerPiece = 0.00, int $totalPieces = 0, float $gstRate = 5.0)
     {
         $fabricCost = round($pricePerUnit * $totalPieces, 2);
         $stitchingCost = round($stitchingPerPiece * $totalPieces, 2);
-        $subtotal = $fabricCost + $stitchingCost;
-        $gstAmount = round($subtotal * ($gstRate / 100.0), 2);
-        $total = $subtotal + $gstAmount;
+        $total = $fabricCost + $stitchingCost;
+
+        // Calculate taxable subtotal and included GST amount (tax-inclusive back-calculation)
+        $taxableSubtotal = ($gstRate > 0) ? round($total / (1 + ($gstRate / 100.0)), 2) : $total;
+        $gstAmount = round($total - $taxableSubtotal, 2);
 
         return [
             'price_per_unit'    => $pricePerUnit,
@@ -181,7 +185,7 @@ class FabricCustomizationService
             'stitching_per_pc'  => $stitchingPerPiece,
             'total_pieces'      => $totalPieces,
             'stitching_cost'    => $stitchingCost,
-            'subtotal'          => $subtotal,
+            'subtotal'          => $taxableSubtotal,
             'gst_rate'          => $gstRate,
             'gst_amount'        => $gstAmount,
             'total'             => $total

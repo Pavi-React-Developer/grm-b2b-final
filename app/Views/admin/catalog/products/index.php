@@ -78,7 +78,7 @@ $permProdMod = !empty($isCustomize) ? 'customize_products' : 'products';
                     Export Excel
                 </button>
                 <?php if ($this->hasPermission($permProdMod, 'create')): ?>
-                <a href="<?= BASE_URL ?>/admin/catalog/products/create<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="bg-brand-600 hover:bg-brand-700 text-white px-5 py-2.5 rounded-full font-bold text-xs shadow-md transition-all flex items-center uppercase tracking-widest">
+                <a href="<?= BASE_URL ?>/admin/catalog/products/create<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="<?= !empty($isCustomize) ? 'bg-[#F25996] hover:bg-[#d8407d]' : 'bg-brand-600 hover:bg-brand-700' ?> text-white px-5 py-2.5 rounded-full font-bold text-xs shadow-md transition-all flex items-center uppercase tracking-widest">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     <?= !empty($isCustomize) ? 'Add Fabric' : 'Add Product' ?>
                 </a>
@@ -445,7 +445,7 @@ function renderTable() {
         let subCatHtml = prod.sub_category_name ? `<div class="text-gray-500 text-xs mt-1 flex items-center group-hover:text-gray-600 transition-colors"><svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg> ${prod.sub_category_name}</div>` : '';
         let moqHtml = prod.moq_override 
             ? `<span class="px-2.5 py-1 bg-blue-50/50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-100/50 shadow-sm">${prod.moq_override}</span>` 
-            : `<?= !empty($isCustomize) ? '<span class="italic text-amber-600 font-medium text-xs bg-amber-50 px-2 py-0.5 rounded border border-amber-100">Custom Rules</span>' : '<span class="italic text-gray-400 font-medium text-xs">Inherited</span>' ?>`;
+            : `<?= !empty($isCustomize) ? '<span class="italic text-[#F25996] font-medium text-xs bg-pink-50 px-2 py-0.5 rounded border border-pink-100">Custom Rules</span>' : '<span class="italic text-gray-400 font-medium text-xs">Inherited</span>' ?>`;
         
         // Status Badge Logic
         let statusHtml = '';

@@ -43,9 +43,27 @@ $variantGst = $productGst;
 $displayPrice = (float)($product['wholesale_price'] ?? 0);
 $displayOriginalPrice = null;
 
+$hasInStockVariant = false;
+$firstInStockIndex = -1;
 if (!empty($variants)) {
-    $firstIndex = isset($firstInStockIndex) && $firstInStockIndex !== -1 ? $firstInStockIndex : 0;
+    foreach($variants as $index => $variant) {
+        if ((int)($variant['current_stock'] ?? 0) >= $moq && $firstInStockIndex === -1) {
+            $firstInStockIndex = $index;
+            $hasInStockVariant = true;
+        }
+    }
+}
+$firstIndex = ($hasInStockVariant && $firstInStockIndex !== -1) ? $firstInStockIndex : 0;
+$initialWeight = null;
+
+if (!empty($variants)) {
     $firstVariant = $variants[$firstIndex];
+    if (isset($firstVariant['weight']) && $firstVariant['weight'] !== null && $firstVariant['weight'] !== '' && (float)$firstVariant['weight'] > 0) {
+        $initialWeight = (float)$firstVariant['weight'];
+    } elseif (isset($product['weight']) && $product['weight'] !== null && $product['weight'] !== '' && (float)$product['weight'] > 0) {
+        $initialWeight = (float)$product['weight'];
+    }
+
     if (isset($firstVariant['base_price']) && (float)$firstVariant['base_price'] > 0) {
         $vGstVal = $catGst > 0 
             ? $catGst 
@@ -63,6 +81,9 @@ if (!empty($variants)) {
     }
 } else {
     $displayPrice = (float)$displayPrice;
+    if (isset($product['weight']) && $product['weight'] !== null && $product['weight'] !== '' && (float)$product['weight'] > 0) {
+        $initialWeight = (float)$product['weight'];
+    }
 }
 ?>
 
@@ -305,8 +326,8 @@ if (!empty($variants)) {
                         <p class="text-sm font-black text-gray-900"><?= $moq ?> units</p>
                     </div>
                     <div class="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Weight / Unit</p>
-                        <p class="text-sm font-black text-gray-900"><?= !empty($product['weight']) ? htmlspecialchars($product['weight']) . ' kg' : '-' ?></p>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1" id="productWeightLabel">Weight / Unit</p>
+                        <p class="text-sm font-black text-gray-900" id="productWeightDisplay"><?= ($initialWeight !== null && $initialWeight > 0) ? number_format($initialWeight, 3) . ' kg' : (!empty($product['weight']) ? htmlspecialchars($product['weight']) . ' kg' : '-') ?></p>
                     </div>
                 </div>
                 <?php else: ?>
@@ -325,7 +346,7 @@ if (!empty($variants)) {
                         </div>
                     </div>
                     
-                    <a href="<?= BASE_URL ?>/login" class="relative z-10 flex items-center justify-center gap-2 bg-[#F25996] hover:bg-[#d8407d] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm shrink-0 w-full md:w-auto">
+                    <a href="<?= BASE_URL ?>/login?redirect=<?= urlencode($_SERVER['REQUEST_URI'] ?? ('/product?id=' . $product['id'])) ?>" class="relative z-10 flex items-center justify-center gap-2 bg-[#F25996] hover:bg-[#d8407d] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm shrink-0 w-full md:w-auto">
                         Login / Register
                     </a>
                 </div>
@@ -405,7 +426,7 @@ if (!empty($variants)) {
                                 $colorCode = !empty($variant['color_code']) ? $variant['color_code'] : null;
                                 ?>
                                 <label class="<?= $isOutOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer' ?>" <?= $isOutOfStock ? 'title="Out of stock"' : '' ?>>
-                                    <input type="checkbox" name="variant_ids[]" value="<?= $variant['id'] ?>" class="hidden peer variant-checkbox" <?= $isChecked ? 'checked' : '' ?> <?= $isOutOfStock ? 'disabled' : '' ?> onchange="updateVariantSelection()" data-name="<?= htmlspecialchars($variant['name']) ?>" data-stock="<?= $stock ?>" data-moq="<?= $moq ?>" data-color="<?= htmlspecialchars($colorCode ?? '') ?>">
+                                    <input type="checkbox" name="variant_ids[]" value="<?= $variant['id'] ?>" class="hidden peer variant-checkbox" <?= $isChecked ? 'checked' : '' ?> <?= $isOutOfStock ? 'disabled' : '' ?> onchange="updateVariantSelection()" data-name="<?= htmlspecialchars($variant['name']) ?>" data-stock="<?= $stock ?>" data-moq="<?= $moq ?>" data-weight="<?= !empty($variant['weight']) ? (float)$variant['weight'] : '' ?>" data-color="<?= htmlspecialchars($colorCode ?? '') ?>">
                                     <div class="min-w-[72px] sm:min-w-[85px] px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border-2 border-gray-200 text-gray-800 bg-white transition-all flex flex-col items-center justify-center
                                         peer-checked:border-[#F25996] peer-checked:bg-pink-50/70 peer-checked:text-[#F25996] peer-checked:shadow-xs
                                         <?= !$isOutOfStock ? 'hover:border-pink-300 hover:bg-pink-50/20' : '' ?>
@@ -458,8 +479,10 @@ if (!empty($variants)) {
                         style="background: #F25996;">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                         <span>Add to Cart</span>
+                        <?php if ($canAddToCart): ?>
                         <span class="text-white/60 font-normal">|</span>
                         <span id="addToCartTotalAmount" class="font-black">₹<?= format_price($initialTotalAmt) ?></span>
+                        <?php endif; ?>
                     </button>
                 </div>
 
@@ -565,9 +588,9 @@ if (!empty($variants)) {
         <!-- ===== PRODUCT INFORMATION TABS (Description, How to play, Why Choose, etc.) ===== -->
         <div class="mt-8 mb-12 bg-white rounded-3xl border border-pink-100/90 p-5 sm:p-8 md:p-10 shadow-sm">
             
-            <!-- Tab Navigation Header (Smooth Horizontal Scrollable, Centered) -->
-            <div class="border-b border-pink-100 pb-0 mb-8 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none flex justify-center" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
-                <nav class="flex items-center justify-center space-x-4 sm:space-x-8 min-w-max px-1 mx-auto" aria-label="Product Information Tabs">
+            <!-- Tab Navigation Header (Smooth Horizontal Scrollable, Left Aligned) -->
+            <div class="border-b border-pink-100 pb-0 mb-8 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none flex justify-start" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
+                <nav class="flex items-center space-x-4 sm:space-x-8 min-w-max px-1" aria-label="Product Information Tabs">
                     <!-- 1. Description Tab (Default Active) -->
                     <button type="button" 
                             onclick="switchProductInfoTab('tab-description', this)" 
@@ -596,12 +619,12 @@ if (!empty($variants)) {
                 
                 <!-- 1. Description Panel (Default Active) -->
                 <div id="tab-description" class="product-info-panel block transition-opacity duration-300">
-                    <div class="text-center max-w-3xl mx-auto">
-                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-4 tracking-tight flex items-center justify-center gap-2 text-center">
-                            <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                    <div class="max-w-4xl mx-auto text-left">
+                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-5 tracking-tight flex items-center gap-2.5 text-left">
+                            <span class="w-2 h-6 bg-[#F25996] rounded-full inline-block shrink-0"></span>
                             <span>About <?= htmlspecialchars($product['name']) ?></span>
                         </h3>
-                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4 text-center">
+                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-3.5 text-left">
                             <?php 
                             $descText = trim($product['description'] ?? '');
                             if (!empty($descText)) {
@@ -625,12 +648,12 @@ if (!empty($variants)) {
                 <?php if (!empty($filteredCustomTabs)): ?>
                     <?php foreach ($filteredCustomTabs as $idx => $tab): ?>
                         <div id="tab-custom-<?= $idx ?>" class="product-info-panel hidden transition-opacity duration-300">
-                            <div class="text-center max-w-3xl mx-auto">
-                                <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-4 tracking-tight flex items-center justify-center gap-2 text-center">
-                                    <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                            <div class="max-w-4xl mx-auto text-left">
+                                <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-5 tracking-tight flex items-center gap-2.5 text-left">
+                                    <span class="w-2 h-6 bg-[#F25996] rounded-full inline-block shrink-0"></span>
                                     <span><?= htmlspecialchars($tab['name']) ?></span>
                                 </h3>
-                                <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4 text-center">
+                                <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-3.5 text-left">
                                     <?php 
                                     $valText = trim($tab['value'] ?? '');
                                     if (!empty($valText)) {
@@ -669,7 +692,7 @@ if (!empty($variants)) {
                 <button type="button" <?= $disableAddToCart ? 'disabled' : '' ?> 
                     onclick="document.getElementById('productAddToCartForm').requestSubmit()" 
                     id="mobileAddToCartBtn"
-                    class="flex-1 h-9 px-3 text-white rounded-lg font-bold text-xs flex items-center justify-between transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed active:opacity-80"
+                    class="flex-1 h-9 px-3 text-white rounded-lg font-bold text-xs flex items-center <?= $canAddToCart ? 'justify-between' : 'justify-center' ?> transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed active:opacity-80"
                     style="background: #F25996;">
                     <div class="flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -701,7 +724,7 @@ if (!empty($variants)) {
         </style>
         <div class="fbt-section mt-10 md:mt-16 border-t border-gray-200 pt-8 md:pt-16">
             <h2 class="text-lg md:text-2xl font-black text-gray-900 mb-3 md:mb-6 px-1 md:px-0">Frequently Bought Together</h2>
-            <div class="fbt-track flex overflow-x-auto pb-4 px-1 md:px-0 gap-2 sm:gap-6 snap-x snap-mandatory sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:overflow-visible style-scrollbars items-start">
+            <div class="fbt-track flex overflow-x-auto pb-4 px-1 md:px-0 gap-2.5 sm:gap-4 snap-x snap-mandatory sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 sm:overflow-visible style-scrollbars items-stretch">
                 <?php foreach($relatedProducts as $relProduct): ?>
                     <?php
                     $relPrimaryImage = !empty($relProduct['primary_image']) ? get_image_url($relProduct['primary_image']) : 'https://placehold.co/300x300/f3f4f6/9ca3af?text=No+Image';
@@ -711,54 +734,69 @@ if (!empty($variants)) {
                     $relDiscountPrice = !empty($relProduct['discount_price']) && (float)$relProduct['discount_price'] > 0 ? (float)$relProduct['discount_price'] : null;
                     $relDisplayPrice = $relDiscountPrice ?? $relBasePrice;
                     ?>
-                    <div class="product-card w-[calc(50%-0.25rem)] min-w-[calc(50%-0.25rem)] sm:w-auto sm:min-w-0 snap-start bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group flex flex-col cursor-pointer shrink-0" onclick="window.location.href='<?= BASE_URL ?>/product?id=<?= $relProduct['id'] ?>'">
+                    <div class="product-card h-full w-[calc(50%-0.25rem)] min-w-[calc(50%-0.25rem)] sm:w-full sm:min-w-0 snap-start bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg transition-shadow group flex flex-col relative shrink-0 sm:shrink">
+                        <!-- Wishlist Button -->
+                        <?php if ($canAddToCart || \Core\Session::get('user_id')): ?>
+                        <?php 
+                            $inWishlist = false;
+                            if (!empty($wishlistIds) && is_array($wishlistIds)) {
+                                $inWishlist = in_array($relProduct['id'], $wishlistIds);
+                            } elseif (!empty($wishlistItems) && is_array($wishlistItems)) {
+                                $inWishlist = in_array($relProduct['id'], array_column($wishlistItems, 'product_id')) || in_array($relProduct['id'], array_column($wishlistItems, 'id'));
+                            }
+                        ?>
+                        <button type="button" onclick="toggleWishlist(<?= $relProduct['id'] ?>, this); event.stopPropagation();" data-wishlist-btn-id="<?= $relProduct['id'] ?>" class="wishlist-btn <?= $inWishlist ? 'is-active' : '' ?>" title="Wishlist">
+                            <svg class="<?= $inWishlist ? 'text-[#F25996] fill-[#F25996] is-active' : 'text-gray-400 fill-none' ?>" fill="<?= $inWishlist ? '#F25996' : 'none' ?>" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                        </button>
+                        <?php endif; ?>
+
                         <!-- Product Image -->
-                        <a href="<?= BASE_URL ?>/product?id=<?= $relProduct['id'] ?>" class="product-image-wrap block w-full bg-gray-100 overflow-hidden shrink-0 relative">
+                        <a href="<?= BASE_URL ?>/product?id=<?= $relProduct['id'] ?>" class="product-image-wrap block w-full bg-gray-100 overflow-hidden shrink-0 aspect-square relative">
                             <?php 
                             $relDiscPct = ($relDiscountPrice && $relBasePrice > $relDiscountPrice) ? round((($relBasePrice - $relDiscountPrice) / $relBasePrice) * 100) : 0;
                             if ($canAddToCart && $relDiscPct > 0) {
-                                echo render_discount_starburst($relDiscPct, 'absolute top-2 left-2 z-10 w-9 h-9 sm:w-11 sm:h-11 transition-transform duration-300 group-hover:scale-110');
+                                echo render_discount_starburst($relDiscPct, 'transition-transform duration-300 group-hover:scale-105');
                             }
                             ?>
                             <img src="<?= htmlspecialchars($relPrimaryImage) ?>" alt="<?= htmlspecialchars($relProduct['name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: cover; width: 100%; height: 100%; display: block;">
                         </a>
                         
                         <!-- Product Details -->
-                        <div class="product-card-body p-3 md:p-4 flex flex-col bg-white relative z-10">
+                        <div class="product-card-body p-3 md:p-4 flex flex-col flex-1 bg-white relative z-10">
                             <a href="<?= BASE_URL ?>/product?id=<?= $relProduct['id'] ?>" class="product-link block mb-1">
-                                <h3 class="product-name font-bold leading-snug line-clamp-2 text-xs md:text-base"><?= htmlspecialchars($relProduct['name']) ?></h3>
+                                <h3 class="product-name font-bold leading-snug line-clamp-2"><?= htmlspecialchars($relProduct['name']) ?></h3>
                             </a>
                             
                             <?php if ($canAddToCart): ?>
                                 <div class="mt-auto flex flex-col justify-end">
-                                    <!-- Selling Price, Strikethrough & Discount Badge (Same Row) -->
+                                    <!-- Selling Price, Strikethrough (Same Row) -->
                                     <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-1">
-                                        <span class="product-price font-extrabold tracking-tight text-xs md:text-xl">₹<?= format_price($relDisplayPrice) ?></span>
+                                        <span class="product-price font-extrabold tracking-tight">₹<?= format_price($relDisplayPrice) ?></span>
                                         <?php if ($relDiscountPrice && $relBasePrice > $relDiscountPrice): ?>
-                                            <span class="product-orig-price text-[0.6875rem] md:text-sm font-bold text-gray-400 line-through">₹<?= format_price($relBasePrice) ?></span>
+                                            <span class="product-orig-price font-bold text-gray-400 line-through">₹<?= format_price($relBasePrice) ?></span>
                                         <?php endif; ?>
                                     </div>
 
-                                    <!-- Row 5: Minimum Order Count -->
-                                    <p class="product-moq-row text-[0.525rem] md:text-xs font-semibold mb-1.5 md:mb-5 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis" style="color: var(--pc-price);">
-                                        <svg class="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                    <!-- Minimum Order Count -->
+                                    <p class="product-moq-row font-semibold flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                         <span>Min. Order: <?= htmlspecialchars($relMoq) ?> Pcs</span>
                                     </p>
 
-                                    <!-- Row 6: CTA Button -->
-                                    <form action="<?= BASE_URL ?>/cart/add" method="POST" onsubmit="ajaxAddToCart(event, this)" onclick="event.stopPropagation();">
+                                    <!-- CTA Button -->
+                                    <form action="<?= BASE_URL ?>/cart/add" method="POST" onsubmit="ajaxAddToCart(event, this)">
                                         <input type="hidden" name="product_id" value="<?= $relProduct['id'] ?>">
                                         <input type="hidden" name="quantity" value="<?= htmlspecialchars($relMoq) ?>">
-                                        <button type="submit" class="product-btn w-full font-bold transition-colors flex items-center justify-center gap-1 hover:opacity-90 shadow-sm whitespace-nowrap py-1.5 sm:py-2.5 md:py-3 px-1.5 sm:px-2 md:px-4 text-[11px] sm:text-xs md:text-base rounded-lg sm:rounded-xl">
-                                            <svg class="w-3 h-3 md:w-5 md:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                        <button type="submit" class="product-btn w-full font-bold transition-colors flex items-center justify-center gap-1 hover:opacity-90 shadow-sm whitespace-nowrap">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                             <span class="whitespace-nowrap">Add to Cart</span>
                                         </button>
                                     </form>
                                 </div>
                             <?php else: ?>
-                                <div class="pt-2 md:pt-4 border-t border-gray-100">
-                                    <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-medium py-1 md:py-2 text-xs md:text-[0.9375rem] hover:underline" onclick="event.stopPropagation();">
-                                        <svg class="w-3.5 h-3.5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                <div class="mt-auto pt-2 md:pt-3 border-t border-gray-100">
+                                    <a href="<?= BASE_URL ?>/login?redirect=<?= urlencode($_SERVER['REQUEST_URI'] ?? ('/product?id=' . $product['id'])) ?>" class="flex items-center gap-1.5 text-[#F25996] font-semibold hover:underline text-xs md:text-sm">
+                                        <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                         Register to view price
                                     </a>
                                 </div>
@@ -1296,6 +1334,7 @@ if (!empty($variants)) {
     const hasVariants = <?= !empty($variants) ? 'true' : 'false' ?>;
     const baseProductPrice = <?= (float)($displayPrice ?? 0) ?>;
     const canAddToCart = <?= $canAddToCart ? 'true' : 'false' ?>;
+    const productWeight = <?= (!empty($product['weight']) && (float)$product['weight'] > 0) ? (float)$product['weight'] : 'null' ?>;
 
     function getSelectedUnitPrice(qty) {
         if (!hasVariants) {
@@ -1339,6 +1378,10 @@ if (!empty($variants)) {
     }
 
     function updateCartButtonAmount() {
+        if (!canAddToCart) {
+            updateMobileButtonTotal();
+            return;
+        }
         const desktopBtnTotal = document.getElementById('addToCartTotalAmount');
         const qtyInput = document.getElementById('qtyInput');
         const qty = parseInt(qtyInput ? qtyInput.value : defaultMoq) || defaultMoq;
@@ -1469,6 +1512,47 @@ if (!empty($variants)) {
                 if (v && v.sku) skus.push(v.sku);
             });
             skuDisplay.innerText = skus.length > 0 ? skus.join(', ') : 'N/A';
+        }
+
+        // Update Weight display for selected variant(s)
+        const weightDisplay = document.getElementById('productWeightDisplay');
+        const weightLabel = document.getElementById('productWeightLabel');
+        if (weightDisplay) {
+            if (hasVariants && checkedIds.length > 0) {
+                let totalWeight = 0;
+                let hasValidWeight = false;
+                checkedIds.forEach(id => {
+                    let v = variants.find(v => String(v.id) === String(id));
+                    let w = (v && v.weight !== null && v.weight !== undefined && v.weight !== '') 
+                        ? parseFloat(v.weight) 
+                        : (productWeight ? parseFloat(productWeight) : 0);
+                    if (!isNaN(w) && w > 0) {
+                        totalWeight += w;
+                        hasValidWeight = true;
+                    }
+                });
+                
+                if (hasValidWeight && totalWeight > 0) {
+                    weightDisplay.innerText = totalWeight.toFixed(3) + ' kg';
+                } else if (productWeight && parseFloat(productWeight) > 0) {
+                    weightDisplay.innerText = parseFloat(productWeight).toFixed(3) + ' kg';
+                } else {
+                    weightDisplay.innerText = '-';
+                }
+
+                if (weightLabel) {
+                    weightLabel.innerText = checkedIds.length > 1 ? 'Weight / Set' : 'Weight / Unit';
+                }
+            } else {
+                if (productWeight && parseFloat(productWeight) > 0) {
+                    weightDisplay.innerText = parseFloat(productWeight).toFixed(3) + ' kg';
+                } else {
+                    weightDisplay.innerText = '-';
+                }
+                if (weightLabel) {
+                    weightLabel.innerText = 'Weight / Unit';
+                }
+            }
         }
 
         // Update pricing display for ALL selected variants (summed)
@@ -1734,7 +1818,7 @@ if (!empty($variants)) {
 
                     if (btn) {
                         btn.disabled = false;
-                        btn.innerHTML = '<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span>Add to Cart</span><span class="text-white/60 font-normal">|</span><span id="addToCartTotalAmount" class="font-black"></span>';
+                        btn.innerHTML = '<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span>Add to Cart</span>' + (canAddToCart ? '<span class="text-white/60 font-normal">|</span><span id="addToCartTotalAmount" class="font-black"></span>' : '');
                         updateCartButtonAmount();
                     }
                 }).catch(err => {
@@ -1742,7 +1826,7 @@ if (!empty($variants)) {
                     console.error('Cart error:', err);
                     if (btn) {
                         btn.disabled = false;
-                        btn.innerHTML = '<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span>Add to Cart</span><span class="text-white/60 font-normal">|</span><span id="addToCartTotalAmount" class="font-black"></span>';
+                        btn.innerHTML = '<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span>Add to Cart</span>' + (canAddToCart ? '<span class="text-white/60 font-normal">|</span><span id="addToCartTotalAmount" class="font-black"></span>' : '');
                         updateCartButtonAmount();
                     }
                 });

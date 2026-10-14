@@ -72,10 +72,15 @@ class MainBannerController extends Controller
             $media_items = [];
             if (isset($_POST[$prefix . '_media_desktop']) && is_array($_POST[$prefix . '_media_desktop'])) {
                 foreach ($_POST[$prefix . '_media_desktop'] as $index => $desktop_url) {
+                    $desktop_url = trim((string)$desktop_url);
+                    if ($desktop_url === '') continue;
+                    $mobile_url = trim((string)($_POST[$prefix . '_media_mobile'][$index] ?? ''));
+                    $opacity = isset($_POST[$prefix . '_media_opacity'][$index]) && $_POST[$prefix . '_media_opacity'][$index] !== '' ? (float)$_POST[$prefix . '_media_opacity'][$index] : 100;
                     $media_items[] = [
                         'type' => $_POST[$prefix . '_media_type'][$index] ?? 'image',
                         'desktop' => $desktop_url,
-                        'mobile' => $_POST[$prefix . '_media_mobile'][$index] ?? $desktop_url
+                        'mobile' => $mobile_url !== '' ? $mobile_url : $desktop_url,
+                        'opacity' => max(0, min(100, $opacity))
                     ];
                 }
             }
@@ -186,10 +191,15 @@ class MainBannerController extends Controller
             $media_items = [];
             if (isset($_POST[$prefix . '_media_desktop']) && is_array($_POST[$prefix . '_media_desktop'])) {
                 foreach ($_POST[$prefix . '_media_desktop'] as $index => $desktop_url) {
+                    $desktop_url = trim((string)$desktop_url);
+                    if ($desktop_url === '') continue;
+                    $mobile_url = trim((string)($_POST[$prefix . '_media_mobile'][$index] ?? ''));
+                    $opacity = isset($_POST[$prefix . '_media_opacity'][$index]) && $_POST[$prefix . '_media_opacity'][$index] !== '' ? (float)$_POST[$prefix . '_media_opacity'][$index] : 100;
                     $media_items[] = [
                         'type' => $_POST[$prefix . '_media_type'][$index] ?? 'image',
                         'desktop' => $desktop_url,
-                        'mobile' => $_POST[$prefix . '_media_mobile'][$index] ?? $desktop_url
+                        'mobile' => $mobile_url !== '' ? $mobile_url : $desktop_url,
+                        'opacity' => max(0, min(100, $opacity))
                     ];
                 }
             }

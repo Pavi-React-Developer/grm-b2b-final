@@ -125,10 +125,19 @@ class FabricCustomization
      */
     public function getByFabricId($fabricId)
     {
+        $cacheKey = "fabric_customization_fid_" . (int)$fabricId;
+        if (class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
         $stmt = $this->db->prepare("
             SELECT fc.*, 
                    p.name as fabric_name, 
                    p.base_sku as fabric_sku, 
+                   (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
                    COALESCE(
                        (SELECT MIN(CASE WHEN pv.discount_price > 0 THEN pv.discount_price ELSE pv.base_price END) FROM product_variants pv WHERE pv.product_id = p.id),
                        p.wholesale_price
@@ -160,6 +169,13 @@ class FabricCustomization
             $customization['sizes'] = $this->getSizesByCustomizationId($customization['id']);
             $customization['labels'] = $this->getLabelsByCustomizationId($customization['id']);
             $customization['images'] = $this->getProductImages($fabricId);
+            if (empty($customization['primary_image']) && !empty($customization['images'][0])) {
+                $customization['primary_image'] = $customization['images'][0];
+            }
+
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::set($cacheKey, $customization, 900);
+            }
         }
 
         return $customization ?: null;
@@ -171,6 +187,21 @@ class FabricCustomization
      */
     public function getCustomizableFabrics($filters = [])
     {
+        $isDefaultQuery = empty($filters) || (
+            empty($filters['category_id']) && 
+            empty($filters['garment_type']) && 
+            empty($filters['search']) && 
+            ($filters['sort'] ?? 'newest') === 'newest'
+        );
+        $cacheKey = $isDefaultQuery ? 'customizable_fabrics_default_v2' : null;
+
+        if ($cacheKey && class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
         $sql = "SELECT fc.*, 
                        p.id as product_id,
                        p.name as fabric_name, 
@@ -246,13 +277,62 @@ class FabricCustomization
         $stmt->execute($params);
         $fabrics = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        foreach ($fabrics as &$fabric) {
-            $fabric['sizes'] = $this->getSizesByCustomizationId($fabric['id']);
-            $fabric['labels'] = $this->getLabelsByCustomizationId($fabric['id']);
-            $fabric['images'] = $this->getProductImages($fabric['fabric_id']);
-            if (empty($fabric['primary_image'])) {
-                $fabric['primary_image'] = !empty($fabric['images'][0]) ? $fabric['images'][0] : '/assets/images/fabric-placeholder.png';
+        // Batch-load sizes, labels, and images in single queries to eliminate N+1 latency
+        if (!empty($fabrics)) {
+            $custIds = array_column($fabrics, 'id');
+            $prodIds = array_column($fabrics, 'fabric_id');
+
+            // 1. Batch fetch sizes
+            $sizesMap = [];
+            if (!empty($custIds)) {
+                $cPlaceholders = implode(',', array_fill(0, count($custIds), '?'));
+                $sStmt = $this->db->prepare("SELECT * FROM fabric_customization_sizes WHERE customization_id IN ($cPlaceholders) AND enabled = 1 ORDER BY sort_order ASC, id ASC");
+                $sStmt->execute($custIds);
+                while ($row = $sStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $sizesMap[$row['customization_id']][] = $row;
+                }
             }
+
+            // 2. Batch fetch labels
+            $labelsMap = [];
+            if (!empty($custIds)) {
+                $cPlaceholders = implode(',', array_fill(0, count($custIds), '?'));
+                $lStmt = $this->db->prepare("
+                    SELECT fclr.customization_id, cl.* 
+                    FROM customization_labels cl
+                    JOIN fabric_customization_label_rel fclr ON cl.id = fclr.label_id
+                    WHERE fclr.customization_id IN ($cPlaceholders) AND cl.status = 'active'
+                    ORDER BY cl.group_name ASC, cl.sort_order ASC, cl.id ASC
+                ");
+                $lStmt->execute($custIds);
+                while ($row = $lStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $labelsMap[$row['customization_id']][] = $row;
+                }
+            }
+
+            // 3. Batch fetch images
+            $imagesMap = [];
+            if (!empty($prodIds)) {
+                $pPlaceholders = implode(',', array_fill(0, count($prodIds), '?'));
+                $iStmt = $this->db->prepare("SELECT product_id, image_path, is_primary FROM product_images WHERE product_id IN ($pPlaceholders) ORDER BY is_primary DESC, id ASC");
+                $iStmt->execute($prodIds);
+                while ($row = $iStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $imagesMap[$row['product_id']][] = $row['image_path'];
+                }
+            }
+
+            foreach ($fabrics as &$fabric) {
+                $fabric['sizes'] = $sizesMap[$fabric['id']] ?? [];
+                $fabric['labels'] = $labelsMap[$fabric['id']] ?? [];
+                $fabric['images'] = $imagesMap[$fabric['fabric_id']] ?? [];
+                if (empty($fabric['primary_image'])) {
+                    $fabric['primary_image'] = !empty($fabric['images'][0]) ? $fabric['images'][0] : '/assets/images/fabric-placeholder.png';
+                }
+            }
+        }
+
+        if ($cacheKey && class_exists('\Core\Cache')) {
+            \Core\Cache::set($cacheKey, $fabrics, 1800); // 30 minutes cache
         }
 
         return $fabrics;
@@ -423,6 +503,10 @@ class FabricCustomization
             if (!$inTx) {
                 $this->db->commit();
             }
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::delete('fabric_customization_fid_' . (int)($data['fabric_id'] ?? 0));
+                \Core\Cache::delete('customizable_fabrics_default_v2');
+            }
             return $customizationId;
         } catch (\Exception $e) {
             if (!$inTx && $this->db->inTransaction()) {
@@ -513,6 +597,11 @@ class FabricCustomization
             if (!$inTx) {
                 $this->db->commit();
             }
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::delete('fabric_customization_fid_' . (int)($data['fabric_id'] ?? 0));
+                \Core\Cache::delete('fabric_customization_fid_' . (int)$id);
+                \Core\Cache::delete('customizable_fabrics_default_v2');
+            }
             return true;
         } catch (\Exception $e) {
             if (!$inTx && $this->db->inTransaction()) {
@@ -543,6 +632,10 @@ class FabricCustomization
 
             if (!$inTx) {
                 $this->db->commit();
+            }
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::delete('fabric_customization_fid_' . (int)$id);
+                \Core\Cache::delete('customizable_fabrics_default_v2');
             }
             return true;
         } catch (\Exception $e) {

@@ -310,7 +310,7 @@
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end space-x-2">
-                                <a href="<?= BASE_URL ?>/admin/orders/invoice?order=<?= $order['order_number'] ?>" target="_blank" class="inline-flex items-center justify-center p-1 text-[#F25996] hover:text-[#e04481] transition-colors" title="Download Invoice PDF">
+                                <a href="<?= BASE_URL ?>/admin/orders/invoice?order=<?= $order['order_number'] ?>&t=<?= time() ?>" target="_blank" class="inline-flex items-center justify-center p-1 text-[#F25996] hover:text-[#e04481] transition-colors" title="Download Invoice PDF">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                 </a>
                                 <?php if ($this->hasPermission('all_orders', 'edit') && in_array($order['status'], ['placed', 'packed'])): ?>
@@ -769,13 +769,13 @@ document.addEventListener('DOMContentLoaded', function() {
             body: formData
         })
         .then(async response => {
+            const rawText = await response.text();
             let res;
             try {
-                res = await response.json();
+                res = JSON.parse(rawText);
             } catch (e) {
-                const text = await response.text();
-                console.error("Server raw response:", text);
-                throw new Error(text || 'Invalid JSON response from server');
+                console.error("Server raw response:", rawText);
+                throw new Error(rawText ? (rawText.length > 150 ? rawText.substring(0, 150) + '...' : rawText) : 'Invalid response from server');
             }
             return res;
         })

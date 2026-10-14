@@ -198,6 +198,12 @@ class CatalogController extends Controller
         }
         $subCategory = !empty($product['sub_category_id']) ? $categoryModel->findById($product['sub_category_id']) : null;
 
+        // Remember return URL for guest visitors (e.g. from Instagram / direct link)
+        if (!\Core\Session::get('user_id')) {
+            $currentUri = $_SERVER['REQUEST_URI'] ?? ('/product?id=' . (int)$id);
+            \Core\Session::set('return_to', $currentUri);
+        }
+
         $images = $productModel->getImages($id);
         
         // Ensure there's a primary image available in $product for easy access
@@ -222,11 +228,27 @@ class CatalogController extends Controller
             }
         }
 
-        // Fetch up to 4 related products in a single fast query (cached)
-        $relKey = 'rel_prods_' . (int)$id;
+        // Fetch up to 5 related products from DIFFERENT categories/subcategories for Frequently Bought Together
+        $relKey = 'rel_prods_diff_' . (int)$id;
         $relatedProducts = class_exists('\Core\Cache') ? \Core\Cache::get($relKey) : null;
         if ($relatedProducts === null) {
             $db = \Core\Database::getInstance();
+            $subCatId = !empty($product['sub_category_id']) ? (int)$product['sub_category_id'] : null;
+            $catId = !empty($product['category_id']) ? (int)$product['category_id'] : null;
+
+            $params = ['id' => $id];
+            $whereClause = "WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) AND p.id != :id";
+            
+            if ($subCatId) {
+                // Strictly exclude the current product's subcategory so it shows DIFFERENT categories (never the same category)
+                $whereClause .= " AND (p.sub_category_id IS NULL OR p.sub_category_id != :exclude_sub_id)";
+                $params['exclude_sub_id'] = $subCatId;
+            } elseif ($catId) {
+                // Exclude current category
+                $whereClause .= " AND p.category_id != :exclude_cat_id";
+                $params['exclude_cat_id'] = $catId;
+            }
+
             $stmt = $db->prepare("
                 SELECT p.*, c.name AS category_name,
                        img.image_path AS primary_image,
@@ -241,12 +263,36 @@ class CatalogController extends Controller
                            MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price 
                     FROM product_variants GROUP BY product_id
                 ) pv_agg ON pv_agg.product_id = p.id
-                WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) AND p.id != :id
+                $whereClause
                 ORDER BY p.id DESC
-                LIMIT 4
             ");
-            $stmt->execute(['id' => $id]);
-            $relatedProducts = $stmt->fetchAll();
+            $stmt->execute($params);
+            $candidateProducts = $stmt->fetchAll();
+
+            $relatedProducts = [];
+            $usedCats = [];
+
+            // Pass 1: Pick 1 product per distinct different category/subcategory
+            foreach ($candidateProducts as $cp) {
+                $grp = $cp['sub_category_id'] ?? $cp['category_id'];
+                if (!in_array($grp, $usedCats)) {
+                    $usedCats[] = $grp;
+                    $relatedProducts[] = $cp;
+                    if (count($relatedProducts) >= 5) break;
+                }
+            }
+
+            // Pass 2: If fewer than 5 categories found, fill remaining slots from candidates
+            if (count($relatedProducts) < 5) {
+                $existingIds = array_column($relatedProducts, 'id');
+                foreach ($candidateProducts as $cp) {
+                    if (!in_array($cp['id'], $existingIds)) {
+                        $relatedProducts[] = $cp;
+                        if (count($relatedProducts) >= 5) break;
+                    }
+                }
+            }
+
             if (class_exists('\Core\Cache')) {
                 \Core\Cache::set($relKey, $relatedProducts, 1800);
             }

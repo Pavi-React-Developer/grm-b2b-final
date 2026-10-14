@@ -107,6 +107,17 @@ class RazorpayService
     }
 
     /**
+     * Fetch all payments associated with an order
+     *
+     * @param string $orderId
+     * @return array
+     */
+    public function fetchOrderPayments(string $orderId): array
+    {
+        return $this->request('GET', '/orders/' . urlencode($orderId) . '/payments');
+    }
+
+    /**
      * Create a refund for a payment
      *
      * @param string     $paymentId
@@ -141,7 +152,10 @@ class RazorpayService
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_USERPWD, $this->keyId . ':' . $this->keySecret);
         curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_TCP_NODELAY, 1);
 
         if ($method === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);

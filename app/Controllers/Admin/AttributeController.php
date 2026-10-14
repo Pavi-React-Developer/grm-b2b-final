@@ -122,6 +122,91 @@ class AttributeController extends Controller
             return;
         }
 
+        $db = \Core\Database::getInstance();
+        $description = trim($_POST['description'] ?? '');
+
+        // Handle values (supports both array and comma-separated string)
+        $rawValues = $_POST['values'] ?? [];
+        $colorCodes = $_POST['color_codes'] ?? [];
+        
+        if (is_string($rawValues)) {
+            $values = array_filter(array_map('trim', explode(',', $rawValues)), fn($v) => $v !== '');
+        } else {
+            $values = (array)$rawValues;
+        }
+
+        // Check if an attribute with the same name already exists in this category
+        if ($subCategoryId) {
+            $stmtExists = $db->prepare("
+                SELECT * FROM attributes 
+                WHERE category_id = ? 
+                  AND (sub_category_id = ? OR sub_category_id IS NULL)
+                  AND LOWER(TRIM(name)) = LOWER(TRIM(?))
+                LIMIT 1
+            ");
+            $stmtExists->execute([$categoryId, $subCategoryId, $name]);
+        } else {
+            $stmtExists = $db->prepare("
+                SELECT * FROM attributes 
+                WHERE category_id = ? 
+                  AND LOWER(TRIM(name)) = LOWER(TRIM(?))
+                LIMIT 1
+            ");
+            $stmtExists->execute([$categoryId, $name]);
+        }
+        $existingAttr = $stmtExists->fetch(\PDO::FETCH_ASSOC);
+
+        if ($existingAttr) {
+            $attributeId = (int)$existingAttr['id'];
+
+            // Update description if newly provided
+            if (!empty($description) && (empty($existingAttr['description']) || $existingAttr['description'] !== $description)) {
+                $db->prepare("UPDATE attributes SET description = ? WHERE id = ?")->execute([$description, $attributeId]);
+            }
+
+            // Append new values under existing attribute without duplicates
+            if (!empty($values)) {
+                $existingValsStmt = $db->prepare("SELECT LOWER(TRIM(value)) FROM attribute_values WHERE attribute_id = ?");
+                $existingValsStmt->execute([$attributeId]);
+                $existingValList = $existingValsStmt->fetchAll(\PDO::FETCH_COLUMN);
+
+                $attributeValueModel = new AttributeValue();
+                $idx = 0;
+                foreach ($values as $valKey => $val) {
+                    $val = trim((string)$val);
+                    if ($val === '') continue;
+
+                    if (!in_array(strtolower($val), $existingValList)) {
+                        $colorCode = isset($colorCodes[$valKey]) ? trim($colorCodes[$valKey]) : (isset($colorCodes[$idx]) ? trim($colorCodes[$idx]) : null);
+                        $attributeValueModel->create([
+                            'attribute_id' => $attributeId,
+                            'value' => $val,
+                            'color_code' => !empty($colorCode) ? $colorCode : null
+                        ]);
+                        $existingValList[] = strtolower($val);
+                    }
+                    $idx++;
+                }
+            }
+
+            $successMsg = "Added new options to existing '{$name}' attribute!";
+            if ($isJson) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => $successMsg,
+                    'attribute_id' => $attributeId,
+                    'name' => $name,
+                    'merged' => true
+                ]);
+                exit;
+            }
+
+            Session::setFlash('success', $successMsg);
+            $redirectUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
+            $this->redirect($redirectUrl);
+            return;
+        }
+
         // Auto-generate attribute_code if empty
         if (empty($code)) {
             $code = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $name));
@@ -130,7 +215,6 @@ class AttributeController extends Controller
         }
 
         // Ensure unique attribute code
-        $db = \Core\Database::getInstance();
         $stmtCode = $db->prepare("SELECT COUNT(*) FROM attributes WHERE attribute_code = ?");
         $stmtCode->execute([$code]);
         if ($stmtCode->fetchColumn() > 0) {
@@ -143,7 +227,7 @@ class AttributeController extends Controller
             'name' => $name,
             'attribute_code' => $code,
             'input_type' => $inputType,
-            'description' => trim($_POST['description'] ?? ''),
+            'description' => $description,
             'display_order' => (int)($_POST['display_order'] ?? 0),
             'status' => $_POST['status'] ?? 'active',
             'is_required' => isset($_POST['is_required']) ? 1 : 0,
@@ -157,16 +241,6 @@ class AttributeController extends Controller
         try {
             $attributeModel = new Attribute();
             $attributeId = $attributeModel->create($data);
-            
-            // Handle values (supports both array and comma-separated string)
-            $rawValues = $_POST['values'] ?? [];
-            $colorCodes = $_POST['color_codes'] ?? [];
-            
-            if (is_string($rawValues)) {
-                $values = array_filter(array_map('trim', explode(',', $rawValues)), fn($v) => $v !== '');
-            } else {
-                $values = (array)$rawValues;
-            }
 
             if (!empty($values)) {
                 $attributeValueModel = new AttributeValue();
@@ -474,11 +548,38 @@ class AttributeController extends Controller
         $attributes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         $attributeValueModel = new AttributeValue();
-        foreach ($attributes as &$attr) {
-            $attr['values'] = $attributeValueModel->getByAttributeId($attr['id']);
+        $mergedAttributes = [];
+        $nameIndex = [];
+
+        foreach ($attributes as $attr) {
+            $attrKey = strtolower(trim($attr['name']));
+            $attrValues = $attributeValueModel->getByAttributeId($attr['id']);
+
+            if (isset($nameIndex[$attrKey])) {
+                // Merge options into already registered attribute
+                $existingIdx = $nameIndex[$attrKey];
+                $existingValTexts = array_map(fn($v) => strtolower(trim($v['value'])), $mergedAttributes[$existingIdx]['values']);
+
+                foreach ($attrValues as $val) {
+                    $valLower = strtolower(trim($val['value']));
+                    if (!in_array($valLower, $existingValTexts)) {
+                        $mergedAttributes[$existingIdx]['values'][] = $val;
+                        $existingValTexts[] = $valLower;
+                    }
+                }
+
+                // Keep description if original was empty
+                if (empty($mergedAttributes[$existingIdx]['description']) && !empty($attr['description'])) {
+                    $mergedAttributes[$existingIdx]['description'] = $attr['description'];
+                }
+            } else {
+                $attr['values'] = $attrValues;
+                $nameIndex[$attrKey] = count($mergedAttributes);
+                $mergedAttributes[] = $attr;
+            }
         }
 
-        echo json_encode($attributes);
+        echo json_encode($mergedAttributes);
         exit;
     }
 

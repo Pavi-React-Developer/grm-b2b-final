@@ -258,6 +258,7 @@ class OrderController extends Controller
 
     public function updatePacked()
     {
+        ini_set('display_errors', '0');
         while (ob_get_level()) {
             ob_end_clean();
         }
@@ -653,6 +654,11 @@ class OrderController extends Controller
             FROM orders o
             JOIN users u ON o.user_id = u.id
             WHERE DATE(o.created_at) >= :start_date AND DATE(o.created_at) <= :end_date
+              AND NOT EXISTS (
+                  SELECT 1 FROM order_items oi_chk 
+                  WHERE oi_chk.order_id = o.id 
+                    AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)
+              ) AND o.order_number NOT LIKE 'GBC%' AND o.order_number NOT LIKE 'GRM-CUST-%'
             ORDER BY o.created_at DESC
         ";
         

@@ -18,7 +18,24 @@ class EmailService
     public function __construct()
     {
         $envPath = dirname(dirname(__DIR__)) . '/.env';
-        $this->envVars = file_exists($envPath) ? parse_ini_file($envPath) : [];
+        $parsed = file_exists($envPath) ? @parse_ini_file($envPath) : [];
+        if (!is_array($parsed)) {
+            $parsed = [];
+            if (file_exists($envPath)) {
+                $lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                if ($lines) {
+                    foreach ($lines as $line) {
+                        $line = trim($line);
+                        if ($line === '' || str_starts_with($line, '#') || str_starts_with($line, ';')) continue;
+                        if (strpos($line, '=') !== false) {
+                            list($k, $v) = explode('=', $line, 2);
+                            $parsed[trim($k)] = trim(trim($v), "'\"");
+                        }
+                    }
+                }
+            }
+        }
+        $this->envVars = $parsed;
 
         $this->fromEmail = $this->envVars['MAIL_FROM_ADDRESS'] ?? $this->envVars['SMTP_FROM'] ?? 'noreply@grmb2b.com';
         $this->fromName  = $this->envVars['MAIL_FROM_NAME']    ?? 'GRM B2B';
@@ -54,6 +71,31 @@ class EmailService
                     <span style='font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #F25996; font-family: monospace;'>" . htmlspecialchars($otp) . "</span>
                 </div>
                 <p style='color: #6b7280; font-size: 13px; text-align: center; margin: 12px 0 0;'>This OTP is valid for your registration. Please do not share this code with anyone.</p>
+                <hr style='border: none; border-top: 1px solid #f3f4f6; margin: 24px 0;' />
+                <p style='color: #9ca3af; font-size: 11px; text-align: center; margin: 0;'>&copy; " . date('Y') . " GRM B2B. All rights reserved.</p>
+            </div>
+        ";
+        return $this->send($toEmail, $name, $subject, $body);
+    }
+
+    /**
+     * Send OTP for Email Change Verification.
+     */
+    public function sendEmailChangeOtp(string $toEmail, string $otp, string $name = 'User'): bool
+    {
+        $subject = "Verify Your New Email Address - GRM B2B";
+        $body = "
+            <div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 28px; background: #ffffff; border: 1px solid #FDBFDD; border-radius: 16px; box-shadow: 0 4px 12px rgba(242, 89, 150, 0.08);'>
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <span style='display: inline-block; background: #fdf2f7; color: #F25996; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 4px 12px; border-radius: 9999px; border: 1px solid #FDBFDD;'>Security Verification</span>
+                    <h2 style='color: #111827; font-size: 22px; font-weight: 800; margin: 12px 0 6px;'>Confirm Email Address Update</h2>
+                </div>
+                <p style='color: #374151; font-size: 14px; line-height: 1.6; margin: 0 0 12px;'>Hello <strong>" . htmlspecialchars($name) . "</strong>,</p>
+                <p style='color: #4b5563; font-size: 14px; line-height: 1.6; margin: 0 0 20px;'>A request was submitted to update your <strong>GRM B2B</strong> account email address to this email. Please use the following One-Time Password (OTP) to confirm and complete this change:</p>
+                <div style='background: linear-gradient(135deg, #fdf2f7 0%, #fff 100%); border: 2px dashed #FDBFDD; padding: 20px; text-align: center; border-radius: 12px; margin: 20px 0;'>
+                    <span style='font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #F25996; font-family: monospace;'>" . htmlspecialchars($otp) . "</span>
+                </div>
+                <p style='color: #6b7280; font-size: 13px; text-align: center; margin: 12px 0 0;'>This code is valid for 10 minutes. If you did not initiate this change, please ignore this email or contact support immediately.</p>
                 <hr style='border: none; border-top: 1px solid #f3f4f6; margin: 24px 0;' />
                 <p style='color: #9ca3af; font-size: 11px; text-align: center; margin: 0;'>&copy; " . date('Y') . " GRM B2B. All rights reserved.</p>
             </div>

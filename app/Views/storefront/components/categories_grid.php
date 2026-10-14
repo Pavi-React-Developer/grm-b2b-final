@@ -332,10 +332,6 @@ if (!empty($category_ids)) {
 
     /* Desktop layout & horizontal slider track */
     @media (min-width: 768px) {
-        #<?= $id ?> .product-img-container {
-            height: 275px;
-            max-height: 295px;
-        }
         #<?= $id ?> .catgrid-mobile {
             display: none !important;
         }
@@ -467,7 +463,7 @@ if (!empty($category_ids)) {
                         <?php endif; ?>
 
                         <!-- Horizontal Slider Track -->
-                        <div id="<?= $paneId ?>_track" class="catgrid-desktop-track flex flex-row gap-4 overflow-x-auto scroll-smooth py-1 px-1" style="scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory;">
+                        <div id="<?= $paneId ?>_track" class="catgrid-desktop-track flex flex-row items-stretch gap-4 overflow-x-auto scroll-smooth py-1 px-1" style="scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory;">
                             <?php foreach ($gridPaneProducts as $prod): 
                                 $imgPath = $prod['main_image'] ?? '';
                                 $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=No+Image';
@@ -502,18 +498,18 @@ if (!empty($category_ids)) {
                                 <?php endif; ?>
 
                                 <!-- Product Image -->
-                                <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="product-image-wrap block w-full bg-gray-100 overflow-hidden shrink-0 product-img-container relative">
+                                <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="product-image-wrap block w-full bg-gray-100 overflow-hidden shrink-0 product-img-container aspect-square relative">
                                     <?php 
                                     $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                                     if ($isLoggedIn && $discPercent > 0) {
-                                        echo render_discount_starburst($discPercent, 'absolute top-2 left-2 z-10 w-16 h-16 md:w-20 md:h-20 transition-transform duration-300 group-hover:scale-110');
+                                        echo render_discount_starburst($discPercent, 'transition-transform duration-300 group-hover:scale-105');
                                     }
                                     ?>
                                     <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" class="w-full h-full object-<?= htmlspecialchars($image_fit) ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
                                 </a>
 
                                 <!-- Product Details -->
-                                <div class="product-card-body p-4 md:p-5 flex flex-col flex-1 bg-white" style="position: relative; z-index: 10;">
+                                <div class="product-card-body p-3 md:p-4 flex flex-col flex-1 bg-white relative z-10">
                                     <?php 
                                     $cardBrand = !empty($prod['vendor_store_name']) ? $prod['vendor_store_name'] : (!empty($prod['vendor_company_name']) ? $prod['vendor_company_name'] : '');
                                     ?>
@@ -527,7 +523,7 @@ if (!empty($category_ids)) {
                                     <?php endif; ?>
 
                                     <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="product-link block mb-1.5">
-                                        <h3 class="product-name font-bold leading-snug line-clamp-2" style="font-size: 1.15rem; color: <?= htmlspecialchars($text_color) ?>;"><?= htmlspecialchars($prod['name']) ?></h3>
+                                        <h3 class="product-name font-bold leading-snug line-clamp-2"><?= htmlspecialchars($prod['name']) ?></h3>
                                     </a>
                                     
                                     <?php if (!empty($prod['sku'])): ?>
@@ -537,13 +533,13 @@ if (!empty($category_ids)) {
                                     <?php if ($isLoggedIn): ?>
                                         <div class="mt-auto">
                                             <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-2">
-                                                <span class="product-price font-black tracking-tight" style="font-size: clamp(1.15rem, 3.5vw, 1.4rem);">₹<?= format_price($displayPrice) ?></span>
+                                                <span class="product-price font-black tracking-tight">₹<?= format_price($displayPrice) ?></span>
                                                 <?php if ($displayOriginalPrice && $displayOriginalPrice > $displayPrice): ?>
                                                     <span class="product-orig-price text-sm font-bold text-gray-400 line-through">₹<?= format_price($displayOriginalPrice) ?></span>
                                                 <?php endif; ?>
                                             </div>
                                             
-                                            <p class="text-xs font-semibold mb-3 flex items-center gap-1" style="color: var(--pc-price);">
+                                            <p class="product-moq-row font-semibold flex items-center gap-1" style="color: var(--pc-price);">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                                 Min. Order: <?= htmlspecialchars($moq) ?> Pcs
                                             </p>
@@ -551,8 +547,8 @@ if (!empty($category_ids)) {
                                             <form action="<?= BASE_URL ?>/cart/add" method="POST" onsubmit="ajaxAddToCart(event, this)">
                                                 <input type="hidden" name="product_id" value="<?= $prod['id'] ?>">
                                                 <input type="hidden" name="quantity" value="<?= htmlspecialchars($moq) ?>">
-                                                <button type="submit" class="product-btn w-full font-bold transition-colors flex items-center justify-center gap-2 hover:opacity-90 shadow-sm" style="padding: 0.75rem 1rem; font-size: 0.9375rem; border-radius: 0.75rem; background-color: <?= htmlspecialchars($button_bg_color) ?>; color: <?= htmlspecialchars($button_text_color) ?>;">
-                                                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                                <button type="submit" class="product-btn w-full font-bold transition-colors flex items-center justify-center gap-2 hover:opacity-90 shadow-sm" style="background-color: <?= htmlspecialchars($button_bg_color) ?>; color: <?= htmlspecialchars($button_text_color) ?>;">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                                                     Add to Cart
                                                 </button>
                                             </form>
@@ -648,7 +644,7 @@ if (!empty($category_ids)) {
                                 <?php 
                                 $mobDiscPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                                 if ($isLoggedIn && $mobDiscPercent > 0) {
-                                    echo render_discount_starburst($mobDiscPercent, 'absolute top-1.5 left-1.5 z-10 w-14 h-14');
+                                    echo render_discount_starburst($mobDiscPercent, 'transition-transform duration-300 group-hover:scale-105');
                                 }
                                 ?>
                             <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" loading="lazy" decoding="async">

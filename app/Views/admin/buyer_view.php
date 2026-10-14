@@ -365,6 +365,76 @@ $vType = $savedVerification['type'] ?? ($buyer['gst_flag'] ? 'gst' : 'pan');
     </div>
 </div>
 
+<!-- Email Change Audit Trail Section -->
+<div class="bg-white border border-gray-100 rounded-3xl shadow-sm shadow-pink-900/5 overflow-hidden mb-8">
+    <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/70">
+        <h3 class="text-lg font-display font-black text-gray-900 flex items-center gap-2">
+            <svg class="w-5 h-5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+            Email Change Audit Trail
+        </h3>
+        <span class="text-xs font-bold text-gray-600 bg-white border border-gray-200 px-3 py-1 rounded-full">
+            <?= count($emailLogs ?? []) ?> change(s) logged
+        </span>
+    </div>
+
+    <?php if (empty($emailLogs)): ?>
+        <div class="p-8 text-center text-gray-400">
+            <div class="w-12 h-12 mx-auto bg-gray-50 rounded-2xl flex items-center justify-center text-gray-300 mb-3 border border-gray-100">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <p class="font-bold text-sm text-gray-700">No Email Changes Recorded</p>
+            <p class="text-xs text-gray-400 mt-1">This buyer is currently active with their registered email address: <span class="font-semibold text-gray-600 font-mono"><?= htmlspecialchars($buyer['email']) ?></span></p>
+        </div>
+    <?php else: ?>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50/50">
+                    <tr>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Date & Time</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Previous Email</th>
+                        <th class="px-2 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider"></th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">New (Current) Email</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Reason for Change</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Verification</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    <?php foreach ($emailLogs as $log): ?>
+                        <tr class="hover:bg-gray-50/60 transition-colors">
+                            <td class="px-6 py-4 text-xs font-medium text-gray-600 whitespace-nowrap">
+                                <span class="font-bold text-gray-900 block"><?= date('d M Y, h:i A', strtotime($log['created_at'])) ?></span>
+                                <span class="text-[10px] text-gray-400">IP: <?= htmlspecialchars($log['ip_address'] ?? 'Unknown') ?></span>
+                            </td>
+                            <td class="px-6 py-4 text-xs font-mono font-medium text-gray-500">
+                                <span class="line-through bg-gray-100 px-2 py-1 rounded text-gray-500"><?= htmlspecialchars($log['old_email']) ?></span>
+                            </td>
+                            <td class="px-2 py-4 text-center text-[#F25996]">
+                                <svg class="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </td>
+                            <td class="px-6 py-4 text-xs font-mono font-bold text-gray-900">
+                                <span class="bg-pink-50 text-[#F25996] border border-pink-200 px-2.5 py-1 rounded-md"><?= htmlspecialchars($log['new_email']) ?></span>
+                            </td>
+                            <td class="px-6 py-4 text-xs text-gray-700 max-w-xs break-words">
+                                <div class="bg-gray-50 p-2.5 rounded-xl border border-gray-200/60 text-xs">
+                                    <?= nl2br(htmlspecialchars($log['reason'])) ?>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <svg class="w-3 h-3 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                                    Verified via OTP
+                                </span>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>
+
 <!-- Order History Section -->
 <div class="bg-white border border-gray-100 rounded-3xl shadow-sm shadow-pink-900/5 overflow-hidden mb-8">
     <div class="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/70">

@@ -17,6 +17,9 @@ function orderStatusBadge(string $status): string
         'out_for_delivery'   => 'bg-orange-50 text-orange-700 border border-orange-200',
         'delivered'          => 'bg-green-50 text-green-700 border border-green-200',
         'cancelled'          => 'bg-red-50 text-red-700 border border-red-200',
+        'stitching'          => 'bg-blue-50 text-blue-700 border border-blue-200',
+        'in_production'      => 'bg-cyan-50 text-cyan-700 border border-cyan-200',
+        'quality_check'      => 'bg-teal-50 text-teal-700 border border-teal-200',
         'refund_pending'     => 'bg-amber-50 text-amber-700 border border-amber-200',
         'refund_processing'  => 'bg-sky-50 text-sky-700 border border-sky-200',
         'refund_completed'   => 'bg-emerald-50 text-emerald-700 border border-emerald-200',
@@ -28,8 +31,15 @@ function orderStatusBadge(string $status): string
 function orderStatusLabel(string $status): string
 {
     $labels = [
-        'placed'            => 'Confirmed',
+        'placed'            => 'Placed',
+        'packed'            => 'Packed',
+        'shipped'           => 'Shipped',
         'out_for_delivery'  => 'Out for Delivery',
+        'delivered'         => 'Delivered',
+        'cancelled'         => 'Cancelled',
+        'stitching'         => 'Stitching',
+        'in_production'     => 'In Production',
+        'quality_check'     => 'Quality Check',
         'refund_pending'    => 'Refund Pending',
         'refund_processing' => 'Refund Processing',
         'refund_completed'  => 'Refunded',
@@ -99,7 +109,7 @@ function orderStatusLabel(string $status): string
                             <!-- Action Buttons -->
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                 <!-- Invoice Download -->
-                                <a href="<?= BASE_URL ?>/dashboard/orders/invoice?order=<?= htmlspecialchars($order['order_number']) ?>"
+                                <a href="<?= BASE_URL ?>/dashboard/orders/invoice?order=<?= htmlspecialchars($order['order_number']) ?>&t=<?= time() ?>" target="_blank"
                                    class="flex items-center justify-center gap-1.5 px-3 py-2 bg-pink-50/70 hover:bg-pink-100 border border-pink-200 text-[#db2777] rounded-xl text-xs font-bold transition-colors shadow-sm"
                                    title="Download Invoice">
                                     <svg class="w-3.5 h-3.5 text-[#db2777] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -204,7 +214,7 @@ function orderStatusLabel(string $status): string
                                                 <button onclick="openOrderModal('<?= $order['id'] ?>')" class="text-white bg-[#F25996] hover:bg-[#d8407d] px-4 py-2 rounded-lg font-bold transition-colors shadow-sm text-xs">
                                                     View Details
                                                 </button>
-                                                <a href="<?= BASE_URL ?>/dashboard/orders/invoice?order=<?= htmlspecialchars($order['order_number']) ?>" class="text-[#db2777] bg-pink-50 hover:bg-pink-100 border border-pink-200 px-3 py-2 rounded-lg font-bold transition-colors shadow-sm text-xs flex items-center gap-1" title="Download Invoice">
+                                                <a href="<?= BASE_URL ?>/dashboard/orders/invoice?order=<?= htmlspecialchars($order['order_number']) ?>&t=<?= time() ?>" target="_blank" class="text-[#db2777] bg-pink-50 hover:bg-pink-100 border border-pink-200 px-3 py-2 rounded-lg font-bold transition-colors shadow-sm text-xs flex items-center gap-1" title="Download Invoice">
                                                     <svg class="w-3.5 h-3.5 text-[#db2777]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                                     Invoice
                                                 </a>
@@ -343,11 +353,11 @@ function orderStatusLabel(string $status): string
                         <!-- Dynamic Order Status Tracker -->
                         <?php
                         $timelineSteps = [
-                            'placed' => 'Ordered',
+                            'placed' => 'Placed',
                             'packed' => 'Packed',
                             'shipped' => 'Shipped',
                             'out_for_delivery' => 'Out for Delivery',
-                            'delivered' => 'Delivery'
+                            'delivered' => 'Delivered'
                         ];
                         // fallback to 0 if not found so at least it shows "placed"
                         $currentStepIndex = array_search($order['status'], array_keys($timelineSteps));
@@ -681,7 +691,7 @@ function orderStatusLabel(string $status): string
                             <?php endif; ?>
                         </div>
                         <div class="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
-                            <a href="<?= BASE_URL ?>/dashboard/orders/invoice?order=<?= htmlspecialchars($order['order_number']) ?>" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-[#F25996] hover:bg-[#d8407d] text-white font-bold rounded-xl shadow-sm transition-all text-xs sm:text-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            <a href="<?= BASE_URL ?>/dashboard/orders/invoice?order=<?= htmlspecialchars($order['order_number']) ?>&t=<?= time() ?>" target="_blank" class="px-3 sm:px-4 py-2 sm:py-2.5 bg-[#F25996] hover:bg-[#d8407d] text-white font-bold rounded-xl shadow-sm transition-all text-xs sm:text-sm flex items-center justify-center gap-1.5 whitespace-nowrap">
                                 <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                 <span>Invoice</span>
                             </a>

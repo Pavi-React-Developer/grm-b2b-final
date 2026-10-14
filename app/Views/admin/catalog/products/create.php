@@ -290,11 +290,11 @@
 
         <?php if (!empty($isCustomize)): ?>
         <!-- Section: Fabric Size Variants & Quantity Limits -->
-        <div class="bg-white p-6 rounded-2xl border border-amber-100 shadow-xs space-y-5">
+        <div class="bg-white p-6 rounded-2xl border border-pink-100 shadow-xs space-y-5">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3">
                 <div>
                     <h3 class="text-base font-bold text-gray-900 flex items-center gap-2">
-                        <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-black shadow-2xs">📏</span>
+                        <span class="w-8 h-8 rounded-xl bg-pink-50 text-[#F25996] flex items-center justify-center text-sm font-black shadow-2xs">📏</span>
                         <span>Fabric Size Variants & Quantity Limits</span>
                     </h3>
                     <p class="text-xs text-gray-500 mt-0.5">
@@ -306,21 +306,21 @@
                         <svg class="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                         <span>Sync from Variants</span>
                     </button>
-                    <button type="button" onclick="addCustomFabricSizeRow()" class="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-bold rounded-lg border border-amber-200 transition-colors flex items-center gap-1.5 cursor-pointer">
-                        <svg class="w-3.5 h-3.5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    <button type="button" onclick="addCustomFabricSizeRow()" class="px-3.5 py-1.5 bg-pink-50 hover:bg-pink-100 text-[#F25996] text-xs font-bold rounded-lg border border-pink-200 transition-colors flex items-center gap-1.5 cursor-pointer">
+                        <svg class="w-3.5 h-3.5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         <span>Add Size Variant</span>
                     </button>
                 </div>
             </div>
 
             <!-- Required Pieces & Customization Settings -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-amber-50/40 rounded-xl border border-amber-100">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-pink-50/40 rounded-xl border border-pink-100">
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                         Required Pieces to Enable Payment <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
-                        <input type="number" name="minimum_pieces" value="<?= htmlspecialchars($_POST['minimum_pieces'] ?? 10) ?>" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold text-gray-900 pr-14">
+                        <input type="number" name="minimum_pieces" value="<?= htmlspecialchars($_POST['minimum_pieces'] ?? 10) ?>" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2 text-sm bg-white border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F25996] focus:border-[#F25996] font-bold text-gray-900 pr-14">
                         <span class="absolute right-3.5 top-2 text-xs text-gray-400 font-semibold">Pcs</span>
                     </div>
                     <p class="text-[11px] text-gray-500 mt-1">
@@ -331,7 +331,7 @@
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
                         Rule Status
                     </label>
-                    <select name="customization_status" class="w-full px-4 py-2 text-sm bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium text-gray-800">
+                    <select name="customization_status" class="w-full px-4 py-2 text-sm bg-white border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F25996] focus:border-[#F25996] font-medium text-gray-800">
                         <option value="active" <?= ($_POST['customization_status'] ?? 'active') === 'active' ? 'selected' : '' ?>>Active (Enabled on Storefront)</option>
                         <option value="inactive" <?= ($_POST['customization_status'] ?? '') === 'inactive' ? 'selected' : '' ?>>Inactive (Hidden / Draft)</option>
                     </select>
@@ -342,30 +342,30 @@
             </div>
 
             <!-- Quick Text Parser & Presets -->
-            <div class="bg-amber-50/50 p-4 rounded-xl border border-amber-100 space-y-3">
+            <div class="bg-pink-50/50 p-4 rounded-xl border border-pink-100 space-y-3">
                 <!-- Text input parser -->
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <div class="relative flex-1">
-                        <input type="text" id="quickShorthandInput" placeholder="Quick paste e.g. M-2, L-2, XL-2, XXL-2, 3XL-2, 4XL-4 (or M:2/4, L:2/4)" class="w-full px-3.5 py-2 text-xs bg-white border border-amber-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono text-gray-800">
+                        <input type="text" id="quickShorthandInput" placeholder="Quick paste e.g. M-2, L-2, XL-2, XXL-2, 3XL-2, 4XL-4 (or M:2/4, L:2/4)" class="w-full px-3.5 py-2 text-xs bg-white border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F25996] focus:border-[#F25996] font-mono text-gray-800">
                     </div>
-                    <button type="button" onclick="applyShorthandInput()" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 shrink-0">
+                    <button type="button" onclick="applyShorthandInput()" class="px-4 py-2 bg-[#F25996] hover:bg-[#d8407d] text-white text-xs font-bold rounded-lg transition-colors shadow-2xs cursor-pointer flex items-center justify-center gap-1.5 shrink-0">
                         <span>⚡ Parse & Generate</span>
                     </button>
                 </div>
 
                 <!-- Presets Buttons -->
-                <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-200/60">
-                    <span class="text-[11px] font-bold text-amber-900 uppercase tracking-wider mr-1">Quick Presets:</span>
-                    <button type="button" onclick="applySizeVariantPreset('standard_m_4xl')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-200 transition-all shadow-2xs cursor-pointer">
+                <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-pink-200/60">
+                    <span class="text-[11px] font-bold text-pink-900 uppercase tracking-wider mr-1">Quick Presets:</span>
+                    <button type="button" onclick="applySizeVariantPreset('standard_m_4xl')" class="px-2.5 py-1 bg-white hover:bg-pink-50 text-pink-800 text-xs font-bold rounded-lg border border-pink-200 transition-all shadow-2xs cursor-pointer">
                         + Standard (M to 4XL: Base 2 / Max 4)
                     </button>
-                    <button type="button" onclick="applySizeVariantPreset('all_s_xxl')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-200 transition-all shadow-2xs cursor-pointer">
+                    <button type="button" onclick="applySizeVariantPreset('all_s_xxl')" class="px-2.5 py-1 bg-white hover:bg-pink-50 text-pink-800 text-xs font-bold rounded-lg border border-pink-200 transition-all shadow-2xs cursor-pointer">
                         + S to XXL (Base 2 / Max 4)
                     </button>
-                    <button type="button" onclick="applySizeVariantPreset('plus_3xl_6xl')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-200 transition-all shadow-2xs cursor-pointer">
+                    <button type="button" onclick="applySizeVariantPreset('plus_3xl_6xl')" class="px-2.5 py-1 bg-white hover:bg-pink-50 text-pink-800 text-xs font-bold rounded-lg border border-pink-200 transition-all shadow-2xs cursor-pointer">
                         + Plus (3XL to 6XL: Base 2 / Max 4)
                     </button>
-                    <button type="button" onclick="applySizeVariantPreset('freesize')" class="px-2.5 py-1 bg-white hover:bg-amber-100 text-amber-900 text-xs font-bold rounded-lg border border-amber-200 transition-all shadow-2xs cursor-pointer">
+                    <button type="button" onclick="applySizeVariantPreset('freesize')" class="px-2.5 py-1 bg-white hover:bg-pink-50 text-pink-800 text-xs font-bold rounded-lg border border-pink-200 transition-all shadow-2xs cursor-pointer">
                         + Free Size (Base 2 / Max 10)
                     </button>
                     <button type="button" onclick="clearAllFabricSizes()" class="px-2.5 py-1 bg-white hover:bg-red-50 text-red-600 text-xs font-bold rounded-lg border border-red-200 transition-all shadow-2xs ml-auto cursor-pointer">
@@ -397,7 +397,7 @@
                 <div class="flex items-center gap-4">
                     <span>Active Size Variants: <strong class="text-gray-900" id="adminActiveVariantsCount">0</strong></span>
                     <span>•</span>
-                    <span>Total Base Pieces: <strong class="text-amber-800" id="adminTotalBasePieces">0</strong> pcs</span>
+                    <span>Total Base Pieces: <strong class="text-[#F25996]" id="adminTotalBasePieces">0</strong> pcs</span>
                 </div>
                 <div class="text-gray-500 italic">
                     Buyers can adjust quantities up to the configured Max Allowed Limit for each size.
@@ -408,7 +408,7 @@
 
         <div class="pt-6 border-t border-gray-100 flex items-center justify-end space-x-4">
             <a href="<?= BASE_URL ?>/admin/catalog/products<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">Cancel</a>
-            <button type="submit" class="px-7 py-2.5 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"><?= !empty($isCustomize) ? 'Save Fabric' : 'Save Product' ?></button>
+            <button type="submit" class="px-7 py-2.5 <?= !empty($isCustomize) ? 'bg-[#F25996] hover:bg-[#d8407d]' : 'bg-brand-600 hover:bg-brand-700' ?> active:scale-95 text-white rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"><?= !empty($isCustomize) ? 'Save Fabric' : 'Save Product' ?></button>
         </div>
     </form>
 </div>
@@ -907,8 +907,9 @@ document.addEventListener('DOMContentLoaded', function() {
         variantInitialState.style.display = 'none';
         variantGridContainer.style.display = 'block';
         
-        let baseSku = document.querySelector('input[name="slug"]').value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 5);
-        if(!baseSku) baseSku = "PRD";
+        let slugVal = document.querySelector('input[name="slug"]').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        let baseSku = slugVal.substring(0, 6) || "PRD";
+        let batchId = Math.floor(100 + Math.random() * 900);
 
         let html = `
             <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
@@ -928,7 +929,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             let isSimple = comboArr.length === 0;
             let variantName = isSimple ? 'Default Product' : comboArr.map(c => c.optText).join(' - ');
-            let variantSku = baseSku + (isSimple ? '-DEFAULT' : ('-' + comboArr.map(c => c.optText.substring(0,3).toUpperCase()).join('') + '-' + (index + 1)));
+            let variantSku = baseSku + (isSimple ? '-DEFAULT' : ('-' + comboArr.map(c => c.optText.substring(0,3).toUpperCase()).join('') + '-' + (index + 1) + '-' + batchId));
             
             html += `
                 <div class="border border-gray-200 rounded-xl overflow-hidden relative variant-card">
@@ -1291,14 +1292,14 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>
             <td class="py-2.5 px-3">
                 <div class="flex items-center gap-2">
-                    <input type="number" name="fabric_sizes[${fabricSizeIndex}][max_quantity]" value="${maxQty}" min="1" required class="fabric-size-max-qty w-28 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white font-bold text-amber-700" oninput="updateFabricVariantSummary()">
+                    <input type="number" name="fabric_sizes[${fabricSizeIndex}][max_quantity]" value="${maxQty}" min="1" required class="fabric-size-max-qty w-28 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] font-bold text-[#F25996]" oninput="updateFabricVariantSummary()">
                     <span class="text-xs text-gray-400 font-semibold">max pcs</span>
                 </div>
             </td>
             <td class="py-2.5 px-3 text-center">
                 <label class="relative inline-flex items-center cursor-pointer">
                     <input type="checkbox" name="fabric_sizes[${fabricSizeIndex}][enabled]" value="1" ${enabled ? 'checked' : ''} class="sr-only peer" onchange="updateFabricVariantSummary()">
-                    <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                    <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#F25996]"></div>
                 </label>
             </td>
             <td class="py-2.5 px-3 text-right">

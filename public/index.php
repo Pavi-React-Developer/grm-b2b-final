@@ -109,17 +109,7 @@ spl_autoload_register(function ($className) {
 require_once CORE_PATH . '/Session.php';
 Core\Session::init();
 
-// Sync user status in real-time if logged in (for blocking/price protection)
-if (Core\Session::get('user_id')) {
-    require_once CORE_PATH . '/Database.php';
-    $db = Core\Database::getInstance();
-    $stmt = $db->prepare("SELECT status FROM users WHERE id = ?");
-    $stmt->execute([Core\Session::get('user_id')]);
-    $status = $stmt->fetchColumn();
-    if ($status) {
-        Core\Session::set('user_status', $status);
-    }
-}
+// Note: Real-time user status, permissions, and block enforcement are handled centrally in Core\Controller::__construct()
 
 // 4. Initialize Router
 $router = new Core\Router();
@@ -127,6 +117,7 @@ $router = new Core\Router();
 // Define routes (can be moved to a separate routes.php file later if it gets too large)
 // Home Route
 $router->get('/', 'App\Controllers\Storefront\HomeController@index');
+$router->get('/clear-cache', 'App\Controllers\Storefront\HomeController@clearCache');
 $router->get('/about', 'App\Controllers\Storefront\HomeController@about');
 $router->get('/about-us', 'App\Controllers\Storefront\HomeController@about');
 $router->get('/terms', 'App\Controllers\Storefront\HomeController@terms');
@@ -139,6 +130,8 @@ $router->get('/return-policies', 'App\Controllers\Storefront\HomeController@priv
 $router->get('/return-policy', 'App\Controllers\Storefront\HomeController@privacyPolicy');
 $router->get('/size-chart', 'App\Controllers\Storefront\HomeController@sizeChart');
 $router->get('/api/size-chart', 'App\Controllers\Storefront\HomeController@apiSizeChart');
+$router->get('/project', 'App\Controllers\Storefront\ProjectController@index');
+$router->get('/projects', 'App\Controllers\Storefront\ProjectController@index');
 
 // Admin CMS Size Chart Routes
 $router->get('/admin/cms/size-charts', 'App\Controllers\Admin\SizeChartController@index');
@@ -212,6 +205,10 @@ $router->get('/wishlist/ajax-get', 'App\Controllers\Storefront\WishlistControlle
 $router->get('/dashboard', 'App\Controllers\Storefront\DashboardController@index');
 $router->get('/dashboard/profile', 'App\Controllers\Storefront\DashboardController@profile');
 $router->post('/dashboard/profile/update', 'App\Controllers\Storefront\DashboardController@updateProfile');
+$router->post('/dashboard/profile/check-email', 'App\Controllers\Storefront\DashboardController@checkEmailAvailability');
+$router->post('/dashboard/profile/request-email-change', 'App\Controllers\Storefront\DashboardController@requestEmailChange');
+$router->post('/dashboard/profile/resend-email-otp', 'App\Controllers\Storefront\DashboardController@resendEmailChangeOtp');
+$router->post('/dashboard/profile/verify-email-change', 'App\Controllers\Storefront\DashboardController@verifyEmailChange');
 $router->get('/dashboard/orders', 'App\Controllers\Storefront\DashboardController@orders');
 $router->get('/dashboard/orders/view', 'App\Controllers\Storefront\DashboardController@orderDetail');
 $router->post('/dashboard/orders/cancel', 'App\Controllers\Storefront\DashboardController@cancelOrder');
@@ -460,6 +457,23 @@ $router->get('/admin/cms/about-us/edit', 'App\Controllers\Admin\AboutUsControlle
 $router->post('/admin/cms/about-us/update', 'App\Controllers\Admin\AboutUsController@update');
 $router->post('/admin/cms/about-us/delete', 'App\Controllers\Admin\AboutUsController@delete');
 
+// CMS Reviews
+$router->get('/admin/cms/reviews', 'App\Controllers\Admin\CmsReviewController@index');
+$router->get('/admin/cms/reviews/create', 'App\Controllers\Admin\CmsReviewController@create');
+$router->post('/admin/cms/reviews/store', 'App\Controllers\Admin\CmsReviewController@store');
+$router->get('/admin/cms/reviews/edit', 'App\Controllers\Admin\CmsReviewController@edit');
+$router->post('/admin/cms/reviews/update', 'App\Controllers\Admin\CmsReviewController@update');
+$router->post('/admin/cms/reviews/delete', 'App\Controllers\Admin\CmsReviewController@delete');
+
+// CMS Projects (Our Project)
+$router->get('/admin/cms/projects', 'App\Controllers\Admin\ProjectController@index');
+$router->get('/admin/cms/projects/create', 'App\Controllers\Admin\ProjectController@create');
+$router->post('/admin/cms/projects/store', 'App\Controllers\Admin\ProjectController@store');
+$router->get('/admin/cms/projects/edit', 'App\Controllers\Admin\ProjectController@edit');
+$router->post('/admin/cms/projects/update', 'App\Controllers\Admin\ProjectController@update');
+$router->post('/admin/cms/projects/delete', 'App\Controllers\Admin\ProjectController@delete');
+$router->post('/admin/cms/projects/toggle-status', 'App\Controllers\Admin\ProjectController@toggleStatus');
+
 // CMS Product Card Settings (Global)
 $router->get('/admin/cms/product-card-settings', 'App\Controllers\Admin\ProductCardSettingsController@index');
 $router->post('/admin/cms/product-card-settings/update', 'App\Controllers\Admin\ProductCardSettingsController@update');
@@ -528,6 +542,7 @@ $router->post('/admin/customization-labels/quick-add', 'App\Controllers\Admin\Cu
 // Admin Customize Orders
 $router->get('/admin/customize/orders', 'App\Controllers\Admin\CustomOrderController@index');
 $router->post('/admin/customize/orders/update-status', 'App\Controllers\Admin\CustomOrderController@updateStatus');
+$router->post('/admin/customize/orders/update-packed', 'App\Controllers\Admin\CustomOrderController@updatePacked');
 
 // Admin Cancellations (Step 1: review & approve/reject)
 $router->get('/admin/cancellations', 'App\Controllers\Admin\CancellationController@index');

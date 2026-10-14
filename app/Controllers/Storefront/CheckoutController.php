@@ -471,6 +471,12 @@ class CheckoutController extends Controller
             return;
         }
 
+        // If order was already paid and assigned a GB number, redirect directly to success
+        if ($order['payment_status'] === 'paid' && strpos($order['order_number'], 'PENDING-') !== 0) {
+            $this->redirect('/order-success?order_id=' . $order['order_number']);
+            return;
+        }
+
         // =========================================================================
         // [ARCHIVED] Cashfree Payment Verification — Commented out for future reference
         // =========================================================================
@@ -515,6 +521,22 @@ class CheckoutController extends Controller
             if (!empty($paymentDetails['status']) && in_array($paymentDetails['status'], ['captured', 'authorized'])) {
                 $isVerified = true;
             }
+        } elseif (!empty($order['razorpay_order_id'])) {
+            // Direct Gateway Verification by Razorpay Order ID (e.g. if redirect didn't pass POST parameters)
+            $rzpOrder = $razorpayService->fetchOrder($order['razorpay_order_id']);
+            if (!empty($rzpOrder['status']) && $rzpOrder['status'] === 'paid') {
+                $rzpPayments = $razorpayService->fetchOrderPayments($order['razorpay_order_id']);
+                if (!empty($rzpPayments['items'])) {
+                    foreach ($rzpPayments['items'] as $payItem) {
+                        if (in_array($payItem['status'] ?? '', ['captured', 'authorized'])) {
+                            $isVerified = true;
+                            $razorpayPaymentId = $payItem['id'];
+                            $paymentDetails = $payItem;
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         if ($isVerified) {
@@ -530,17 +552,39 @@ class CheckoutController extends Controller
                 }
             }
 
-            // Generate successful GB order number if not already assigned
+            // Generate successful unique GB order number if not already assigned
             $finalOrderNumber = $orderNumber;
             if (strpos($orderNumber, 'PENDING-') === 0) {
-                $stmt = $db->query("SELECT order_number FROM orders WHERE order_number LIKE 'GB%' ORDER BY id DESC LIMIT 1");
-                $lastOrder = $stmt->fetchColumn();
-                if ($lastOrder) {
-                    $num = (int)str_replace('GB', '', $lastOrder);
-                    $finalOrderNumber = 'GB' . str_pad($num + 1, 5, '0', STR_PAD_LEFT);
-                } else {
-                    $finalOrderNumber = 'GB00001';
+                // Query strictly standard B2B orders matching 'GB' followed only by digits
+                // Exclude 'GBC%' which are custom fabric orders
+                $stmt = $db->query("
+                    SELECT order_number 
+                    FROM orders 
+                    WHERE order_number REGEXP '^GB[0-9]+$' 
+                    ORDER BY id DESC
+                ");
+                $gbOrders = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+                $maxNum = 0;
+                foreach ($gbOrders as $ord) {
+                    if (preg_match('/^GB(\d+)$/', $ord, $matches)) {
+                        $numVal = (int)$matches[1];
+                        if ($numVal > $maxNum) {
+                            $maxNum = $numVal;
+                        }
+                    }
                 }
+
+                // Increment and guarantee uniqueness
+                do {
+                    $maxNum++;
+                    $candidateOrderNumber = 'GB' . str_pad($maxNum, 5, '0', STR_PAD_LEFT);
+                    $chk = $db->prepare("SELECT COUNT(*) FROM orders WHERE order_number = ?");
+                    $chk->execute([$candidateOrderNumber]);
+                    $exists = ((int)$chk->fetchColumn()) > 0;
+                } while ($exists);
+
+                $finalOrderNumber = $candidateOrderNumber;
             }
 
             $stmt = $db->prepare("

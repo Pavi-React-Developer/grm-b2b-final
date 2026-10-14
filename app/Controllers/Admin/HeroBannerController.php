@@ -71,10 +71,12 @@ class HeroBannerController extends Controller
                     continue;
                 }
                 $mobile_url = trim((string)($_POST['media_mobile'][$index] ?? ''));
+                $opacity = isset($_POST['media_opacity'][$index]) && $_POST['media_opacity'][$index] !== '' ? (float)$_POST['media_opacity'][$index] : 100;
                 $media_items[] = [
                     'type' => $_POST['media_type'][$index] ?? 'image',
                     'desktop' => $desktop_url,
-                    'mobile' => $mobile_url !== '' ? $mobile_url : $desktop_url
+                    'mobile' => $mobile_url !== '' ? $mobile_url : $desktop_url,
+                    'opacity' => max(0, min(100, $opacity))
                 ];
             }
         }
@@ -213,10 +215,12 @@ class HeroBannerController extends Controller
                     continue;
                 }
                 $mobile_url = trim((string)($_POST['media_mobile'][$index] ?? ''));
+                $opacity = isset($_POST['media_opacity'][$index]) && $_POST['media_opacity'][$index] !== '' ? (float)$_POST['media_opacity'][$index] : 100;
                 $media_items[] = [
                     'type' => $_POST['media_type'][$index] ?? 'image',
                     'desktop' => $desktop_url,
-                    'mobile' => $mobile_url !== '' ? $mobile_url : $desktop_url
+                    'mobile' => $mobile_url !== '' ? $mobile_url : $desktop_url,
+                    'opacity' => max(0, min(100, $opacity))
                 ];
             }
         }

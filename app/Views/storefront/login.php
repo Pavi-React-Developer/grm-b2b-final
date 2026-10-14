@@ -1,11 +1,14 @@
 <div class="min-h-[calc(100vh-80px)] flex flex-col justify-center py-8 px-4 sm:px-6 lg:px-8 bg-gray-50 overflow-visible">
+    <?php
+    $redirectTarget = !empty($redirect) ? $redirect : ($_GET['redirect'] ?? \Core\Session::get('return_to') ?? '');
+    ?>
     <div class="w-full sm:mx-auto sm:max-w-md text-center">
         <h2 class="mt-2 text-3xl font-extrabold text-gray-900 font-display">
             Log in to your account
         </h2>
         <p class="mt-2 text-sm text-gray-600">
             Or
-            <a href="<?= BASE_URL ?>/register" class="font-medium text-[#f25996] hover:text-[#d94883]">
+            <a href="<?= BASE_URL ?>/register<?= !empty($redirectTarget) ? '?redirect=' . urlencode($redirectTarget) : '' ?>" class="font-medium text-[#f25996] hover:text-[#d94883]">
                 register as a new B2B buyer
             </a>
         </p>
@@ -14,6 +17,9 @@
     <div class="mt-8 w-full sm:mx-auto sm:max-w-md">
         <div class="bg-white py-8 px-6 shadow-lg rounded-2xl sm:shadow-card sm:rounded-xl sm:px-10 border border-gray-100">
             <form class="space-y-5" action="<?= BASE_URL ?>/login" method="POST">
+                <?php if (!empty($redirectTarget)): ?>
+                    <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirectTarget) ?>">
+                <?php endif; ?>
                 
                 <div>
                     <label for="email" class="form-label text-sm font-semibold text-gray-700">Email address or Mobile number</label>
@@ -67,7 +73,7 @@
             <div class="mt-6 pt-5 border-t border-gray-100 text-center">
                 <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Don't have an account?</p>
                 <div class="grid <?= is_vendor_module_enabled() ? 'grid-cols-2' : 'grid-cols-1' ?> gap-2">
-                    <a href="<?= BASE_URL ?>/register" class="py-2 px-3 border border-[#fbaed2] bg-[#fdf2f7] hover:bg-[#fce7f1] text-[#f25996] text-xs font-bold rounded-xl transition flex items-center justify-center">
+                    <a href="<?= BASE_URL ?>/register<?= !empty($redirectTarget) ? '?redirect=' . urlencode($redirectTarget) : '' ?>" class="py-2 px-3 border border-[#fbaed2] bg-[#fdf2f7] hover:bg-[#fce7f1] text-[#f25996] text-xs font-bold rounded-xl transition flex items-center justify-center">
                         <svg class="w-3.5 h-3.5 mr-1.5 text-[#f25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                         Join as Buyer
                     </a>

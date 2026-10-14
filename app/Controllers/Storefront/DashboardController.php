@@ -41,7 +41,28 @@ class DashboardController extends Controller
         $stmt->execute([$userId]);
         $shopImages = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        $stmt = $db->prepare("SELECT * FROM addresses WHERE user_id = ? AND is_default = 1 LIMIT 1");
+        // Auto-seed: if user has no addresses yet, pull from business_profiles.shop_location
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM addresses WHERE user_id = ?");
+        $countStmt->execute([$userId]);
+        if ((int)$countStmt->fetchColumn() === 0 && !empty($profile['shop_location'])) {
+            $shopLocation = $profile['shop_location'];
+            $line1 = $shopLocation;
+            $city = 'Unknown';
+            $state = 'Unknown';
+            $postal = '000000';
+            
+            if (preg_match('/^(.*?),\s*(.*?),\s*(.*?)\s*-\s*(\d{6})$/', $shopLocation, $matches)) {
+                $line1 = trim($matches[1]);
+                $city = trim($matches[2]);
+                $state = trim($matches[3]);
+                $postal = $matches[4];
+            }
+            
+            $db->prepare("INSERT INTO addresses (user_id, label, line1, city, state, postal_code, country, is_default) VALUES (?, ?, ?, ?, ?, ?, ?, 1)")
+               ->execute([$userId, 'Shop Address', $line1, $city, $state, $postal, 'India']);
+        }
+
+        $stmt = $db->prepare("SELECT * FROM addresses WHERE user_id = ? ORDER BY is_default DESC, id ASC LIMIT 1");
         $stmt->execute([$userId]);
         $defaultAddress = $stmt->fetch(\PDO::FETCH_ASSOC);
 
@@ -121,6 +142,268 @@ class DashboardController extends Controller
 
         Session::setFlash('success', 'Profile updated successfully.');
         $this->redirect('/dashboard/profile');
+    }
+
+    /**
+     * Real-time inline availability check for new email address.
+     */
+    public function checkEmailAvailability()
+    {
+        header('Content-Type: application/json');
+        $raw = file_get_contents('php://input');
+        $data = json_decode($raw, true) ?: [];
+        $email = trim($data['email'] ?? $_POST['email'] ?? '');
+        $userId = Session::get('user_id');
+
+        if (empty($email)) {
+            echo json_encode(['available' => false, 'message' => 'Email address is required.']);
+            exit;
+        }
+
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['available' => false, 'message' => 'Please enter a valid email format.']);
+            exit;
+        }
+
+        $userModel = new User();
+        $currentUser = $userModel->findById($userId);
+        if ($currentUser && strtolower($currentUser['email']) === strtolower($email)) {
+            echo json_encode(['available' => false, 'message' => 'This is already your current email address.']);
+            exit;
+        }
+
+        $db = \Core\Database::getInstance();
+        $stmt = $db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id != ?");
+        $stmt->execute([$email, $userId]);
+        if ($stmt->fetch()) {
+            echo json_encode(['available' => false, 'message' => 'This email address is already registered to another account.']);
+            exit;
+        }
+
+        echo json_encode(['available' => true, 'message' => 'Email address is available.']);
+        exit;
+    }
+
+    /**
+     * Request email change: validate reason & email, generate OTP, and send email.
+     */
+    public function requestEmailChange()
+    {
+        header('Content-Type: application/json');
+        $userId = Session::get('user_id');
+        if (!$userId) {
+            echo json_encode(['success' => false, 'message' => 'Please log in to continue.']);
+            exit;
+        }
+
+        $raw = file_get_contents('php://input');
+        $data = json_decode($raw, true) ?: [];
+        $newEmail = strtolower(trim($data['email'] ?? $_POST['email'] ?? ''));
+        $reason = trim($data['reason'] ?? $_POST['reason'] ?? '');
+
+        if (empty($reason)) {
+            echo json_encode(['success' => false, 'message' => 'Please provide a reason why you are changing your email address.']);
+            exit;
+        }
+
+        if (empty($newEmail) || !filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+            echo json_encode(['success' => false, 'message' => 'Please enter a valid email address.']);
+            exit;
+        }
+
+        $userModel = new User();
+        $currentUser = $userModel->findById($userId);
+        if (!$currentUser) {
+            echo json_encode(['success' => false, 'message' => 'User not found.']);
+            exit;
+        }
+
+        if (strtolower($currentUser['email']) === $newEmail) {
+            echo json_encode(['success' => false, 'message' => 'The new email must be different from your current email.']);
+            exit;
+        }
+
+        $db = \Core\Database::getInstance();
+        $stmt = $db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id != ?");
+        $stmt->execute([$newEmail, $userId]);
+        if ($stmt->fetch()) {
+            echo json_encode(['success' => false, 'message' => 'This email address is already registered to another account.']);
+            exit;
+        }
+
+        // Generate 6-digit OTP
+        $otp = sprintf("%06d", mt_rand(100000, 999999));
+        $sessionData = [
+            'new_email' => $newEmail,
+            'reason' => $reason,
+            'otp' => $otp,
+            'expires_at' => time() + 600, // 10 minutes
+            'last_sent_at' => time()
+        ];
+        Session::set('email_change_data', $sessionData);
+
+        // Send OTP email
+        try {
+            $emailService = new \App\Services\EmailService();
+            $sent = $emailService->sendEmailChangeOtp($newEmail, $otp, $currentUser['name'] ?? 'User');
+            if (!$sent) {
+                error_log("[EmailChange] Mail server returned false while sending OTP to $newEmail");
+            }
+        } catch (\Throwable $e) {
+            error_log("[EmailChange Error] " . $e->getMessage());
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'A 6-digit verification code has been sent to ' . $newEmail . '. Please check your inbox.',
+            'target_email' => $newEmail
+        ]);
+        exit;
+    }
+
+    /**
+     * Resend verification OTP for pending email change.
+     */
+    public function resendEmailChangeOtp()
+    {
+        header('Content-Type: application/json');
+        $userId = Session::get('user_id');
+        if (!$userId) {
+            echo json_encode(['success' => false, 'message' => 'Please log in to continue.']);
+            exit;
+        }
+
+        $data = Session::get('email_change_data');
+        if (!$data || empty($data['new_email'])) {
+            echo json_encode(['success' => false, 'message' => 'No pending email change request found. Please start over.']);
+            exit;
+        }
+
+        if (isset($data['last_sent_at']) && (time() - $data['last_sent_at']) < 60) {
+            $remaining = 60 - (time() - $data['last_sent_at']);
+            echo json_encode(['success' => false, 'message' => "Please wait {$remaining} seconds before requesting a new code."]);
+            exit;
+        }
+
+        $otp = sprintf("%06d", mt_rand(100000, 999999));
+        $data['otp'] = $otp;
+        $data['expires_at'] = time() + 600;
+        $data['last_sent_at'] = time();
+        Session::set('email_change_data', $data);
+
+        $userModel = new User();
+        $currentUser = $userModel->findById($userId);
+
+        try {
+            $emailService = new \App\Services\EmailService();
+            $emailService->sendEmailChangeOtp($data['new_email'], $otp, $currentUser['name'] ?? 'User');
+        } catch (\Throwable $e) {
+            error_log("[EmailChange Resend Error] " . $e->getMessage());
+        }
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'A new 6-digit verification code has been sent to ' . $data['new_email'] . '.'
+        ]);
+        exit;
+    }
+
+    /**
+     * Verify OTP and complete email change with audit logging.
+     */
+    public function verifyEmailChange()
+    {
+        header('Content-Type: application/json');
+        $userId = Session::get('user_id');
+        if (!$userId) {
+            echo json_encode(['success' => false, 'message' => 'Please log in to continue.']);
+            exit;
+        }
+
+        $raw = file_get_contents('php://input');
+        $req = json_decode($raw, true) ?: [];
+        $submittedOtp = trim($req['otp'] ?? $_POST['otp'] ?? '');
+
+        if (empty($submittedOtp)) {
+            echo json_encode(['success' => false, 'message' => 'Please enter the 6-digit verification code.']);
+            exit;
+        }
+
+        $data = Session::get('email_change_data');
+        if (!$data || empty($data['otp']) || empty($data['new_email'])) {
+            echo json_encode(['success' => false, 'message' => 'Verification session expired. Please request a new code.']);
+            exit;
+        }
+
+        if (time() > ($data['expires_at'] ?? 0)) {
+            echo json_encode(['success' => false, 'message' => 'The verification code has expired. Please request a new code.']);
+            exit;
+        }
+
+        if ($submittedOtp !== (string)$data['otp']) {
+            echo json_encode(['success' => false, 'message' => 'Invalid verification code. Please check and try again.']);
+            exit;
+        }
+
+        $newEmail = $data['new_email'];
+        $reason = $data['reason'] ?? 'Email updated by user';
+
+        $db = \Core\Database::getInstance();
+        $userModel = new User();
+        $currentUser = $userModel->findById($userId);
+
+        if (!$currentUser) {
+            echo json_encode(['success' => false, 'message' => 'User not found.']);
+            exit;
+        }
+
+        $oldEmail = $currentUser['email'];
+
+        try {
+            $db->beginTransaction();
+
+            // Double check email uniqueness inside transaction
+            $checkStmt = $db->prepare("SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND id != ?");
+            $checkStmt->execute([$newEmail, $userId]);
+            if ($checkStmt->fetch()) {
+                $db->rollBack();
+                echo json_encode(['success' => false, 'message' => 'This email address was registered by another user in the meantime.']);
+                exit;
+            }
+
+            // Update user email
+            $updateStmt = $db->prepare("UPDATE users SET email = ? WHERE id = ?");
+            $updateStmt->execute([$newEmail, $userId]);
+
+            // Insert into user_email_logs
+            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? null;
+            $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+            $logStmt = $db->prepare("
+                INSERT INTO user_email_logs (user_id, old_email, new_email, reason, ip_address, user_agent, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
+            ");
+            $logStmt->execute([$userId, $oldEmail, $newEmail, $reason, $ipAddress, $userAgent]);
+
+            $db->commit();
+
+            // Clear session OTP and update session email
+            Session::remove('email_change_data');
+            Session::set('user_email', $newEmail);
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Your email address has been successfully updated to ' . $newEmail . '! For future logins, please use this new email.',
+                'new_email' => $newEmail
+            ]);
+            exit;
+        } catch (\Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            error_log("[EmailChange Commit Error] " . $e->getMessage());
+            echo json_encode(['success' => false, 'message' => 'Database error while updating email: ' . $e->getMessage()]);
+            exit;
+        }
     }
 
     public function orders()
@@ -405,6 +688,13 @@ class DashboardController extends Controller
         }
 
         $db = \Core\Database::getInstance();
+
+        // If this is the user's first address, automatically make it the default address
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM addresses WHERE user_id = ?");
+        $countStmt->execute([$userId]);
+        if ((int)$countStmt->fetchColumn() === 0) {
+            $isDefault = 1;
+        }
 
         if ($isDefault) {
             $db->prepare("UPDATE addresses SET is_default = 0 WHERE user_id = ?")->execute([$userId]);

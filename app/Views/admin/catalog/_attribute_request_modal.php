@@ -63,6 +63,12 @@
                     </select>
                 </div>
 
+                <!-- Description / Comment -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Description / Comment <span class="text-xs font-normal text-gray-400">(Optional - e.g. test, specifications)</span></label>
+                    <input type="text" name="description" id="modal_attr_description" placeholder="e.g. Storage capacity, specifications, comments..." class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 text-sm">
+                </div>
+
                 <!-- Values / Options -->
                 <div>
                     <div class="flex items-center justify-between mb-1">

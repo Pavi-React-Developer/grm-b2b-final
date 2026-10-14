@@ -104,7 +104,8 @@
         </h2>
         <p class="mt-2 text-sm text-gray-600">
             Already have an account? 
-            <a href="<?= BASE_URL ?>/login" class="font-bold hover:underline" style="color: #F25996;">
+            <?php $regRedirect = $redirect ?? $_GET['redirect'] ?? \Core\Session::get('return_to') ?? ''; ?>
+            <a href="<?= BASE_URL ?>/login<?= !empty($regRedirect) ? '?redirect=' . urlencode($regRedirect) : '' ?>" class="font-bold hover:underline" style="color: #F25996;">
                 Log in here
             </a>
         </p>

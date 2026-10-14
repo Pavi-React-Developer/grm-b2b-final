@@ -44,7 +44,11 @@ class InvoiceController extends Controller
         }
 
         header('Content-Type: application/pdf');
-        header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+        header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        $disposition = (isset($_GET['download']) && $_GET['download'] == '1') ? 'attachment' : 'inline';
+        header('Content-Disposition: ' . $disposition . '; filename="' . $result['filename'] . '"');
         header('Content-Length: ' . strlen($result['pdf_binary']));
         echo $result['pdf_binary'];
         exit;

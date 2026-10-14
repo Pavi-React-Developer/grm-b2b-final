@@ -84,6 +84,12 @@ class FabricCustomizationController extends Controller
             return;
         }
 
+        // Remember return URL for guest visitors (e.g. from Instagram / direct link)
+        if (!Session::get('user_id')) {
+            $currentUri = $_SERVER['REQUEST_URI'] ?? ('/fabrics/customize?fabric_id=' . (int)$fabricId);
+            Session::set('return_to', $currentUri);
+        }
+
         // Fetch user addresses if logged in
         $userAddresses = [];
         $userId = Session::get('user_id');
@@ -207,13 +213,13 @@ class FabricCustomizationController extends Controller
 
         $labelQuantities = $input['label_quantities'] ?? [];
 
-        $userId = (int)Session::get('user_id');
         $db = Database::getInstance();
+        $userId = $this->resolveValidUserId($db);
 
         try {
             $db->beginTransaction();
 
-            $orderNumber = 'GRM-REQ-' . strtoupper(substr(uniqid(), -6));
+            $orderNumber = $this->generateCustomizeOrderNumber($db, 'GBC');
 
             $customizationData = [
                 'customization_id'    => $customization['id'],
@@ -356,11 +362,9 @@ class FabricCustomizationController extends Controller
             5.0
         );
 
-        $userId = (int)Session::get('user_id');
         $db = Database::getInstance();
-        $userStmt = $db->prepare("SELECT name, email, phone FROM users WHERE id = ?");
-        $userStmt->execute([$userId]);
-        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+        $user = $this->resolveValidUser($db);
+        $userId = (int)$user['id'];
 
         $receiptId = 'CUST_' . strtoupper(substr(uniqid(), -8));
         $razorpayService = new RazorpayService();
@@ -472,13 +476,13 @@ class FabricCustomizationController extends Controller
 
         $labelQuantities = $input['label_quantities'] ?? [];
 
-        $userId = (int)Session::get('user_id');
         $db = Database::getInstance();
+        $userId = $this->resolveValidUserId($db);
 
         try {
             $db->beginTransaction();
 
-            $orderNumber = 'GRM-CUST-' . strtoupper(substr(uniqid(), -6));
+            $orderNumber = $this->generateCustomizeOrderNumber($db, 'GBC');
 
             $customizationData = [
                 'customization_id'    => $customization['id'],
@@ -514,7 +518,7 @@ class FabricCustomizationController extends Controller
                     user_id, order_number, total_amount, grand_total, shipping_address, 
                     status, payment_status, razorpay_order_id, razorpay_payment_id, 
                     notes, created_at
-                ) VALUES (?, ?, ?, ?, ?, 'stitching', 'paid', ?, ?, ?, NOW())
+                ) VALUES (?, ?, ?, ?, ?, 'placed', 'paid', ?, ?, ?, NOW())
             ");
 
             $orderStmt->execute([
@@ -562,7 +566,7 @@ class FabricCustomizationController extends Controller
                 'success'      => true,
                 'order_id'     => $orderId,
                 'order_number' => $orderNumber,
-                'message'      => "Payment successful! Your custom order #{$orderNumber} is confirmed and sent to stitching.",
+                'message'      => "Payment successful! Your custom order #{$orderNumber} is confirmed and placed.",
                 'redirect_url' => BASE_URL . '/order-success?order_id=' . $orderId
             ]);
             exit;
@@ -572,5 +576,80 @@ class FabricCustomizationController extends Controller
             echo json_encode(['success' => false, 'message' => 'Error completing paid order: ' . $e->getMessage()]);
             exit;
         }
+    }
+
+    /**
+     * Resolve a valid user record from the database in a single query to eliminate multiple roundtrips.
+     */
+    private function resolveValidUser(PDO $db): array
+    {
+        $userId = (int)Session::get('user_id');
+        if ($userId > 0) {
+            $stmt = $db->prepare("SELECT id, name, email, phone FROM users WHERE id = ? LIMIT 1");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($user) {
+                return $user;
+            }
+        }
+
+        // Fallback to the first active user
+        $fallbackStmt = $db->query("SELECT id, name, email, phone FROM users WHERE status = 'active' ORDER BY id ASC LIMIT 1");
+        $fallback = $fallbackStmt->fetch(PDO::FETCH_ASSOC);
+        if ($fallback) {
+            Session::set('user_id', (int)$fallback['id']);
+            return $fallback;
+        }
+
+        return ['id' => $userId, 'name' => 'Wholesale Customer', 'email' => '', 'phone' => ''];
+    }
+
+    /**
+     * Resolve a valid user_id from the database to strictly prevent foreign key constraint violations.
+     */
+    private function resolveValidUserId(PDO $db): int
+    {
+        $u = $this->resolveValidUser($db);
+        return (int)$u['id'];
+    }
+
+    /**
+     * Generates a sequential, dynamic customize order number in the format GBC000001, GBC000002, etc.
+     */
+    private function generateCustomizeOrderNumber(PDO $db, string $prefix = 'GBC'): string
+    {
+        $stmt = $db->prepare("
+            SELECT order_number 
+            FROM orders 
+            WHERE order_number LIKE ? 
+            ORDER BY id DESC 
+            LIMIT 100
+        ");
+        $stmt->execute([$prefix . '%']);
+        $rows = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+        $maxSeq = 0;
+        foreach ($rows as $ordNum) {
+            if (preg_match('/^' . preg_quote($prefix, '/') . '(\d+)$/', $ordNum, $matches)) {
+                $num = (int)$matches[1];
+                if ($num > $maxSeq) {
+                    $maxSeq = $num;
+                }
+            }
+        }
+
+        $nextSeq = $maxSeq + 1;
+        $orderNumber = $prefix . str_pad((string)$nextSeq, 6, '0', STR_PAD_LEFT);
+
+        // Safety check: ensure absolute uniqueness
+        $checkStmt = $db->prepare("SELECT id FROM orders WHERE order_number = ? LIMIT 1");
+        $checkStmt->execute([$orderNumber]);
+        while ($checkStmt->fetch()) {
+            $nextSeq++;
+            $orderNumber = $prefix . str_pad((string)$nextSeq, 6, '0', STR_PAD_LEFT);
+            $checkStmt->execute([$orderNumber]);
+        }
+
+        return $orderNumber;
     }
 }

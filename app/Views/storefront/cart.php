@@ -266,7 +266,7 @@
                         </div>
                     </div>
                     <div class="p-4 sm:p-5">
-                        <div id="cart-related-track" class="flex overflow-x-auto gap-2.5 sm:gap-4 pb-3 pt-0.5 snap-x snap-proximity md:snap-mandatory hide-scrollbar touch-auto overscroll-x-contain cursor-grab active:cursor-grabbing">
+                        <div id="cart-related-track" class="flex items-stretch overflow-x-auto gap-2.5 sm:gap-4 pb-3 pt-0.5 snap-x snap-proximity md:snap-mandatory hide-scrollbar touch-auto overscroll-x-contain cursor-grab active:cursor-grabbing">
                             <?php foreach($relatedProducts as $rp): ?>
                             <?php
                                 $rpImg = !empty($rp['primary_image'])
@@ -285,13 +285,20 @@
                                 }
                                 $rpMoq = !empty($rp['moq']) ? (int)$rp['moq'] : (!empty($rp['moq_override']) ? (int)$rp['moq_override'] : ($rp['category_moq'] ?? 1));
                             ?>
-                            <div class="product-card shrink-0 w-[calc(50%-0.25rem)] sm:w-[260px] md:w-[280px] snap-start bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 flex flex-col relative group">
+                            <div class="product-card h-full shrink-0 w-[calc(50%-0.25rem)] sm:w-[260px] md:w-[280px] snap-start bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 flex flex-col relative group">
+                                <!-- Wishlist Button -->
+                                <?php if (\Core\Session::get('user_id')): ?>
+                                <button type="button" onclick="toggleWishlist(<?= $rp['id'] ?>, this); event.stopPropagation();" data-wishlist-btn-id="<?= $rp['id'] ?>" class="wishlist-btn" title="Wishlist">
+                                    <svg class="text-gray-400 fill-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                                </button>
+                                <?php endif; ?>
+
                                 <!-- Product Image -->
                                 <a href="<?= BASE_URL ?>/product?id=<?= $rp['id'] ?>" class="product-image-wrap block w-full bg-gray-50 overflow-hidden shrink-0 aspect-square relative">
                                     <?php 
                                         $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                                         if ($discPercent > 0) {
-                                            echo render_discount_starburst($discPercent, 'absolute top-1.5 left-1.5 z-10 w-16 sm:w-18 md:w-20 transition-transform duration-300 group-hover:scale-110');
+                                            echo render_discount_starburst($discPercent, 'transition-transform duration-300 group-hover:scale-105');
                                         }
                                     ?>
                                     <img src="<?= htmlspecialchars($rpImg) ?>" alt="<?= htmlspecialchars($rp['name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
@@ -300,29 +307,29 @@
                                 <!-- Product Body -->
                                 <div class="product-card-body p-3 md:p-4 flex flex-col flex-1 bg-white relative z-10">
                                     <a href="<?= BASE_URL ?>/product?id=<?= $rp['id'] ?>" class="product-link block mb-1">
-                                        <h3 class="product-name font-bold leading-snug line-clamp-2 text-sm md:text-base text-gray-900 group-hover:text-[#F25996] transition-colors"><?= htmlspecialchars($rp['name']) ?></h3>
+                                        <h3 class="product-name font-bold leading-snug line-clamp-2"><?= htmlspecialchars($rp['name']) ?></h3>
                                     </a>
 
                                     <div class="mt-auto">
                                         <!-- Selling Price & Strikethrough (Same Row) -->
                                         <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-1">
-                                            <span class="product-price font-black tracking-tight text-base md:text-xl text-[#F25996]">₹<?= format_price($displayPrice) ?></span>
+                                            <span class="product-price font-black tracking-tight">₹<?= format_price($displayPrice) ?></span>
                                             <?php if ($displayOriginalPrice && $displayOriginalPrice > $displayPrice): ?>
-                                                <span class="product-orig-price text-[0.6875rem] md:text-sm font-bold text-gray-400 line-through">₹<?= format_price($displayOriginalPrice) ?></span>
+                                                <span class="product-orig-price font-bold text-gray-400 line-through">₹<?= format_price($displayOriginalPrice) ?></span>
                                             <?php endif; ?>
                                         </div>
 
                                         <!-- MOQ -->
                                         <?php if ($rpMoq >= 1): ?>
-                                         <p class="product-moq-row text-[0.525rem] md:text-xs font-semibold mb-2.5 md:mb-5 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis" style="color: var(--pc-price);">
+                                         <p class="product-moq-row font-semibold flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis">
                                             <svg class="w-3.5 h-3.5 md:w-4 md:h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                                             <span>Min. Order: <?= htmlspecialchars($rpMoq) ?> Pcs</span>
                                         </p>
                                         <?php endif; ?>
 
                                         <!-- Add to Cart Button -->
-                                        <button type="button" onclick="quickAddToCart(<?= $rp['id'] ?>, <?= $rpMoq ?>, this, event)" class="product-btn w-full font-bold transition-all flex items-center justify-center gap-1.5 hover:bg-[#d8407d] shadow-sm py-2.5 sm:py-3 px-2 sm:px-4 text-xs md:text-base rounded-xl sm:rounded-2xl cursor-pointer bg-[#F25996] text-white">
-                                            <svg class="w-3.5 h-3.5 sm:w-5 sm:h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                        <button type="button" onclick="quickAddToCart(<?= $rp['id'] ?>, <?= $rpMoq ?>, this, event)" class="product-btn w-full font-bold transition-all flex items-center justify-center gap-1.5 hover:opacity-90 shadow-sm cursor-pointer">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                                             <span>Add to Cart</span>
                                         </button>
                                     </div>

@@ -670,9 +670,13 @@ class CartController extends Controller
         $moqErrors = array_merge($moqErrors, $ruleErrorsText);
 
         $cartCategoryIds = [];
+        $cartSubCategoryIds = [];
         foreach ($cartItems as $item) {
             if (!in_array($item['category_id'], $cartCategoryIds)) {
                 $cartCategoryIds[] = $item['category_id'];
+            }
+            if (!empty($item['sub_category_id']) && !in_array($item['sub_category_id'], $cartSubCategoryIds)) {
+                $cartSubCategoryIds[] = (int)$item['sub_category_id'];
             }
         }
 
@@ -691,7 +695,7 @@ class CartController extends Controller
             : (!empty($unlockedCatIds) ? $unlockedCatIds : $cartCategoryIds);
 
         $cartProductIds = array_unique(array_filter(array_column($cartItems, 'product_id')));
-        $relatedProducts = $includeRelated ? $this->getRelatedProducts($suggestionCategoryIds, $unlockedCatIds, $cartProductIds, 8) : [];
+        $relatedProducts = $includeRelated ? $this->getRelatedProducts($suggestionCategoryIds, $unlockedCatIds, $cartProductIds, 8, $cartSubCategoryIds) : [];
         
         $suggestionUrl = BASE_URL . "/catalog";
         if (!empty($ruleValidation['failing_categories'])) {
@@ -713,7 +717,7 @@ class CartController extends Controller
         ];
     }
 
-    private function getRelatedProducts($cartCategoryIds = [], $unlockedCategoryIds = [], $excludeProductIds = [], $limit = 8)
+    private function getRelatedProducts($cartCategoryIds = [], $unlockedCategoryIds = [], $excludeProductIds = [], $limit = 8, $cartSubCategoryIds = [])
     {
         $db = Database::getInstance();
         $relatedProducts = [];
@@ -722,57 +726,68 @@ class CartController extends Controller
         // Always exclude items currently in cart
         $baseExclude = array_unique(array_filter(array_map('intval', (array)$excludeProductIds)));
 
-        // 1. Fetch products from relevant categories first (failing categories, unlocked offers, or cart categories)
-        if (!empty($cartCategoryIds)) {
-            $catIds = array_values(array_unique(array_filter(array_map('intval', (array)$cartCategoryIds))));
-            if (!empty($catIds)) {
-                $inCats = implode(',', array_fill(0, count($catIds), '?'));
-                $params = $catIds;
-                
-                $excludeClause = "";
-                if (!empty($baseExclude)) {
-                    $inExclude = implode(',', array_fill(0, count($baseExclude), '?'));
-                    $excludeClause = " AND p.id NOT IN ($inExclude)";
-                    $params = array_merge($params, $baseExclude);
-                }
+        // Exclude subcategories currently in cart so it shows DIFFERENT categories (never the same category)
+        $subCatExclude = array_values(array_unique(array_filter(array_map('intval', (array)$cartSubCategoryIds))));
 
-                $stmt = $db->prepare("
-                    SELECT p.id, p.name, p.wholesale_price, p.total_gst, p.category_id, 
-                           c.name as category_name, c.moq as category_moq, c.sgst as category_sgst, c.cgst as category_cgst,
-                           p.moq_override,
-                           (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
-                           (SELECT base_price FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_price,
-                           (SELECT discount_price FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_discount_price,
-                           (SELECT total_gst FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_total_gst
-                    FROM products p
-                    JOIN categories c ON p.category_id = c.id AND c.status = 'active'
-                    WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) AND p.category_id IN ($inCats) $excludeClause
-                    ORDER BY RAND() LIMIT " . (int)$limit . "
-                ");
-                $stmt->execute($params);
-                $products = $stmt->fetchAll();
+        $whereClause = "WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL)";
+        $params = [];
 
-                foreach ($products as $p) {
+        if (!empty($baseExclude)) {
+            $inExclude = implode(',', array_fill(0, count($baseExclude), '?'));
+            $whereClause .= " AND p.id NOT IN ($inExclude)";
+            $params = array_merge($params, $baseExclude);
+        }
+
+        if (!empty($subCatExclude)) {
+            $inSubExclude = implode(',', array_fill(0, count($subCatExclude), '?'));
+            $whereClause .= " AND (p.sub_category_id IS NULL OR p.sub_category_id NOT IN ($inSubExclude))";
+            $params = array_merge($params, $subCatExclude);
+        }
+
+        $stmt = $db->prepare("
+            SELECT p.id, p.name, p.wholesale_price, p.total_gst, p.category_id, p.sub_category_id,
+                   c.name as category_name, c.moq as category_moq, c.sgst as category_sgst, c.cgst as category_cgst,
+                   p.moq_override,
+                   (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
+                   (SELECT base_price FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_price,
+                   (SELECT discount_price FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_discount_price,
+                   (SELECT total_gst FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_total_gst
+            FROM products p
+            JOIN categories c ON p.category_id = c.id AND c.status = 'active'
+            $whereClause
+            ORDER BY p.id DESC
+        ");
+        $stmt->execute($params);
+        $candidateProducts = $stmt->fetchAll();
+
+        // 1. Pass 1: Pick 1 product per distinct DIFFERENT category/subcategory to give a diverse recommendation mix
+        $usedCats = [];
+        foreach ($candidateProducts as $p) {
+            $grp = $p['sub_category_id'] ?? $p['category_id'];
+            if (!in_array($grp, $usedCats)) {
+                $usedCats[] = $grp;
+                $fetchedProductIds[] = (int)$p['id'];
+                $relatedProducts[] = $this->formatRelatedProductRow($p, $unlockedCategoryIds);
+                if (count($relatedProducts) >= $limit) break;
+            }
+        }
+
+        // 2. Pass 2: If we still need more products up to $limit, fill with remaining candidates from different categories
+        if (count($relatedProducts) < $limit) {
+            foreach ($candidateProducts as $p) {
+                if (!in_array((int)$p['id'], $fetchedProductIds)) {
                     $fetchedProductIds[] = (int)$p['id'];
                     $relatedProducts[] = $this->formatRelatedProductRow($p, $unlockedCategoryIds);
+                    if (count($relatedProducts) >= $limit) break;
                 }
             }
         }
 
-        // 2. If we have fewer than $limit products, backfill with active products across OTHER categories in catalog
-        $remaining = $limit - count($relatedProducts);
-        if ($remaining > 0) {
-            $allExclude = array_unique(array_merge($baseExclude, $fetchedProductIds));
-            $excludeClause = "";
-            $params = [];
-            if (!empty($allExclude)) {
-                $inExclude = implode(',', array_fill(0, count($allExclude), '?'));
-                $excludeClause = " AND p.id NOT IN ($inExclude)";
-                $params = array_values($allExclude);
-            }
-
-            $stmt = $db->prepare("
-                SELECT p.id, p.name, p.wholesale_price, p.total_gst, p.category_id, 
+        // 3. Fallback only if no other categories exist
+        if (empty($relatedProducts) && !empty($baseExclude)) {
+            $inExclude = implode(',', array_fill(0, count($baseExclude), '?'));
+            $stmtFallback = $db->prepare("
+                SELECT p.id, p.name, p.wholesale_price, p.total_gst, p.category_id, p.sub_category_id,
                        c.name as category_name, c.moq as category_moq, c.sgst as category_sgst, c.cgst as category_cgst,
                        p.moq_override,
                        (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
@@ -781,14 +796,12 @@ class CartController extends Controller
                        (SELECT total_gst FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_total_gst
                 FROM products p
                 JOIN categories c ON p.category_id = c.id AND c.status = 'active'
-                WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) $excludeClause
-                ORDER BY RAND() LIMIT " . (int)$remaining . "
+                WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) AND p.id NOT IN ($inExclude)
+                ORDER BY p.id DESC LIMIT " . (int)$limit . "
             ");
-            $stmt->execute($params);
-            $moreProducts = $stmt->fetchAll();
-
-            foreach ($moreProducts as $p) {
-                $fetchedProductIds[] = (int)$p['id'];
+            $stmtFallback->execute($baseExclude);
+            $fallbackProds = $stmtFallback->fetchAll();
+            foreach ($fallbackProds as $p) {
                 $relatedProducts[] = $this->formatRelatedProductRow($p, $unlockedCategoryIds);
             }
         }

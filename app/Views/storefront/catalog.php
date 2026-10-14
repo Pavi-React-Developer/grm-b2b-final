@@ -376,7 +376,7 @@
                                 <?php 
                                 $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
                                 if ($canAddToCart && $discPercent > 0 && function_exists('render_discount_starburst')) {
-                                    echo render_discount_starburst($discPercent, 'absolute top-1.5 left-1.5 z-10 w-9 h-9 sm:w-11 sm:h-11 transition-transform duration-300 group-hover:scale-105');
+                                    echo render_discount_starburst($discPercent, 'transition-transform duration-300 group-hover:scale-105');
                                 }
                                 ?>
                                 <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($product['name']) ?>" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async">
@@ -397,7 +397,7 @@
                                 <?php endif; ?>
 
                                 <a href="<?= BASE_URL ?>/product?id=<?= $product['id'] ?>" class="product-link block mb-1">
-                                    <h3 class="product-name font-bold leading-snug line-clamp-2" style="font-size: clamp(0.8125rem, 1.1vw, 0.95rem);"><?= htmlspecialchars($product['name']) ?></h3>
+                                    <h3 class="product-name font-bold leading-snug line-clamp-2"><?= htmlspecialchars($product['name']) ?></h3>
                                 </a>
                                 
                                 <?php if (!empty($product['sku'])): ?>
@@ -408,7 +408,7 @@
                                     <div class="mt-auto">
                                         <!-- Selling Price, Strikethrough & Discount % Badge -->
                                         <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-1">
-                                            <span class="product-price font-extrabold tracking-tight" style="font-size: clamp(0.95rem, 3.8vw, 1.5rem);">&#8377;<?= format_price($displayPrice) ?></span>
+                                            <span class="product-price font-extrabold tracking-tight">&#8377;<?= format_price($displayPrice) ?></span>
                                             <?php if ($displayOriginalPrice && $displayOriginalPrice > $displayPrice): ?>
                                                 <span class="product-orig-price text-sm font-bold text-gray-400 line-through">&#8377;<?= format_price($displayOriginalPrice) ?></span>
                                             <?php endif; ?>

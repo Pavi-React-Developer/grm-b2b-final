@@ -235,7 +235,10 @@ $menuItems = $content['menu_items'] ?? [];
             
         <!-- Menu Items Section -->
         <div class="flex justify-between items-center mb-4 mt-8 border-t border-gray-100 pt-8">
-            <h3 class="text-xl font-serif font-bold text-gray-800">Menu Items</h3>
+            <div>
+                <h3 class="text-xl font-serif font-bold text-gray-800">Menu Items</h3>
+                <p class="text-xs text-gray-500 mt-0.5">Drag items or use the arrows to rearrange navigation order on your website</p>
+            </div>
             <button type="button" id="addMenuItemBtn" class="text-gray-700 bg-white border border-gray-200 px-4 py-2 rounded-full font-bold text-xs uppercase tracking-wider shadow-sm hover:bg-gray-50 transition-colors flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 ADD ITEM
@@ -245,11 +248,29 @@ $menuItems = $content['menu_items'] ?? [];
         <div id="menuItemsContainer" class="space-y-6">
             <?php foreach($menuItems as $index => $item): ?>
             <div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8 relative menu-item-block section-form-wrapper">
-                <button type="button" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors remove-item-btn">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-                
-                <h4 class="text-lg font-serif font-bold text-[#0b3c7c] mb-6 border-b border-gray-100 pb-3">Edit Menu Item</h4>
+                <div class="flex items-center justify-between mb-6 border-b border-gray-100 pb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="menu-item-drag-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-xl border border-gray-200 transition-all flex items-center gap-1.5 shadow-2xs select-none group" title="Click and drag to reorder this menu item">
+                            <svg class="w-4 h-4 text-gray-500 group-hover:text-blue-600 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm6-12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>
+                            <span class="text-[11px] font-sans font-bold text-gray-600 group-hover:text-blue-600 tracking-wider uppercase">Drag</span>
+                        </div>
+                        <div class="flex items-center gap-0.5 bg-gray-50 border border-gray-200 rounded-lg p-0.5">
+                            <button type="button" class="move-item-up-btn p-1 text-gray-400 hover:text-blue-600 hover:bg-white rounded transition-colors" title="Move Up">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+                            </button>
+                            <button type="button" class="move-item-down-btn p-1 text-gray-400 hover:text-blue-600 hover:bg-white rounded transition-colors" title="Move Down">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                        </div>
+                        <h4 class="text-lg font-serif font-bold text-[#0b3c7c] menu-item-card-title flex items-center gap-2">
+                            <span class="item-title-display"><?= !empty($item['title']) ? htmlspecialchars($item['title']) : 'Edit Menu Item' ?></span>
+                            <span class="text-xs font-sans font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 order-badge">#<?= $index + 1 ?></span>
+                        </h4>
+                    </div>
+                    <button type="button" class="text-gray-400 hover:text-red-500 transition-colors remove-item-btn p-1.5 rounded-lg hover:bg-red-50" title="Remove menu item">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div>
@@ -305,10 +326,21 @@ $menuItems = $content['menu_items'] ?? [];
                     </div>
                 </div>
 
-                <!-- Dropdown Color Theme (shown when Is Dropdown is checked) -->
-                <div class="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-xl dropdown-theme-row">
-                    <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-3">DROPDOWN PANEL COLOR THEME</label>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Dropdown Options & Color Theme Section -->
+                <div class="mt-4 p-4 sm:p-5 bg-gray-50/90 border border-gray-200 rounded-2xl dropdown-config-section transition-all <?= empty($item['is_dropdown']) && empty($item['sub_items']) ? 'opacity-70' : '' ?>">
+                    <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-200">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            <span class="text-xs font-serif font-bold text-gray-700 uppercase tracking-wider">Dropdown Menu Options & Theme</span>
+                        </div>
+                        <button type="button" class="add-dropdown-option-btn text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 px-3 py-1.5 rounded-lg transition-all shadow-xs flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                            <span>Add Dropdown Option</span>
+                        </button>
+                    </div>
+
+                    <!-- Dropdown Panel Color Theme -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-[10px] font-serif font-bold text-gray-400 uppercase tracking-wider mb-1.5">PANEL BACKGROUND</label>
                             <div class="flex items-center gap-2 border border-gray-200 rounded-lg p-1.5 bg-white focus-within:border-brown transition-colors">
@@ -326,19 +358,61 @@ $menuItems = $content['menu_items'] ?? [];
                             </div>
                         </div>
                     </div>
+
+                    <!-- Dropdown Sub-Items List -->
+                    <div class="mt-3">
+                        <label class="block text-[11px] font-serif font-bold text-gray-600 uppercase tracking-wider mb-2">
+                            Custom Dropdown Links / Options
+                            <span class="text-[10px] font-sans font-normal text-gray-400 normal-case ml-1">(Adds clickable options to this dropdown menu)</span>
+                        </label>
+                        
+                        <div class="dropdown-options-container space-y-2.5">
+                            <?php 
+                                $subItems = !empty($item['sub_items']) && is_array($item['sub_items']) ? $item['sub_items'] : [];
+                                foreach ($subItems as $sIdx => $sItem):
+                                    $sTitle = $sItem['title'] ?? ($sItem['name'] ?? '');
+                                    $sUrl = $sItem['url'] ?? '';
+                            ?>
+                                <div class="dropdown-option-row flex items-center gap-2.5 p-2 bg-white rounded-xl border border-gray-200 shadow-2xs group hover:border-blue-300 transition-colors">
+                                    <span class="w-6 h-6 rounded-lg bg-gray-100 text-gray-500 font-mono text-xs flex items-center justify-center shrink-0 font-bold opt-number"><?= $sIdx + 1 ?></span>
+                                    <div class="flex-1 min-w-0">
+                                        <input type="text" name="menu_item_sub_title[<?= $index ?>][]" value="<?= htmlspecialchars($sTitle) ?>" placeholder="Option Name (e.g. Feeding Dresses)" class="w-full text-xs font-medium border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 outline-none transition-colors" required>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <input type="text" name="menu_item_sub_url[<?= $index ?>][]" value="<?= htmlspecialchars($sUrl) ?>" placeholder="Option URL (e.g. /catalog?cat=dresses)" class="w-full text-xs font-mono border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 outline-none transition-colors" required>
+                                    </div>
+                                    <button type="button" class="remove-dropdown-option-btn p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0" title="Remove option">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+
+                        <div class="no-options-placeholder text-center py-3 text-xs text-gray-400 bg-white/70 border border-dashed border-gray-200 rounded-xl mt-2 <?= !empty($subItems) ? 'hidden' : '' ?>">
+                            No custom dropdown options yet. Click <span class="font-bold text-blue-600">Add Dropdown Option</span> to add custom links.
+                        </div>
+                    </div>
                 </div>
 
                 <input type="hidden" name="menu_item_font_size[<?= $index ?>]" value="<?= htmlspecialchars($item['font_size'] ?? '') ?>">
                 <input type="hidden" name="menu_item_icon_size[<?= $index ?>]" value="<?= htmlspecialchars($item['icon_size'] ?? '') ?>">
                 
-                <div class="flex items-center gap-8 pt-4">
-                    <div class="flex items-center gap-2">
-                        <input type="checkbox" name="menu_item_is_dropdown[<?= $index ?>]" value="1" <?= !empty($item['is_dropdown']) ? 'checked' : '' ?> class="w-4 h-4 text-brown rounded border-gray-300 focus:ring-brown">
-                        <span class="font-bold text-gray-700">Is Dropdown Menu?</span>
+                <div class="flex items-center justify-between pt-6 mt-6 border-t border-gray-100">
+                    <div class="flex items-center gap-8">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" name="menu_item_is_dropdown[<?= $index ?>]" value="1" <?= !empty($item['is_dropdown']) ? 'checked' : '' ?> class="w-4 h-4 text-brown rounded border-gray-300 focus:ring-brown">
+                            <span class="font-bold text-gray-700">Is Dropdown Menu?</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" name="menu_item_active[<?= $index ?>]" value="1" <?= !isset($item['active']) || $item['active'] ? 'checked' : '' ?> class="w-4 h-4 text-blue-500 rounded border-gray-300 focus:ring-blue-500">
+                            <span class="text-gray-600">Active</span>
+                        </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <input type="checkbox" name="menu_item_active[<?= $index ?>]" value="1" <?= !isset($item['active']) || $item['active'] ? 'checked' : '' ?> class="w-4 h-4 text-blue-500 rounded border-gray-300 focus:ring-blue-500">
-                        <span class="text-gray-600">Active</span>
+                        <button type="button" class="insert-item-below-btn text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50/70 hover:bg-blue-100/70 px-3 py-1.5 rounded-lg border border-blue-200 transition-colors flex items-center gap-1.5" title="Insert a new menu item directly below this one">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                            <span>Insert Below</span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -369,11 +443,29 @@ $menuItems = $content['menu_items'] ?? [];
 <!-- Template for Menu Item -->
 <template id="menuItemTemplate">
     <div class="bg-white rounded-[1.5rem] shadow-sm border border-gray-100 p-8 relative menu-item-block section-form-wrapper">
-        <button type="button" class="absolute top-4 right-4 text-gray-400 hover:text-red-500 transition-colors remove-item-btn">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-        </button>
-        
-        <h4 class="text-lg font-serif font-bold text-[#0b3c7c] mb-6 border-b border-gray-100 pb-3">Add New Menu Item</h4>
+        <div class="flex items-center justify-between mb-6 border-b border-gray-100 pb-3">
+            <div class="flex items-center gap-3">
+                <div class="menu-item-drag-handle cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 px-3 py-1.5 rounded-xl border border-gray-200 transition-all flex items-center gap-1.5 shadow-2xs select-none group" title="Click and drag to reorder this menu item">
+                    <svg class="w-4 h-4 text-gray-500 group-hover:text-blue-600 transition-colors" fill="currentColor" viewBox="0 0 24 24"><path d="M8 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm6-12a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm0 6a2 2 0 1 1-4 0 2 2 0 0 1 4 0z"/></svg>
+                    <span class="text-[11px] font-sans font-bold text-gray-600 group-hover:text-blue-600 tracking-wider uppercase">Drag</span>
+                </div>
+                <div class="flex items-center gap-0.5 bg-gray-50 border border-gray-200 rounded-lg p-0.5">
+                    <button type="button" class="move-item-up-btn p-1 text-gray-400 hover:text-blue-600 hover:bg-white rounded transition-colors" title="Move Up">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/></svg>
+                    </button>
+                    <button type="button" class="move-item-down-btn p-1 text-gray-400 hover:text-blue-600 hover:bg-white rounded transition-colors" title="Move Down">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                    </button>
+                </div>
+                <h4 class="text-lg font-serif font-bold text-[#0b3c7c] menu-item-card-title flex items-center gap-2">
+                    <span class="item-title-display">New Menu Item</span>
+                    <span class="text-xs font-sans font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100 order-badge">#</span>
+                </h4>
+            </div>
+            <button type="button" class="text-gray-400 hover:text-red-500 transition-colors remove-item-btn p-1.5 rounded-lg hover:bg-red-50" title="Remove menu item">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div>
@@ -421,10 +513,21 @@ $menuItems = $content['menu_items'] ?? [];
             </div>
         </div>
 
-        <!-- Dropdown Color Theme -->
-        <div class="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-xl dropdown-theme-row">
-            <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-3">DROPDOWN PANEL COLOR THEME</label>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Dropdown Options & Color Theme Section -->
+        <div class="mt-4 p-4 sm:p-5 bg-gray-50/90 border border-gray-200 rounded-2xl dropdown-config-section transition-all opacity-70">
+            <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-200">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <span class="text-xs font-serif font-bold text-gray-700 uppercase tracking-wider">Dropdown Menu Options & Theme</span>
+                </div>
+                <button type="button" class="add-dropdown-option-btn text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 active:scale-95 px-3 py-1.5 rounded-lg transition-all shadow-xs flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Add Dropdown Option</span>
+                </button>
+            </div>
+
+            <!-- Dropdown Panel Color Theme -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                     <label class="block text-[10px] font-serif font-bold text-gray-400 uppercase tracking-wider mb-1.5">PANEL BACKGROUND</label>
                     <div class="flex items-center gap-2 border border-gray-200 rounded-lg p-1.5 bg-white focus-within:border-brown transition-colors">
@@ -442,24 +545,74 @@ $menuItems = $content['menu_items'] ?? [];
                     </div>
                 </div>
             </div>
+
+            <!-- Dropdown Sub-Items List -->
+            <div class="mt-3">
+                <label class="block text-[11px] font-serif font-bold text-gray-600 uppercase tracking-wider mb-2">
+                    Custom Dropdown Links / Options
+                    <span class="text-[10px] font-sans font-normal text-gray-400 normal-case ml-1">(Adds clickable options to this dropdown menu)</span>
+                </label>
+                
+                <div class="dropdown-options-container space-y-2.5"></div>
+
+                <div class="no-options-placeholder text-center py-3 text-xs text-gray-400 bg-white/70 border border-dashed border-gray-200 rounded-xl mt-2">
+                    No custom dropdown options yet. Click <span class="font-bold text-blue-600">Add Dropdown Option</span> to add custom links.
+                </div>
+            </div>
         </div>
 
 
         
-        <div class="flex items-center gap-8 pt-4">
-            <div class="flex items-center gap-2">
-                <input type="checkbox" name="menu_item_is_dropdown[__INDEX__]" value="1" class="w-4 h-4 text-brown rounded border-gray-300 focus:ring-brown">
-                <span class="font-bold text-gray-700">Is Dropdown Menu?</span>
+        <div class="flex items-center justify-between pt-6 mt-6 border-t border-gray-100">
+            <div class="flex items-center gap-8">
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="menu_item_is_dropdown[__INDEX__]" value="1" class="w-4 h-4 text-brown rounded border-gray-300 focus:ring-brown">
+                    <span class="font-bold text-gray-700">Is Dropdown Menu?</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="menu_item_active[__INDEX__]" value="1" checked class="w-4 h-4 text-blue-500 rounded border-gray-300 focus:ring-blue-500">
+                    <span class="text-gray-600">Active</span>
+                </div>
             </div>
             <div class="flex items-center gap-2">
-                <input type="checkbox" name="menu_item_active[__INDEX__]" value="1" checked class="w-4 h-4 text-blue-500 rounded border-gray-300 focus:ring-blue-500">
-                <span class="text-gray-600">Active</span>
+                <button type="button" class="insert-item-below-btn text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50/70 hover:bg-blue-100/70 px-3 py-1.5 rounded-lg border border-blue-200 transition-colors flex items-center gap-1.5" title="Insert a new menu item directly below this one">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Insert Below</span>
+                </button>
             </div>
         </div>
     </div>
 </template>
 
 <?php require_once __DIR__ . '/../../media/_selector_modal.php'; ?>
+
+<!-- Include SortableJS for Drag and Drop -->
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+<style>
+.sortable-ghost {
+    opacity: 0.35 !important;
+    background-color: #eff6ff !important;
+    border: 2px dashed #3b82f6 !important;
+}
+.sortable-drag {
+    opacity: 0.98 !important;
+    background-color: #ffffff !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    transform: scale(1.01) !important;
+}
+.sortable-chosen {
+    cursor: grabbing !important;
+}
+.menu-item-drag-handle {
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.menu-item-drag-handle:active {
+    cursor: grabbing;
+}
+</style>
 
 <script>
 function updateMultiSelectText(checkbox) {
@@ -715,13 +868,109 @@ document.addEventListener('DOMContentLoaded', function() {
     const menuItemsContainer = document.getElementById('menuItemsContainer');
     const addMenuItemBtn = document.getElementById('addMenuItemBtn');
     const template = document.getElementById('menuItemTemplate');
+    const navbarForm = document.getElementById('navbarForm');
+
+    function reindexMenuItems() {
+        const blocks = menuItemsContainer.querySelectorAll('.menu-item-block');
+        blocks.forEach((block, idx) => {
+            // Update names of all inputs, selects, textareas
+            block.querySelectorAll('input, select, textarea').forEach(input => {
+                if (!input.name) return;
+                input.name = input.name.replace(/\[\d+\]|\[__INDEX__\]/, `[${idx}]`);
+            });
+
+            // Update title text and order badge
+            const titleInput = block.querySelector('input[name^="menu_item_title"]');
+            const titleDisplay = block.querySelector('.item-title-display');
+            const orderBadge = block.querySelector('.order-badge');
+            if (titleDisplay) {
+                const val = titleInput && titleInput.value.trim() ? titleInput.value.trim() : 'Menu Item';
+                titleDisplay.textContent = val;
+            }
+            if (orderBadge) {
+                orderBadge.textContent = `#${idx + 1}`;
+            }
+
+            // Up/Down button states
+            const upBtn = block.querySelector('.move-item-up-btn');
+            const downBtn = block.querySelector('.move-item-down-btn');
+            if (upBtn) {
+                upBtn.disabled = (idx === 0);
+                upBtn.classList.toggle('opacity-30', idx === 0);
+                upBtn.classList.toggle('cursor-not-allowed', idx === 0);
+            }
+            if (downBtn) {
+                downBtn.disabled = (idx === blocks.length - 1);
+                downBtn.classList.toggle('opacity-30', idx === blocks.length - 1);
+                downBtn.classList.toggle('cursor-not-allowed', idx === blocks.length - 1);
+            }
+        });
+    }
+
+    function moveItemUp(block) {
+        const prev = block.previousElementSibling;
+        if (prev && prev.classList.contains('menu-item-block')) {
+            menuItemsContainer.insertBefore(block, prev);
+            reindexMenuItems();
+            block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function moveItemDown(block) {
+        const next = block.nextElementSibling;
+        if (next && next.classList.contains('menu-item-block')) {
+            menuItemsContainer.insertBefore(next, block);
+            reindexMenuItems();
+            block.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function insertMenuItemAfter(referenceBlock) {
+        let html = template.innerHTML;
+        html = html.replace(/__INDEX__/g, itemIndex++);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+        const newBlock = tempDiv.firstElementChild;
+        if (referenceBlock && referenceBlock.nextElementSibling) {
+            menuItemsContainer.insertBefore(newBlock, referenceBlock.nextElementSibling);
+        } else {
+            menuItemsContainer.appendChild(newBlock);
+        }
+        bindItemEvents(newBlock);
+        reindexMenuItems();
+        newBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const titleInput = newBlock.querySelector('input[name^="menu_item_title"]');
+        if (titleInput) titleInput.focus();
+    }
 
     function bindItemEvents(block) {
+        // Sync title input with card title in real time
+        const titleInput = block.querySelector('input[name^="menu_item_title"]');
+        const titleDisplay = block.querySelector('.item-title-display');
+        if (titleInput && titleDisplay) {
+            titleInput.addEventListener('input', () => {
+                titleDisplay.textContent = titleInput.value.trim() || 'Menu Item';
+            });
+        }
+
+        // Up & Down buttons
+        const upBtn = block.querySelector('.move-item-up-btn');
+        if (upBtn) upBtn.addEventListener('click', (e) => { e.stopPropagation(); moveItemUp(block); });
+
+        const downBtn = block.querySelector('.move-item-down-btn');
+        if (downBtn) downBtn.addEventListener('click', (e) => { e.stopPropagation(); moveItemDown(block); });
+
+        // Insert below button
+        const insertBtn = block.querySelector('.insert-item-below-btn');
+        if (insertBtn) insertBtn.addEventListener('click', (e) => { e.stopPropagation(); insertMenuItemAfter(block); });
+
         // Color pickers inside item
         const tPicker = block.querySelector('.item_text_color_picker');
         const tText = block.querySelector('.item_text_color_text');
-        tPicker.addEventListener('input', () => { tText.value = tPicker.value; });
-        tText.addEventListener('input', () => { tPicker.value = tText.value; });
+        if (tPicker && tText) {
+            tPicker.addEventListener('input', () => { tText.value = tPicker.value; });
+            tText.addEventListener('input', () => { tPicker.value = tText.value; });
+        }
 
         const bPicker = block.querySelector('.item_bg_color_picker');
         const bText = block.querySelector('.item_bg_color_text');
@@ -732,10 +981,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Remove buttons
         const topRemove = block.querySelector('.remove-item-btn');
-        if (topRemove) topRemove.addEventListener('click', () => block.remove());
+        if (topRemove) topRemove.addEventListener('click', () => {
+            block.remove();
+            reindexMenuItems();
+        });
         
         const bottomRemove = block.querySelector('.remove-item-btn-bottom');
-        if (bottomRemove) bottomRemove.addEventListener('click', () => block.remove());
+        if (bottomRemove) bottomRemove.addEventListener('click', () => {
+            block.remove();
+            reindexMenuItems();
+        });
 
         // Dropdown BG color pickers
         const dbPicker = block.querySelector('.dropdown_bg_picker');
@@ -770,14 +1025,93 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
+
+        // Dropdown options management
+        const addOptBtn = block.querySelector('.add-dropdown-option-btn');
+        const optContainer = block.querySelector('.dropdown-options-container');
+        const noOptPlaceholder = block.querySelector('.no-options-placeholder');
+        const isDropdownCb = block.querySelector('input[name^="menu_item_is_dropdown"]');
+        const dropdownSection = block.querySelector('.dropdown-config-section');
+
+        function updateOptionNumbers() {
+            if (!optContainer) return;
+            const rows = optContainer.querySelectorAll('.dropdown-option-row');
+            rows.forEach((row, rIdx) => {
+                const numEl = row.querySelector('.opt-number');
+                if (numEl) numEl.textContent = (rIdx + 1);
+            });
+            if (noOptPlaceholder) {
+                noOptPlaceholder.classList.toggle('hidden', rows.length > 0);
+            }
+        }
+
+        if (addOptBtn && optContainer) {
+            addOptBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (isDropdownCb) isDropdownCb.checked = true;
+                if (dropdownSection) dropdownSection.classList.remove('opacity-70');
+
+                // Determine parent index
+                const anyInput = block.querySelector('input[name^="menu_item_title"]');
+                let parentIdx = '0';
+                if (anyInput) {
+                    const match = anyInput.name.match(/\[(\d+|__INDEX__)\]/);
+                    if (match) parentIdx = match[1];
+                }
+
+                const rowDiv = document.createElement('div');
+                rowDiv.className = 'dropdown-option-row flex items-center gap-2.5 p-2 bg-white rounded-xl border border-gray-200 shadow-2xs group hover:border-blue-300 transition-colors';
+                rowDiv.innerHTML = `
+                    <span class="w-6 h-6 rounded-lg bg-gray-100 text-gray-500 font-mono text-xs flex items-center justify-center shrink-0 font-bold opt-number">#</span>
+                    <div class="flex-1 min-w-0">
+                        <input type="text" name="menu_item_sub_title[${parentIdx}][]" placeholder="Option Name (e.g. Feeding Dresses)" class="w-full text-xs font-medium border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 outline-none transition-colors" required>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <input type="text" name="menu_item_sub_url[${parentIdx}][]" placeholder="Option URL (e.g. /catalog?cat=dresses)" class="w-full text-xs font-mono border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 outline-none transition-colors" required>
+                    </div>
+                    <button type="button" class="remove-dropdown-option-btn p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors shrink-0" title="Remove option">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                `;
+                optContainer.appendChild(rowDiv);
+                updateOptionNumbers();
+                const newInput = rowDiv.querySelector('input[type="text"]');
+                if (newInput) newInput.focus();
+            });
+
+            optContainer.addEventListener('click', (e) => {
+                const removeBtn = e.target.closest('.remove-dropdown-option-btn');
+                if (removeBtn) {
+                    e.stopPropagation();
+                    const row = removeBtn.closest('.dropdown-option-row');
+                    if (row) {
+                        row.remove();
+                        updateOptionNumbers();
+                    }
+                }
+            });
+        }
+
+        if (isDropdownCb && dropdownSection) {
+            isDropdownCb.addEventListener('change', () => {
+                if (isDropdownCb.checked) {
+                    dropdownSection.classList.remove('opacity-70');
+                } else {
+                    const rowCount = optContainer ? optContainer.querySelectorAll('.dropdown-option-row').length : 0;
+                    if (rowCount === 0) {
+                        dropdownSection.classList.add('opacity-70');
+                    }
+                }
+            });
+        }
     }
 
     // Bind existing blocks
     menuItemsContainer.querySelectorAll('.menu-item-block').forEach(bindItemEvents);
+    reindexMenuItems();
 
     let itemIndex = menuItemsContainer.querySelectorAll('.menu-item-block').length;
     addMenuItemBtn.addEventListener('click', function() {
-        // Replace __INDEX__ with a unique index so array inputs don't collide
         let html = template.innerHTML;
         html = html.replace(/__INDEX__/g, itemIndex++);
         const tempDiv = document.createElement('div');
@@ -785,6 +1119,31 @@ document.addEventListener('DOMContentLoaded', function() {
         const block = tempDiv.firstElementChild;
         menuItemsContainer.appendChild(block);
         bindItemEvents(block);
+        reindexMenuItems();
+        block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const titleInput = block.querySelector('input[name^="menu_item_title"]');
+        if (titleInput) titleInput.focus();
     });
+
+    // Initialize SortableJS
+    if (typeof Sortable !== 'undefined') {
+        new Sortable(menuItemsContainer, {
+            animation: 180,
+            handle: '.menu-item-drag-handle',
+            draggable: '.menu-item-block',
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            chosenClass: 'sortable-chosen',
+            onEnd: function() {
+                reindexMenuItems();
+            }
+        });
+    }
+
+    if (navbarForm) {
+        navbarForm.addEventListener('submit', function() {
+            reindexMenuItems();
+        });
+    }
 });
 </script>

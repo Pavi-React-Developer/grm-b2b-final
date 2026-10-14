@@ -112,11 +112,17 @@ class BuyerController extends Controller
         
         $orderHistory = $orderModel->getOrdersByUser((int)$id, $limit, $offset);
 
+        $db = \Core\Database::getInstance();
+        $emailLogsStmt = $db->prepare("SELECT * FROM user_email_logs WHERE user_id = ? ORDER BY created_at DESC");
+        $emailLogsStmt->execute([(int)$id]);
+        $emailLogs = $emailLogsStmt->fetchAll(\PDO::FETCH_ASSOC);
+
         $this->render('admin/buyer_view', [
             'title' => 'Review Buyer Registration',
             'buyer' => $buyer,
             'orderStats' => $orderStats,
             'orderHistory' => $orderHistory,
+            'emailLogs' => $emailLogs,
             'currentPage' => $page,
             'totalPages' => $totalPages,
             'totalOrders' => $totalOrdersCount
