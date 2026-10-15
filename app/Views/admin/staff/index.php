@@ -108,23 +108,23 @@
                             </div>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div class="flex justify-end space-x-3 items-center">
+                            <div class="flex justify-end space-x-2 items-center">
                                 <!-- History Icon -->
-                                <button class="text-blue-500 hover:text-blue-700 transition-colors" title="History">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <button class="inline-flex items-center justify-center p-1 text-indigo-600 hover:text-indigo-800 transition-colors" title="History">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                 </button>
                                 <!-- Edit Icon -->
                                 <?php if ($this->hasPermission('staff_management', 'edit')): ?>
-                                <a href="<?= BASE_URL ?>/admin/staff/edit?id=<?= $user['id'] ?>" class="text-emerald-500 hover:text-emerald-700 transition-colors" title="Edit">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                <a href="<?= BASE_URL ?>/admin/staff/edit?id=<?= $user['id'] ?>" class="inline-flex items-center justify-center p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit">
+                                    <i class="bi bi-pencil-square text-lg"></i>
                                 </a>
                                 <?php endif; ?>
                                 <!-- Delete Icon -->
                                 <?php if ($user['id'] != \Core\Session::get('user_id') && $this->hasPermission('staff_management', 'delete')): ?>
                                 <form action="<?= BASE_URL ?>/admin/staff/delete" method="POST" class="inline m-0 p-0" onsubmit="return confirm('Delete this staff member?');">
                                     <input type="hidden" name="id" value="<?= $user['id'] ?>">
-                                    <button type="submit" class="text-red-400 hover:text-red-600 transition-colors" title="Delete">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    <button type="submit" class="inline-flex items-center justify-center p-1 text-red-600 hover:text-red-800 transition-colors" title="Delete">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     </button>
                                 </form>
                                 <?php endif; ?>

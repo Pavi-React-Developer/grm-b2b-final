@@ -126,10 +126,12 @@
                             </div>
                         </div>
                         <?php if ($this->hasPermission('inventory', 'edit')): ?>
-                        <button onclick="openEditStockModal('p_<?= $product['id'] ?>')" class="text-indigo-600 hover:text-indigo-800 transition-colors text-xs font-bold flex items-center gap-1">
-                            <svg class="w-4 h-4 icon-16" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                            Edit Stock
-                        </button>
+                        <div class="pt-1">
+                            <button type="button" onclick="openEditStockModal('p_<?= $product['id'] ?>')" class="inline-flex items-center gap-1.5 px-4 py-1.5 bg-pink-50 hover:bg-pink-100 text-[#F25996] border border-pink-200 hover:border-pink-300 rounded-full text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-95 whitespace-nowrap">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                <span>Edit Stock</span>
+                            </button>
+                        </div>
                         <?php endif; ?>
                     </div>
                 <?php else: ?>
@@ -158,10 +160,12 @@
                                 </div>
                             </div>
                             <?php if ($this->hasPermission('inventory', 'edit')): ?>
-                            <button onclick="openEditStockModal('<?= $variant['id'] ?>')" class="text-indigo-600 hover:text-indigo-800 transition-colors text-xs font-bold flex items-center gap-1">
-                                <svg class="w-4 h-4 icon-16" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
-                                Edit Stock
-                            </button>
+                            <div class="pt-1">
+                                <button type="button" onclick="openEditStockModal('<?= $variant['id'] ?>')" class="inline-flex items-center gap-1.5 px-4 py-1.5 bg-pink-50 hover:bg-pink-100 text-[#F25996] border border-pink-200 hover:border-pink-300 rounded-full text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-95 whitespace-nowrap">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                    <span>Edit Stock</span>
+                                </button>
+                            </div>
                             <?php endif; ?>
                         </div>
                     <?php endforeach; ?>

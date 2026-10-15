@@ -17,9 +17,14 @@ class AuthController extends Controller
     public function showLogin()
     {
         if (Session::get('user_id')) {
-            $this->redirect('/');
+            $redirect = !empty($_GET['redirect']) ? $_GET['redirect'] : '/';
+            $this->redirect($redirect);
+            return;
         }
-        $this->render('storefront/login', ['title' => 'Login']);
+        $this->render('storefront/login', [
+            'title'    => 'Login',
+            'redirect' => $_GET['redirect'] ?? ''
+        ]);
     }
 
     public function login()
@@ -156,7 +161,11 @@ class AuthController extends Controller
             }
 
             Session::setFlash('success', 'Welcome back, ' . htmlspecialchars($user['name']) . '!');
-            $this->redirect('/');
+            $redirect = !empty($_POST['redirect']) ? $_POST['redirect'] : (!empty($_GET['redirect']) ? $_GET['redirect'] : '/');
+            if (!is_string($redirect) || strpos($redirect, '/') !== 0 || strpos($redirect, '//') === 0) {
+                $redirect = '/';
+            }
+            $this->redirect($redirect);
             return;
         } else {
             Session::setFlash('error', 'Invalid email/phone or password. Please try again.');

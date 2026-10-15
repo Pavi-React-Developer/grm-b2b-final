@@ -23,10 +23,9 @@ class CategoryController extends Controller
 
     public function index()
     {
-        $this->requirePermission('categories', 'view');
-        
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_categories' : 'categories', 'view');
 
         $categoryModel = new Category();
         $categories = $categoryModel->getAll($isCustomize ? 1 : 0);
@@ -58,10 +57,9 @@ class CategoryController extends Controller
 
     public function updateGlobalCartLimit()
     {
-        $this->requirePermission('categories', 'edit');
-
         $module = $_POST['module'] ?? '';
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_categories' : 'categories', 'edit');
         $redirectUrl = '/admin/catalog/categories' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -98,10 +96,9 @@ class CategoryController extends Controller
 
     public function store()
     {
-        $this->requirePermission('categories', 'create');
-
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize') || (!empty($_POST['is_customizable']) && (int)$_POST['is_customizable'] === 1);
+        $this->requirePermission($isCustomize ? 'customize_categories' : 'categories', 'create');
         $redirectUrl = '/admin/catalog/categories' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -144,10 +141,26 @@ class CategoryController extends Controller
         if (empty($data['name'])) {
             Session::setFlash('error', 'Name is required.');
             $this->redirect($redirectUrl);
+            return;
+        }
+
+        if (!empty($data['hsn_code']) && !preg_match('/^\d+$/', $data['hsn_code'])) {
+            Session::setFlash('error', 'HSN Code must contain only numbers.');
+            $this->redirect($redirectUrl);
+            return;
         }
 
         try {
             $categoryModel = new Category();
+
+            // Prevent duplicate category names
+            $existingDuplicate = $categoryModel->findByName($data['name'], $isCustomize ? 1 : 0);
+            if ($existingDuplicate) {
+                Session::setFlash('error', 'A category named "' . htmlspecialchars($data['name']) . '" already exists. Duplicate categories are not allowed.');
+                $this->redirect($redirectUrl);
+                return;
+            }
+
             $categoryModel->create($data);
             Session::setFlash('success', ($isCustomize ? 'Customize Category' : 'Category') . ' created successfully.');
         } catch (\Exception $e) {
@@ -159,10 +172,9 @@ class CategoryController extends Controller
 
     public function update()
     {
-        $this->requirePermission('categories', 'edit');
-
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize') || (!empty($_POST['is_customizable']) && (int)$_POST['is_customizable'] === 1);
+        $this->requirePermission($isCustomize ? 'customize_categories' : 'categories', 'edit');
         $redirectUrl = '/admin/catalog/categories' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -214,10 +226,25 @@ class CategoryController extends Controller
         if ($id <= 0 || empty($data['name']) || empty($data['slug'])) {
             Session::setFlash('error', 'Invalid input.');
             $this->redirect($redirectUrl);
+            return;
+        }
+
+        if (!empty($data['hsn_code']) && !preg_match('/^\d+$/', $data['hsn_code'])) {
+            Session::setFlash('error', 'HSN Code must contain only numbers.');
+            $this->redirect($redirectUrl);
+            return;
         }
 
         try {
             $categoryModel = new Category();
+
+            // Prevent duplicate category names
+            $existingDuplicate = $categoryModel->findByName($data['name'], $isCustomize ? 1 : 0, $id);
+            if ($existingDuplicate) {
+                Session::setFlash('error', 'A category named "' . htmlspecialchars($data['name']) . '" already exists. Duplicate categories are not allowed.');
+                $this->redirect($redirectUrl);
+                return;
+            }
             $categoryModel->update($id, $data);
 
             // Sync updated GST rates to all products & variants in this category
@@ -258,10 +285,9 @@ class CategoryController extends Controller
 
     public function delete()
     {
-        $this->requirePermission('categories', 'delete');
-
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_categories' : 'categories', 'delete');
         $redirectUrl = '/admin/catalog/categories' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -280,6 +306,11 @@ class CategoryController extends Controller
         if ($id > 0) {
             try {
                 $categoryModel = new Category();
+                $existingCat = $categoryModel->findById($id);
+                if ($existingCat && !empty($existingCat['is_customizable'])) {
+                    $isCustomize = true;
+                    $redirectUrl = '/admin/catalog/categories?module=customize';
+                }
                 $categoryModel->delete($id);
                 if (class_exists('\Core\Cache')) {
                     \Core\Cache::delete('catalog_active');
@@ -301,7 +332,9 @@ class CategoryController extends Controller
 
     public function checkDelete()
     {
-        $this->requirePermission('categories', 'delete');
+        $module = $_GET['module'] ?? '';
+        $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_categories' : 'categories', 'delete');
         $id = (int)($_GET['id'] ?? 0);
         
         if (ob_get_length()) ob_clean();
@@ -309,8 +342,14 @@ class CategoryController extends Controller
         
         if ($id > 0) {
             $categoryModel = new Category();
-            $count = $categoryModel->getProductCount($id);
-            echo json_encode(['success' => true, 'count' => $count]);
+            $counts = $categoryModel->getCounts($id);
+            echo json_encode([
+                'success' => true,
+                'count' => $counts['product_count'],
+                'product_count' => $counts['product_count'],
+                'subcategory_count' => $counts['subcategory_count'],
+                'attribute_count' => $counts['attribute_count'] ?? 0
+            ]);
             exit;
         }
         

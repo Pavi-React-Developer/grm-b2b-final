@@ -91,14 +91,14 @@ $gridTemplate = implode(' ', $gridParts);
                 <?php endif; ?>
 
                 <?php if (!empty($activeSocials)): ?>
-                <div style="display:flex; align-items:center; gap:1rem; padding-top:0.25rem;">
+                <div style="display:flex; align-items:center; gap:1.25rem; padding-top:0.5rem; flex-wrap:wrap;">
                     <?php foreach ($activeSocials as $network => $url): ?>
                         <a href="<?= htmlspecialchars($url) ?>" target="_blank" rel="noopener noreferrer"
                            title="<?= ucfirst($network) ?>"
-                           style="color:<?= htmlspecialchars($linkColor) ?>; opacity:0.75; transition:opacity 0.2s;"
-                           onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.75'">
-                            <svg style="width:1.25rem; height:1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.6" d="<?= $socialIcons[$network] ?? '' ?>"/>
+                           style="display:inline-flex; align-items:center; justify-content:center; color:<?= htmlspecialchars($linkColor) ?>; opacity:0.85; transition:all 0.2s ease-in-out;"
+                           onmouseover="this.style.opacity='1'; this.style.transform='scale(1.15)';" onmouseout="this.style.opacity='0.85'; this.style.transform='scale(1)';">
+                            <svg style="width:2rem; height:2rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="<?= $socialIcons[$network] ?? '' ?>"/>
                             </svg>
                         </a>
                     <?php endforeach; ?>

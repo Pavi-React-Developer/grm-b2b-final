@@ -52,43 +52,54 @@ $db = \Core\Database::getInstance();
 $catProducts = [];
 $catProductCounts = [];
 if (!empty($category_ids)) {
-    // We fetch products for these categories. Note that there might be no category_id in products table directly if it's many-to-many, but in this schema it seems to be category_id.
-    // Let's check if category_id exists. It usually does.
     $ids = implode(',', array_map('intval', $category_ids));
-    try {
-        $stmt = $db->query("
-            SELECT p.*, 
-                   c.sgst as category_sgst, c.cgst as category_cgst, c.moq as category_moq,
-                   (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
-                   pv_agg.base_price,
-                   pv_agg.discount_price
-            FROM products p 
-            LEFT JOIN categories c ON c.id = p.category_id
-            LEFT JOIN (
-                SELECT product_id,
-                       MIN(base_price) AS base_price,
-                       MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price
-                FROM product_variants
-                GROUP BY product_id
-            ) pv_agg ON pv_agg.product_id = p.id
-            WHERE p.category_id IN ($ids) AND p.status = 'active' 
-            ORDER BY p.id DESC
-        ");
-        $productsRaw = $stmt->fetchAll();
-        
-        foreach ($productsRaw as $p) {
-            $cId = $p['category_id'];
-            if (!isset($catProducts[$cId])) {
-                $catProducts[$cId] = [];
-                $catProductCounts[$cId] = 0;
+    $cgCacheKey = 'catgrid_products_' . md5($ids);
+    $cachedData = (empty($_GET['preview']) && class_exists('\Core\Cache')) ? \Core\Cache::get($cgCacheKey) : null;
+    if ($cachedData !== null) {
+        $catProducts = $cachedData['products'] ?? [];
+        $catProductCounts = $cachedData['counts'] ?? [];
+    } else {
+        try {
+            $stmt = $db->query("
+                SELECT p.*, 
+                       c.sgst as category_sgst, c.cgst as category_cgst, c.moq as category_moq,
+                       (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
+                       pv_agg.base_price,
+                       pv_agg.discount_price
+                FROM products p 
+                JOIN categories c ON c.id = p.category_id AND c.status = 'active'
+                LEFT JOIN (
+                    SELECT product_id,
+                           MIN(base_price) AS base_price,
+                           MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price
+                    FROM product_variants
+                    GROUP BY product_id
+                ) pv_agg ON pv_agg.product_id = p.id
+                WHERE p.category_id IN ($ids) AND p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL)
+                ORDER BY p.id DESC
+            ");
+            $productsRaw = $stmt->fetchAll();
+            
+            foreach ($productsRaw as $p) {
+                $cId = $p['category_id'];
+                if (!isset($catProducts[$cId])) {
+                    $catProducts[$cId] = [];
+                    $catProductCounts[$cId] = 0;
+                }
+                if (count($catProducts[$cId]) < 12) { // keep up to 12 for horizontal slider track
+                    $catProducts[$cId][] = $p;
+                }
+                $catProductCounts[$cId]++;
             }
-            if (count($catProducts[$cId]) < 12) { // keep up to 12 for horizontal slider track
-                $catProducts[$cId][] = $p;
+            if (empty($_GET['preview']) && class_exists('\Core\Cache')) {
+                \Core\Cache::set($cgCacheKey, [
+                    'products' => $catProducts,
+                    'counts' => $catProductCounts
+                ], 3600);
             }
-            $catProductCounts[$cId]++;
+        } catch (\Exception $e) {
+            // Fallback or ignore if query fails (e.g. wrong schema)
         }
-    } catch (\Exception $e) {
-        // Fallback or ignore if query fails (e.g. wrong schema)
     }
 }
 ?>
@@ -548,7 +559,7 @@ if (!empty($category_ids)) {
                                         </div>
                                     <?php else: ?>
                                         <div class="mt-auto pt-2 border-t border-gray-100">
-                                            <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#b94a3e] font-semibold py-1 text-xs md:text-[11px] lg:text-xs hover:underline leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                                            <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-semibold py-1 text-xs md:text-[11px] lg:text-xs hover:underline leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
                                                 <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                                 <span class="truncate">Register to view price</span>
                                             </a>
@@ -676,7 +687,7 @@ if (!empty($category_ids)) {
                                 </form>
                             </div>
                             <?php else: ?>
-                            <a href="<?= BASE_URL ?>/login" style="font-size:0.75rem; color:#b94a3e; font-weight:600; margin-top:auto; display:block; padding-top:0.3rem;">Login to view price</a>
+                            <a href="<?= BASE_URL ?>/login" style="font-size:0.75rem; color:#F25996; font-weight:600; margin-top:auto; display:block; padding-top:0.3rem;">Login to view price</a>
                             <?php endif; ?>
                         </div>
                     </div>

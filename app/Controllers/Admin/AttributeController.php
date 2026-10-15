@@ -22,9 +22,9 @@ class AttributeController extends Controller
 
     public function index()
     {
-        $this->requirePermission('attributes', 'view');
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'view');
 
         $attributeModel = new Attribute();
         $attributes = $attributeModel->getAll($isCustomize ? 1 : 0);
@@ -44,9 +44,9 @@ class AttributeController extends Controller
 
     public function create()
     {
-        $this->requirePermission('attributes', 'create');
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'create');
 
         $categoryModel = new Category();
         $categories = $categoryModel->getAllActive(null, $isCustomize ? 1 : 0);
@@ -61,10 +61,10 @@ class AttributeController extends Controller
 
     public function edit()
     {
-        $this->requirePermission('attributes', 'edit');
         $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'edit');
 
         $attributeModel = new Attribute();
         $attribute = $attributeModel->findById($id);
@@ -99,7 +99,9 @@ class AttributeController extends Controller
 
     public function store()
     {
-        $this->requirePermission('attributes', 'create');
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'create');
         $isJson = (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')
             || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false);
 
@@ -120,6 +122,91 @@ class AttributeController extends Controller
             return;
         }
 
+        $db = \Core\Database::getInstance();
+        $description = trim($_POST['description'] ?? '');
+
+        // Handle values (supports both array and comma-separated string)
+        $rawValues = $_POST['values'] ?? [];
+        $colorCodes = $_POST['color_codes'] ?? [];
+        
+        if (is_string($rawValues)) {
+            $values = array_filter(array_map('trim', explode(',', $rawValues)), fn($v) => $v !== '');
+        } else {
+            $values = (array)$rawValues;
+        }
+
+        // Check if an attribute with the same name already exists in this category
+        if ($subCategoryId) {
+            $stmtExists = $db->prepare("
+                SELECT * FROM attributes 
+                WHERE category_id = ? 
+                  AND (sub_category_id = ? OR sub_category_id IS NULL)
+                  AND LOWER(TRIM(name)) = LOWER(TRIM(?))
+                LIMIT 1
+            ");
+            $stmtExists->execute([$categoryId, $subCategoryId, $name]);
+        } else {
+            $stmtExists = $db->prepare("
+                SELECT * FROM attributes 
+                WHERE category_id = ? 
+                  AND LOWER(TRIM(name)) = LOWER(TRIM(?))
+                LIMIT 1
+            ");
+            $stmtExists->execute([$categoryId, $name]);
+        }
+        $existingAttr = $stmtExists->fetch(\PDO::FETCH_ASSOC);
+
+        if ($existingAttr) {
+            $attributeId = (int)$existingAttr['id'];
+
+            // Update description if newly provided
+            if (!empty($description) && (empty($existingAttr['description']) || $existingAttr['description'] !== $description)) {
+                $db->prepare("UPDATE attributes SET description = ? WHERE id = ?")->execute([$description, $attributeId]);
+            }
+
+            // Append new values under existing attribute without duplicates
+            if (!empty($values)) {
+                $existingValsStmt = $db->prepare("SELECT LOWER(TRIM(value)) FROM attribute_values WHERE attribute_id = ?");
+                $existingValsStmt->execute([$attributeId]);
+                $existingValList = $existingValsStmt->fetchAll(\PDO::FETCH_COLUMN);
+
+                $attributeValueModel = new AttributeValue();
+                $idx = 0;
+                foreach ($values as $valKey => $val) {
+                    $val = trim((string)$val);
+                    if ($val === '') continue;
+
+                    if (!in_array(strtolower($val), $existingValList)) {
+                        $colorCode = isset($colorCodes[$valKey]) ? trim($colorCodes[$valKey]) : (isset($colorCodes[$idx]) ? trim($colorCodes[$idx]) : null);
+                        $attributeValueModel->create([
+                            'attribute_id' => $attributeId,
+                            'value' => $val,
+                            'color_code' => !empty($colorCode) ? $colorCode : null
+                        ]);
+                        $existingValList[] = strtolower($val);
+                    }
+                    $idx++;
+                }
+            }
+
+            $successMsg = "Added new options to existing '{$name}' attribute!";
+            if ($isJson) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => $successMsg,
+                    'attribute_id' => $attributeId,
+                    'name' => $name,
+                    'merged' => true
+                ]);
+                exit;
+            }
+
+            Session::setFlash('success', $successMsg);
+            $redirectUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
+            $this->redirect($redirectUrl);
+            return;
+        }
+
         // Auto-generate attribute_code if empty
         if (empty($code)) {
             $code = strtolower(preg_replace('/[^a-zA-Z0-9]+/', '_', $name));
@@ -128,7 +215,6 @@ class AttributeController extends Controller
         }
 
         // Ensure unique attribute code
-        $db = \Core\Database::getInstance();
         $stmtCode = $db->prepare("SELECT COUNT(*) FROM attributes WHERE attribute_code = ?");
         $stmtCode->execute([$code]);
         if ($stmtCode->fetchColumn() > 0) {
@@ -141,7 +227,7 @@ class AttributeController extends Controller
             'name' => $name,
             'attribute_code' => $code,
             'input_type' => $inputType,
-            'description' => trim($_POST['description'] ?? ''),
+            'description' => $description,
             'display_order' => (int)($_POST['display_order'] ?? 0),
             'status' => $_POST['status'] ?? 'active',
             'is_required' => isset($_POST['is_required']) ? 1 : 0,
@@ -155,16 +241,6 @@ class AttributeController extends Controller
         try {
             $attributeModel = new Attribute();
             $attributeId = $attributeModel->create($data);
-            
-            // Handle values (supports both array and comma-separated string)
-            $rawValues = $_POST['values'] ?? [];
-            $colorCodes = $_POST['color_codes'] ?? [];
-            
-            if (is_string($rawValues)) {
-                $values = array_filter(array_map('trim', explode(',', $rawValues)), fn($v) => $v !== '');
-            } else {
-                $values = (array)$rawValues;
-            }
 
             if (!empty($values)) {
                 $attributeValueModel = new AttributeValue();
@@ -213,9 +289,9 @@ class AttributeController extends Controller
 
     public function update()
     {
-        $this->requirePermission('attributes', 'edit');
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'edit');
         $redirectListUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -308,9 +384,9 @@ class AttributeController extends Controller
 
     public function delete()
     {
-        $this->requirePermission('attributes', 'delete');
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'delete');
         $redirectListUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -372,9 +448,11 @@ class AttributeController extends Controller
 
     public function storeValue()
     {
-        $this->requirePermission('attributes', 'create');
+        $module = $_POST['module'] ?? ($_GET['module'] ?? '');
+        $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'create');
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $this->redirect('/admin/catalog/attributes');
+            $this->redirect('/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : ''));
         }
 
         $attributeId = (int)($_POST['attribute_id'] ?? 0);
@@ -382,7 +460,7 @@ class AttributeController extends Controller
 
         if ($attributeId <= 0 || empty($value)) {
             Session::setFlash('error', 'Attribute and Value are required.');
-            $this->redirect('/admin/catalog/attributes');
+            $this->redirect('/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : ''));
         }
 
         try {
@@ -393,14 +471,14 @@ class AttributeController extends Controller
             Session::setFlash('error', 'Error adding value: ' . $e->getMessage());
         }
 
-        $this->redirect('/admin/catalog/attributes');
+        $this->redirect('/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : ''));
     }
 
     public function deleteValue()
     {
-        $this->requirePermission('attributes', 'delete');
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_attributes' : 'attributes', 'delete');
         $redirectUrl = '/admin/catalog/attributes' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -441,32 +519,68 @@ class AttributeController extends Controller
         
         if ($categoryId <= 0) {
             echo json_encode([]);
-            return;
+            exit;
         }
 
-        $attributeModel = new Attribute();
         $db = \Core\Database::getInstance();
         
-        // Fetch active attributes that belong to the category AND (sub_category is null OR matches)
-        $sql = "SELECT * FROM attributes 
-                WHERE status = 'active' 
-                AND category_id = :category_id 
-                AND (sub_category_id IS NULL OR sub_category_id = :sub_category_id)
-                ORDER BY display_order ASC";
-        
-        $stmt = $db->prepare($sql);
-        $stmt->execute([
-            'category_id' => $categoryId,
-            'sub_category_id' => $subCategoryId > 0 ? $subCategoryId : null
-        ]);
-        $attributes = $stmt->fetchAll();
+        if ($subCategoryId > 0) {
+            $sql = "SELECT * FROM attributes 
+                    WHERE status = 'active' 
+                    AND category_id = :category_id 
+                    AND (sub_category_id IS NULL OR sub_category_id = :sub_category_id)
+                    ORDER BY display_order ASC, name ASC";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([
+                'category_id' => $categoryId,
+                'sub_category_id' => $subCategoryId
+            ]);
+        } else {
+            $sql = "SELECT * FROM attributes 
+                    WHERE status = 'active' 
+                    AND category_id = :category_id 
+                    ORDER BY display_order ASC, name ASC";
+            $stmt = $db->prepare($sql);
+            $stmt->execute([
+                'category_id' => $categoryId
+            ]);
+        }
+        $attributes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         $attributeValueModel = new AttributeValue();
-        foreach ($attributes as &$attr) {
-            $attr['values'] = $attributeValueModel->getByAttributeId($attr['id']);
+        $mergedAttributes = [];
+        $nameIndex = [];
+
+        foreach ($attributes as $attr) {
+            $attrKey = strtolower(trim($attr['name']));
+            $attrValues = $attributeValueModel->getByAttributeId($attr['id']);
+
+            if (isset($nameIndex[$attrKey])) {
+                // Merge options into already registered attribute
+                $existingIdx = $nameIndex[$attrKey];
+                $existingValTexts = array_map(fn($v) => strtolower(trim($v['value'])), $mergedAttributes[$existingIdx]['values']);
+
+                foreach ($attrValues as $val) {
+                    $valLower = strtolower(trim($val['value']));
+                    if (!in_array($valLower, $existingValTexts)) {
+                        $mergedAttributes[$existingIdx]['values'][] = $val;
+                        $existingValTexts[] = $valLower;
+                    }
+                }
+
+                // Keep description if original was empty
+                if (empty($mergedAttributes[$existingIdx]['description']) && !empty($attr['description'])) {
+                    $mergedAttributes[$existingIdx]['description'] = $attr['description'];
+                }
+            } else {
+                $attr['values'] = $attrValues;
+                $nameIndex[$attrKey] = count($mergedAttributes);
+                $mergedAttributes[] = $attr;
+            }
         }
 
-        echo json_encode($attributes);
+        echo json_encode($mergedAttributes);
+        exit;
     }
 
     private function isJsonRequest(): bool

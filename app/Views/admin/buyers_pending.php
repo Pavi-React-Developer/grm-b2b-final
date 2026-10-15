@@ -85,7 +85,7 @@
                                     <?= date('M j, Y', strtotime($buyer['created_at'])) ?>
                                 </td>
                                 <td class="px-6 py-4 text-right space-x-2">
-                                    <a href="<?= BASE_URL ?>/admin/buyers/view?id=<?= $buyer['id'] ?>" class="inline-flex items-center justify-center p-2 text-gray-500 hover:text-brand-600 hover:bg-gray-100 rounded-lg transition-colors align-middle" title="View Details">
+                                    <a href="<?= BASE_URL ?>/admin/buyers/view?id=<?= $buyer['id'] ?>" class="text-emerald-600 hover:text-emerald-800 transition-colors inline-block align-middle" title="View Details">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     </a>
                                     <?php if ($this->hasPermission('pending_buyers', 'edit')): ?>
@@ -158,7 +158,7 @@
                                     <?= date('M j, Y', strtotime($buyer['created_at'])) ?>
                                 </td>
                                 <td class="px-6 py-4 text-right space-x-2">
-                                    <a href="<?= BASE_URL ?>/admin/buyers/view?id=<?= $buyer['id'] ?>" class="inline-flex items-center justify-center p-2 text-gray-500 hover:text-brand-600 hover:bg-gray-100 rounded-lg transition-colors align-middle" title="View Details">
+                                    <a href="<?= BASE_URL ?>/admin/buyers/view?id=<?= $buyer['id'] ?>" class="p-1.5 text-emerald-600 hover:text-emerald-800 transition-colors inline-block align-middle" title="View Details">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     </a>
                                 </td>
@@ -179,36 +179,68 @@
 <script>
 function promptReject(userId, businessName) {
     Swal.fire({
-        title: 'Reject Registration',
-        html: `<p class="text-sm text-gray-600 mb-2">Rejecting application from: <strong class="text-gray-900">${businessName}</strong></p><p class="text-xs text-gray-500">Please enter the reason for rejection:</p>`,
-        input: 'textarea',
-        inputPlaceholder: 'e.g., Documents provided are unclear or invalid...',
-        icon: 'warning',
+        html: `
+            <div class="text-center">
+                <div class="w-14 h-14 mx-auto rounded-2xl bg-red-50 border border-red-200 text-red-600 flex items-center justify-center mb-3.5 shadow-sm">
+                    <svg class="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 font-display mb-1">Reject Registration</h3>
+                <p class="text-xs text-gray-500 mb-4">
+                    Rejecting application for <span class="font-bold text-gray-800 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">${businessName}</span>
+                </p>
+
+                <div class="text-left mb-3">
+                    <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">Quick Reasons</label>
+                    <div class="flex flex-wrap gap-1.5 mb-3">
+                        <button type="button" onclick="setRejectReason('Unclear or invalid shop photos provided.')" class="text-[11px] font-medium px-2.5 py-1 bg-gray-50 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-gray-200 rounded-full text-gray-600 transition-all cursor-pointer">📸 Unclear Shop Photos</button>
+                        <button type="button" onclick="setRejectReason('Invalid or expired GST/PAN document.')" class="text-[11px] font-medium px-2.5 py-1 bg-gray-50 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-gray-200 rounded-full text-gray-600 transition-all cursor-pointer">📄 Invalid GST/PAN</button>
+                        <button type="button" onclick="setRejectReason('Business details and tax registration do not match.')" class="text-[11px] font-medium px-2.5 py-1 bg-gray-50 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-gray-200 rounded-full text-gray-600 transition-all cursor-pointer">🏢 Business Mismatch</button>
+                        <button type="button" onclick="setRejectReason('Incomplete shop address or contact verification failed.')" class="text-[11px] font-medium px-2.5 py-1 bg-gray-50 hover:bg-red-50 hover:text-red-700 hover:border-red-200 border border-gray-200 rounded-full text-gray-600 transition-all cursor-pointer">📍 Incomplete Address</button>
+                    </div>
+                </div>
+
+                <div class="text-left">
+                    <label class="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Reason for Rejection <span class="text-red-500">*</span></label>
+                    <textarea id="swal-rejection-reason" rows="3" placeholder="Please enter the reason for rejection..." class="w-full text-xs text-gray-800 bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-none focus:bg-white focus:border-red-500 focus:ring-4 focus:ring-red-100 transition-all resize-none"></textarea>
+                    <p class="text-[11px] text-gray-400 mt-1">This reason will be recorded and emailed to the applicant.</p>
+                </div>
+            </div>
+        `,
         showCancelButton: true,
         confirmButtonText: 'Confirm Rejection',
         cancelButtonText: 'Cancel',
         buttonsStyling: false,
         customClass: {
-            popup: 'rounded-3xl p-6 md:p-8 shadow-2xl border border-gray-100 bg-white',
-            title: 'text-2xl font-black text-gray-900 font-display',
-            htmlContainer: 'text-sm text-gray-600',
-            input: 'rounded-2xl border border-gray-300 focus:border-red-500 focus:ring-2 focus:ring-red-100 text-sm p-4 w-full text-gray-800',
-            actions: 'flex items-center justify-center gap-3 mt-6',
-            confirmButton: 'inline-flex items-center justify-center px-7 py-3 font-bold text-sm text-white bg-red-600 hover:bg-red-700 active:scale-95 rounded-full shadow-md transition-all cursor-pointer',
-            cancelButton: 'inline-flex items-center justify-center px-7 py-3 font-bold text-sm text-gray-700 bg-gray-100 hover:bg-gray-200 active:scale-95 border border-gray-200 rounded-full shadow-sm transition-all cursor-pointer'
+            popup: 'rounded-2xl p-6 sm:p-7 shadow-2xl border border-gray-100 bg-white max-w-md w-full',
+            actions: 'flex items-center justify-end gap-2.5 mt-5 pt-3 border-t border-gray-100 w-full',
+            confirmButton: 'inline-flex items-center justify-center px-5 py-2.5 font-bold text-xs text-white bg-red-600 hover:bg-red-700 active:scale-95 rounded-xl shadow-md transition-all cursor-pointer',
+            cancelButton: 'inline-flex items-center justify-center px-4 py-2.5 font-semibold text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 active:scale-95 rounded-xl transition-all cursor-pointer'
         },
-        inputValidator: (value) => {
-            if (!value || value.trim().length === 0) {
-                return 'You need to write a rejection reason!';
+        preConfirm: () => {
+            const reason = document.getElementById('swal-rejection-reason')?.value.trim();
+            if (!reason) {
+                Swal.showValidationMessage('Please provide a reason for rejection.');
+                return false;
             }
+            return reason;
         }
     }).then((result) => {
-        if (result.isConfirmed) {
+        if (result.isConfirmed && result.value) {
             document.getElementById('reject-user-id').value = userId;
             document.getElementById('reject-reason-input').value = result.value;
             document.getElementById('reject-form').submit();
         }
     });
+}
+
+function setRejectReason(text) {
+    const el = document.getElementById('swal-rejection-reason');
+    if (el) {
+        el.value = text;
+        el.focus();
+    }
 }
 
 function exportPendingBuyersCSV() {

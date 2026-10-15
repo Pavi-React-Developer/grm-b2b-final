@@ -14,6 +14,13 @@ class CategoryRequestController extends Controller
         $role = Session::get('user_role');
         if (!$role) {
             $this->redirect('/login');
+            return;
+        }
+
+        if (!is_vendor_module_enabled()) {
+            Session::setFlash('error', 'Category requests are disabled because the Vendor module is currently turned off.');
+            $this->redirect('/admin/dashboard');
+            return;
         }
     }
 
@@ -82,6 +89,17 @@ class CategoryRequestController extends Controller
 
         if ($requestType === 'subcategory' && empty($parentCategoryId)) {
             $msg = 'Please select a parent category for the subcategory.';
+            if ($this->isJsonRequest()) {
+                echo json_encode(['success' => false, 'message' => $msg]);
+                exit;
+            }
+            Session::setFlash('error', $msg);
+            $this->redirect('/admin/catalog/products/create');
+            return;
+        }
+
+        if (!empty($hsnCode) && !preg_match('/^\d+$/', $hsnCode)) {
+            $msg = 'HSN Code must contain only numbers.';
             if ($this->isJsonRequest()) {
                 echo json_encode(['success' => false, 'message' => $msg]);
                 exit;

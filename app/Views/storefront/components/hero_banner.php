@@ -127,6 +127,9 @@ if ($themeValue) {
                 $mUrl = !empty($media['mobile']) ? $media['mobile'] : $dUrl;
                 $type = $media['type'] ?? 'image';
                 if (!$dUrl) continue;
+                $overlayOpacity = isset($media['opacity']) && $media['opacity'] !== '' ? (float)$media['opacity'] : 0;
+                $overlayFrac = $overlayOpacity > 1 ? ($overlayOpacity / 100) : $overlayOpacity;
+                $overlayFrac = max(0, min(1, $overlayFrac));
             ?>
                 <div class="slide absolute inset-0 w-full h-full transition-all duration-700 ease-in-out <?= $index === 0 ? 'opacity-100 z-1' : 'opacity-0 z-0' ?>" data-index="<?= $index ?>">
                     <?php if ($type === 'video'): ?>
@@ -144,7 +147,9 @@ if ($themeValue) {
                             <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="w-full h-full" style="<?= $fitStyle ?>">
                         </picture>
                     <?php endif; ?>
-                    <div class="absolute inset-0 bg-black/20"></div>
+                    <?php if ($overlayFrac > 0): ?>
+                        <div class="absolute inset-0 pointer-events-none" style="background-color: rgba(0, 0, 0, <?= $overlayFrac ?>);"></div>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
 
@@ -184,7 +189,7 @@ if ($themeValue) {
         <?php endif; ?>
 
         <!-- Navigation Arrows (Controlled by CMS Settings) -->
-        <?php if ($showArrows && count($mediaItems) > 1): ?>
+        <?php if ($showArrows && !empty($mediaItems)): ?>
         <button class="slider-prev absolute left-2 sm:left-3 md:left-4 top-1/2 -translate-y-1/2 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all z-30 focus:outline-none" style="color: <?= htmlspecialchars($arrowColor) ?>; background-color: <?= htmlspecialchars($arrowBgColor) ?>;" aria-label="Previous Slide">
             <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
         </button>
@@ -220,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let autoPlay;
 
     function updateSlider(newIndex, isNext) {
-        if (newIndex === currentIndex) return;
+        if (total <= 1 || newIndex === currentIndex) return;
         const currentSlide = slides[currentIndex];
         const nextSlide = slides[newIndex];
 

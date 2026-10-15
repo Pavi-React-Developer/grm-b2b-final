@@ -14,6 +14,10 @@
     <div class="mt-8 w-full sm:mx-auto sm:max-w-md">
         <div class="bg-white py-8 px-6 shadow-lg rounded-2xl sm:shadow-card sm:rounded-xl sm:px-10 border border-gray-100">
             <form class="space-y-5" action="<?= BASE_URL ?>/login" method="POST">
+                <?php $redirectUrl = $redirect ?? ($_GET['redirect'] ?? ''); ?>
+                <?php if (!empty($redirectUrl)): ?>
+                    <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirectUrl) ?>">
+                <?php endif; ?>
                 
                 <div>
                     <label for="email" class="form-label text-sm font-semibold text-gray-700">Email address or Mobile number</label>

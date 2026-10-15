@@ -21,7 +21,10 @@
                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     Export Excel
                 </button>
-                <?php if ($this->hasPermission('subcategories', 'create')): ?>
+                <?php 
+                $permSubMod = !empty($isCustomize) ? 'customize_subcategories' : 'subcategories';
+                ?>
+                <?php if ($this->hasPermission($permSubMod, 'create')): ?>
                 <button onclick="document.getElementById('add-modal').classList.remove('hidden')" class="bg-brand-600 hover:bg-brand-700 text-white px-6 py-3 rounded-full font-bold text-sm shadow-md transition-all flex items-center uppercase tracking-widest">
                     <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                     <?= !empty($isCustomize) ? 'Add Customize Sub-Category' : 'Add Sub-Category' ?>
@@ -97,8 +100,8 @@
                                 <span class="group-hover:text-brand-600 transition-colors duration-300">#<?= $index + 1 ?></span>
                             </td>
                             <td class="px-6 py-5">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-md bg-gray-50 border border-gray-100 text-[11px] font-bold text-gray-700 uppercase tracking-wider">
-                                    <?= htmlspecialchars($sub['category_name']) ?>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-md <?= empty($sub['category_name']) || $sub['category_name'] === 'Unassigned' ? 'bg-amber-50 border-amber-200 text-amber-700' : 'bg-gray-50 border-gray-100 text-gray-700' ?> border text-[11px] font-bold uppercase tracking-wider">
+                                    <?= htmlspecialchars(!empty($sub['category_name']) ? $sub['category_name'] : 'Unassigned') ?>
                                 </span>
                             </td>
                             <td class="px-6 py-5">
@@ -115,13 +118,13 @@
                                 <?php endif; ?>
                             </td>
                             <td class="px-6 py-5 text-right space-x-2">
-                                <?php if ($this->hasPermission('subcategories', 'edit')): ?>
-                                <button onclick="openEditModal(<?= htmlspecialchars(json_encode($sub)) ?>)" class="p-2 text-gray-400 hover:text-brand-600 hover:bg-brand-50 rounded-lg transition-all duration-200 group/btn" title="Edit">
-                                    <svg class="w-5 h-5 group-hover/btn:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                <?php if ($this->hasPermission($permSubMod, 'edit')): ?>
+                                <button onclick="openEditModal(<?= htmlspecialchars(json_encode($sub)) ?>)" class="p-1 text-blue-600 hover:text-blue-800 transition-colors group/btn inline-flex items-center justify-center" title="Edit">
+                                    <i class="bi bi-pencil-square text-lg group-hover/btn:scale-110 transition-transform"></i>
                                 </button>
                                 <?php endif; ?>
-                                <?php if ($this->hasPermission('subcategories', 'delete')): ?>
-                                <button onclick="openDeleteModal(<?= $sub['id'] ?>)" class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group/btn" title="Delete">
+                                <?php if ($this->hasPermission($permSubMod, 'delete')): ?>
+                                <button onclick="openDeleteModal(<?= $sub['id'] ?>)" class="p-1 text-red-600 hover:text-red-800 transition-colors group/btn inline-flex items-center justify-center" title="Delete">
                                     <svg class="w-5 h-5 group-hover/btn:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                                 <?php endif; ?>
@@ -171,9 +174,9 @@
                     <option value="inactive">⚪ Inactive</option>
                 </select>
             </div>
-            <div class="pt-6 mt-6 border-t border-gray-100 flex justify-end space-x-3">
-                <button type="button" onclick="document.getElementById('add-modal').classList.add('hidden')" class="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">Cancel</button>
-                <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-brand-600/30 transform hover:-translate-y-0.5 transition-all">Save Subcategory</button>
+            <div class="pt-6 mt-6 border-t border-gray-100 flex justify-end space-x-3 items-center">
+                <button type="button" onclick="document.getElementById('add-modal').classList.add('hidden')" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">Cancel</button>
+                <button type="submit" class="px-6 py-2.5 bg-[#F25996] hover:bg-[#e04481] text-white rounded-full text-sm font-bold shadow-md shadow-brand-600/30 transform hover:-translate-y-0.5 transition-all inline-flex items-center justify-center">Save Subcategory</button>
             </div>
         </form>
     </div>
@@ -215,9 +218,9 @@
                     <option value="inactive">⚪ Inactive</option>
                 </select>
             </div>
-            <div class="pt-6 mt-6 border-t border-gray-100 flex justify-end space-x-3">
-                <button type="button" onclick="document.getElementById('edit-modal').classList.add('hidden')" class="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">Cancel</button>
-                <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-brand-600/30 transform hover:-translate-y-0.5 transition-all">Update Subcategory</button>
+            <div class="pt-6 mt-6 border-t border-gray-100 flex justify-end space-x-3 items-center">
+                <button type="button" onclick="document.getElementById('edit-modal').classList.add('hidden')" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">Cancel</button>
+                <button type="submit" class="px-6 py-2.5 bg-[#F25996] hover:bg-[#e04481] text-white rounded-full text-sm font-bold shadow-md shadow-brand-600/30 transform hover:-translate-y-0.5 transition-all inline-flex items-center justify-center">Update Subcategory</button>
             </div>
         </form>
     </div>
@@ -233,11 +236,11 @@
         <h3 class="text-xl font-display font-bold text-gray-900 mb-2">Delete Subcategory?</h3>
         <p class="text-sm text-gray-500 mb-6 font-medium">Are you sure you want to delete this subcategory? This action <strong class="text-gray-900">cannot be undone</strong>.</p>
         <div id="delete-error-msg" class="hidden mb-4 p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl text-left"></div>
-        <form id="subcategory-delete-form" action="<?= BASE_URL ?>/admin/catalog/subcategories/delete" method="POST" class="flex space-x-3">
+        <form id="subcategory-delete-form" action="<?= BASE_URL ?>/admin/catalog/subcategories/delete" method="POST" class="flex space-x-3 items-center">
             <input type="hidden" name="id" id="delete-id">
             <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
-            <button type="button" onclick="document.getElementById('delete-modal').classList.add('hidden')" class="flex-1 px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">Cancel</button>
-            <button type="submit" id="btn-confirm-delete-sub" class="flex-1 px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-xl text-sm font-semibold shadow-lg shadow-red-500/30 transform hover:-translate-y-0.5 transition-all">Yes, Delete</button>
+            <button type="button" onclick="document.getElementById('delete-modal').classList.add('hidden')" class="flex-1 px-6 py-2.5 bg-white border border-gray-200 rounded-full text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">Cancel</button>
+            <button type="submit" id="btn-confirm-delete-sub" class="flex-1 px-6 py-2.5 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-400 text-white rounded-full text-sm font-semibold shadow-lg shadow-red-500/30 transform hover:-translate-y-0.5 transition-all inline-flex items-center justify-center">Yes, Delete</button>
         </form>
     </div>
 </div>

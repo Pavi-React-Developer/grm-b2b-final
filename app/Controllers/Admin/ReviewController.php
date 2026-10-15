@@ -35,14 +35,20 @@ class ReviewController extends Controller
         $userId = (int)Session::get('user_id');
 
         if ($role === 'vendor') {
-            $reviews = $this->reviewModel->getVendorReviews($userId);
+            $allReviews = $this->reviewModel->getVendorReviews($userId);
+            $standardReviews = array_values(array_filter($allReviews, fn($r) => empty($r['customization_id'])));
+            $customizedReviews = array_values(array_filter($allReviews, fn($r) => !empty($r['customization_id'])));
         } else {
-            $reviews = $this->reviewModel->getAdminReviews();
+            $standardReviews = $this->reviewModel->getAdminReviews('standard');
+            $customizedReviews = $this->reviewModel->getAdminReviews('customized');
+            $allReviews = $this->reviewModel->getAdminReviews();
         }
 
         $this->render('admin/reviews/index', [
-            'title' => ($role === 'vendor') ? 'Customer Reviews' : 'Reviews Management',
-            'reviews' => $reviews
+            'title'             => ($role === 'vendor') ? 'Customer Reviews' : 'Reviews Management',
+            'reviews'           => $allReviews,
+            'standardReviews'   => $standardReviews,
+            'customizedReviews' => $customizedReviews
         ], 'admin');
     }
 

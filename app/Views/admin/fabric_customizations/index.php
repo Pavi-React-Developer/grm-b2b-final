@@ -136,14 +136,28 @@
                                         <?= ucfirst($r['status']) ?>
                                     </span>
                                 </div>
-                                <div class="flex items-center gap-4 text-xs text-gray-500 mt-1">
+                                <div class="flex items-center gap-3 text-xs text-gray-500 mt-1.5 flex-wrap">
                                     <span>Fabric: <strong class="text-gray-800"><?= htmlspecialchars($r['fabric_name']) ?></strong> (SKU: <?= htmlspecialchars($r['fabric_sku'] ?? 'N/A') ?>)</span>
                                     <span>•</span>
                                     <span>Stock: <strong class="text-gray-800"><?= (int)$r['fabric_stock'] ?> Qty</strong></span>
                                     <span>•</span>
-                                    <span>Min to Order: <strong class="text-amber-700 font-bold"><?= (int)($r['minimum_pieces'] ?? 10) ?> Pcs</strong></span>
+                                    <span>Min: <strong class="text-amber-700 font-bold"><?= (int)($r['minimum_pieces'] ?? 10) ?> Pcs</strong></span>
+                                    <?php if (!empty($r['maximum_pieces'])): ?>
+                                        <span>•</span>
+                                        <span>Max: <strong class="text-gray-800"><?= (int)$r['maximum_pieces'] ?> Pcs</strong></span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($r['without_cover_discount_percentage']) && (float)$r['without_cover_discount_percentage'] > 0): ?>
+                                        <span>•</span>
+                                        <span class="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                            Cover Discount: <?= (float)$r['without_cover_discount_percentage'] ?>% OFF
+                                        </span>
+                                    <?php endif; ?>
                                     <span>•</span>
-                                    <span>Wholesale Rate: <strong class="text-gray-800">₹<?= number_format($r['fabric_price'], 2) ?></strong></span>
+                                    <span class="inline-flex items-center gap-1 text-indigo-700 font-medium">
+                                        🚚 <?= (int)($r['delivery_days'] ?? 7) ?> Days / <?= (int)($r['delivery_base_pieces'] ?? 100) ?> Pcs
+                                    </span>
+                                    <span>•</span>
+                                    <span>Rate: <strong class="text-gray-800">₹<?= number_format($r['fabric_price'], 2) ?></strong></span>
                                 </div>
                             </div>
                         </div>
@@ -163,35 +177,6 @@
                                     Delete
                                 </button>
                             </form>
-                        </div>
-                    </div>
-
-                    <!-- Rule Breakdown & Size Variants -->
-                    <div class="mt-4 pt-1">
-                        <div class="bg-gray-50/70 p-3.5 rounded-xl border border-gray-100">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                                    Configured Size Variants & Allowed Limits:
-                                </span>
-                                <span class="text-[11px] font-semibold text-gray-400">
-                                    Total Base: <?= array_sum(array_map(fn($s) => (int)($s['base_quantity'] ?? 2), array_filter($r['sizes'] ?? [], fn($s) => !empty($s['enabled'])))) ?> pcs
-                                </span>
-                            </div>
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <?php if (!empty($r['sizes'])): ?>
-                                    <?php foreach ($r['sizes'] as $sz): ?>
-                                        <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-white text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 shadow-2xs">
-                                            <span class="text-amber-800 font-black"><?= htmlspecialchars($sz['size_name']) ?></span>
-                                            <span class="text-gray-400">•</span>
-                                            <span class="text-gray-600">Base: <?= (int)($sz['base_quantity'] ?? 2) ?></span>
-                                            <span class="text-gray-400">|</span>
-                                            <span class="text-amber-700">Max: <?= (int)($sz['max_quantity'] ?? 4) ?> pcs</span>
-                                        </span>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <span class="text-xs text-gray-400 italic">No size variants configured</span>
-                                <?php endif; ?>
-                            </div>
                         </div>
                     </div>
                 </div>

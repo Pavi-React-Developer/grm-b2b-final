@@ -93,6 +93,13 @@
         color: #ffffff;
         font-weight: 600;
     }
+    @media (min-width: 1024px) {
+        #filter-panel,
+        #filter-panel > div {
+            overflow: visible !important;
+            max-height: none !important;
+        }
+    }
 </style>
 
 <div class="bg-[#fcfbf9] min-h-screen">
@@ -159,7 +166,7 @@
             <div id="mobile-filter-backdrop" class="fixed inset-0 bg-black/50 z-[998] hidden lg:hidden" onclick="toggleMobileFilter()"></div>
 
             <!-- Filter Panel -->
-            <div id="filter-panel" class="fixed inset-y-0 left-0 z-[999] w-[85%] max-w-sm sm:max-w-md bg-[#fce7f3] shadow-2xl transform -translate-x-full transition-transform duration-300 lg:relative lg:translate-x-0 lg:w-full lg:max-w-none lg:shadow-sm lg:z-0 flex flex-col h-[100dvh] lg:h-auto lg:bg-[#fce7f3] lg:rounded-2xl lg:p-5">
+            <div id="filter-panel" class="fixed inset-y-0 left-0 z-[999] w-[85%] max-w-sm sm:max-w-md bg-[#fce7f3] shadow-2xl transform -translate-x-full transition-transform duration-300 lg:relative lg:translate-x-0 lg:w-full lg:max-w-none lg:shadow-sm lg:z-0 flex flex-col h-[100dvh] lg:h-auto lg:bg-[#fce7f3] lg:rounded-2xl lg:p-5 lg:overflow-visible">
 
                 <!-- Mobile & Tablet Header -->
                 <div class="flex items-center justify-between p-4 border-b border-pink-200 lg:hidden shrink-0 bg-[#fce7f3]">
@@ -172,8 +179,8 @@
                     </button>
                 </div>
                 
-                <!-- Filter Content Scrollable Area -->
-                <div class="p-4 lg:p-0 flex-1 overflow-y-auto">
+                <!-- Filter Content Scrollable Area on Mobile, Visible on Desktop -->
+                <div class="p-4 lg:p-0 flex-1 overflow-y-auto lg:overflow-visible">
 
                 <!-- Desktop Header -->
                 <div class="hidden lg:flex items-center gap-2 mb-5">

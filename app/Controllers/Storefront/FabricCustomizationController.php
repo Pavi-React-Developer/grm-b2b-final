@@ -67,6 +67,14 @@ class FabricCustomizationController extends Controller
         $fabricId = (int)($_GET['fabric_id'] ?? 0);
         $customizationId = (int)($_GET['id'] ?? 0);
 
+        $userId = Session::get('user_id');
+        if (!$userId) {
+            Session::setFlash('info', 'Please log in to customize fabrics and view wholesale pricing.');
+            $redirectTarget = '/fabrics/customize?' . ($fabricId > 0 ? 'fabric_id=' . $fabricId : 'id=' . $customizationId);
+            $this->redirect('/login?redirect=' . urlencode($redirectTarget));
+            return;
+        }
+
         $customization = null;
         if ($fabricId > 0) {
             $customization = $this->model->getByFabricId($fabricId);
@@ -80,21 +88,138 @@ class FabricCustomizationController extends Controller
             return;
         }
 
-        // Fetch user addresses if logged in
+        // Fetch user addresses
         $userAddresses = [];
-        $userId = Session::get('user_id');
-        if ($userId) {
-            $db = Database::getInstance();
-            $stmt = $db->prepare("SELECT * FROM addresses WHERE user_id = ? ORDER BY is_default DESC, id DESC");
-            $stmt->execute([$userId]);
-            $userAddresses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM addresses WHERE user_id = ? ORDER BY is_default DESC, id DESC");
+        $stmt->execute([$userId]);
+        $userAddresses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $wishlistIds = [];
+        try {
+            $wishlistModel = new \App\Models\Wishlist();
+            $wishlistIds = $wishlistModel->getProductIds($userId);
+        } catch (\Throwable $e) {
+            $wishlistIds = [];
         }
 
+        $reviewModel = new \App\Models\Review();
+        $customizationReviews = $reviewModel->getApprovedCustomizationReviews((int)$customization['id'], (int)$customization['fabric_id']);
+        $customizationStats = $reviewModel->getCustomizationReviewStats((int)$customization['id'], (int)$customization['fabric_id']);
+
         $this->render('storefront/fabric_customize', [
-            'title'         => 'Customize: ' . htmlspecialchars($customization['fabric_name']) . ' (' . htmlspecialchars($customization['garment_type']) . ')',
-            'customization' => $customization,
-            'userAddresses' => $userAddresses,
-            'userId'        => $userId
+            'title'                => 'Customize: ' . htmlspecialchars($customization['fabric_name']) . ' (' . htmlspecialchars($customization['garment_type']) . ')',
+            'customization'        => $customization,
+            'userAddresses'        => $userAddresses,
+            'wishlistIds'          => $wishlistIds,
+            'userId'               => $userId,
+            'customizationReviews' => $customizationReviews,
+            'customizationStats'   => $customizationStats
+        ]);
+    }
+
+    /**
+     * Dedicated Custom Checkout & Razorpay Review Page
+     */
+    public function checkoutPage()
+    {
+        $userId = Session::get('user_id');
+        $fabricId = (int)($_POST['fabric_id'] ?? ($_GET['fabric_id'] ?? 0));
+        $customizationId = (int)($_POST['customization_id'] ?? ($_GET['id'] ?? ($_GET['customization_id'] ?? 0)));
+
+        $redirectTarget = '/fabrics/customize/checkout?' . ($fabricId > 0 ? 'fabric_id=' . $fabricId : 'customization_id=' . $customizationId);
+
+        if (!$userId || Session::get('user_status') !== 'active') {
+            Session::setFlash('info', 'Please log in to review your custom garment order and proceed to payment.');
+            $this->redirect('/login?redirect=' . urlencode($redirectTarget));
+            return;
+        }
+
+        $customization = null;
+        if ($fabricId > 0) {
+            $customization = $this->model->getByFabricId($fabricId);
+        } elseif ($customizationId > 0) {
+            $customization = $this->model->getById($customizationId);
+        }
+
+        if (!$customization) {
+            Session::setFlash('error', 'Fabric customization program not found.');
+            $this->redirect('/customize');
+            return;
+        }
+
+        // Parse sizes from POST, session or GET
+        $sizes = [];
+        if (!empty($_POST['sizes']) && is_array($_POST['sizes'])) {
+            $sizes = $_POST['sizes'];
+            Session::set('custom_checkout_sizes_' . $customization['id'], $sizes);
+        } elseif (!empty($_GET['sizes']) && is_array($_GET['sizes'])) {
+            $sizes = $_GET['sizes'];
+            Session::set('custom_checkout_sizes_' . $customization['id'], $sizes);
+        } else {
+            $sizes = Session::get('custom_checkout_sizes_' . $customization['id']) ?? [];
+        }
+
+        // If sizes are still empty, default to base configuration from the program
+        if (empty($sizes) && !empty($customization['sizes'])) {
+            foreach ($customization['sizes'] as $sz) {
+                $sizes[$sz['size_name']] = (int)($sz['base_quantity'] ?? 2);
+            }
+        }
+
+        $fabricQuantity = max(1, (int)($_POST['fabric_quantity'] ?? ($_GET['fabric_quantity'] ?? (Session::get('custom_checkout_qty_' . $customization['id']) ?? 1))));
+        Session::set('custom_checkout_qty_' . $customization['id'], $fabricQuantity);
+
+        $packagingOption = $_POST['packaging_option'] ?? ($_GET['packaging_option'] ?? (Session::get('custom_checkout_pkg_' . $customization['id']) ?? 'with_cover'));
+        Session::set('custom_checkout_pkg_' . $customization['id'], $packagingOption);
+        $withoutCover = ($packagingOption === 'without_cover');
+        $discountPct = (float)($customization['without_cover_discount_percentage'] ?? 0.0);
+
+        // Calculate consumption and pricing
+        $consumption = $this->service->calculateConsumption(
+            $customization, 
+            $sizes, 
+            (float)$customization['fabric_stock'],
+            $fabricQuantity
+        );
+
+        $pricing = $this->service->calculatePricing(
+            (float)$customization['fabric_price'],
+            (float)$consumption['required_fabric'],
+            0.00,
+            (int)$consumption['total_pieces'],
+            5.0,
+            $withoutCover,
+            $discountPct
+        );
+
+        $delivery = $this->service->calculateDeliveryTimeline(
+            (int)$consumption['total_pieces'],
+            (int)($customization['delivery_days'] ?? 7),
+            (int)($customization['delivery_base_pieces'] ?? 100)
+        );
+
+        // Fetch user addresses
+        $db = Database::getInstance();
+        $stmt = $db->prepare("SELECT * FROM addresses WHERE user_id = ? ORDER BY is_default DESC, id DESC");
+        $stmt->execute([$userId]);
+        $userAddresses = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $userStmt = $db->prepare("SELECT name, email, phone FROM users WHERE id = ?");
+        $userStmt->execute([$userId]);
+        $user = $userStmt->fetch(PDO::FETCH_ASSOC);
+
+        $this->render('storefront/fabric_checkout', [
+            'title'           => 'Checkout & Payment: ' . htmlspecialchars($customization['fabric_name']) . ' Customization',
+            'customization'   => $customization,
+            'sizes'           => $sizes,
+            'fabricQuantity'  => $fabricQuantity,
+            'packagingOption' => $packagingOption,
+            'consumption'     => $consumption,
+            'pricing'         => $pricing,
+            'delivery'        => $delivery,
+            'userAddresses'   => $userAddresses,
+            'user'            => $user
         ]);
     }
 
@@ -104,6 +229,11 @@ class FabricCustomizationController extends Controller
     public function calculateAjax()
     {
         header('Content-Type: application/json');
+
+        if (!Session::get('user_id')) {
+            echo json_encode(['success' => false, 'error' => 'Authentication required to view customization pricing.']);
+            exit;
+        }
         
         $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
         $fabricId = (int)($input['fabric_id'] ?? 0);
@@ -123,6 +253,10 @@ class FabricCustomizationController extends Controller
             exit;
         }
 
+        $packagingOption = $input['packaging_option'] ?? 'with_cover';
+        $withoutCover = ($packagingOption === 'without_cover' || !empty($input['without_cover']));
+        $discountPct = (float)($customization['without_cover_discount_percentage'] ?? 0.0);
+
         $consumptionResult = $this->service->calculateConsumption(
             $customization, 
             $sizes, 
@@ -135,13 +269,22 @@ class FabricCustomizationController extends Controller
             (float)$consumptionResult['required_fabric'],
             0.00, // stitching charge
             (int)$consumptionResult['total_pieces'],
-            5.0 // GST 5%
+            5.0, // GST 5%
+            $withoutCover,
+            $discountPct
+        );
+
+        $deliveryResult = $this->service->calculateDeliveryTimeline(
+            (int)$consumptionResult['total_pieces'],
+            (int)($customization['delivery_days'] ?? 7),
+            (int)($customization['delivery_base_pieces'] ?? 100)
         );
 
         echo json_encode([
             'success'     => true,
             'consumption' => $consumptionResult,
-            'pricing'     => $pricingResult
+            'pricing'     => $pricingResult,
+            'delivery'    => $deliveryResult
         ]);
         exit;
     }
@@ -183,6 +326,10 @@ class FabricCustomizationController extends Controller
             exit;
         }
 
+        $packagingOption = $input['packaging_option'] ?? 'with_cover';
+        $withoutCover = ($packagingOption === 'without_cover' || !empty($input['without_cover']));
+        $discountPct = (float)($customization['without_cover_discount_percentage'] ?? 0.0);
+
         // Validate consumption & stock
         $calc = $this->service->calculateConsumption($customization, $sizes, (float)$customization['fabric_stock'], $fabricQuantity);
         if (!$calc['is_valid']) {
@@ -195,7 +342,15 @@ class FabricCustomizationController extends Controller
             (float)$calc['required_fabric'],
             0.00,
             (int)$calc['total_pieces'],
-            5.0
+            5.0,
+            $withoutCover,
+            $discountPct
+        );
+
+        $delivery = $this->service->calculateDeliveryTimeline(
+            (int)$calc['total_pieces'],
+            (int)($customization['delivery_days'] ?? 7),
+            (int)($customization['delivery_base_pieces'] ?? 100)
         );
 
         $userId = (int)Session::get('user_id');
@@ -212,6 +367,11 @@ class FabricCustomizationController extends Controller
                 'program_name'        => $customization['program_name'],
                 'garment_type'        => $customization['garment_type'],
                 'feeding_type'        => $customization['feeding_type'],
+                'packaging_option'    => $packagingOption,
+                'without_cover'       => $withoutCover,
+                'discount_percentage' => $discountPct,
+                'total_saved'         => $pricing['total_saved'] ?? 0.00,
+                'delivery_timeline'   => $delivery,
                 'fabric_name'         => $customization['fabric_name'],
                 'fabric_sku'          => $customization['fabric_sku'],
                 'fabric_unit'         => $customization['unit'],
@@ -220,7 +380,8 @@ class FabricCustomizationController extends Controller
                 'base_consumption'    => $calc['base_consumption'],
                 'wastage_percentage'  => $calc['wastage_percentage'],
                 'wastage_amount'      => $calc['wastage_amount'],
-                'price_per_unit'      => $customization['fabric_price'],
+                'price_per_unit'      => $pricing['price_per_unit'],
+                'original_price'      => $pricing['original_price_per_unit'],
                 'fabric_cost'         => $pricing['fabric_cost'],
                 'stitching_cost'      => $pricing['stitching_cost'],
                 'gst_amount'          => $pricing['gst_amount'],
@@ -329,6 +490,10 @@ class FabricCustomizationController extends Controller
             exit;
         }
 
+        $packagingOption = $input['packaging_option'] ?? 'with_cover';
+        $withoutCover = ($packagingOption === 'without_cover' || !empty($input['without_cover']));
+        $discountPct = (float)($customization['without_cover_discount_percentage'] ?? 0.0);
+
         $calc = $this->service->calculateConsumption($customization, $sizes, (float)$customization['fabric_stock'], $fabricQuantity);
         if (!$calc['is_valid']) {
             echo json_encode(['success' => false, 'message' => implode(' ', $calc['errors'])]);
@@ -340,7 +505,9 @@ class FabricCustomizationController extends Controller
             (float)$calc['required_fabric'],
             0.00,
             (int)$calc['total_pieces'],
-            5.0
+            5.0,
+            $withoutCover,
+            $discountPct
         );
 
         $userId = (int)Session::get('user_id');
@@ -352,6 +519,8 @@ class FabricCustomizationController extends Controller
         $receiptId = 'CUST_' . strtoupper(substr(uniqid(), -8));
         $razorpayService = new RazorpayService();
 
+        $fabricTitle = $customization['fabric_name'] ?? 'Custom Order';
+
         $rzpRes = $razorpayService->createOrder(
             $pricing['total'],
             $receiptId,
@@ -359,20 +528,22 @@ class FabricCustomizationController extends Controller
                 'fabric_id'        => $customization['fabric_id'],
                 'customization_id' => $customization['id'],
                 'fabric_quantity'  => $fabricQuantity,
-                'program_name'     => $customization['program_name'],
+                'fabric_name'      => substr($fabricTitle, 0, 40),
                 'total_pieces'     => $calc['total_pieces'],
                 'required_fabric'  => $calc['required_fabric'],
                 'user_id'          => $userId
             ]
         );
 
-        $rzpOrderId = null;
-        if (!empty($rzpRes['success']) && !empty($rzpRes['order']['id'])) {
-            $rzpOrderId = $rzpRes['order']['id'];
-        } else {
-            // Fallback generated ID for test environment
-            $rzpOrderId = 'order_mock_' . uniqid();
+        if (empty($rzpRes['success']) || empty($rzpRes['order']['id'])) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Unable to create Razorpay payment order: ' . ($rzpRes['error'] ?? 'Gateway request failed')
+            ]);
+            exit;
         }
+
+        $rzpOrderId = $rzpRes['order']['id'];
 
         echo json_encode([
             'success'           => true,
@@ -381,7 +552,7 @@ class FabricCustomizationController extends Controller
             'amount_in_paise'   => (int)round($pricing['total'] * 100),
             'amount'            => $pricing['total'],
             'currency'          => defined('RAZORPAY_CURRENCY') ? RAZORPAY_CURRENCY : 'INR',
-            'program_name'      => $customization['program_name'],
+            'program_name'      => $fabricTitle,
             'user'              => [
                 'name'    => $user['name'] ?? Session::get('user_name') ?? 'Wholesale Customer',
                 'email'   => $user['email'] ?? '',
@@ -431,6 +602,10 @@ class FabricCustomizationController extends Controller
             exit;
         }
 
+        $packagingOption = $input['packaging_option'] ?? 'with_cover';
+        $withoutCover = ($packagingOption === 'without_cover' || !empty($input['without_cover']));
+        $discountPct = (float)($customization['without_cover_discount_percentage'] ?? 0.0);
+
         $calc = $this->service->calculateConsumption($customization, $sizes, (float)$customization['fabric_stock'], $fabricQuantity);
         if (!$calc['is_valid']) {
             echo json_encode(['success' => false, 'message' => implode(' ', $calc['errors'])]);
@@ -442,7 +617,15 @@ class FabricCustomizationController extends Controller
             (float)$calc['required_fabric'],
             0.00,
             (int)$calc['total_pieces'],
-            5.0
+            5.0,
+            $withoutCover,
+            $discountPct
+        );
+
+        $delivery = $this->service->calculateDeliveryTimeline(
+            (int)$calc['total_pieces'],
+            (int)($customization['delivery_days'] ?? 7),
+            (int)($customization['delivery_base_pieces'] ?? 100)
         );
 
         // Verify Signature if signature is provided and not dummy mock
@@ -467,9 +650,14 @@ class FabricCustomizationController extends Controller
             $customizationData = [
                 'customization_id'    => $customization['id'],
                 'fabric_quantity'     => $fabricQuantity,
-                'program_name'        => $customization['program_name'],
+                'program_name'        => $customization['program_name'] ?? $customization['fabric_name'] ?? 'Custom Order',
                 'garment_type'        => $customization['garment_type'],
                 'feeding_type'        => $customization['feeding_type'],
+                'packaging_option'    => $packagingOption,
+                'without_cover'       => $withoutCover,
+                'discount_percentage' => $discountPct,
+                'total_saved'         => $pricing['total_saved'] ?? 0.00,
+                'delivery_timeline'   => $delivery,
                 'fabric_name'         => $customization['fabric_name'],
                 'fabric_sku'          => $customization['fabric_sku'],
                 'fabric_unit'         => $customization['unit'],
@@ -478,7 +666,8 @@ class FabricCustomizationController extends Controller
                 'base_consumption'    => $calc['base_consumption'],
                 'wastage_percentage'  => $calc['wastage_percentage'],
                 'wastage_amount'      => $calc['wastage_amount'],
-                'price_per_unit'      => $customization['fabric_price'],
+                'price_per_unit'      => $pricing['price_per_unit'],
+                'original_price'      => $pricing['original_price_per_unit'],
                 'fabric_cost'         => $pricing['fabric_cost'],
                 'stitching_cost'      => $pricing['stitching_cost'],
                 'gst_amount'          => $pricing['gst_amount'],

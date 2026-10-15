@@ -148,7 +148,8 @@ class CartController extends Controller
             ? $ruleValidation['failing_categories'] 
             : (!empty($unlockedCatIds) ? $unlockedCatIds : array_keys($categoryTotals));
             
-        $relatedProducts = $this->getRelatedProducts($cartCategoryIds, $unlockedCatIds);
+        $cartProductIds = array_unique(array_filter(array_column($cartItems, 'product_id')));
+        $relatedProducts = $this->getRelatedProducts($cartCategoryIds, $unlockedCatIds, $cartProductIds, 8);
         
         $suggestionUrl = BASE_URL . "/catalog";
         if (!empty($ruleValidation['failing_categories'])) {
@@ -661,7 +662,7 @@ class CartController extends Controller
         }
         unset($item);
         
-        $ruleValidation = $this->validateOrderRules($categoryTotals);
+        $ruleValidation = $this->validateOrderRules($categoryTotals, $subtotal);
         $ruleErrorsText = array_map(function($err) {
             return strip_tags($err, '<a><strong><br><span><i>');
         }, $ruleValidation['errors']);
@@ -689,7 +690,8 @@ class CartController extends Controller
             ? $ruleValidation['failing_categories'] 
             : (!empty($unlockedCatIds) ? $unlockedCatIds : $cartCategoryIds);
 
-        $relatedProducts = $includeRelated ? $this->getRelatedProducts($suggestionCategoryIds, $unlockedCatIds) : [];
+        $cartProductIds = array_unique(array_filter(array_column($cartItems, 'product_id')));
+        $relatedProducts = $includeRelated ? $this->getRelatedProducts($suggestionCategoryIds, $unlockedCatIds, $cartProductIds, 8) : [];
         
         $suggestionUrl = BASE_URL . "/catalog";
         if (!empty($ruleValidation['failing_categories'])) {
@@ -711,56 +713,118 @@ class CartController extends Controller
         ];
     }
 
-    private function getRelatedProducts($cartCategoryIds, $unlockedCategoryIds = [])
+    private function getRelatedProducts($cartCategoryIds = [], $unlockedCategoryIds = [], $excludeProductIds = [], $limit = 8)
     {
         $db = Database::getInstance();
         $relatedProducts = [];
-        $catCondition = "";
-        $params = [];
+        $fetchedProductIds = [];
+
+        // Always exclude items currently in cart
+        $baseExclude = array_unique(array_filter(array_map('intval', (array)$excludeProductIds)));
+
+        // 1. Fetch products from relevant categories first (failing categories, unlocked offers, or cart categories)
         if (!empty($cartCategoryIds)) {
-            $inQuery = implode(',', array_fill(0, count($cartCategoryIds), '?'));
-            $catCondition = "AND p.category_id IN ($inQuery)";
-            $params = $cartCategoryIds;
+            $catIds = array_values(array_unique(array_filter(array_map('intval', (array)$cartCategoryIds))));
+            if (!empty($catIds)) {
+                $inCats = implode(',', array_fill(0, count($catIds), '?'));
+                $params = $catIds;
+                
+                $excludeClause = "";
+                if (!empty($baseExclude)) {
+                    $inExclude = implode(',', array_fill(0, count($baseExclude), '?'));
+                    $excludeClause = " AND p.id NOT IN ($inExclude)";
+                    $params = array_merge($params, $baseExclude);
+                }
+
+                $stmt = $db->prepare("
+                    SELECT p.id, p.name, p.wholesale_price, p.total_gst, p.category_id, 
+                           c.name as category_name, c.moq as category_moq, c.sgst as category_sgst, c.cgst as category_cgst,
+                           p.moq_override,
+                           (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
+                           (SELECT base_price FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_price,
+                           (SELECT discount_price FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_discount_price,
+                           (SELECT total_gst FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_total_gst
+                    FROM products p
+                    JOIN categories c ON p.category_id = c.id AND c.status = 'active'
+                    WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) AND p.category_id IN ($inCats) $excludeClause
+                    ORDER BY RAND() LIMIT " . (int)$limit . "
+                ");
+                $stmt->execute($params);
+                $products = $stmt->fetchAll();
+
+                foreach ($products as $p) {
+                    $fetchedProductIds[] = (int)$p['id'];
+                    $relatedProducts[] = $this->formatRelatedProductRow($p, $unlockedCategoryIds);
+                }
+            }
         }
 
-        $stmt = $db->prepare("
-            SELECT p.id, p.name, p.wholesale_price, p.category_id, c.name as category_name, c.moq as category_moq, p.moq_override,
-                   (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
-                   (SELECT base_price FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_price,
-                   (SELECT discount_price FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_discount_price
-            FROM products p
-            JOIN categories c ON p.category_id = c.id
-            WHERE p.status = 'active' $catCondition
-            ORDER BY RAND() LIMIT 8
-        ");
-        $stmt->execute($params);
-        $products = $stmt->fetchAll();
+        // 2. If we have fewer than $limit products, backfill with active products across OTHER categories in catalog
+        $remaining = $limit - count($relatedProducts);
+        if ($remaining > 0) {
+            $allExclude = array_unique(array_merge($baseExclude, $fetchedProductIds));
+            $excludeClause = "";
+            $params = [];
+            if (!empty($allExclude)) {
+                $inExclude = implode(',', array_fill(0, count($allExclude), '?'));
+                $excludeClause = " AND p.id NOT IN ($inExclude)";
+                $params = array_values($allExclude);
+            }
 
-        foreach ($products as $p) {
-            $base = !empty($p['variant_price']) && (float)$p['variant_price'] > 0 ? (float)$p['variant_price'] : (float)$p['wholesale_price'];
-            $disc = !empty($p['variant_discount_price']) && (float)$p['variant_discount_price'] > 0 ? (float)$p['variant_discount_price'] : null;
-            $eff = $disc ?? $base;
-            $moq = !empty($p['moq_override']) ? $p['moq_override'] : ($p['category_moq'] ?? 1);
-            $isUnlocked = in_array($p['category_id'], $unlockedCategoryIds);
+            $stmt = $db->prepare("
+                SELECT p.id, p.name, p.wholesale_price, p.total_gst, p.category_id, 
+                       c.name as category_name, c.moq as category_moq, c.sgst as category_sgst, c.cgst as category_cgst,
+                       p.moq_override,
+                       (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
+                       (SELECT base_price FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_price,
+                       (SELECT discount_price FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_discount_price,
+                       (SELECT total_gst FROM product_variants WHERE product_id = p.id AND status = 'active' ORDER BY id ASC LIMIT 1) as variant_total_gst
+                FROM products p
+                JOIN categories c ON p.category_id = c.id AND c.status = 'active'
+                WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) $excludeClause
+                ORDER BY RAND() LIMIT " . (int)$remaining . "
+            ");
+            $stmt->execute($params);
+            $moreProducts = $stmt->fetchAll();
 
-            $relatedProducts[] = [
-                'id' => (int)$p['id'],
-                'name' => $p['name'],
-                'price' => $eff,
-                'base_price' => $base,
-                'primary_image' => !empty($p['primary_image']) ? get_image_url($p['primary_image']) : null,
-                'category_name' => $p['category_name'],
-                'moq' => (int)$moq,
-                'is_unlocked_offer' => $isUnlocked
-            ];
+            foreach ($moreProducts as $p) {
+                $fetchedProductIds[] = (int)$p['id'];
+                $relatedProducts[] = $this->formatRelatedProductRow($p, $unlockedCategoryIds);
+            }
         }
 
         return $relatedProducts;
     }
 
-    private function validateOrderRules(array $categoryTotals): array
+    private function formatRelatedProductRow(array $p, array $unlockedCategoryIds = []): array
     {
-        return OrderRule::validateCartRules($categoryTotals);
+        $base = !empty($p['variant_price']) && (float)$p['variant_price'] > 0 ? (float)$p['variant_price'] : (float)($p['wholesale_price'] ?? 0);
+        $disc = !empty($p['variant_discount_price']) && (float)$p['variant_discount_price'] > 0 ? (float)$p['variant_discount_price'] : null;
+        $eff = $disc ?? $base;
+        $moq = !empty($p['moq_override']) ? (int)$p['moq_override'] : (!empty($p['category_moq']) ? (int)$p['category_moq'] : 1);
+        $isUnlocked = in_array($p['category_id'], $unlockedCategoryIds);
+
+        return [
+            'id' => (int)$p['id'],
+            'name' => $p['name'],
+            'price' => $eff,
+            'discount_price' => $disc,
+            'base_price' => $base,
+            'wholesale_price' => (float)($p['wholesale_price'] ?? 0),
+            'primary_image' => !empty($p['primary_image']) ? get_image_url($p['primary_image']) : null,
+            'category_name' => $p['category_name'] ?? '',
+            'category_sgst' => (float)($p['category_sgst'] ?? 0),
+            'category_cgst' => (float)($p['category_cgst'] ?? 0),
+            'variant_total_gst' => (float)($p['variant_total_gst'] ?? 0),
+            'total_gst' => (float)($p['total_gst'] ?? 0),
+            'moq' => $moq,
+            'is_unlocked_offer' => $isUnlocked
+        ];
+    }
+
+    private function validateOrderRules(array $categoryTotals, float $cartSubtotal = 0): array
+    {
+        return OrderRule::validateCartRules($categoryTotals, $cartSubtotal);
     }
 
     private function getActiveOffersData(array $categoryTotals): array

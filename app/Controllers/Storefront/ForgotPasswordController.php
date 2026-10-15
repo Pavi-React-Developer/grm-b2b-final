@@ -57,6 +57,8 @@ class ForgotPasswordController extends Controller
         // Send Email via PHPMailer
         try {
             $mail = new PHPMailer(true);
+            $mail->CharSet  = 'UTF-8';
+            $mail->Encoding = 'base64';
             $mail->isSMTP();
             $mail->Host       = SMTP_HOST;
             $mail->SMTPAuth   = true;

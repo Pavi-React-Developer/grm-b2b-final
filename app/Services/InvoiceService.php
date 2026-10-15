@@ -89,11 +89,13 @@ class InvoiceService
                        COALESCE(p.name, p2.name) as product_name,
                        COALESCE(pv.name, pv2.name) as variant_name,
                        COALESCE(pi1.image_path, pi2.image_path) as product_image,
-                       COALESCE(c.hsn_code, c2.hsn_code) as category_hsn_code,
+                       COALESCE(c.hsn_code, c2.hsn_code, '5208') as category_hsn_code,
                        COALESCE(pv.sgst, pv2.sgst, p.sgst, p2.sgst, c.sgst, c2.sgst, 0) as sgst_rate,
                        COALESCE(pv.cgst, pv2.cgst, p.cgst, p2.cgst, c.cgst, c2.cgst, 0) as cgst_rate,
                        COALESCE(pv.total_gst, pv2.total_gst, p.total_gst, p2.total_gst, (COALESCE(c.sgst, c2.sgst, 0) + COALESCE(c.cgst, c2.cgst, 0)), 0) as total_gst_rate,
-                       COALESCE(pv.base_price, pv2.base_price, p.wholesale_price, p2.wholesale_price, 0) as base_price
+                       COALESCE(pv.base_price, pv2.base_price, p.wholesale_price, p2.wholesale_price, 0) as base_price,
+                       oi.customization_data,
+                       oi.customization_id
                 FROM order_modification_items omi
                 LEFT JOIN order_items oi ON omi.order_item_id = oi.id
                 LEFT JOIN products p ON oi.product_id = p.id
@@ -357,6 +359,13 @@ class InvoiceService
         $taxTiers = [];
         $calculatedItems = [];
 
+        $sumOriginalItems = 0.0;
+        foreach ($items as $item) {
+            $sumOriginalItems += ((int)($item['quantity'] ?? 0)) * ((float)($item['unit_price'] ?? 0));
+        }
+        $orderGrandTotal = (float)($order['grand_total'] ?? $order['total_amount'] ?? 0);
+        $isOrigPriceExclusive = ($orderGrandTotal > ($sumOriginalItems + 0.01));
+
         foreach ($items as $item) {
             $qty = (int)($item['quantity'] ?? 0);
             $unitPriceInclGst = (float)($item['unit_price'] ?? 0);
@@ -387,17 +396,27 @@ class InvoiceService
                 }
             }
 
-            // Determine unit base price before GST
-            $rawBase = 0.0;
-            if (!empty($item['variant_discount_price']) && (float)$item['variant_discount_price'] > 0) {
-                $rawBase = (float)$item['variant_discount_price'];
-            } elseif (!empty($item['variant_base_price']) && (float)$item['variant_base_price'] > 0) {
-                $rawBase = (float)$item['variant_base_price'];
-            } elseif (!empty($item['wholesale_price']) && (float)$item['wholesale_price'] > 0) {
-                $rawBase = (float)$item['wholesale_price'];
+            // Fallback for custom fabric orders or items with customization_data
+            if ($totalGstPercent <= 0 && !empty($item['customization_data'])) {
+                $cData = is_array($item['customization_data']) ? $item['customization_data'] : json_decode($item['customization_data'], true);
+                if (!empty($cData['gst_rate'])) {
+                    $totalGstPercent = (float)$cData['gst_rate'];
+                } elseif (!empty($cData['fabric_cost']) && !empty($cData['gst_amount'])) {
+                    $totalGstPercent = round(((float)$cData['gst_amount'] / (float)$cData['fabric_cost']) * 100, 1);
+                }
+            }
+            if ($totalGstPercent <= 0 && (!empty($item['customization_id']) || !empty($item['customization_data']) || stripos($item['product_name'] ?? '', 'fabric') !== false)) {
+                $totalGstPercent = 5.0;
+            }
+            if ($totalGstPercent > 0 && $sgstPercent <= 0 && $cgstPercent <= 0) {
+                $sgstPercent = round($totalGstPercent / 2, 2);
+                $cgstPercent = round($totalGstPercent / 2, 2);
             }
 
-            if ($totalGstPercent > 0) {
+            if ($isOrigPriceExclusive) {
+                $unitBase = $unitPriceInclGst;
+                $lineBase = round($unitBase * $qty, 2);
+            } elseif ($totalGstPercent > 0) {
                 $unitBase = round($unitPriceInclGst / (1 + ($totalGstPercent / 100)), 2);
                 $lineBase = round(($unitPriceInclGst * $qty) / (1 + ($totalGstPercent / 100)), 2);
             } else {
@@ -406,8 +425,14 @@ class InvoiceService
             }
 
             if ($isTamilNadu) {
-                $lineSgst = $sgstPercent > 0 ? round($lineBase * ($sgstPercent / 100), 2) : 0.0;
-                $lineCgst = $cgstPercent > 0 ? round($lineBase * ($cgstPercent / 100), 2) : 0.0;
+                $lineTotalTax = $totalGstPercent > 0 ? round($lineBase * ($totalGstPercent / 100), 2) : 0.0;
+                if ($cgstPercent + $sgstPercent > 0) {
+                    $lineCgst = round($lineTotalTax * ($cgstPercent / ($cgstPercent + $sgstPercent)), 2);
+                    $lineSgst = round($lineTotalTax - $lineCgst, 2);
+                } else {
+                    $lineCgst = 0.0;
+                    $lineSgst = 0.0;
+                }
                 $lineIgst = 0.0;
 
                 $cgstKey = (string)(float)$cgstPercent . '%';
@@ -417,7 +442,8 @@ class InvoiceService
             } else {
                 $lineSgst = 0.0;
                 $lineCgst = 0.0;
-                $lineIgst = $totalGstPercent > 0 ? round($lineBase * ($totalGstPercent / 100), 2) : 0.0;
+                $lineTotalTax = $totalGstPercent > 0 ? round($lineBase * ($totalGstPercent / 100), 2) : 0.0;
+                $lineIgst = $lineTotalTax;
 
                 $igstKey = (string)(float)$totalGstPercent . '%';
                 $igstBreakdown[$igstKey] = ($igstBreakdown[$igstKey] ?? 0.0) + $lineIgst;
@@ -439,11 +465,7 @@ class InvoiceService
             $taxTiers[$tierKey]['sgst_amount'] += $lineSgst;
             $taxTiers[$tierKey]['igst_amount'] += $lineIgst;
 
-            $lineTotal = round($lineBase + $lineSgst + $lineCgst + $lineIgst, 2);
-
-            if (!empty($item['total_price']) && (float)$item['total_price'] > 0 && abs((float)$item['total_price'] - $lineTotal) < 0.05) {
-                $lineTotal = (float)$item['total_price'];
-            }
+            $lineTotal = round($lineBase + $lineTotalTax, 2);
 
             $totalBase += $lineBase;
             $totalSgst += $lineSgst;
@@ -475,6 +497,16 @@ class InvoiceService
         $calculatedModItems = [];
 
         if ($hasModification && !empty($modItems)) {
+            $revisedTotal = (float)($modification['revised_total'] ?? 0);
+            $sumNewItems = 0.0;
+            foreach ($modItems as $m) {
+                if (($m['change_type'] ?? '') !== 'removed') {
+                    $sumNewItems += ((int)($m['new_qty'] ?? 0)) * ((float)($m['new_price'] ?? 0));
+                }
+            }
+            // If revised total is greater than sum of new item prices, prices were entered exclusive of GST (with GST added as fee)
+            $isPriceExclusive = ($revisedTotal > ($sumNewItems + 0.01));
+
             foreach ($modItems as $mc) {
                 $ct = $mc['change_type'];
                 $newQty = (int)($mc['new_qty'] ?? 0);
@@ -483,31 +515,45 @@ class InvoiceService
                 $sgstPercent = (float)($mc['sgst_rate'] ?? 0);
                 $cgstPercent = (float)($mc['cgst_rate'] ?? 0);
                 $totalGstPercent = (float)($mc['total_gst_rate'] ?? ($sgstPercent + $cgstPercent));
+
+                // Fallback from customization_data if tax rates were missing
+                if ($totalGstPercent <= 0 && !empty($mc['customization_data'])) {
+                    $cData = is_array($mc['customization_data']) ? $mc['customization_data'] : json_decode($mc['customization_data'], true);
+                    if (!empty($cData['gst_rate'])) {
+                        $totalGstPercent = (float)$cData['gst_rate'];
+                    } elseif (!empty($cData['fabric_cost']) && !empty($cData['gst_amount'])) {
+                        $totalGstPercent = round(((float)$cData['gst_amount'] / (float)$cData['fabric_cost']) * 100, 1);
+                    }
+                }
+                if ($totalGstPercent <= 0 && (!empty($mc['customization_id']) || !empty($mc['customization_data']) || stripos($mc['product_name'] ?? '', 'fabric') !== false)) {
+                    $totalGstPercent = 5.0;
+                }
                 if ($totalGstPercent > 0 && $sgstPercent <= 0 && $cgstPercent <= 0) {
                     $sgstPercent = round($totalGstPercent / 2, 2);
                     $cgstPercent = round($totalGstPercent / 2, 2);
                 }
 
-                $rawBase = !empty($mc['base_price']) ? (float)$mc['base_price'] : 0.0;
-                if ($rawBase > 0) {
-                    $unitBase = $rawBase;
-                } elseif ($totalGstPercent > 0) {
-                    $unitBase = round($newPrice / (1 + ($totalGstPercent / 100)), 2);
-                } else {
-                    $unitBase = $newPrice;
-                }
-
                 if ($ct !== 'removed') {
-                    if ($rawBase > 0) {
+                    if ($isPriceExclusive) {
+                        $unitBase = $newPrice;
                         $lineBase = round($unitBase * $newQty, 2);
                     } elseif ($totalGstPercent > 0) {
+                        $unitBase = round($newPrice / (1 + ($totalGstPercent / 100)), 2);
                         $lineBase = round(($newPrice * $newQty) / (1 + ($totalGstPercent / 100)), 2);
                     } else {
+                        $unitBase = $newPrice;
                         $lineBase = round($unitBase * $newQty, 2);
                     }
+
                     if ($isTamilNadu) {
-                        $lineSgst = $sgstPercent > 0 ? round($lineBase * ($sgstPercent / 100), 2) : 0.0;
-                        $lineCgst = $cgstPercent > 0 ? round($lineBase * ($cgstPercent / 100), 2) : 0.0;
+                        $lineTotalTax = $totalGstPercent > 0 ? round($lineBase * ($totalGstPercent / 100), 2) : 0.0;
+                        if ($cgstPercent + $sgstPercent > 0) {
+                            $lineCgst = round($lineTotalTax * ($cgstPercent / ($cgstPercent + $sgstPercent)), 2);
+                            $lineSgst = round($lineTotalTax - $lineCgst, 2);
+                        } else {
+                            $lineCgst = 0.0;
+                            $lineSgst = 0.0;
+                        }
                         $lineIgst = 0.0;
 
                         $cgstKey = (string)(float)$cgstPercent . '%';
@@ -517,7 +563,8 @@ class InvoiceService
                     } else {
                         $lineSgst = 0.0;
                         $lineCgst = 0.0;
-                        $lineIgst = $totalGstPercent > 0 ? round($lineBase * ($totalGstPercent / 100), 2) : 0.0;
+                        $lineTotalTax = $totalGstPercent > 0 ? round($lineBase * ($totalGstPercent / 100), 2) : 0.0;
+                        $lineIgst = $lineTotalTax;
 
                         $igstKey = (string)(float)$totalGstPercent . '%';
                         $modIgstBreakdown[$igstKey] = ($modIgstBreakdown[$igstKey] ?? 0.0) + $lineIgst;
@@ -539,18 +586,19 @@ class InvoiceService
                     $modTaxTiers[$tierKey]['sgst_amount'] += $lineSgst;
                     $modTaxTiers[$tierKey]['igst_amount'] += $lineIgst;
 
-                    $lineTotal = round($newQty * $newPrice, 2);
+                    $lineTotal = round($lineBase + $lineTotalTax, 2);
 
                     $modTotalBase += $lineBase;
                     $modTotalSgst += $lineSgst;
                     $modTotalCgst += $lineCgst;
                     $modTotalIgst += $lineIgst;
                 } else {
-                    $lineBase = 0;
-                    $lineSgst = 0;
-                    $lineCgst = 0;
-                    $lineIgst = 0;
-                    $lineTotal = 0;
+                    $unitBase = 0.0;
+                    $lineBase = 0.0;
+                    $lineSgst = 0.0;
+                    $lineCgst = 0.0;
+                    $lineIgst = 0.0;
+                    $lineTotal = 0.0;
                 }
 
                 $calculatedModItems[] = array_merge($mc, [
@@ -919,11 +967,15 @@ class InvoiceService
     $storedGrandTotal = $hasModification ? (float)$modification['revised_total'] : (float)($order['grand_total'] ?? $order['total_amount']);
     $unroundedTotal = $displayItemsTotal + $shippingFee + $platformFee + $packagingFee + $weightFee;
 
-    // Round to nearest whole integer
-    $finalGrandTotal = (float)round($unroundedTotal);
-    $roundOff = round($finalGrandTotal - $unroundedTotal, 2);
-    if (abs($roundOff) < 0.001) {
+    if ($storedGrandTotal > 0 && abs($unroundedTotal - $storedGrandTotal) < 0.05) {
+        $finalGrandTotal = $storedGrandTotal;
         $roundOff = 0.0;
+    } else {
+        $finalGrandTotal = (float)round($unroundedTotal);
+        $roundOff = round($finalGrandTotal - $unroundedTotal, 2);
+        if (abs($roundOff) < 0.001) {
+            $roundOff = 0.0;
+        }
     }
   ?>
 

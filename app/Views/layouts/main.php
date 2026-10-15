@@ -7,14 +7,18 @@ $activeCond = $isPreview ? "" : " AND is_active = 1";
 
 $components = $cacheKey ? \Core\Cache::get($cacheKey) : null;
 if (!$components) {
-    $stmtTb = $db->query("SELECT * FROM cms_components WHERE section_type = 'top_bar' $activeCond ORDER BY id DESC LIMIT 1");
-    $globalTopBar = $stmtTb->fetch();
+    $allCmpStmt = $db->query("SELECT * FROM cms_components WHERE section_type IN ('top_bar', 'navbar', 'footer') $activeCond ORDER BY id DESC");
+    $allCmpRows = $allCmpStmt->fetchAll();
 
-    $stmt = $db->query("SELECT * FROM cms_components WHERE section_type = 'navbar' $activeCond ORDER BY id DESC LIMIT 1");
-    $globalNavbar = $stmt->fetch();
+    $globalTopBar = null;
+    $globalNavbar = null;
+    $globalFooter = null;
 
-    $footerStmt = $db->query("SELECT * FROM cms_components WHERE section_type = 'footer' $activeCond ORDER BY id DESC LIMIT 1");
-    $globalFooter = $footerStmt->fetch();
+    foreach ($allCmpRows as $row) {
+        if ($row['section_type'] === 'top_bar' && !$globalTopBar) $globalTopBar = $row;
+        elseif ($row['section_type'] === 'navbar' && !$globalNavbar) $globalNavbar = $row;
+        elseif ($row['section_type'] === 'footer' && !$globalFooter) $globalFooter = $row;
+    }
 
     $components = [
         'top_bar' => $globalTopBar ?: null,
@@ -43,7 +47,7 @@ if ($hasDynamicNavbar) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= isset($title) ? htmlspecialchars($title) . ' - ' . APP_NAME : APP_NAME ?></title>
+    <title><?= (!empty($title)) ? htmlspecialchars($title) . ' - ' . APP_NAME : APP_NAME ?></title>
     
     <?php if (!empty($faviconUrl)): ?>
     <link rel="icon" href="<?= htmlspecialchars($faviconUrl) ?>">
@@ -60,6 +64,19 @@ if ($hasDynamicNavbar) {
     <!-- Cloudinary CDN preconnect (speeds up all product/media images) -->
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
+
+    <!-- Global HTML Sanitization Helpers -->
+    <script>
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+        function escapeHtmlStr(str) {
+            return escapeHtml(str);
+        }
+        window.escapeHtml = escapeHtml;
+        window.escapeHtmlStr = escapeHtmlStr;
+    </script>
 
     <!-- Compiled Tailwind CSS -->
     <link rel="stylesheet" href="<?= BASE_URL ?>/css/app.css">
@@ -231,12 +248,24 @@ if ($hasDynamicNavbar) {
                 <!-- Center Nav (desktop only) -->
                 <nav class="hidden md:flex space-x-10">
                     <?php
-                    // Load categories for mega-menu
-                    $_megaDb = \Core\Database::getInstance();
-                    $_megaStmt = $_megaDb->query("SELECT id, name, slug FROM categories WHERE status='active' ORDER BY name ASC");
-                    $_megaCategories = $_megaStmt->fetchAll(\PDO::FETCH_ASSOC);
-                    $_megaSubStmt = $_megaDb->query("SELECT id, category_id, name, slug FROM sub_categories WHERE status='active' ORDER BY name ASC");
-                    $_megaSubCategories = $_megaSubStmt->fetchAll(\PDO::FETCH_ASSOC);
+                    // Load categories for mega-menu (cached to avoid redundant DB roundtrips)
+                    $_megaMenuData = class_exists('\Core\Cache') ? \Core\Cache::get('layout_mega_categories_data') : null;
+                    if (!$_megaMenuData) {
+                        $_megaDb = \Core\Database::getInstance();
+                        $_megaStmt = $_megaDb->query("SELECT id, name, slug FROM categories WHERE status='active' ORDER BY name ASC");
+                        $_megaCategories = $_megaStmt->fetchAll(\PDO::FETCH_ASSOC);
+                        $_megaSubStmt = $_megaDb->query("SELECT id, category_id, name, slug FROM sub_categories WHERE status='active' ORDER BY name ASC");
+                        $_megaSubCategories = $_megaSubStmt->fetchAll(\PDO::FETCH_ASSOC);
+                        $_megaMenuData = [
+                            'categories' => $_megaCategories,
+                            'subCategories' => $_megaSubCategories
+                        ];
+                        if (class_exists('\Core\Cache')) {
+                            \Core\Cache::set('layout_mega_categories_data', $_megaMenuData, 3600);
+                        }
+                    }
+                    $_megaCategories = $_megaMenuData['categories'] ?? [];
+                    $_megaSubCategories = $_megaMenuData['subCategories'] ?? [];
                     // Group subs by category_id
                     $_megaSubMap = [];
                     foreach ($_megaSubCategories as $sc) {
@@ -1222,7 +1251,7 @@ if ($hasDynamicNavbar) {
                 clearTimeout(cartUpdateTimers[cartItemId]);
             }
 
-            // Debounce the network request by 150ms so rapid consecutive taps are bundled into one smooth server call
+            // Debounce the network request by 75ms so rapid consecutive taps are bundled into an ultra-fast server call
             cartUpdateTimers[cartItemId] = setTimeout(() => {
                 const sendQty = cartPendingQty[cartItemId] ? cartPendingQty[cartItemId].qty : newQty;
                 const seq = (cartDrawerReqSeq[cartItemId] || 0) + 1;
@@ -1258,7 +1287,7 @@ if ($hasDynamicNavbar) {
                     }
                     console.error('Error updating cart:', err);
                 });
-            }, 150);
+            }, 75);
         }
 
         // Send a cart update to the server (keepalive: request survives page navigation/refresh)
@@ -1576,11 +1605,11 @@ if ($hasDynamicNavbar) {
 
                                         <!-- Bottom (Below Trash): Quantity Stepper with NO dividing line -->
                                         <div class="inline-flex items-center border border-pink-200 rounded-xl bg-white p-0.5 shadow-2xs mt-auto select-none" style="touch-action: manipulation;">
-                                            <button type="button" onclick="updateCartItem(${item.cart_item_id}, -1, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;" ${item.quantity <= (item.moq || 1) ? 'disabled' : ''}>&minus;</button>
+                                            <button type="button" onclick="updateCartItem(${item.cart_item_id}, -${(item.moq && parseInt(item.moq) > 0) ? parseInt(item.moq) : 1}, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;" ${item.quantity <= (item.moq || 1) ? 'disabled' : ''}>&minus;</button>
                                             <div class="h-3 w-[1px] bg-pink-100"></div>
                                             <span id="cart-drawer-qty-${item.cart_item_id}" class="text-xs font-bold w-6 text-center text-[#F25996] select-none pointer-events-none">${item.quantity}</span>
                                             <div class="h-3 w-[1px] bg-pink-100"></div>
-                                            <button type="button" onclick="updateCartItem(${item.cart_item_id}, 1, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;" ${isMaxStock ? 'disabled' : ''}>&plus;</button>
+                                            <button type="button" onclick="updateCartItem(${item.cart_item_id}, ${(item.moq && parseInt(item.moq) > 0) ? parseInt(item.moq) : 1}, ${item.moq || 1}, this, ${item.available_stock})" class="w-6 h-6 flex items-center justify-center text-[#F25996] hover:bg-pink-50 active:scale-90 active:bg-pink-100 rounded transition-all disabled:opacity-30 disabled:cursor-not-allowed text-sm font-bold cursor-pointer select-none" style="touch-action: manipulation; -webkit-tap-highlight-color: transparent;" ${isMaxStock ? 'disabled' : ''}>&plus;</button>
                                         </div>
                                     </div>
                                 </div>
@@ -2064,7 +2093,7 @@ if ($hasDynamicNavbar) {
         <div class="relative w-full max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] transform scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
             <!-- Header / Search Bar -->
             <form id="searchDrawerForm" action="<?= BASE_URL ?>/catalog" method="GET" class="flex items-center w-full px-4 py-3 sm:py-4 border-b border-gray-100 shrink-0">
-                <button type="submit" class="text-gray-400 hover:text-brand-600 focus:outline-none transition-colors shrink-0 p-1">
+                <button type="submit" class="text-gray-400 hover:text-[#F25996] focus:outline-none transition-colors shrink-0 p-1">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
@@ -2078,24 +2107,25 @@ if ($hasDynamicNavbar) {
             </form>
 
             <!-- Results Container -->
-            <div class="overflow-y-auto p-4 md:p-6 bg-[#faf8f5]">
+            <div class="overflow-y-auto p-4 md:p-6 bg-gray-50/40">
                 <!-- Loading Indicator -->
                 <div id="searchLoading" class="hidden py-8 text-center text-gray-500">
-                    Searching...
+                    <div class="inline-block animate-spin rounded-full h-6 w-6 border-2 border-t-[#F25996] border-r-transparent border-b-[#F25996] border-l-transparent mb-2"></div>
+                    <p class="text-sm font-medium text-gray-500">Searching...</p>
                 </div>
 
                 <!-- Categories Section -->
                 <div id="searchCategoriesSection" class="hidden mb-6">
-                    <h3 class="text-xs font-bold text-gray-500 tracking-wider mb-3 uppercase">Categories</h3>
+                    <h3 class="text-xs font-bold text-gray-400 tracking-wider mb-3 uppercase">Categories</h3>
                     <ul id="searchCategoriesList" class="space-y-3">
                         <!-- Populated via JS -->
                     </ul>
                 </div>
 
                 <!-- Products Section -->
-                <div id="searchProductsSection" class="hidden border-t border-gray-200 pt-6">
-                    <h3 class="text-xs font-bold text-gray-500 tracking-wider mb-3 uppercase">Products</h3>
-                    <ul id="searchProductsList" class="space-y-4">
+                <div id="searchProductsSection" class="hidden border-t border-gray-100 pt-6">
+                    <h3 class="text-xs font-bold text-gray-400 tracking-wider mb-3 uppercase">Products</h3>
+                    <ul id="searchProductsList" class="space-y-3">
                         <!-- Populated via JS -->
                     </ul>
                 </div>
@@ -2106,8 +2136,8 @@ if ($hasDynamicNavbar) {
                 </div>
 
                 <!-- View All Link -->
-                <div id="searchViewAll" class="hidden text-center border-t border-gray-200 pt-4 mt-6">
-                    <a href="#" id="searchViewAllLink" class="text-sm font-bold text-[#8c6a4f] hover:underline">View All Results</a>
+                <div id="searchViewAll" class="hidden text-center border-t border-gray-100 pt-4 mt-6">
+                    <a href="#" id="searchViewAllLink" class="text-sm font-bold text-[#F25996] hover:text-[#d8407d] hover:underline">View All Results</a>
                 </div>
             </div>
         </div>
@@ -2208,11 +2238,11 @@ if ($hasDynamicNavbar) {
                 data.categories.forEach(cat => {
                     html += `
                         <li>
-                            <a href="<?= BASE_URL ?>/catalog?q=${encodeURIComponent(cat.name)}" class="flex items-center group">
-                                <div class="w-10 h-10 rounded-full bg-[#f0eadd] flex items-center justify-center mr-4 group-hover:bg-[#e4dcd0] transition-colors">
-                                    <svg class="w-5 h-5 text-[#8c6a4f]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            <a href="<?= BASE_URL ?>/catalog?q=${encodeURIComponent(cat.name)}" class="flex items-center p-2 -mx-2 rounded-xl group hover:bg-pink-50/50 transition-colors">
+                                <div class="w-10 h-10 rounded-full bg-pink-50 flex items-center justify-center mr-4 group-hover:bg-pink-100/70 transition-colors">
+                                    <svg class="w-5 h-5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                                 </div>
-                                <span class="text-lg font-display font-semibold text-gray-900 group-hover:text-[#8c6a4f] transition-colors">${cat.name}</span>
+                                <span class="text-base font-semibold text-gray-900 group-hover:text-[#F25996] transition-colors">${cat.name}</span>
                             </a>
                         </li>
                     `;
@@ -2236,21 +2266,21 @@ if ($hasDynamicNavbar) {
                             priceHtml = `
                                 <div class="text-right shrink-0">
                                     <span class="text-[11px] text-gray-400 line-through block">₹${formatNum(prod.base_price)}</span>
-                                    <span class="font-extrabold text-[#b94a3e] text-xs sm:text-sm block">₹${formatNum(prod.discount_price)}</span>
+                                    <span class="font-extrabold text-[#F25996] text-xs sm:text-sm block">₹${formatNum(prod.discount_price)}</span>
                                 </div>`;
                         } else {
-                            priceHtml = `<div class="font-extrabold text-[#8c6a4f] text-xs sm:text-sm shrink-0">₹${formatNum(prod.base_price)}</div>`;
+                            priceHtml = `<div class="font-extrabold text-[#F25996] text-xs sm:text-sm shrink-0">₹${formatNum(prod.base_price)}</div>`;
                         }
                     }
                     const imageSrc = prod.primary_image ? prod.primary_image : 'https://placehold.co/100x100?text=No+Image';
                     
                     html += `
                         <li>
-                            <a href="<?= BASE_URL ?>/product?id=${prod.id}" class="flex items-center group p-2 -mx-2 rounded-lg hover:bg-[#f0eadd] transition-colors">
-                                <img src="${imageSrc}" alt="${prod.name}" class="w-16 h-16 object-cover rounded-md mr-4 shadow-sm">
-                                <div class="flex-1">
-                                    <h4 class="font-display font-bold text-gray-900 text-lg group-hover:text-[#8c6a4f] transition-colors">${prod.name}</h4>
-                                    <p class="text-gray-500 text-sm">${prod.category_name}</p>
+                            <a href="<?= BASE_URL ?>/product?id=${prod.id}" class="flex items-center group p-2.5 -mx-2 rounded-xl hover:bg-pink-50/50 transition-colors">
+                                <img src="${imageSrc}" alt="${prod.name}" class="w-14 h-14 object-cover rounded-lg mr-3.5 shadow-xs border border-gray-100">
+                                <div class="flex-1 min-w-0 pr-2">
+                                    <h4 class="font-bold text-gray-900 text-sm sm:text-base group-hover:text-[#F25996] transition-colors truncate">${prod.name}</h4>
+                                    <p class="text-gray-400 text-xs truncate">${prod.category_name || ''}</p>
                                 </div>
                                 ${priceHtml}
                             </a>

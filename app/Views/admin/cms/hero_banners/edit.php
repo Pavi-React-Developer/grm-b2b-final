@@ -199,16 +199,6 @@
                                 <span class="text-xs text-gray-500 whitespace-nowrap">vh (default: 100)</span>
                             </div>
                         </div>
-
-                        <div>
-                            <label class="block text-xs font-serif font-bold text-gray-600 uppercase tracking-wider mb-2">Image Fit</label>
-                            <?php $currentFit = $content['image_fit'] ?? 'cover'; ?>
-                            <select name="image_fit" class="w-full border border-gray-200 rounded-lg px-3 py-2 outline-none focus:border-brown text-sm">
-                                <option value="cover" <?= $currentFit === 'cover' ? 'selected' : '' ?>>Cover (Fills, Crops)</option>
-                                <option value="contain" <?= $currentFit === 'contain' ? 'selected' : '' ?>>Contain (Full Image, Empty Space)</option>
-                                <option value="fill" <?= $currentFit === 'fill' ? 'selected' : '' ?>>Stretch (Fills, Distorts)</option>
-                            </select>
-                        </div>
                     </div>
 
                     <div class="border-t border-gray-100 pt-6 mt-6">
@@ -290,17 +280,40 @@
                         $mType = $media['type'] ?? 'image';
                         $isVideo = $mType === 'video' || preg_match('/\.(mp4|webm|ogg)/i', $dUrl);
                     ?>
-                        <div class="bg-white border border-gray-200 rounded-xl p-5 relative group media-item-row">
-                            <button type="button" class="absolute top-4 right-4 text-red-400 hover:text-red-600 remove-media-btn" title="Remove">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            </button>
+                        <div class="bg-white border border-gray-200 rounded-xl p-5 relative group media-item-row shadow-sm">
+                            <div class="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    Media Item #<?= $idx + 1 ?>
+                                </span>
+                                <button type="button" class="remove-media-btn inline-flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1 rounded-md transition-colors" title="Delete this media item">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    <span>Delete</span>
+                                </button>
+                            </div>
                             
-                            <div class="mb-4 w-full sm:w-1/3">
-                                <label class="block text-[10px] font-serif font-bold text-gray-500 uppercase tracking-wider mb-1">Type</label>
-                                <select name="media_type[]" class="media-type-select w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm bg-white outline-none">
-                                    <option value="image" <?= $mType === 'image' ? 'selected' : '' ?>>Image</option>
-                                    <option value="video" <?= $mType === 'video' ? 'selected' : '' ?>>Video</option>
-                                </select>
+                            <?php $mediaOpacity = isset($media['opacity']) && $media['opacity'] !== '' ? (int)$media['opacity'] : 100; ?>
+                            <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                                <div>
+                                    <label class="block text-[10px] font-serif font-bold text-gray-500 uppercase tracking-wider mb-1">Type</label>
+                                    <select name="media_type[]" class="media-type-select w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm bg-white outline-none">
+                                        <option value="image" <?= $mType === 'image' ? 'selected' : '' ?>>Image</option>
+                                        <option value="video" <?= $mType === 'video' ? 'selected' : '' ?>>Video</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <label class="block text-[10px] font-serif font-bold text-gray-500 uppercase tracking-wider">Banner Overlay Opacity</label>
+                                        <span class="text-xs font-bold text-[#F25996] opacity-display"><?= $mediaOpacity ?>%</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <input type="range" min="0" max="100" value="<?= $mediaOpacity ?>" class="media-opacity-slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#F25996]">
+                                        <div class="flex items-center gap-1 shrink-0">
+                                            <input type="number" name="media_opacity[]" min="0" max="100" value="<?= $mediaOpacity ?>" class="media-opacity-input w-16 border border-gray-200 rounded-md px-2 py-1 text-xs text-center font-bold outline-none focus:border-brown">
+                                            <span class="text-xs text-gray-500 font-bold">%</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -313,11 +326,21 @@
                                         </div>
                                         <div class="upload-preview <?= $dUrl ? '' : 'hidden' ?> mt-1">
                                             <?php if($dUrl): ?>
-                                                <?php if($isVideo): ?>
-                                                    <video src="<?= $dUrl ?>" class="w-full h-32 rounded-md object-cover" controls muted></video>
-                                                <?php else: ?>
-                                                    <img src="<?= $dUrl ?>" class="w-full h-32 rounded-md object-cover" alt="Desktop preview">
-                                                <?php endif; ?>
+                                                <div class="relative group/thumb rounded-md overflow-hidden cursor-pointer">
+                                                    <?php if($isVideo): ?>
+                                                        <video src="<?= $dUrl ?>" class="w-full h-32 rounded-md object-cover" muted></video>
+                                                    <?php else: ?>
+                                                        <img src="<?= $dUrl ?>" class="w-full h-32 rounded-md object-cover" alt="Desktop preview">
+                                                    <?php endif; ?>
+                                                    <div class="preview-black-overlay absolute inset-0 pointer-events-none transition-colors" style="background-color: rgba(0, 0, 0, <?= $mediaOpacity / 100 ?>);"></div>
+                                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                                        <span class="bg-white/95 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full shadow flex items-center gap-1.5 pointer-events-auto cursor-pointer">
+                                                            <svg class="w-3.5 h-3.5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                            Change Media
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <p class="text-[10px] text-gray-400 mt-1 truncate"><?= htmlspecialchars(basename($dUrl)) ?></p>
                                             <?php endif; ?>
                                         </div>
                                         <input type="file" class="upload-file-input hidden" accept="image/*,video/*">
@@ -334,11 +357,21 @@
                                         </div>
                                         <div class="upload-preview <?= $mUrl ? '' : 'hidden' ?> mt-1">
                                             <?php if($mUrl): ?>
-                                                <?php if($isVideo): ?>
-                                                    <video src="<?= $mUrl ?>" class="w-full h-32 rounded-md object-cover" controls muted></video>
-                                                <?php else: ?>
-                                                    <img src="<?= $mUrl ?>" class="w-full h-32 rounded-md object-cover" alt="Mobile preview">
-                                                <?php endif; ?>
+                                                <div class="relative group/thumb rounded-md overflow-hidden cursor-pointer">
+                                                    <?php if($isVideo): ?>
+                                                        <video src="<?= $mUrl ?>" class="w-full h-32 rounded-md object-cover" muted></video>
+                                                    <?php else: ?>
+                                                        <img src="<?= $mUrl ?>" class="w-full h-32 rounded-md object-cover" alt="Mobile preview">
+                                                    <?php endif; ?>
+                                                    <div class="preview-black-overlay absolute inset-0 pointer-events-none transition-colors" style="background-color: rgba(0, 0, 0, <?= $mediaOpacity / 100 ?>);"></div>
+                                                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                                                        <span class="bg-white/95 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full shadow flex items-center gap-1.5 pointer-events-auto cursor-pointer">
+                                                            <svg class="w-3.5 h-3.5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                                            Change Media
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <p class="text-[10px] text-gray-400 mt-1 truncate"><?= htmlspecialchars(basename($mUrl)) ?></p>
                                             <?php endif; ?>
                                         </div>
                                         <input type="file" class="upload-file-input hidden" accept="image/*,video/*">
@@ -367,17 +400,39 @@
 
 <!-- Template for new media item -->
 <template id="mediaTemplate">
-    <div class="bg-white border border-gray-200 rounded-xl p-5 relative group media-item-row">
-        <button type="button" class="absolute top-4 right-4 text-red-400 hover:text-red-600 remove-media-btn" title="Remove">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-        </button>
+    <div class="bg-white border border-gray-200 rounded-xl p-5 relative group media-item-row shadow-sm">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-gray-100">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Media Item
+            </span>
+            <button type="button" class="remove-media-btn inline-flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1 rounded-md transition-colors" title="Delete this media item">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <span>Delete</span>
+            </button>
+        </div>
         
-        <div class="mb-4 w-1/3">
-            <label class="block text-[10px] font-serif font-bold text-gray-500 uppercase tracking-wider mb-1">Type</label>
-            <select name="media_type[]" class="media-type-select w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm bg-white outline-none">
-                <option value="image">Image</option>
-                <option value="video">Video</option>
-            </select>
+        <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+            <div>
+                <label class="block text-[10px] font-serif font-bold text-gray-500 uppercase tracking-wider mb-1">Type</label>
+                <select name="media_type[]" class="media-type-select w-full border border-gray-200 rounded-md px-3 py-1.5 text-sm bg-white outline-none">
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                </select>
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-[10px] font-serif font-bold text-gray-500 uppercase tracking-wider">Banner Overlay Opacity</label>
+                    <span class="text-xs font-bold text-[#F25996] opacity-display">0%</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="range" min="0" max="100" value="0" class="media-opacity-slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#F25996]">
+                    <div class="flex items-center gap-1 shrink-0">
+                        <input type="number" name="media_opacity[]" min="0" max="100" value="0" class="media-opacity-input w-16 border border-gray-200 rounded-md px-2 py-1 text-xs text-center font-bold outline-none focus:border-brown">
+                        <span class="text-xs text-gray-500 font-bold">%</span>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -426,15 +481,22 @@
 
 <!-- Media Picker Modal -->
 <div id="mediaPickerModal" class="fixed inset-0 bg-gray-900/50 hidden z-[100] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-5xl rounded-xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-        <div class="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-100">
-            <h3 class="font-serif font-bold text-gray-800 text-lg">Select Media</h3>
-            <button type="button" id="closeMediaPickerBtn" class="text-gray-400 hover:text-gray-600">
+    <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+        <div class="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+            <div class="flex items-center gap-4">
+                <h3 class="font-serif font-bold text-gray-800 text-lg">Select Media</h3>
+                <label id="mediaPickerUploadLbl" class="cursor-pointer inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#F25996] hover:bg-[#d63f7d] text-white text-xs font-bold rounded-lg shadow-sm transition-all active:scale-95">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <span id="mediaPickerUploadText">Upload Image / Video</span>
+                    <input type="file" id="mediaPickerFileInput" class="hidden" accept="image/*,video/*">
+                </label>
+            </div>
+            <button type="button" id="closeMediaPickerBtn" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
         </div>
         <div class="p-6 overflow-y-auto flex-1 min-h-0">
-            <div id="mediaPickerGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div id="mediaPickerGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 <div class="col-span-full text-center text-gray-400 py-12">Loading media...</div>
             </div>
         </div>
@@ -481,22 +543,75 @@ document.addEventListener('DOMContentLoaded', function() {
     // Init upload zones for all pre-rendered rows
     container.querySelectorAll('.media-item-row').forEach(row => initUploadZones(row));
 
+    function bindOpacityControls(row) {
+        const slider = row.querySelector('.media-opacity-slider');
+        const input = row.querySelector('.media-opacity-input');
+        const display = row.querySelector('.opacity-display');
+        if (!slider || !input) return;
+
+        function update(val) {
+            val = Math.max(0, Math.min(100, parseInt(val) || 0));
+            slider.value = val;
+            input.value = val;
+            if (display) display.textContent = val + '%';
+            row.querySelectorAll('.preview-black-overlay').forEach(el => {
+                el.style.backgroundColor = `rgba(0, 0, 0, ${val / 100})`;
+            });
+            row.querySelectorAll('.upload-preview img, .upload-preview video').forEach(el => {
+                el.style.opacity = '1';
+            });
+        }
+
+        slider.addEventListener('input', () => update(slider.value));
+        input.addEventListener('input', () => update(input.value));
+        update(input.value);
+    }
+
     // ---- Upload Zones ----
     function renderPreview(zone, url, type) {
         const placeholder = zone.querySelector('.upload-placeholder');
         const preview = zone.querySelector('.upload-preview');
         const spinner = zone.querySelector('.upload-spinner');
-        placeholder.classList.add('hidden');
-        spinner.classList.add('hidden');
-        preview.classList.remove('hidden');
+        if (placeholder) placeholder.classList.add('hidden');
+        if (spinner) spinner.classList.add('hidden');
+        if (preview) preview.classList.remove('hidden');
+        const row = zone.closest('.media-item-row');
+        const opInput = row ? row.querySelector('.media-opacity-input') : null;
+        const opVal = opInput ? (parseInt(opInput.value) || 0) / 100 : 0;
+        const fileName = (url || '').split('/').pop();
         if (type === 'video' || /\.(mp4|webm|ogg)$/i.test(url)) {
-            preview.innerHTML = `<video src="${url}" class="w-full h-32 rounded-md object-cover" controls muted></video><p class="text-[10px] text-gray-400 mt-1 truncate">${url.split('/').pop()}</p>`;
+            preview.innerHTML = `
+                <div class="relative group/thumb rounded-md overflow-hidden cursor-pointer">
+                    <video src="${url}" class="w-full h-32 rounded-md object-cover" muted></video>
+                    <div class="preview-black-overlay absolute inset-0 pointer-events-none transition-colors" style="background-color: rgba(0, 0, 0, ${opVal});"></div>
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <span class="bg-white/95 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full shadow flex items-center gap-1.5 pointer-events-auto cursor-pointer">
+                            <svg class="w-3.5 h-3.5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Change Media
+                        </span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-1 truncate">${fileName}</p>
+            `;
         } else {
-            preview.innerHTML = `<img src="${url}" class="w-full h-32 rounded-md object-cover" alt="preview"><p class="text-[10px] text-gray-400 mt-1 truncate">${url.split('/').pop()}</p>`;
+            preview.innerHTML = `
+                <div class="relative group/thumb rounded-md overflow-hidden cursor-pointer">
+                    <img src="${url}" class="w-full h-32 rounded-md object-cover" alt="preview">
+                    <div class="preview-black-overlay absolute inset-0 pointer-events-none transition-colors" style="background-color: rgba(0, 0, 0, ${opVal});"></div>
+                    <div class="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                        <span class="bg-white/95 text-gray-800 text-xs font-bold px-3 py-1.5 rounded-full shadow flex items-center gap-1.5 pointer-events-auto cursor-pointer">
+                            <svg class="w-3.5 h-3.5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Change Media
+                        </span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-1 truncate">${fileName}</p>
+            `;
         }
     }
 
     function initUploadZones(row) {
+        bindOpacityControls(row);
         row.querySelectorAll('.upload-drop-zone').forEach(zone => {
             const fileInput = zone.querySelector('.upload-file-input');
             const target = zone.getAttribute('data-target');
@@ -506,14 +621,14 @@ document.addEventListener('DOMContentLoaded', function() {
             // Guard: skip if critical elements are missing
             if (!urlInput) return;
 
+            // Clicking drop zone or preview image/video triggers media picker
             zone.addEventListener('click', e => {
-                if (!e.target.closest('video, img, input, button')) {
-                    openMediaPicker((selectedUrl, isVideo) => {
-                        urlInput.value = selectedUrl;
-                        if (typeSelect) typeSelect.value = isVideo ? 'video' : 'image';
-                        renderPreview(zone, selectedUrl, isVideo ? 'video' : 'image');
-                    });
-                }
+                if (e.target.closest('input, button.remove-media-btn')) return;
+                openMediaPicker((selectedUrl, isVideo) => {
+                    urlInput.value = selectedUrl;
+                    if (typeSelect) typeSelect.value = isVideo ? 'video' : 'image';
+                    renderPreview(zone, selectedUrl, isVideo ? 'video' : 'image');
+                });
             });
 
             zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('border-brown'); });
@@ -542,9 +657,57 @@ document.addEventListener('DOMContentLoaded', function() {
     const pickerModal = document.getElementById('mediaPickerModal');
     const pickerGrid = document.getElementById('mediaPickerGrid');
     const closePickerBtn = document.getElementById('closeMediaPickerBtn');
+    const pickerFileInput = document.getElementById('mediaPickerFileInput');
+    const pickerUploadLbl = document.getElementById('mediaPickerUploadLbl');
+    const pickerUploadText = document.getElementById('mediaPickerUploadText');
     let pickerCallback = null;
 
     closePickerBtn.addEventListener('click', () => pickerModal.classList.add('hidden'));
+
+    // Upload button inside Media Picker modal
+    if (pickerFileInput) {
+        pickerFileInput.addEventListener('change', function() {
+            if (!this.files || this.files.length === 0) return;
+            const file = this.files[0];
+            const isVideo = file.type.startsWith('video') || /\.(mp4|webm|ogg)$/i.test(file.name);
+            const originalText = pickerUploadText.innerText;
+
+            pickerUploadText.innerText = 'Uploading to Cloudinary...';
+            pickerUploadLbl.classList.add('opacity-70', 'pointer-events-none');
+
+            const fd = new FormData();
+            fd.append('image', file);
+
+            fetch('<?= BASE_URL ?>/admin/media/upload', {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success && data.url) {
+                    showUploadToast('Uploaded to Cloudinary successfully!', 'success');
+                    if (pickerCallback) {
+                        pickerCallback(data.url, isVideo);
+                        pickerModal.classList.add('hidden');
+                    } else {
+                        openMediaPicker(pickerCallback);
+                    }
+                } else {
+                    alert('Upload failed: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(err => {
+                console.error('Upload Error:', err);
+                alert('Upload error. Please try again.');
+            })
+            .finally(() => {
+                pickerUploadText.innerText = originalText;
+                pickerUploadLbl.classList.remove('opacity-70', 'pointer-events-none');
+                pickerFileInput.value = '';
+            });
+        });
+    }
 
     function openMediaPicker(callback) {
         pickerCallback = callback;
@@ -568,7 +731,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                 }
                             </div>
                             <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <span class="text-white text-xs font-bold bg-brown px-3 py-1 rounded-full shadow">Select</span>
+                                <span class="text-white text-xs font-bold bg-[#F25996] px-3 py-1 rounded-full shadow">Select</span>
                             </div>
                         `;
                         div.addEventListener('click', () => {

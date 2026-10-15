@@ -197,10 +197,11 @@ class CheckoutController extends Controller
             $orderModel = new Order();
             $orderNumber = $orderModel->createOrder($userId, $cartItems, $totalAmount, $address, $feeDetails);
             
-            // Get user details for Cashfree
+            // Get user details for Razorpay
             $db = \Core\Database::getInstance();
             $stmt = $db->prepare("SELECT phone, name, email FROM users WHERE id = ?");
             $stmt->execute([$userId]);
+            $user = $stmt->fetch() ?: [];
             
             // Handle saving new address
             if (($_POST['is_new_address'] ?? '0') === '1') {
@@ -470,6 +471,12 @@ class CheckoutController extends Controller
             return;
         }
 
+        // If order was already paid and assigned a GB number, redirect directly to success
+        if ($order['payment_status'] === 'paid' && strpos($order['order_number'], 'PENDING-') !== 0) {
+            $this->redirect('/order-success?order_id=' . $order['order_number']);
+            return;
+        }
+
         // =========================================================================
         // [ARCHIVED] Cashfree Payment Verification — Commented out for future reference
         // =========================================================================
@@ -514,6 +521,22 @@ class CheckoutController extends Controller
             if (!empty($paymentDetails['status']) && in_array($paymentDetails['status'], ['captured', 'authorized'])) {
                 $isVerified = true;
             }
+        } elseif (!empty($order['razorpay_order_id'])) {
+            // Direct Gateway Verification by Razorpay Order ID (e.g. if redirect didn't pass POST parameters)
+            $rzpOrder = $razorpayService->fetchOrder($order['razorpay_order_id']);
+            if (!empty($rzpOrder['status']) && $rzpOrder['status'] === 'paid') {
+                $rzpPayments = $razorpayService->fetchOrderPayments($order['razorpay_order_id']);
+                if (!empty($rzpPayments['items'])) {
+                    foreach ($rzpPayments['items'] as $payItem) {
+                        if (in_array($payItem['status'] ?? '', ['captured', 'authorized'])) {
+                            $isVerified = true;
+                            $razorpayPaymentId = $payItem['id'];
+                            $paymentDetails = $payItem;
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         if ($isVerified) {
@@ -529,17 +552,39 @@ class CheckoutController extends Controller
                 }
             }
 
-            // Generate successful GB order number if not already assigned
+            // Generate successful unique GB order number if not already assigned
             $finalOrderNumber = $orderNumber;
             if (strpos($orderNumber, 'PENDING-') === 0) {
-                $stmt = $db->query("SELECT order_number FROM orders WHERE order_number LIKE 'GB%' ORDER BY id DESC LIMIT 1");
-                $lastOrder = $stmt->fetchColumn();
-                if ($lastOrder) {
-                    $num = (int)str_replace('GB', '', $lastOrder);
-                    $finalOrderNumber = 'GB' . str_pad($num + 1, 5, '0', STR_PAD_LEFT);
-                } else {
-                    $finalOrderNumber = 'GB00001';
+                // Query strictly standard B2B orders matching 'GB' followed only by digits
+                // Exclude 'GBC%' which are custom fabric orders
+                $stmt = $db->query("
+                    SELECT order_number 
+                    FROM orders 
+                    WHERE order_number REGEXP '^GB[0-9]+$' 
+                    ORDER BY id DESC
+                ");
+                $gbOrders = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+                $maxNum = 0;
+                foreach ($gbOrders as $ord) {
+                    if (preg_match('/^GB(\d+)$/', $ord, $matches)) {
+                        $numVal = (int)$matches[1];
+                        if ($numVal > $maxNum) {
+                            $maxNum = $numVal;
+                        }
+                    }
                 }
+
+                // Increment and guarantee uniqueness
+                do {
+                    $maxNum++;
+                    $candidateOrderNumber = 'GB' . str_pad($maxNum, 5, '0', STR_PAD_LEFT);
+                    $chk = $db->prepare("SELECT COUNT(*) FROM orders WHERE order_number = ?");
+                    $chk->execute([$candidateOrderNumber]);
+                    $exists = ((int)$chk->fetchColumn()) > 0;
+                } while ($exists);
+
+                $finalOrderNumber = $candidateOrderNumber;
             }
 
             $stmt = $db->prepare("
@@ -554,7 +599,7 @@ class CheckoutController extends Controller
             $stmt->execute([$razorpayPaymentId, $razorpayOrderId, $finalOrderNumber, $orderNumber]);
             
             // Reduce stock
-            $orderModel = new \App\Models\Order();
+            $orderModel = new Order();
             $orderModel->reduceStockForOrder($finalOrderNumber);
             
             // Clear the cart here upon successful payment
@@ -807,11 +852,11 @@ class CheckoutController extends Controller
             $state = $otherState;
         }
         $postal= trim($_POST['postal_code'] ?? '');
-        $country = 'India';
+        $country = trim($_POST['country'] ?? 'India') ?: 'India';
         $isDefault = !empty($_POST['is_default']) ? 1 : 0;
 
-        if (empty($line1) || empty($city) || empty($state) || $state === 'Others' || empty($postal)) {
-            echo json_encode(['error' => 'Please fill in all required fields.']);
+        if (empty($line1) || empty($city) || empty($state) || empty($postal)) {
+            echo json_encode(['error' => 'Please fill in all required fields (Address Line 1, State, District/City, Pincode).']);
             exit;
         }
 
@@ -846,11 +891,11 @@ class CheckoutController extends Controller
             $state = $otherState;
         }
         $postal= trim($_POST['postal_code'] ?? '');
-        $country = 'India';
+        $country = trim($_POST['country'] ?? 'India') ?: 'India';
         $isDefault = !empty($_POST['is_default']) ? 1 : 0;
 
-        if (!$addressId || empty($line1) || empty($city) || empty($state) || $state === 'Others' || empty($postal)) {
-            echo json_encode(['error' => 'Please fill in all required fields.']);
+        if (!$addressId || empty($line1) || empty($city) || empty($state) || empty($postal)) {
+            echo json_encode(['error' => 'Please fill in all required fields (Address Line 1, State, District/City, Pincode).']);
             exit;
         }
 

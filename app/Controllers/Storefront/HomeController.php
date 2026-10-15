@@ -8,16 +8,26 @@ class HomeController extends Controller
 {
     public function index()
     {
-        $productModel = new Product();
-        $products = $productModel->getAllActive(null, null, null, [], 'newest', 0);
+        $cachedProducts = class_exists('\Core\Cache') ? \Core\Cache::get('home_active_products') : null;
+        if ($cachedProducts !== null) {
+            $products = $cachedProducts;
+        } else {
+            $productModel = new Product();
+            $products = $productModel->getAllActive(null, null, null, [], 'newest', 0);
+
+            // Attach variants to each product (batch loaded in a single query to eliminate N+1 latency)
+            $pIds = array_column($products, 'id');
+            $variantsMap = $productModel->getInventoryVariantsForProducts($pIds);
+            foreach ($products as &$product) {
+                $product['variants'] = $variantsMap[$product['id']] ?? [];
+            }
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::set('home_active_products', $products, 600); // 10 minutes cache
+            }
+        }
 
         $categoryModel = new \App\Models\Category();
         $categories = $categoryModel->getAll(0);
-
-        // Attach variants to each product
-        foreach ($products as &$product) {
-            $product['variants'] = $productModel->getInventoryProductVariants($product['id']);
-        }
 
         $wishlistIds = [];
         if (\Core\Session::get('user_id')) {

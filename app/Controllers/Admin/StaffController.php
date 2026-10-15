@@ -36,8 +36,12 @@ class StaffController extends Controller
             'products' => ['label' => 'Products', 'actions' => ['view', 'create', 'edit', 'delete']],
         ],
         'Customize' => [
-            'fabric_customizations' => ['label' => 'Fabric Customization Rules', 'actions' => ['view', 'create', 'edit', 'delete']],
-            'custom_orders' => ['label' => 'Customized Orders', 'actions' => ['view', 'edit']],
+            'customize_categories' => ['label' => 'Category', 'actions' => ['view', 'create', 'edit', 'delete']],
+            'customize_subcategories' => ['label' => 'Sub Category', 'actions' => ['view', 'create', 'edit', 'delete']],
+            'customize_attributes' => ['label' => 'Attributes', 'actions' => ['view', 'create', 'edit', 'delete']],
+            'customize_products' => ['label' => 'Products / Fabrics', 'actions' => ['view', 'create', 'edit', 'delete']],
+            'customization_labels' => ['label' => 'Customization Labels', 'actions' => ['view', 'create', 'edit', 'delete']],
+            'custom_orders' => ['label' => 'Custom Orders', 'actions' => ['view', 'edit']],
         ],
         'Inventory' => [
             'inventory' => ['label' => 'Inventory Management', 'actions' => ['view', 'edit']],

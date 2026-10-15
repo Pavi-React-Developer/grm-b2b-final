@@ -180,6 +180,8 @@ $router->get('/logout', 'App\Controllers\Storefront\AuthController@logout');
 // Storefront Fabric Customization Routes
 $router->get('/customize', 'App\Controllers\Storefront\FabricCustomizationController@customizeListing');
 $router->get('/fabrics/customize', 'App\Controllers\Storefront\FabricCustomizationController@customizeWorkshop');
+$router->get('/fabrics/customize/checkout', 'App\Controllers\Storefront\FabricCustomizationController@checkoutPage');
+$router->post('/fabrics/customize/checkout', 'App\Controllers\Storefront\FabricCustomizationController@checkoutPage');
 $router->post('/fabrics/customization/calculate', 'App\Controllers\Storefront\FabricCustomizationController@calculateAjax');
 $router->post('/fabrics/customization/request-order', 'App\Controllers\Storefront\FabricCustomizationController@requestOrderAjax');
 $router->post('/fabrics/customization/razorpay-init', 'App\Controllers\Storefront\FabricCustomizationController@razorpayInitAjax');

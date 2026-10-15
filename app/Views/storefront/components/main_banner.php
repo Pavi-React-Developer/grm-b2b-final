@@ -61,7 +61,11 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
 
         <!-- Slide Track -->
         <div class="slider-track-mb w-full h-full absolute inset-0 rounded-inherit overflow-hidden" id="<?= $sliderId ?>">
-            <?php foreach($mediaItems as $idx => $m): ?>
+            <?php foreach($mediaItems as $idx => $m): 
+                $overlayOpacity = isset($m['opacity']) && $m['opacity'] !== '' ? (float)$m['opacity'] : 0;
+                $overlayFrac = $overlayOpacity > 1 ? ($overlayOpacity / 100) : $overlayOpacity;
+                $overlayFrac = max(0, min(1, $overlayFrac));
+            ?>
                 <div class="slide-mb absolute inset-0 w-full h-full transition-all duration-700 ease-in-out <?= $idx === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0' ?>" data-index="<?= $idx ?>">
                     <?php if(($m['type'] ?? 'image') === 'video'): ?>
                         <video src="<?= htmlspecialchars($m['desktop']) ?>" autoplay loop muted playsinline class="absolute inset-0 w-full h-full <?= $objectFitClass ?>"></video>
@@ -73,7 +77,9 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
                             <img src="<?= htmlspecialchars($m['desktop']) ?>" class="absolute inset-0 w-full h-full <?= $objectFitClass ?>">
                         </picture>
                     <?php endif; ?>
-                    <div class="absolute inset-0 bg-black/10"></div>
+                    <?php if ($overlayFrac > 0): ?>
+                        <div class="absolute inset-0 pointer-events-none" style="background-color: rgba(0, 0, 0, <?= $overlayFrac ?>);"></div>
+                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -94,7 +100,7 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
         </div>
 
         <!-- Navigation Arrows (Controlled by CMS Settings) -->
-        <?php if($showArrows && count($mediaItems) > 1): ?>
+        <?php if($showArrows && !empty($mediaItems)): ?>
         <button class="mb-slider-prev-<?= $sliderId ?> absolute left-2 md:left-3 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all focus:outline-none" style="color: <?= htmlspecialchars($aCol) ?>; background-color: <?= htmlspecialchars($aBg) ?>;" aria-label="Previous Slide">
             <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
         </button>
@@ -242,7 +248,7 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
                 <?php endforeach; ?>
             </div>
             
-            <?php if($pcShowArrows && count($items) > 1): ?>
+            <?php if($pcShowArrows && !empty($items)): ?>
                 <button class="swiper-button-prev-custom absolute left-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all focus:outline-none" style="background-color:<?= $aBgPC ?>; color:<?= $aColPC ?>;" aria-label="Previous">
                     <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
                 </button>
@@ -492,26 +498,42 @@ foreach ($sectionsData as $data) {
     }
 }
 
-if ($needProducts) {
-    $stmt = $db->query("SELECT p.*, (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image FROM products p WHERE p.status = 'active' ORDER BY p.id DESC LIMIT 4");
-    $dynamicData['product_carousel'] = $stmt->fetchAll();
-}
-if ($needCategories) {
-    $stmt = $db->query("SELECT * FROM categories ORDER BY id ASC LIMIT 4");
-    $dynamicData['category_grid'] = $stmt->fetchAll();
-}
-if (!empty($selProdIds)) {
-    $ids = implode(',', array_map('intval', array_unique($selProdIds)));
-    $stmt = $db->query("SELECT p.*, (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image FROM products p WHERE p.id IN ($ids)");
-    foreach ($stmt->fetchAll() as $p) {
-        $dynamicData['selected_products'][$p['id']] = $p;
+$mbCacheKey = 'mb_dyn_' . md5(json_encode([$needProducts, $needCategories, $selProdIds, $selCatIds]));
+$dynamicData = (empty($_GET['preview']) && class_exists('\Core\Cache')) ? \Core\Cache::get($mbCacheKey) : null;
+
+if ($dynamicData === null) {
+    $dynamicData = [
+        'product_carousel' => [], 
+        'category_grid' => [],
+        'selected_products' => [],
+        'selected_categories' => []
+    ];
+
+    if ($needProducts) {
+        $stmt = $db->query("SELECT p.*, (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image FROM products p JOIN categories c ON p.category_id = c.id AND c.status = 'active' WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) ORDER BY p.id DESC LIMIT 4");
+        $dynamicData['product_carousel'] = $stmt->fetchAll();
     }
-}
-if (!empty($selCatIds)) {
-    $ids = implode(',', array_map('intval', array_unique($selCatIds)));
-    $stmt = $db->query("SELECT * FROM categories WHERE id IN ($ids)");
-    foreach ($stmt->fetchAll() as $c) {
-        $dynamicData['selected_categories'][$c['id']] = $c;
+    if ($needCategories) {
+        $stmt = $db->query("SELECT * FROM categories WHERE status = 'active' ORDER BY id ASC LIMIT 4");
+        $dynamicData['category_grid'] = $stmt->fetchAll();
+    }
+    if (!empty($selProdIds)) {
+        $ids = implode(',', array_map('intval', array_unique($selProdIds)));
+        $stmt = $db->query("SELECT p.*, (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image FROM products p JOIN categories c ON p.category_id = c.id AND c.status = 'active' WHERE p.id IN ($ids) AND p.status = 'active' AND p.category_id IS NOT NULL");
+        foreach ($stmt->fetchAll() as $p) {
+            $dynamicData['selected_products'][$p['id']] = $p;
+        }
+    }
+    if (!empty($selCatIds)) {
+        $ids = implode(',', array_map('intval', array_unique($selCatIds)));
+        $stmt = $db->query("SELECT * FROM categories WHERE id IN ($ids) AND status = 'active'");
+        foreach ($stmt->fetchAll() as $c) {
+            $dynamicData['selected_categories'][$c['id']] = $c;
+        }
+    }
+
+    if (empty($_GET['preview']) && class_exists('\Core\Cache')) {
+        \Core\Cache::set($mbCacheKey, $dynamicData, 3600);
     }
 }
 

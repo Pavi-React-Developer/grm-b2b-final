@@ -75,6 +75,188 @@
         </div>
 
         <!-- Categorization and Base Image -->
+        <?php if (!empty($isCustomize)): ?>
+        <div class="space-y-6">
+            <!-- Categorization (Full Width for Customizable Fabric) -->
+            <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-2xs">
+                <div class="border-b border-gray-200 pb-3 mb-5">
+                    <h3 class="text-lg font-bold text-gray-900">Categorization</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">Organize your fabric hierarchy and assign size charts.</p>
+                </div>
+
+                <!-- Row 1: Category & Subcategory -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <label class="block text-sm font-bold text-gray-800">Category <span class="text-red-500">*</span></label>
+                            <button type="button" onclick="openCategoryRequestModal('category')" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-lg border border-brand-200 transition-colors shrink-0 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                <span>Request New</span>
+                            </button>
+                        </div>
+                        <select name="category_id" id="category_id" required class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
+                            <option value="">Select Category...</option>
+                            <?php foreach($categories as $category): ?>
+                                <option value="<?= $category['id'] ?>" data-sgst="<?= (float)($category['sgst'] ?? 0) ?>" data-cgst="<?= (float)($category['cgst'] ?? 0) ?>" data-hsn="<?= htmlspecialchars($category['hsn_code'] ?? '') ?>"><?= htmlspecialchars($category['name']) ?><?= !empty($category['hsn_code']) ? ' (HSN: ' . htmlspecialchars($category['hsn_code']) . ')' : '' ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <label class="block text-sm font-bold text-gray-800">Subcategory</label>
+                            <button type="button" onclick="openCategoryRequestModal('subcategory')" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors shrink-0 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                <span>Request New</span>
+                            </button>
+                        </div>
+                        <select name="sub_category_id" id="sub_category_id" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 disabled:bg-gray-100 bg-white text-sm text-gray-800 shadow-2xs" disabled>
+                            <option value="">Select Category first...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Row 2: Size Chart -->
+                <div class="mt-5 pt-4 border-t border-gray-200/80">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div class="sm:col-span-2">
+                            <div class="flex items-center justify-between gap-2 mb-1.5">
+                                <div class="flex items-center gap-2">
+                                    <label class="block text-sm font-bold text-gray-800">Size Chart</label>
+                                    <span class="text-[11px] font-semibold text-gray-400 bg-gray-200/60 px-2 py-0.5 rounded-full">Optional</span>
+                                </div>
+                                <a href="<?= BASE_URL ?>/admin/cms/size-charts/create" target="_blank" class="text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors shrink-0 flex items-center gap-1" title="Open Size Chart Creator in new tab">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    <span>Add New Chart</span>
+                                </a>
+                            </div>
+                            <select name="size_chart_id" id="size_chart_id" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
+                                <option value="">Default (Auto from Category / Subcategory / General)</option>
+                                <?php if (!empty($sizeCharts)): ?>
+                                    <?php foreach($sizeCharts as $sc): ?>
+                                        <option value="<?= $sc['id'] ?>" 
+                                                data-category-id="<?= (int)($sc['category_id'] ?? 0) ?>"
+                                                data-subcategory-id="<?= (int)($sc['sub_category_id'] ?? 0) ?>">
+                                            <?= htmlspecialchars($sc['title']) ?><?= !empty($sc['sub_category_name']) ? ' [' . htmlspecialchars($sc['sub_category_name']) . ']' : (!empty($sc['category_name']) ? ' (' . htmlspecialchars($sc['category_name']) . ')' : '') ?><?= !empty($sc['dress_type']) ? ' - ' . htmlspecialchars($sc['dress_type']) : '' ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1.5" id="size_chart_hint">Auto-filters to match selected Category and Subcategory.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <?php if (!empty($vendors)): ?>
+                <!-- Row 3: Assigned Vendor -->
+                <div class="mt-5 pt-4 border-t border-gray-200/80">
+                    <label class="block text-sm font-bold text-gray-800 mb-1.5">Assigned Vendor (Optional)</label>
+                    <select name="vendor_id" id="vendor_id" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
+                        <option value="">In-House / Admin Product (Default)</option>
+                        <?php foreach($vendors as $v): ?>
+                            <option value="<?= $v['id'] ?>">
+                                <?= htmlspecialchars($v['store_name'] ?? $v['name']) ?> (ID: <?= htmlspecialchars($v['unique_vendor_id'] ?? 'VN'.$v['id']) ?> - <?= htmlspecialchars($v['email']) ?>)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <?php endif; ?>
+            </div>
+
+            <!-- Fabric Images: 5-Slot Showcase Gallery (1 Default Base + 4 Detail Images) -->
+            <div class="bg-white p-6 rounded-2xl border border-pink-200/80 shadow-xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gray-100 gap-3">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 font-serif flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#F25996]"></span>
+                            Fabric Images (Up to 5 Images)
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Add up to 5 images for this fabric. <strong>Image 1 is the Default Base Image</strong> used across listings. Images 2–5 display as the product details gallery on the customer workshop.
+                        </p>
+                    </div>
+                    <button type="button" onclick="uploadNextFabricImage()" class="px-3.5 py-2 bg-[#F25996] hover:bg-[#d8407d] text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 self-start sm:self-auto shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                        <span>+ Add Next Image</span>
+                    </button>
+                </div>
+
+                <!-- 5 Slots Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mt-5">
+                    <!-- Slot 1: Default Base Image (Primary) -->
+                    <div class="bg-gradient-to-b from-pink-50/70 to-white rounded-2xl border-2 border-pink-200/90 p-3.5 flex flex-col justify-between shadow-2xs relative">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black bg-pink-100 text-[#F25996] border border-pink-200 uppercase tracking-wider">⭐ 1. Base Image</span>
+                            </div>
+                            <input type="hidden" name="primary_image_path" id="fabric_slot_input_0" value="">
+                            
+                            <!-- Preview State -->
+                            <div id="fabric_slot_prev_wrap_0" class="hidden relative group">
+                                <div class="aspect-square w-full rounded-xl overflow-hidden bg-gray-50 border border-pink-200 relative">
+                                    <img id="fabric_slot_img_0" src="#" class="w-full h-full object-cover">
+                                    <span class="absolute top-1.5 left-1.5 px-2 py-0.5 rounded bg-black/60 text-white text-[9px] font-bold backdrop-blur-xs">Default Base</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-1 mt-2.5">
+                                    <button type="button" onclick="openMediaSelector((rawUrl, fullUrl) => setFabricSlot(0, rawUrl, fullUrl))" class="flex-1 py-1.5 px-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg text-center transition-colors">
+                                        Change
+                                    </button>
+                                    <button type="button" onclick="removeFabricSlot(0, 0)" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors" title="Remove image">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Empty Placeholder State -->
+                            <div id="fabric_slot_empty_wrap_0" onclick="openMediaSelector((rawUrl, fullUrl) => setFabricSlot(0, rawUrl, fullUrl))" class="flex aspect-square w-full rounded-xl border-2 border-dashed border-pink-300 bg-pink-50/30 hover:bg-pink-50/60 cursor-pointer flex-col items-center justify-center p-3 text-center transition-colors group">
+                                <div class="w-10 h-10 rounded-full bg-pink-100 text-[#F25996] flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                </div>
+                                <span class="text-xs font-bold text-[#F25996]">Select Base Image</span>
+                                <span class="text-[10px] text-gray-400 mt-0.5">(Primary)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Slots 2 through 5: Additional Detail Angles -->
+                    <?php for ($s = 1; $s <= 4; $s++): ?>
+                    <div class="bg-white rounded-2xl border border-gray-200 p-3.5 flex flex-col justify-between shadow-2xs relative hover:border-gray-300 transition-colors">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-gray-100 text-gray-700 border border-gray-200 uppercase tracking-wider">📷 <?= $s + 1 ?>. Detail Angle</span>
+                            </div>
+                            <input type="hidden" name="gallery_images[<?= $s - 1 ?>]" id="fabric_slot_input_<?= $s ?>" value="">
+                            
+                            <!-- Preview State -->
+                            <div id="fabric_slot_prev_wrap_<?= $s ?>" class="hidden relative group">
+                                <div class="aspect-square w-full rounded-xl overflow-hidden bg-gray-50 border border-gray-200 relative">
+                                    <img id="fabric_slot_img_<?= $s ?>" src="#" class="w-full h-full object-cover">
+                                    <span class="absolute top-1.5 left-1.5 px-2 py-0.5 rounded bg-black/60 text-white text-[9px] font-bold backdrop-blur-xs">Image <?= $s + 1 ?></span>
+                                </div>
+                                <div class="flex items-center justify-between gap-1 mt-2.5">
+                                    <button type="button" onclick="openMediaSelector((rawUrl, fullUrl) => setFabricSlot(<?= $s ?>, rawUrl, fullUrl))" class="flex-1 py-1.5 px-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-lg text-center transition-colors">
+                                        Change
+                                    </button>
+                                    <button type="button" onclick="removeFabricSlot(<?= $s ?>, 0)" class="p-1.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors" title="Remove image">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Empty Placeholder State -->
+                            <div id="fabric_slot_empty_wrap_<?= $s ?>" onclick="openMediaSelector((rawUrl, fullUrl) => setFabricSlot(<?= $s ?>, rawUrl, fullUrl))" class="flex aspect-square w-full rounded-xl border-2 border-dashed border-gray-200 bg-gray-50/60 hover:bg-gray-100/80 cursor-pointer flex-col items-center justify-center p-3 text-center transition-colors group">
+                                <div class="w-10 h-10 rounded-full bg-gray-100 text-gray-400 group-hover:text-gray-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                                </div>
+                                <span class="text-xs font-bold text-gray-600">+ Add Image <?= $s + 1 ?></span>
+                                <span class="text-[10px] text-gray-400 mt-0.5">(Optional)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endfor; ?>
+                </div>
+            </div>
+        </div>
+        <?php else: ?>
         <div>
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 <!-- Categorization -->
@@ -85,7 +267,7 @@
                             <p class="text-xs text-gray-500 mt-0.5">Organize your product hierarchy and assign size charts.</p>
                         </div>
 
-                        <!-- Row 1: Category & Subcategory (2 Columns with generous room) -->
+                        <!-- Row 1: Category & Subcategory -->
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                             <div>
                                 <div class="flex items-center justify-between gap-2 mb-1.5">
@@ -116,7 +298,7 @@
                             </div>
                         </div>
 
-                        <!-- Row 2: Size Chart (Placed cleanly below with ample spacing) -->
+                        <!-- Row 2: Size Chart -->
                         <div class="mt-5 pt-4 border-t border-gray-200/80">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 <div class="sm:col-span-2">
@@ -167,7 +349,7 @@
                 <!-- Product Base Image -->
                 <div class="bg-gray-50 p-6 rounded-2xl border border-gray-100 flex flex-col justify-between">
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2"><?= !empty($isCustomize) ? 'Fabric Base Image' : 'Product Base Image' ?></h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">Product Base Image</h3>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Select Primary Image</label>
                         <p class="text-xs text-gray-500 mb-3">This image will be used as the thumbnail on landing pages.</p>
                         
@@ -194,6 +376,7 @@
                 </div>
             </div>
         </div>
+        <?php endif; ?>
 
         <!-- Attributes -->
         <div id="attributes-section">
@@ -230,6 +413,188 @@
                 <!-- Variant cards will be injected here -->
             </div>
         </div>
+
+        <!-- ======================================================== -->
+        <!-- FABRIC CUSTOMIZATION RULES & CUSTOMIZED LABELS (STUDIO)  -->
+        <!-- ======================================================== -->
+        <div class="space-y-6 pt-6 border-t border-gray-100">
+            <!-- 1. FABRIC CUSTOMIZATION RULES -->
+            <div class="bg-gradient-to-br from-amber-50/40 via-white to-pink-50/30 p-6 sm:p-7 rounded-2xl border border-amber-200/80 shadow-xs space-y-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-amber-200/60 pb-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎛️</span>
+                            <h3 class="text-lg font-black text-gray-900 font-display">Fabric Customization Rules</h3>
+                            <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">Customization Engine</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-0.5">Configure minimum/maximum required order pieces, price reduction without cover, and dynamic delivery schedules for this fabric.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- Required Pieces to Enable Payment (Min & Max Limits) -->
+                    <div class="md:col-span-2 bg-white p-4 sm:p-5 rounded-xl border border-amber-200/70 shadow-2xs">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="block text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
+                                <span>Required Order Pieces (Min / Max Limits)</span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">Dynamic Multiplier</span>
+                            </label>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">
+                                    Minimum Required Pieces <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" name="minimum_pieces" value="<?= htmlspecialchars($fabricRule['minimum_pieces'] ?? 10) ?>" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
+                                    <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs (Min)</span>
+                                </div>
+                                <p class="text-[11px] text-gray-500 mt-1">
+                                    Base pieces required before checkout is unlocked (scales with Sets).
+                                </p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">
+                                    Maximum Allowed Pieces <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="number" name="maximum_pieces" value="<?= htmlspecialchars($fabricRule['maximum_pieces'] ?? 100) ?>" min="1" required placeholder="e.g. 100" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
+                                    <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs (Max)</span>
+                                </div>
+                                <p class="text-[11px] text-gray-500 mt-1">
+                                    Maximum total pieces buyer can order per set multiplier.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Without Cover Discount Percentage -->
+                    <div class="bg-white p-4 sm:p-5 rounded-xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                                <span>Without Cover Discount (%)</span>
+                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">Price Reduction</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="without_cover_discount_percentage" value="<?= htmlspecialchars(number_format((float)($fabricRule['without_cover_discount_percentage'] ?? 0), 2, '.', '')) ?>" step="0.01" min="0" max="100" placeholder="e.g. 5.00" class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-bold text-emerald-700 pr-14">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-emerald-600 font-semibold">% OFF</span>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-2">
+                            When buyer selects <strong>Without Cover</strong> in the customization UI, the base product price is reduced by this percentage.
+                        </p>
+                    </div>
+
+                    <!-- Dynamic Delivery Dates Setting -->
+                    <div class="bg-white p-4 sm:p-5 rounded-xl border border-gray-200 shadow-2xs flex flex-col justify-between">
+                        <div>
+                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <span>🚚 Dynamic Delivery Schedule</span>
+                            </label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 mb-1">Days</label>
+                                    <div class="relative">
+                                        <input type="number" name="delivery_days" value="<?= htmlspecialchars($fabricRule['delivery_days'] ?? 7) ?>" min="1" required class="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-12">
+                                        <span class="absolute right-2.5 top-2 text-xs text-gray-400 font-medium">Days</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-bold text-gray-600 mb-1">Per Pieces</label>
+                                    <div class="relative">
+                                        <input type="number" name="delivery_base_pieces" value="<?= htmlspecialchars($fabricRule['delivery_base_pieces'] ?? 100) ?>" min="1" required class="w-full px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-12">
+                                        <span class="absolute right-2.5 top-2 text-xs text-gray-400 font-medium">Pcs</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-gray-500 mt-2">
+                            e.g. 7 days for 100 pcs; delivery estimate calculates dynamically as buyer quantity increases.
+                        </p>
+                    </div>
+
+                    <!-- Customization Rule Status -->
+                    <div class="md:col-span-2 bg-white p-4 sm:p-5 rounded-xl border border-gray-200 shadow-2xs">
+                        <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
+                            Customization Rule Status
+                        </label>
+                        <select name="rule_status" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 font-medium">
+                            <option value="active" <?= ($fabricRule['status'] ?? 'active') === 'active' ? 'selected' : '' ?>>Active (Visible & Enabled for Customization)</option>
+                            <option value="inactive" <?= ($fabricRule['status'] ?? 'active') === 'inactive' ? 'selected' : '' ?>>Inactive (Draft / Hidden from Customization Workshop)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. CUSTOMIZED LABELS (STYLE OPTIONS) -->
+            <div class="bg-white p-6 sm:p-7 rounded-2xl border border-gray-200 shadow-xs space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-gray-100 pb-4">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🏷️</span>
+                            <h3 class="text-lg font-black text-gray-900 font-display">Assigned Customized Labels</h3>
+                            <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-pink-100 text-pink-800 border border-pink-200">Styles & Options</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-0.5">Select the active customization labels (sleeves, necklines, feeding options, etc.) that buyers can choose for this fabric.</p>
+                    </div>
+                    <div class="flex items-center gap-2 self-start sm:self-auto">
+                        <button type="button" onclick="selectAllCustomizationLabels(true)" class="px-2.5 py-1.5 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                            Select All
+                        </button>
+                        <button type="button" onclick="selectAllCustomizationLabels(false)" class="px-2.5 py-1.5 text-xs font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors">
+                            Deselect All
+                        </button>
+                        <button type="button" onclick="openCustomizationLabelModal()" class="px-3.5 py-1.5 bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-700 hover:to-rose-700 text-white text-xs font-bold rounded-lg shadow-2xs hover:shadow-xs transition-all flex items-center gap-1.5">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            <span>+ Quick Add Label</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Labels Container / Grid -->
+                <div id="customization-labels-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <?php if (!empty($customizationLabels)): ?>
+                        <?php foreach ($customizationLabels as $lbl): 
+                            $isLblChecked = in_array($lbl['id'], $selectedLabelIds ?? []);
+                        ?>
+                        <label class="relative cursor-pointer flex items-start gap-3 p-3.5 rounded-xl border border-gray-200 hover:border-gray-300 bg-white has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50/40 has-[:checked]:ring-1 has-[:checked]:ring-brand-500 transition-all shadow-2xs select-none">
+                            <input type="checkbox" name="customization_labels[]" value="<?= $lbl['id'] ?>" <?= $isLblChecked ? 'checked' : '' ?> class="mt-0.5 w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500 customization-label-checkbox">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <?php if (!empty($lbl['group_name'])): ?>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-gray-100 text-gray-700"><?= htmlspecialchars($lbl['group_name']) ?></span>
+                                    <?php endif; ?>
+                                    <?php if (!empty($lbl['sub_group'])): ?>
+                                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200"><?= htmlspecialchars($lbl['sub_group']) ?></span>
+                                    <?php endif; ?>
+                                    <span class="text-xs font-bold text-gray-900"><?= htmlspecialchars($lbl['name']) ?></span>
+                                </div>
+                                <?php if (!empty($lbl['description'])): ?>
+                                <p class="text-[11px] text-gray-500 mt-1 line-clamp-2"><?= htmlspecialchars($lbl['description']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                        </label>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+
+                <div id="customization-labels-empty" class="<?= !empty($customizationLabels) ? 'hidden' : 'block' ?> text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <svg class="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                    <p class="text-xs text-gray-500 font-medium">No customized labels found.</p>
+                    <button type="button" onclick="openCustomizationLabelModal()" class="mt-2.5 inline-flex items-center gap-1 text-xs font-bold text-pink-600 hover:text-pink-700 bg-pink-50 hover:bg-pink-100 px-3 py-1.5 rounded-lg border border-pink-200 transition-colors">
+                        <span>+ Create First Label</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        function selectAllCustomizationLabels(checked) {
+            document.querySelectorAll('.customization-label-checkbox').forEach(cb => {
+                cb.checked = checked;
+            });
+        }
+        </script>
 
         <div class="pt-6 border-t border-gray-100 flex justify-end space-x-4">
             <a href="<?= BASE_URL ?>/admin/catalog/products<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="px-5 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">Cancel</a>
@@ -718,12 +1083,43 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <label class="block text-xs font-bold text-gray-700 mb-1">Total Amount (Incl. GST)</label>
                                 <input type="text" step="0.01" name="variants[${index}][max_amount]" value="" readonly class="variant-total-amount w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-gray-50 cursor-not-allowed font-bold text-brand-700">
                             </div>
-                            ${<?= !empty($isCustomize) ? 'true' : 'false' ?> ? '' : `
+                            <!-- Variant Fabric Rules (Base & Max Qty, Consumption) -->
+                            <div class="col-span-2 bg-gradient-to-r from-amber-50/80 to-pink-50/50 p-3.5 rounded-xl border border-amber-200/90 shadow-2xs">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                                        <span>📏 Fabric Rules (Variant Limits & Consumption)</span>
+                                    </span>
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">Per-Variant Rule</span>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-amber-900 mb-1">Base Qty (Pcs) <span class="text-red-500">*</span></label>
+                                        <input type="number" min="1" name="variants[${index}][base_quantity]" value="2" required placeholder="e.g. 2" class="w-full border border-amber-300 rounded-lg focus:ring-amber-500 focus:border-amber-500 px-3 py-1.5 text-sm bg-white font-bold text-gray-800">
+                                        <span class="text-[10px] text-gray-500">Base pieces per set</span>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-amber-900 mb-1">Max Allowed (Pcs) <span class="text-red-500">*</span></label>
+                                        <input type="number" min="1" name="variants[${index}][max_quantity]" value="4" required placeholder="e.g. 4" class="w-full border border-amber-300 rounded-lg focus:ring-amber-500 focus:border-amber-500 px-3 py-1.5 text-sm bg-white font-bold text-gray-800">
+                                        <span class="text-[10px] text-gray-500">Max limit per multiplier</span>
+                                    </div>
+                                    <div>
+                                        <label class="block text-[11px] font-bold text-pink-900 mb-1">Fabric Consumption <span class="text-red-500">*</span></label>
+                                        <input type="number" step="0.01" min="0.01" name="variants[${index}][fabric_consumption]" value="1.00" required placeholder="e.g. 1.00" class="w-full border border-pink-300 rounded-lg focus:ring-pink-500 focus:border-pink-500 px-3 py-1.5 text-sm bg-white font-bold text-gray-800">
+                                        <span class="text-[10px] text-gray-500">Meters per piece</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            ${!<?= !empty($isCustomize) ? 'true' : 'false' ?> ? `
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 mb-1">Inventory (Qty) <span class="text-red-500">*</span></label>
                                 <input type="text" min="0" name="variants[${index}][inventory]" value="" placeholder="e.g. 50" required class="variant-inv w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-1.5 text-sm">
                             </div>
-                            `}
+                            <div>
+                                <label class="block text-xs font-bold text-gray-700 mb-1">Weight (kg) <span class="text-red-500">*</span></label>
+                                <input type="text" step="0.0001" min="0.0001" name="variants[${index}][weight]" value="" placeholder="e.g. 0.5000" required class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-1.5 text-sm">
+                            </div>
+                            ` : ''}
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 mb-1">Low Stock Alert <span class="text-red-500">*</span></label>
                                 <input type="text" min="0" name="variants[${index}][low_stock_alert]" value="5" required class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-1.5 text-sm">
@@ -731,10 +1127,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             <div>
                                 <label class="block text-xs font-bold text-gray-700 mb-1">SKU <span class="text-red-500">*</span></label>
                                 <input type="text" name="variants[${index}][sku]" value="${variantSku}" required class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-1.5 text-sm font-mono">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-700 mb-1">Weight (kg) <span class="text-red-500">*</span></label>
-                                <input type="text" step="0.0001" min="0.0001" name="variants[${index}][weight]" value="" placeholder="e.g. 0.5000" required class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-1.5 text-sm">
                             </div>
                         </div>
 
@@ -798,6 +1190,54 @@ document.addEventListener('DOMContentLoaded', function() {
         if (totalAmountEl) {
             totalAmountEl.value = totalAmount > 0 ? totalAmount.toFixed(2) : '';
         }
+    };
+
+    window.setFabricSlot = function(slotIndex, rawUrl, fullUrl) {
+        const displayUrl = fullUrl || ((rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) ? rawUrl : ('<?= BASE_URL ?>/' + rawUrl.replace(/^\/+/, '')));
+        const input = document.getElementById('fabric_slot_input_' + slotIndex);
+        const prevWrap = document.getElementById('fabric_slot_prev_wrap_' + slotIndex);
+        const emptyWrap = document.getElementById('fabric_slot_empty_wrap_' + slotIndex);
+        const img = document.getElementById('fabric_slot_img_' + slotIndex);
+
+        if (input) input.value = rawUrl;
+        if (img) img.src = displayUrl;
+        if (emptyWrap) {
+            emptyWrap.classList.add('hidden');
+            emptyWrap.classList.remove('flex');
+        }
+        if (prevWrap) {
+            prevWrap.classList.remove('hidden');
+            prevWrap.classList.add('block');
+        }
+    };
+
+    window.removeFabricSlot = function(slotIndex, productId) {
+        const input = document.getElementById('fabric_slot_input_' + slotIndex);
+        const prevWrap = document.getElementById('fabric_slot_prev_wrap_' + slotIndex);
+        const emptyWrap = document.getElementById('fabric_slot_empty_wrap_' + slotIndex);
+
+        if (input) input.value = '';
+        if (prevWrap) {
+            prevWrap.classList.add('hidden');
+            prevWrap.classList.remove('block');
+        }
+        if (emptyWrap) {
+            emptyWrap.classList.remove('hidden');
+            emptyWrap.classList.add('flex');
+        }
+    };
+
+    window.uploadNextFabricImage = function() {
+        for (let i = 0; i < 5; i++) {
+            const input = document.getElementById('fabric_slot_input_' + i);
+            if (input && !input.value.trim()) {
+                openMediaSelector((rawUrl, fullUrl) => {
+                    window.setFabricSlot(i, rawUrl, fullUrl);
+                });
+                return;
+            }
+        }
+        alert('All 5 image slots are currently filled. Use the "Change" or "Remove" buttons on an existing slot to replace an image.');
     };
 
     window.addVariantImage = function(index, rawUrl, fullUrl) {
@@ -934,6 +1374,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
 
+                <?php if (empty($isCustomize)): ?>
                 if (!weightInput || isNaN(weight) || weight <= 0) {
                     e.preventDefault();
                     alert(`Weight is required and must be greater than 0 kg for variant #${idx + 1}.`);
@@ -941,6 +1382,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     hasError = true;
                     return;
                 }
+                <?php endif; ?>
 
                 if (!sku) {
                     e.preventDefault();
@@ -976,4 +1418,8 @@ document.addEventListener('DOMContentLoaded', function() {
 <?php include __DIR__ . '/../../media/_selector_modal.php'; ?>
 <?php include __DIR__ . '/../_category_request_modal.php'; ?>
 <?php include __DIR__ . '/../_attribute_request_modal.php'; ?>
+<?php if (!empty($isCustomize)): ?>
+<?php include __DIR__ . '/../_customization_label_modal.php'; ?>
+<?php endif; ?>
+
 

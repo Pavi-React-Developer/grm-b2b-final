@@ -143,7 +143,9 @@ class DashboardController extends Controller
                        p.weight, 
                        pi.image_path as image, 
                        pv.name as variant_name, 
-                       c.hsn_code as category_hsn_code
+                       c.hsn_code as category_hsn_code,
+                       fc.program_name,
+                       fc.garment_type
                 FROM order_items oi 
                 LEFT JOIN product_variants pv ON oi.variant_id = pv.id
                 LEFT JOIN fabric_customizations fc ON oi.customization_id = fc.id
@@ -223,6 +225,9 @@ class DashboardController extends Controller
         $settingModel = new \App\Models\Setting();
         $cancellationsEnabled = $settingModel->get('cancellations_enabled', '1') === '1';
 
+        $reviewModel = new \App\Models\Review();
+        $userReviewedMap = $reviewModel->getUserReviewedItemMap($userId);
+
         $this->render('storefront/dashboard/orders', [
             'title'          => 'My Orders',
             'orders'         => $orders,
@@ -231,6 +236,7 @@ class DashboardController extends Controller
             'orderRules'     => $orderRules,
             'orderModifications' => $orderModifications ?? [],
             'cancellationsEnabled' => $cancellationsEnabled,
+            'userReviewedMap' => $userReviewedMap,
             'activeTab'      => 'orders'
         ]);
     }
@@ -295,21 +301,25 @@ class DashboardController extends Controller
             $this->redirect('/dashboard/orders');
         }
 
-        // Fetch order items with product image, weight, variant
+        // Fetch order items with product image, weight, variant, customization
         $stmtItems = $db->prepare("
             SELECT oi.*,
-                   p.name,
+                   COALESCE(oi.product_id, pv.product_id, fc.fabric_id) as resolved_product_id,
+                   COALESCE(p.name, 'Custom Item') as name,
                    p.weight,
                    c.hsn_code as category_hsn_code,
                    COALESCE(
                        (SELECT image_path FROM product_images WHERE variant_id = oi.variant_id ORDER BY is_primary DESC, id ASC LIMIT 1),
-                       (SELECT image_path FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC, id ASC LIMIT 1)
+                       (SELECT image_path FROM product_images WHERE product_id = COALESCE(oi.product_id, pv.product_id, fc.fabric_id) ORDER BY is_primary DESC, id ASC LIMIT 1)
                    ) as image,
-                   pv.name as variant_name
+                   pv.name as variant_name,
+                   fc.program_name,
+                   fc.garment_type
             FROM order_items oi
-            JOIN products p ON oi.product_id = p.id
-            LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN product_variants pv ON oi.variant_id = pv.id
+            LEFT JOIN fabric_customizations fc ON oi.customization_id = fc.id
+            LEFT JOIN products p ON p.id = COALESCE(oi.product_id, pv.product_id, fc.fabric_id)
+            LEFT JOIN categories c ON p.category_id = c.id
             WHERE oi.order_id = ?
             ORDER BY oi.id ASC
         ");
@@ -326,12 +336,16 @@ class DashboardController extends Controller
         $stmtMod->execute([$order['id']]);
         $modification = $stmtMod->fetch(\PDO::FETCH_ASSOC) ?: null;
 
+        $reviewModel = new \App\Models\Review();
+        $userReviewedMap = $reviewModel->getUserReviewedItemMap($userId);
+
         $this->render('storefront/dashboard/order_detail', [
-            'title'        => 'Order Details — ' . $orderNumber,
-            'order'        => $order,
-            'items'        => $items,
-            'modification' => $modification,
-            'activeTab'    => 'orders'
+            'title'           => 'Order Details — ' . $orderNumber,
+            'order'           => $order,
+            'items'           => $items,
+            'modification'    => $modification,
+            'userReviewedMap' => $userReviewedMap,
+            'activeTab'       => 'orders'
         ]);
     }
 

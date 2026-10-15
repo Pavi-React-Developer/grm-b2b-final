@@ -17,7 +17,14 @@ foreach ($items as $item) {
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
         <div class="flex items-start justify-between">
             <div>
-                <h2 class="text-xl font-bold text-gray-900">Modify Order Bill <span class="font-mono text-brand-700">#<?= htmlspecialchars($order['order_number']) ?></span></h2>
+                <div class="flex items-center gap-2">
+                    <h2 class="text-xl font-bold text-gray-900">Modify Order Bill <span class="font-mono text-brand-700">#<?= htmlspecialchars($order['order_number']) ?></span></h2>
+                    <?php if (!empty($isCustomOrder)): ?>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+                            ✂️ Customized Garments & Fabric Order
+                        </span>
+                    <?php endif; ?>
+                </div>
                 <p class="text-sm text-gray-500 mt-1">Buyer: <span class="font-medium text-gray-700"><?= htmlspecialchars($order['customer_name']) ?></span> · <?= htmlspecialchars($order['customer_email']) ?> · <?= htmlspecialchars($order['customer_phone']) ?></p>
             </div>
             <div class="text-right">
@@ -27,11 +34,7 @@ foreach ($items as $item) {
         </div>
     </div>
 
-    <!-- Warning -->
-    <div class="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 flex items-start gap-3">
-        <svg class="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-        <p class="text-sm text-amber-800">Changes will be sent to the buyer for review. The buyer has <strong>48 hours</strong> to accept or reject. If rejected, the order will be cancelled automatically.</p>
-    </div>
+
 
     <form action="<?= BASE_URL ?>/admin/order-modifications/store" method="POST" id="modForm" enctype="multipart/form-data">
         <input type="hidden" name="order_id" value="<?= $order['id'] ?>">
@@ -182,7 +185,7 @@ foreach ($items as $item) {
             <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-center">
                 <button type="button" onclick="openProductModal()" class="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-brand-200 text-brand-700 text-sm font-semibold rounded-lg hover:bg-brand-50 hover:border-brand-300 transition-colors">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                    Add New Product to Bill
+                    <?= !empty($isCustomOrder) ? 'Add Customizable Fabric / Product' : 'Add New Product to Bill' ?>
                 </button>
             </div>
         </div>
@@ -284,13 +287,13 @@ foreach ($items as $item) {
         </div>
 
         <!-- Submit -->
-        <div class="flex gap-4">
-            <a href="<?= BASE_URL ?>/admin/order-modifications" class="px-6 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50">
+        <div class="flex items-center gap-4">
+            <a href="<?= BASE_URL ?>/admin/order-modifications" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">
                 Cancel
             </a>
-            <button type="submit" class="flex-1 px-6 py-3 bg-brand-600 text-white rounded-xl text-sm font-semibold hover:bg-brand-700 transition-colors flex items-center justify-center gap-2">
+            <button type="submit" class="flex-1 px-8 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-full text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                Update Bill & Apply Changes
+                <span>Update Bill & Apply Changes</span>
             </button>
         </div>
 
@@ -511,7 +514,7 @@ function onCategoryChange() {
 
     resultsContainer.innerHTML = '<div class="p-8 text-center flex flex-col items-center justify-center h-full text-gray-400"><p class="text-sm">Loading sub-categories...</p></div>';
 
-    fetch(`<?= BASE_URL ?>/admin/order-modifications/get-subcategories?category_id=${categoryId}`)
+    fetch(`<?= BASE_URL ?>/admin/order-modifications/get-subcategories?category_id=${categoryId}&is_custom=<?= !empty($isCustomOrder) ? 1 : 0 ?>&order_id=<?= (int)$order['id'] ?>`)
         .then(res => res.json())
         .then(data => {
             if (data.length > 0) {
@@ -551,7 +554,7 @@ function fetchProducts(categoryId, subCategoryId) {
     const resultsContainer = document.getElementById('productSearchResults');
     resultsContainer.innerHTML = '<div class="p-4 text-center text-sm text-gray-500">Loading products...</div>';
 
-    let url = `<?= BASE_URL ?>/admin/order-modifications/search-products?category_id=${categoryId}`;
+    let url = `<?= BASE_URL ?>/admin/order-modifications/search-products?category_id=${categoryId}&is_custom=<?= !empty($isCustomOrder) ? 1 : 0 ?>&order_id=<?= (int)$order['id'] ?>`;
     if (subCategoryId) {
         url += `&sub_category_id=${subCategoryId}`;
     }
@@ -693,7 +696,12 @@ function changeQty(btn, step) {
         <!-- Modal Header / Category Dropdown -->
         <div class="p-4 border-b border-gray-100 bg-gray-50 flex flex-col gap-3">
             <div class="flex items-center justify-between">
-                <h3 class="font-semibold text-gray-800">Add Product</h3>
+                <div>
+                    <h3 class="font-semibold text-gray-800"><?= !empty($isCustomOrder) ? 'Add Customizable Fabric / Product' : 'Add Product' ?></h3>
+                    <?php if (!empty($isCustomOrder)): ?>
+                        <p class="text-[11px] text-purple-600 font-medium">Validation: Showing customizable categories only</p>
+                    <?php endif; ?>
+                </div>
                 <button type="button" onclick="closeProductModal()" class="p-2 text-gray-400 hover:text-gray-600 rounded-xl hover:bg-gray-200 transition-colors">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
@@ -701,7 +709,7 @@ function changeQty(btn, step) {
             <div class="flex items-center gap-3">
                 <div class="relative flex-1">
                     <select id="categorySelect" onchange="onCategoryChange()" class="w-full pl-4 pr-10 py-2 border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 text-sm font-medium text-gray-700 bg-white shadow-sm appearance-none cursor-pointer">
-                        <option value="">-- Main Category --</option>
+                        <option value="">-- <?= !empty($isCustomOrder) ? 'Customizable Category' : 'Main Category' ?> --</option>
                         <?php foreach ($categories ?? [] as $cat): ?>
                             <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['name']) ?></option>
                         <?php endforeach; ?>

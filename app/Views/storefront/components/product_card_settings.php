@@ -10,19 +10,22 @@ $pcs = $row ? (json_decode($row['setting_value'], true) ?? []) : [];
 $d = $pcs['desktop'] ?? [];
 $m = $pcs['mobile'] ?? [];
 
-// Helper: convert value to CSS - if numeric treat as vh, if 'auto' use auto
-function pcVh($val, $default = 'auto') {
-    $v = trim($val ?? '');
-    if ($v === '' || strtolower($v) === 'auto') return 'auto';
-    if (is_numeric($v)) return $v . 'vh';
-    return $v; // e.g. already has unit
+if (!function_exists('pcVh')) {
+    function pcVh($val, $default = 'auto') {
+        $v = trim($val ?? '');
+        if ($v === '' || strtolower($v) === 'auto') return 'auto';
+        if (is_numeric($v)) return $v . 'vh';
+        return $v; // e.g. already has unit
+    }
 }
 
-function pcWidth($val, $default = 'auto') {
-    $v = trim($val ?? '');
-    if ($v === '' || strtolower($v) === 'auto') return 'auto';
-    if (is_numeric($v)) return $v . 'vw';
-    return $v;
+if (!function_exists('pcWidth')) {
+    function pcWidth($val, $default = 'auto') {
+        $v = trim($val ?? '');
+        if ($v === '' || strtolower($v) === 'auto') return 'auto';
+        if (is_numeric($v)) return $v . 'vw';
+        return $v;
+    }
 }
 
 $d_card_h    = pcVh($d['card_height'] ?? '');

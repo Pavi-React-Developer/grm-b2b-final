@@ -18,7 +18,24 @@ class EmailService
     public function __construct()
     {
         $envPath = dirname(dirname(__DIR__)) . '/.env';
-        $this->envVars = file_exists($envPath) ? parse_ini_file($envPath) : [];
+        $parsed = file_exists($envPath) ? @parse_ini_file($envPath) : [];
+        if (!is_array($parsed)) {
+            $parsed = [];
+            if (file_exists($envPath)) {
+                $lines = @file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+                if ($lines) {
+                    foreach ($lines as $line) {
+                        $line = trim($line);
+                        if ($line === '' || str_starts_with($line, '#') || str_starts_with($line, ';')) continue;
+                        if (strpos($line, '=') !== false) {
+                            list($k, $v) = explode('=', $line, 2);
+                            $parsed[trim($k)] = trim(trim($v), "'\"");
+                        }
+                    }
+                }
+            }
+        }
+        $this->envVars = $parsed;
 
         $this->fromEmail = $this->envVars['MAIL_FROM_ADDRESS'] ?? $this->envVars['SMTP_FROM'] ?? 'noreply@grmb2b.com';
         $this->fromName  = $this->envVars['MAIL_FROM_NAME']    ?? 'GRM B2B';
@@ -62,11 +79,36 @@ class EmailService
     }
 
     /**
+     * Send OTP for Email Change Verification.
+     */
+    public function sendEmailChangeOtp(string $toEmail, string $otp, string $name = 'User'): bool
+    {
+        $subject = "Verify Your New Email Address - GRM B2B";
+        $body = "
+            <div style='font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, Helvetica, Arial, sans-serif; max-width: 540px; margin: 0 auto; padding: 28px; background: #ffffff; border: 1px solid #FDBFDD; border-radius: 16px; box-shadow: 0 4px 12px rgba(242, 89, 150, 0.08);'>
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <span style='display: inline-block; background: #fdf2f7; color: #F25996; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; padding: 4px 12px; border-radius: 9999px; border: 1px solid #FDBFDD;'>Security Verification</span>
+                    <h2 style='color: #111827; font-size: 22px; font-weight: 800; margin: 12px 0 6px;'>Confirm Email Address Update</h2>
+                </div>
+                <p style='color: #374151; font-size: 14px; line-height: 1.6; margin: 0 0 12px;'>Hello <strong>" . htmlspecialchars($name) . "</strong>,</p>
+                <p style='color: #4b5563; font-size: 14px; line-height: 1.6; margin: 0 0 20px;'>A request was submitted to update your <strong>GRM B2B</strong> account email address to this email. Please use the following One-Time Password (OTP) to confirm and complete this change:</p>
+                <div style='background: linear-gradient(135deg, #fdf2f7 0%, #fff 100%); border: 2px dashed #FDBFDD; padding: 20px; text-align: center; border-radius: 12px; margin: 20px 0;'>
+                    <span style='font-size: 34px; font-weight: 800; letter-spacing: 8px; color: #F25996; font-family: monospace;'>" . htmlspecialchars($otp) . "</span>
+                </div>
+                <p style='color: #6b7280; font-size: 13px; text-align: center; margin: 12px 0 0;'>This code is valid for 10 minutes. If you did not initiate this change, please ignore this email or contact support immediately.</p>
+                <hr style='border: none; border-top: 1px solid #f3f4f6; margin: 24px 0;' />
+                <p style='color: #9ca3af; font-size: 11px; text-align: center; margin: 0;'>&copy; " . date('Y') . " GRM B2B. All rights reserved.</p>
+            </div>
+        ";
+        return $this->send($toEmail, $name, $subject, $body);
+    }
+
+    /**
      * Email #1 — Cancellation requested by user.
      */
     public function sendCancellationRequested(array $user, array $order): bool
     {
-        $subject = "Cancellation Request Received — Order #{$order['order_number']}";
+        $subject = "Cancellation Request Received - Order #{$order['order_number']}";
         $body    = $this->buildCancellationRequestedHtml($user, $order);
         return $this->send($user['email'], $user['name'], $subject, $body);
     }
@@ -76,7 +118,7 @@ class EmailService
      */
     public function sendRefundProcessed(array $user, array $order, float $amount): bool
     {
-        $subject = "Refund of ₹" . number_format($amount, 2) . " Processed — Order #{$order['order_number']}";
+        $subject = "Refund of ₹" . number_format($amount, 2) . " Processed - Order #{$order['order_number']}";
         $body    = $this->buildRefundProcessedHtml($user, $order, $amount);
         return $this->send($user['email'], $user['name'], $subject, $body);
     }
@@ -86,7 +128,7 @@ class EmailService
      */
     public function sendRefundRejected(array $user, array $order, string $reason): bool
     {
-        $subject = "Update on Your Cancellation Request — Order #{$order['order_number']}";
+        $subject = "Update on Your Cancellation Request - Order #{$order['order_number']}";
         $body    = $this->buildRefundRejectedHtml($user, $order, $reason);
         return $this->send($user['email'], $user['name'], $subject, $body);
     }
@@ -96,7 +138,7 @@ class EmailService
      */
     public function sendOrderPackedWithInvoice(array $user, array $order, string $pdfBinary, string $pdfFilename, ?string $video1Url = null, ?string $video2Url = null): bool
     {
-        $subject = "Your Order #{$order['order_number']} is Packed & Tax Invoice Attached 📦";
+        $subject = "Your Order #{$order['order_number']} is Packed & Tax Invoice Attached";
         $body    = $this->buildOrderPackedHtml($user, $order, $video1Url, $video2Url);
 
         $attachments = [];
@@ -342,6 +384,9 @@ class EmailService
         if (class_exists(PHPMailer::class)) {
             $mail = new PHPMailer(true);
             try {
+                $mail->CharSet  = 'UTF-8';
+                $mail->Encoding = 'base64';
+
                 $host = defined('SMTP_HOST') ? SMTP_HOST : ($this->envVars['SMTP_HOST'] ?? $this->envVars['MAIL_HOST'] ?? 'smtp.gmail.com');
                 $user = defined('SMTP_USER') ? SMTP_USER : ($this->envVars['SMTP_USER'] ?? $this->envVars['MAIL_USERNAME'] ?? '');
                 $pass = defined('SMTP_PASS') ? SMTP_PASS : ($this->envVars['SMTP_PASS'] ?? $this->envVars['MAIL_PASSWORD'] ?? '');
@@ -398,15 +443,19 @@ class EmailService
         // Fallback to standard mail()
         $headers  = "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+        $headers .= "Content-Transfer-Encoding: base64\r\n";
         $headers .= "From: {$this->fromName} <{$this->fromEmail}>\r\n";
         $headers .= "Reply-To: {$this->fromEmail}\r\n";
         $headers .= "X-Mailer: PHP/" . phpversion();
 
+        $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+        $encodedBody    = chunk_split(base64_encode($htmlBody));
+
         $to = "{$toName} <{$toEmail}>";
-        $result = @mail($to, $subject, $htmlBody, $headers);
+        $result = @mail($to, $encodedSubject, $encodedBody, $headers);
 
         if (!$result) {
-            error_log("[EmailService mail() Error] Failed to send email to {$toEmail} — Subject: {$subject}");
+            error_log("[EmailService mail() Error] Failed to send email to {$toEmail} - Subject: {$subject}");
         }
 
         return $result;

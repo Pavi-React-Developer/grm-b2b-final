@@ -115,10 +115,18 @@ class Order extends Model
             $whereClause = "(o.payment_status = 'paid' OR (o.status != 'pending' AND o.order_number NOT LIKE 'PENDING-%'))";
         }
 
+        // Exclude customize orders: customize orders are restricted to the Customize Orders page only
+        $whereClause .= " AND NOT EXISTS (
+            SELECT 1 FROM order_items oi_chk 
+            WHERE oi_chk.order_id = o.id 
+              AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)
+        ) AND o.order_number NOT LIKE 'GBC%' AND o.order_number NOT LIKE 'GRM-CUST-%'";
+
         $sql = "
             SELECT o.*, 
                    u.name as user_name, u.email as user_email, u.phone as user_phone,
                    (SELECT COUNT(*) FROM order_modifications om WHERE om.order_id = o.id AND om.status IN ('accepted', 'applied') AND om.created_at >= o.created_at) as has_modification,
+                   (SELECT COUNT(*) FROM orders o_prev WHERE o_prev.user_id = o.user_id AND o_prev.payment_status = 'paid' AND o_prev.id < o.id) as repeat_count,
                    (SELECT GROUP_CONCAT(DISTINCT vp.store_name SEPARATOR ', ') 
                     FROM order_items oi 
                     JOIN products p ON oi.product_id = p.id 
@@ -136,7 +144,7 @@ class Order extends Model
 
         // Calculate repeat order badge
         foreach ($orders as &$order) {
-            $order['repeat_count'] = $this->getPreviousOrderCount($order['user_id'], $order['id']);
+            $order['repeat_count'] = (int)($order['repeat_count'] ?? 0);
             $order['has_modification'] = (int)$order['has_modification'] > 0;
         }
 
@@ -148,7 +156,7 @@ class Order extends Model
      */
     public function getCustomOrders($statusFilter = 'all'): array
     {
-        $where = ["EXISTS (SELECT 1 FROM order_items oi_chk WHERE oi_chk.order_id = o.id AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL))"];
+        $where = ["(EXISTS (SELECT 1 FROM order_items oi_chk WHERE oi_chk.order_id = o.id AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)) OR o.order_number LIKE 'GBC%' OR o.order_number LIKE 'GRM-CUST-%')"];
         $params = [];
 
         if ($statusFilter !== 'all' && !empty($statusFilter)) {
@@ -156,7 +164,7 @@ class Order extends Model
                 $where[] = "o.payment_status = 'request_pending'";
             } elseif ($statusFilter === 'paid') {
                 $where[] = "o.payment_status = 'paid'";
-            } elseif (in_array($statusFilter, ['placed', 'stitching', 'in_production', 'packed', 'shipped', 'delivered', 'cancelled'])) {
+            } elseif (in_array($statusFilter, ['placed', 'packed', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'])) {
                 $where[] = "o.status = :status_filter";
                 $params['status_filter'] = $statusFilter;
             }
@@ -213,18 +221,17 @@ class Order extends Model
             'request_pending' => 0,
             'paid' => 0,
             'placed' => 0,
-            'stitching' => 0,
-            'in_production' => 0,
             'packed' => 0,
             'shipped' => 0,
+            'out_for_delivery' => 0,
             'delivered' => 0,
-            'cancelled' => 0
+            'cancelled' => 0,
         ];
 
         $sql = "
             SELECT o.status, o.payment_status, COUNT(*) as cnt
             FROM orders o
-            WHERE EXISTS (SELECT 1 FROM order_items oi_chk WHERE oi_chk.order_id = o.id AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL))
+            WHERE (EXISTS (SELECT 1 FROM order_items oi_chk WHERE oi_chk.order_id = o.id AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)) OR o.order_number LIKE 'GBC%' OR o.order_number LIKE 'GRM-CUST-%')
             GROUP BY o.status, o.payment_status
         ";
 
@@ -261,8 +268,13 @@ class Order extends Model
         ];
 
         $stmt = $this->db->query("
-            SELECT status, payment_status, order_number
-            FROM orders
+            SELECT o.status, o.payment_status, o.order_number
+            FROM orders o
+            WHERE NOT EXISTS (
+                SELECT 1 FROM order_items oi_chk 
+                WHERE oi_chk.order_id = o.id 
+                  AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)
+            ) AND o.order_number NOT LIKE 'GBC%' AND o.order_number NOT LIKE 'GRM-CUST-%'
         ");
         $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
@@ -311,11 +323,18 @@ class Order extends Model
         } else {
             $whereClause = "(o.payment_status = 'paid' OR (o.status != 'pending' AND o.order_number NOT LIKE 'PENDING-%'))";
         }
+
+        $whereClause .= " AND NOT EXISTS (
+            SELECT 1 FROM order_items oi_chk 
+            WHERE oi_chk.order_id = o.id 
+              AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)
+        ) AND o.order_number NOT LIKE 'GBC%' AND o.order_number NOT LIKE 'GRM-CUST-%'";
         
         $sql = "
             SELECT o.*, 
                    u.name as user_name, u.email as user_email, u.phone as user_phone,
                    (SELECT COUNT(*) FROM order_modifications om WHERE om.order_id = o.id AND om.status IN ('accepted', 'applied') AND om.created_at >= o.created_at) as has_modification,
+                   (SELECT COUNT(*) FROM orders o_prev WHERE o_prev.user_id = o.user_id AND o_prev.payment_status = 'paid' AND o_prev.id < o.id) as repeat_count,
                    (SELECT SUM(oi.quantity) FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = o.id AND p.vendor_id = :vendor_id1) as vendor_item_qty,
                    (SELECT SUM(oi.total_price) FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = o.id AND p.vendor_id = :vendor_id2) as vendor_subtotal,
                    (SELECT GROUP_CONCAT(DISTINCT p.name SEPARATOR ', ') FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = o.id AND p.vendor_id = :vendor_id3) as vendor_product_names
@@ -335,7 +354,7 @@ class Order extends Model
         $orders = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         foreach ($orders as &$order) {
-            $order['repeat_count'] = $this->getPreviousOrderCount($order['user_id'], $order['id']);
+            $order['repeat_count'] = (int)($order['repeat_count'] ?? 0);
             $order['has_modification'] = (int)$order['has_modification'] > 0;
         }
 
@@ -352,6 +371,11 @@ class Order extends Model
             WHERE p.vendor_id = :vendor_id
               AND o.status IN ('placed', 'packed')
               AND o.status != 'cancelled'
+              AND NOT EXISTS (
+                  SELECT 1 FROM order_items oi_chk 
+                  WHERE oi_chk.order_id = o.id 
+                    AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)
+              ) AND o.order_number NOT LIKE 'GBC%' AND o.order_number NOT LIKE 'GRM-CUST-%'
         ");
         $stmt->execute(['vendor_id' => $vendorId]);
         return (int)$stmt->fetchColumn();
@@ -375,6 +399,11 @@ class Order extends Model
             JOIN order_items oi ON oi.order_id = o.id
             JOIN products p ON oi.product_id = p.id
             WHERE p.vendor_id = :vendor_id
+              AND NOT EXISTS (
+                  SELECT 1 FROM order_items oi_chk 
+                  WHERE oi_chk.order_id = o.id 
+                    AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)
+              ) AND o.order_number NOT LIKE 'GBC%' AND o.order_number NOT LIKE 'GRM-CUST-%'
             GROUP BY o.id, o.status, o.payment_status, o.order_number
         ");
         $stmt->execute(['vendor_id' => $vendorId]);
@@ -561,7 +590,12 @@ class Order extends Model
             FROM order_items oi
             JOIN products p ON oi.product_id = p.id
             JOIN orders o ON oi.order_id = o.id
-            WHERE o.status NOT IN ('cancelled', 'refund_processing', 'refund_completed') AND o.payment_status = 'paid'
+            WHERE o.status NOT IN ('cancelled', 'refund_processing', 'refund_completed') 
+              AND o.payment_status = 'paid'
+              AND oi.customization_id IS NULL
+              AND oi.customization_data IS NULL
+              AND o.order_number NOT LIKE 'GBC%'
+              AND o.order_number NOT LIKE 'GRM-CUST-%'
             GROUP BY p.id
             ORDER BY total_sold DESC
             LIMIT :limit
@@ -574,10 +608,15 @@ class Order extends Model
     public function getOrderStatusDistribution()
     {
         $stmt = $this->db->query("
-            SELECT status, COUNT(*) as count 
-            FROM orders 
-            WHERE payment_status = 'paid'
-            GROUP BY status
+            SELECT o.status, COUNT(*) as count 
+            FROM orders o
+            WHERE o.payment_status = 'paid'
+              AND NOT EXISTS (
+                  SELECT 1 FROM order_items oi_chk 
+                  WHERE oi_chk.order_id = o.id 
+                    AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)
+              ) AND o.order_number NOT LIKE 'GBC%' AND o.order_number NOT LIKE 'GRM-CUST-%'
+            GROUP BY o.status
         ");
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
@@ -871,6 +910,11 @@ class Order extends Model
             JOIN users u ON o.user_id = u.id
             LEFT JOIN business_profiles bp ON u.id = bp.user_id
             WHERE o.payment_status != 'paid' AND o.status NOT IN ('cancelled', 'delivered')
+              AND NOT EXISTS (
+                  SELECT 1 FROM order_items oi_chk 
+                  WHERE oi_chk.order_id = o.id 
+                    AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)
+              ) AND o.order_number NOT LIKE 'GBC%' AND o.order_number NOT LIKE 'GRM-CUST-%'
             GROUP BY u.id, u.unique_buyer_id, u.name, u.email, u.phone, u.status, bp.business_name, bp.shop_location
             ORDER BY latest_order_date DESC
         ";
@@ -900,6 +944,11 @@ class Order extends Model
             SELECT o.*
             FROM orders o
             WHERE o.user_id = ? AND o.payment_status != 'paid' AND o.status NOT IN ('cancelled', 'delivered')
+              AND NOT EXISTS (
+                  SELECT 1 FROM order_items oi_chk 
+                  WHERE oi_chk.order_id = o.id 
+                    AND (oi_chk.customization_id IS NOT NULL OR oi_chk.customization_data IS NOT NULL)
+              ) AND o.order_number NOT LIKE 'GBC%' AND o.order_number NOT LIKE 'GRM-CUST-%'
             ORDER BY o.created_at DESC
         ");
         $stmtOrders->execute([$userId]);

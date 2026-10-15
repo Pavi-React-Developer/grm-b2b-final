@@ -434,16 +434,39 @@ $media = $media ?? [];
                 </div>
                 <?php foreach($media as $m): ?>
                 <div class="media-row relative group bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                    <button type="button" class="btn-remove-media absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors z-10">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
+                    <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Media Item
+                        </span>
+                        <button type="button" class="btn-remove-media inline-flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1 rounded-md transition-colors" title="Delete this media item">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span>Delete</span>
+                        </button>
+                    </div>
                     
-                    <div class="mb-4 w-1/3">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Type</label>
-                        <select name="<?= $prefix ?>_media_type[]" class="media-type-input w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white outline-none focus:border-brown">
-                            <option value="image" <?= $m['type'] === 'image' ? 'selected' : '' ?>>Image</option>
-                            <option value="video" <?= $m['type'] === 'video' ? 'selected' : '' ?>>Video</option>
-                        </select>
+                    <?php $mediaOpacity = isset($m['opacity']) && $m['opacity'] !== '' ? (int)$m['opacity'] : 100; ?>
+                    <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Type</label>
+                            <select name="<?= $prefix ?>_media_type[]" class="media-type-input w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white outline-none focus:border-brown">
+                                <option value="image" <?= ($m['type'] ?? 'image') === 'image' ? 'selected' : '' ?>>Image</option>
+                                <option value="video" <?= ($m['type'] ?? '') === 'video' ? 'selected' : '' ?>>Video</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Banner Overlay Opacity</label>
+                                <span class="text-xs font-bold text-[#F25996] opacity-display"><?= $mediaOpacity ?>%</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="range" min="0" max="100" value="<?= $mediaOpacity ?>" class="media-opacity-slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#F25996]">
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <input type="number" name="<?= $prefix ?>_media_opacity[]" min="0" max="100" value="<?= $mediaOpacity ?>" class="media-opacity-input w-16 border border-gray-200 rounded-md px-2 py-1.5 text-xs text-center font-bold outline-none focus:border-brown">
+                                    <span class="text-xs text-gray-500 font-bold">%</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -800,16 +823,39 @@ $media = $media ?? [];
                 </div>
                 <?php foreach($media as $m): ?>
                 <div class="media-row relative group bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                    <button type="button" class="btn-remove-media absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors z-10">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
+                    <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Media Item
+                        </span>
+                        <button type="button" class="btn-remove-media inline-flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1 rounded-md transition-colors" title="Delete this media item">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span>Delete</span>
+                        </button>
+                    </div>
                     
-                    <div class="mb-4 w-1/3">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Type</label>
-                        <select name="<?= $prefix ?>_media_type[]" class="media-type-input w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white outline-none focus:border-brown">
-                            <option value="image" <?= $m['type'] === 'image' ? 'selected' : '' ?>>Image</option>
-                            <option value="video" <?= $m['type'] === 'video' ? 'selected' : '' ?>>Video</option>
-                        </select>
+                    <?php $mediaOpacity = isset($m['opacity']) && $m['opacity'] !== '' ? (int)$m['opacity'] : 100; ?>
+                    <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Type</label>
+                            <select name="<?= $prefix ?>_media_type[]" class="media-type-input w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white outline-none focus:border-brown">
+                                <option value="image" <?= ($m['type'] ?? 'image') === 'image' ? 'selected' : '' ?>>Image</option>
+                                <option value="video" <?= ($m['type'] ?? '') === 'video' ? 'selected' : '' ?>>Video</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Banner Overlay Opacity</label>
+                                <span class="text-xs font-bold text-[#F25996] opacity-display"><?= $mediaOpacity ?>%</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="range" min="0" max="100" value="<?= $mediaOpacity ?>" class="media-opacity-slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#F25996]">
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <input type="number" name="<?= $prefix ?>_media_opacity[]" min="0" max="100" value="<?= $mediaOpacity ?>" class="media-opacity-input w-16 border border-gray-200 rounded-md px-2 py-1.5 text-xs text-center font-bold outline-none focus:border-brown">
+                                    <span class="text-xs text-gray-500 font-bold">%</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1166,16 +1212,39 @@ $media = $media ?? [];
                 </div>
                 <?php foreach($media as $m): ?>
                 <div class="media-row relative group bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-                    <button type="button" class="btn-remove-media absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors z-10">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    </button>
+                    <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
+                        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Media Item
+                        </span>
+                        <button type="button" class="btn-remove-media inline-flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1 rounded-md transition-colors" title="Delete this media item">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            <span>Delete</span>
+                        </button>
+                    </div>
                     
-                    <div class="mb-4 w-1/3">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Type</label>
-                        <select name="<?= $prefix ?>_media_type[]" class="media-type-input w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white outline-none focus:border-brown">
-                            <option value="image" <?= $m['type'] === 'image' ? 'selected' : '' ?>>Image</option>
-                            <option value="video" <?= $m['type'] === 'video' ? 'selected' : '' ?>>Video</option>
-                        </select>
+                    <?php $mediaOpacity = isset($m['opacity']) && $m['opacity'] !== '' ? (int)$m['opacity'] : 100; ?>
+                    <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Type</label>
+                            <select name="<?= $prefix ?>_media_type[]" class="media-type-input w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white outline-none focus:border-brown">
+                                <option value="image" <?= ($m['type'] ?? 'image') === 'image' ? 'selected' : '' ?>>Image</option>
+                                <option value="video" <?= ($m['type'] ?? '') === 'video' ? 'selected' : '' ?>>Video</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Banner Overlay Opacity</label>
+                                <span class="text-xs font-bold text-[#F25996] opacity-display"><?= $mediaOpacity ?>%</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="range" min="0" max="100" value="<?= $mediaOpacity ?>" class="media-opacity-slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#F25996]">
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <input type="number" name="<?= $prefix ?>_media_opacity[]" min="0" max="100" value="<?= $mediaOpacity ?>" class="media-opacity-input w-16 border border-gray-200 rounded-md px-2 py-1.5 text-xs text-center font-bold outline-none focus:border-brown">
+                                    <span class="text-xs text-gray-500 font-bold">%</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1284,16 +1353,38 @@ $media = $media ?? [];
 <!-- Template for Media Row -->
 <template id="mediaTemplate">
     <div class="media-row relative group bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <button type="button" class="btn-remove-media absolute top-4 right-4 text-red-400 hover:text-red-600 transition-colors z-10">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-        </button>
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-gray-100">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                Media Item
+            </span>
+            <button type="button" class="btn-remove-media inline-flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1 rounded-md transition-colors" title="Delete this media item">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                <span>Delete</span>
+            </button>
+        </div>
         
-        <div class="mb-4 w-1/3">
-            <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Type</label>
-            <select class="media-type-input w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white outline-none focus:border-brown">
-                <option value="image">Image</option>
-                <option value="video">Video</option>
-            </select>
+        <div class="mb-4 grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+            <div>
+                <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Type</label>
+                <select class="media-type-input w-full border border-gray-200 rounded-md px-3 py-2 text-sm bg-white outline-none focus:border-brown">
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                </select>
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Banner Overlay Opacity</label>
+                    <span class="text-xs font-bold text-[#F25996] opacity-display">0%</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="range" min="0" max="100" value="0" class="media-opacity-slider w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-[#F25996]">
+                    <div class="flex items-center gap-1 shrink-0">
+                        <input type="number" min="0" max="100" value="0" class="media-opacity-input w-16 border border-gray-200 rounded-md px-2 py-1.5 text-xs text-center font-bold outline-none focus:border-brown">
+                        <span class="text-xs text-gray-500 font-bold">%</span>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1597,6 +1688,8 @@ document.addEventListener('DOMContentLoaded', function() {
             row.querySelector('.media-type-input').name = `${prefix}_media_type[]`;
             row.querySelector('.desktop-url').name = `${prefix}_media_desktop[]`;
             row.querySelector('.mobile-url').name = `${prefix}_media_mobile[]`;
+            const opInp = row.querySelector('.media-opacity-input');
+            if (opInp) opInp.name = `${prefix}_media_opacity[]`;
             
             initMediaRow(row);
             container.appendChild(clone);
@@ -1615,19 +1708,47 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    function bindMainMediaOpacity(row) {
+        const slider = row.querySelector('.media-opacity-slider');
+        const input = row.querySelector('.media-opacity-input');
+        const display = row.querySelector('.opacity-display');
+        if (!slider || !input) return;
+
+        function update(val) {
+            val = Math.max(0, Math.min(100, parseInt(val) || 0));
+            slider.value = val;
+            input.value = val;
+            if (display) display.textContent = val + '%';
+            row.querySelectorAll('.preview-black-overlay').forEach(el => {
+                el.style.backgroundColor = `rgba(0, 0, 0, ${val / 100})`;
+            });
+            row.querySelectorAll('.desktop-preview img, .desktop-preview video, .mobile-preview img, .mobile-preview video').forEach(el => {
+                el.style.opacity = '1';
+            });
+        }
+
+        slider.addEventListener('input', () => update(slider.value));
+        input.addEventListener('input', () => update(input.value));
+        update(input.value);
+    }
+
     function renderPreview(url, previewEl, type) {
         if (!url) {
             previewEl.innerHTML = '<span class="text-xs text-gray-400">Preview</span>';
             return;
         }
+        const row = previewEl.closest('.media-row');
+        const opInput = row ? row.querySelector('.media-opacity-input') : null;
+        const opVal = opInput ? (parseInt(opInput.value) || 0) / 100 : 0;
         if (type === 'video' || url.match(/\.(mp4|webm|ogg)$/i) || url.includes('/video/upload/')) {
-            previewEl.innerHTML = `<video src="${url}" class="w-full h-full object-cover" controls muted></video>`;
+            previewEl.innerHTML = `<video src="${url}" class="w-full h-full object-cover" controls muted></video><div class="preview-black-overlay absolute inset-0 pointer-events-none transition-colors" style="background-color: rgba(0, 0, 0, ${opVal});"></div>`;
         } else {
-            previewEl.innerHTML = `<img src="${url}" class="w-full h-full object-cover">`;
+            previewEl.innerHTML = `<img src="${url}" class="w-full h-full object-cover"><div class="preview-black-overlay absolute inset-0 pointer-events-none transition-colors" style="background-color: rgba(0, 0, 0, ${opVal});"></div>`;
         }
     }
 
     function initMediaRow(row) {
+        bindMainMediaOpacity(row);
         const typeSelect = row.querySelector('.media-type-input');
         
         row.querySelectorAll('.desktop-preview, .mobile-preview').forEach(preview => {
@@ -1662,6 +1783,8 @@ document.addEventListener('DOMContentLoaded', function() {
             renderPreview(mUrl, row.querySelector('.mobile-preview'), typeSelect.value);
         });
     }
+
+    document.querySelectorAll('.media-row').forEach(row => initMediaRow(row));
 
     // Hybrid Color Inputs (Color Link) - Master Toggles
     const masterToggles = document.querySelectorAll('.masterColorLinkToggle');

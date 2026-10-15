@@ -265,7 +265,34 @@ class FabricCustomization
             ORDER BY sort_order ASC, id ASC
         ");
         $stmt->execute([(int)$customizationId]);
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $sizes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Fallback to product_variants of the associated fabric product (created in Fabric Added Module)
+        if (empty($sizes)) {
+            $stmtFabric = $this->db->prepare("SELECT fabric_id, unit FROM fabric_customizations WHERE id = ?");
+            $stmtFabric->execute([(int)$customizationId]);
+            $ruleRow = $stmtFabric->fetch(PDO::FETCH_ASSOC);
+
+            if (!empty($ruleRow['fabric_id'])) {
+                $stmtPv = $this->db->prepare("
+                    SELECT id as size_id, name as size_name, 
+                           COALESCE(fabric_consumption, 1.00) as fabric_consumption, 
+                           COALESCE(base_quantity, 2) as base_quantity, 
+                           COALESCE(max_quantity, 4) as max_quantity, 
+                           ? as unit, 1 as enabled, id as sort_order
+                    FROM product_variants
+                    WHERE product_id = ? AND status = 'active'
+                    ORDER BY id ASC
+                ");
+                $stmtPv->execute([$ruleRow['unit'] ?? 'Meter', (int)$ruleRow['fabric_id']]);
+                $pvSizes = $stmtPv->fetchAll(PDO::FETCH_ASSOC);
+                if (!empty($pvSizes)) {
+                    return $pvSizes;
+                }
+            }
+        }
+
+        return $sizes;
     }
 
     /**
@@ -318,8 +345,8 @@ class FabricCustomization
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO fabric_customizations 
-                (fabric_id, program_name, garment_type, category_id, sub_category_id, feeding_type, minimum_pieces, maximum_pieces, wastage_percentage, unit, customization_enabled, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (fabric_id, program_name, garment_type, category_id, sub_category_id, feeding_type, minimum_pieces, maximum_pieces, wastage_percentage, without_cover_discount_percentage, delivery_days, delivery_base_pieces, unit, customization_enabled, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmt->execute([
@@ -332,6 +359,9 @@ class FabricCustomization
                 $data['minimum_pieces'] ?? 10,
                 $data['maximum_pieces'] ?? 100,
                 $data['wastage_percentage'] ?? 0.00,
+                $data['without_cover_discount_percentage'] ?? 0.00,
+                $data['delivery_days'] ?? 7,
+                $data['delivery_base_pieces'] ?? 100,
                 $data['unit'] ?? 'Meter',
                 isset($data['customization_enabled']) ? (int)$data['customization_enabled'] : 1,
                 $data['status'] ?? 'active'
@@ -339,33 +369,57 @@ class FabricCustomization
 
             $customizationId = (int)$this->db->lastInsertId();
 
-            // Insert sizes
-            $sizeStmt = $this->db->prepare("
-                INSERT INTO fabric_customization_sizes 
-                (customization_id, size_id, size_name, fabric_consumption, base_quantity, max_quantity, unit, enabled, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-
-            $sort = 1;
-            foreach ($sizes as $sz) {
-                if (empty($sz['size_name'])) {
-                    continue;
+            // Auto-sync variants from product_variants of fabric_id if not explicitly provided
+            if (empty($sizes) && !empty($data['fabric_id'])) {
+                $stmtPv = $this->db->prepare("
+                    SELECT id, name FROM product_variants 
+                    WHERE product_id = ? AND status = 'active' 
+                    ORDER BY id ASC
+                ");
+                $stmtPv->execute([(int)$data['fabric_id']]);
+                $pvList = $stmtPv->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($pvList as $pv) {
+                    $sizes[] = [
+                        'size_id'            => $pv['id'],
+                        'size_name'          => trim($pv['name']),
+                        'fabric_consumption' => 1.00,
+                        'base_quantity'      => 2,
+                        'max_quantity'       => 4,
+                        'unit'               => $data['unit'] ?? 'Meter',
+                        'enabled'            => 1
+                    ];
                 }
-                $consumption = isset($sz['fabric_consumption']) && (float)$sz['fabric_consumption'] > 0 ? (float)$sz['fabric_consumption'] : 1.00;
-                $baseQty = isset($sz['base_quantity']) && (int)$sz['base_quantity'] >= 0 ? (int)$sz['base_quantity'] : 2;
-                $maxQty = isset($sz['max_quantity']) && (int)$sz['max_quantity'] > 0 ? (int)$sz['max_quantity'] : 4;
+            }
 
-                $sizeStmt->execute([
-                    $customizationId,
-                    $sz['size_id'] ?? null,
-                    trim($sz['size_name']),
-                    $consumption,
-                    $baseQty,
-                    $maxQty,
-                    $sz['unit'] ?? $data['unit'] ?? 'Meter',
-                    isset($sz['enabled']) ? (int)$sz['enabled'] : 1,
-                    $sz['sort_order'] ?? $sort++
-                ]);
+            // Insert sizes
+            if (!empty($sizes)) {
+                $sizeStmt = $this->db->prepare("
+                    INSERT INTO fabric_customization_sizes 
+                    (customization_id, size_id, size_name, fabric_consumption, base_quantity, max_quantity, unit, enabled, sort_order)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
+
+                $sort = 1;
+                foreach ($sizes as $sz) {
+                    if (empty($sz['size_name'])) {
+                        continue;
+                    }
+                    $consumption = isset($sz['fabric_consumption']) && (float)$sz['fabric_consumption'] > 0 ? (float)$sz['fabric_consumption'] : 1.00;
+                    $baseQty = isset($sz['base_quantity']) && (int)$sz['base_quantity'] >= 0 ? (int)$sz['base_quantity'] : 2;
+                    $maxQty = isset($sz['max_quantity']) && (int)$sz['max_quantity'] > 0 ? (int)$sz['max_quantity'] : 4;
+
+                    $sizeStmt->execute([
+                        $customizationId,
+                        $sz['size_id'] ?? null,
+                        trim($sz['size_name']),
+                        $consumption,
+                        $baseQty,
+                        $maxQty,
+                        $sz['unit'] ?? $data['unit'] ?? 'Meter',
+                        isset($sz['enabled']) ? (int)$sz['enabled'] : 1,
+                        $sz['sort_order'] ?? $sort++
+                    ]);
+                }
             }
 
             $this->db->commit();
@@ -394,6 +448,9 @@ class FabricCustomization
                     minimum_pieces = ?, 
                     maximum_pieces = ?, 
                     wastage_percentage = ?, 
+                    without_cover_discount_percentage = ?,
+                    delivery_days = ?,
+                    delivery_base_pieces = ?,
                     unit = ?, 
                     customization_enabled = ?, 
                     status = ?
@@ -410,42 +467,47 @@ class FabricCustomization
                 $data['minimum_pieces'] ?? 10,
                 $data['maximum_pieces'] ?? 100,
                 $data['wastage_percentage'] ?? 0.00,
+                $data['without_cover_discount_percentage'] ?? 0.00,
+                $data['delivery_days'] ?? 7,
+                $data['delivery_base_pieces'] ?? 100,
                 $data['unit'] ?? 'Meter',
                 isset($data['customization_enabled']) ? (int)$data['customization_enabled'] : 1,
                 $data['status'] ?? 'active',
                 (int)$id
             ]);
 
-            // Clear old sizes and insert new ones
-            $delStmt = $this->db->prepare("DELETE FROM fabric_customization_sizes WHERE customization_id = ?");
-            $delStmt->execute([(int)$id]);
+            // Only update fabric_customization_sizes if sizes array is explicitly provided
+            if (!empty($sizes)) {
+                $delStmt = $this->db->prepare("DELETE FROM fabric_customization_sizes WHERE customization_id = ?");
+                $delStmt->execute([(int)$id]);
 
-            $sizeStmt = $this->db->prepare("
-                INSERT INTO fabric_customization_sizes 
-                (customization_id, size_id, size_name, fabric_consumption, base_quantity, max_quantity, unit, enabled, sort_order)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
+                $sizeStmt = $this->db->prepare("
+                    INSERT INTO fabric_customization_sizes 
+                    (customization_id, size_id, size_name, fabric_consumption, base_quantity, max_quantity, unit, enabled, sort_order)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ");
 
-            $sort = 1;
-            foreach ($sizes as $sz) {
-                if (empty($sz['size_name'])) {
-                    continue;
+                $sort = 1;
+                foreach ($sizes as $sz) {
+                    if (empty($sz['size_name'])) {
+                        continue;
+                    }
+                    $consumption = isset($sz['fabric_consumption']) && (float)$sz['fabric_consumption'] > 0 ? (float)$sz['fabric_consumption'] : 1.00;
+                    $baseQty = isset($sz['base_quantity']) && (int)$sz['base_quantity'] >= 0 ? (int)$sz['base_quantity'] : 2;
+                    $maxQty = isset($sz['max_quantity']) && (int)$sz['max_quantity'] > 0 ? (int)$sz['max_quantity'] : 4;
+
+                    $sizeStmt->execute([
+                        (int)$id,
+                        $sz['size_id'] ?? null,
+                        trim($sz['size_name']),
+                        $consumption,
+                        $baseQty,
+                        $maxQty,
+                        $sz['unit'] ?? $data['unit'] ?? 'Meter',
+                        isset($sz['enabled']) ? (int)$sz['enabled'] : 1,
+                        $sz['sort_order'] ?? $sort++
+                    ]);
                 }
-                $consumption = isset($sz['fabric_consumption']) && (float)$sz['fabric_consumption'] > 0 ? (float)$sz['fabric_consumption'] : 1.00;
-                $baseQty = isset($sz['base_quantity']) && (int)$sz['base_quantity'] >= 0 ? (int)$sz['base_quantity'] : 2;
-                $maxQty = isset($sz['max_quantity']) && (int)$sz['max_quantity'] > 0 ? (int)$sz['max_quantity'] : 4;
-
-                $sizeStmt->execute([
-                    (int)$id,
-                    $sz['size_id'] ?? null,
-                    trim($sz['size_name']),
-                    $consumption,
-                    $baseQty,
-                    $maxQty,
-                    $sz['unit'] ?? $data['unit'] ?? 'Meter',
-                    isset($sz['enabled']) ? (int)$sz['enabled'] : 1,
-                    $sz['sort_order'] ?? $sort++
-                ]);
             }
 
             $this->db->commit();

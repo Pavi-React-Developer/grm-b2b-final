@@ -68,14 +68,15 @@ assertTest($calcStock['is_valid'] === false, "Service: Fails when larger sizes (
 assertTest(strpos($calcStock['errors'][0], 'Fabric Stock Exceeded') !== false || strpos($calcStock['errors'][0], 'inventory') !== false, "Service: Returns explicit fabric stock shortage error message");
 assertTest($calcStock['is_stock_sufficient'] === false, "Service: is_stock_sufficient flag is false when required > stock");
 
-// 7. Test Service: Pricing Calculation
+// 7. Test Service: Pricing Calculation (Tax-Inclusive)
 $pricing = $service->calculatePricing((float)$rule['fabric_price'], 31.0, 0.0, 15, 5.0);
-$expectedFabricCost = round(31.0 * (float)$rule['fabric_price'], 2);
-assertTest($pricing['fabric_cost'] == $expectedFabricCost, "Service: Fabric cost calculation is accurate");
+$expectedTotal = round(15 * (float)$rule['fabric_price'], 2);
+assertTest($pricing['fabric_cost'] == $expectedTotal, "Service: Fabric cost calculation is accurate");
 assertTest($pricing['gst_rate'] == 5.0, "Service: GST rate applied is 5%");
-$expectedGst = round($expectedFabricCost * 0.05, 2);
-assertTest($pricing['gst_amount'] == $expectedGst, "Service: GST amount is calculated accurately");
-assertTest($pricing['total'] == ($expectedFabricCost + $expectedGst), "Service: Grand total matches subtotal + GST");
+$expectedTaxable = round($expectedTotal / 1.05, 2);
+$expectedGst = round($expectedTotal - $expectedTaxable, 2);
+assertTest($pricing['gst_amount'] == $expectedGst, "Service: GST amount included in price is calculated accurately");
+assertTest($pricing['total'] == $expectedTotal, "Service: Grand total is tax-inclusive (no extra GST added)");
 
 // 8. Test Model: Get Customizable Fabrics for Storefront
 $storefrontFabrics = $model->getCustomizableFabrics();

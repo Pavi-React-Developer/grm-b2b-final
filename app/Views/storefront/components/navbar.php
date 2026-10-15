@@ -25,12 +25,14 @@ if (isset($global['bg_color'])) {
 
 $textColor = $global['text_color'] ?? '#8C6A4F';
 
-function getInlineStyleStr($property, $value) {
-    if (strpos($value, ':') !== false) {
-        $val = trim($value);
-        return htmlspecialchars($val) . (substr($val, -1) === ';' ? '' : ';');
+if (!function_exists('getInlineStyleStr')) {
+    function getInlineStyleStr($property, $value) {
+        if (strpos($value, ':') !== false) {
+            $val = trim($value);
+            return htmlspecialchars($val) . (substr($val, -1) === ';' ? '' : ';');
+        }
+        return htmlspecialchars($property) . ': ' . htmlspecialchars($value) . ';';
     }
-    return htmlspecialchars($property) . ': ' . htmlspecialchars($value) . ';';
 }
 $bgInline = getInlineStyleStr('background', $bgColorVal);
 $textInline = getInlineStyleStr('color', $textColor);
@@ -69,7 +71,39 @@ foreach ($menuItems as $item) {
     }
 }
 
-$renderItems = function($items) use ($textColor, $globalFontSize, $globalIconSize) {
+$getNavCategoriesWithSubcategories = function($catIds) {
+    if (empty($catIds)) return [];
+    $navDropCacheKey = 'nav_drop_v2_subcats_' . md5(implode(',', $catIds));
+    $navDropData = class_exists('\Core\Cache') ? \Core\Cache::get($navDropCacheKey) : null;
+    if ($navDropData === null) {
+        $db = \Core\Database::getInstance();
+        $inClause = implode(',', array_map('intval', $catIds));
+        $categoriesList = $db->query("SELECT id, name, slug, is_customizable FROM categories WHERE id IN ($inClause) AND status = 'active' ORDER BY name ASC")->fetchAll();
+        $navDropData = [];
+        foreach ($categoriesList as $cat) {
+            $stmt = $db->prepare("SELECT id, name, slug, is_customizable FROM sub_categories WHERE category_id = ? AND status = 'active' ORDER BY name ASC");
+            $stmt->execute([$cat['id']]);
+            $rawSub = $stmt->fetchAll();
+            $uniqueSub = [];
+            $seen = [];
+            foreach ($rawSub as $sub) {
+                $norm = strtolower(trim($sub['name']));
+                if (!isset($seen[$norm])) {
+                    $seen[$norm] = true;
+                    $uniqueSub[] = $sub;
+                }
+            }
+            $cat['subcategories'] = $uniqueSub;
+            $navDropData[] = $cat;
+        }
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set($navDropCacheKey, $navDropData, 3600);
+        }
+    }
+    return $navDropData ?: [];
+};
+
+$renderItems = function($items) use ($textColor, $globalFontSize, $globalIconSize, $getNavCategoriesWithSubcategories) {
     if (empty($items)) return;
     foreach ($items as $item):
         $itemBg = !empty($item['bg_color']) && $item['bg_color'] !== '#ffffff' && $item['bg_color'] !== 'transparent' ? $item['bg_color'] : 'transparent';
@@ -99,44 +133,55 @@ $renderItems = function($items) use ($textColor, $globalFontSize, $globalIconSiz
                 $isMega = count($catIds) > 1;
                 $dropdownBg = $item['dropdown_bg_color'] ?? '#ffffff';
                 $dropdownText = $item['dropdown_text_color'] ?? '#111827';
+                $navDropData = !empty($catIds) ? $getNavCategoriesWithSubcategories($catIds) : [];
             ?>
-            <div class="absolute top-full <?= $isMega ? 'left-1/2 -translate-x-1/2 origin-top w-[750px] max-w-[90vw]' : 'left-0 origin-top-left min-w-[260px] w-auto max-w-sm' ?> mt-2 shadow-2xl border border-gray-100 rounded-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform overflow-hidden" style="background-color: <?= htmlspecialchars($dropdownBg) ?>;">
-                <?php if (!empty($catIds)): 
-                    $db = \Core\Database::getInstance();
-                    $inClause = implode(',', $catIds);
-                    $subCats = $db->query("SELECT id, name, slug FROM categories WHERE id IN ($inClause) AND status = 'active' ORDER BY name ASC")->fetchAll();
-                    if (count($subCats) > 0):
-                ?>
-                    <div class="<?= $isMega ? 'p-6 sm:p-8 flex flex-wrap gap-x-10 gap-y-8' : 'p-5 flex flex-col' ?> overflow-y-auto overflow-x-hidden" style="max-height: 75vh;">
-                        <?php foreach ($subCats as $subCat): 
-                            $stmt = $db->prepare("SELECT id, name, slug FROM products WHERE category_id = ? AND status = 'active' ORDER BY name ASC LIMIT 10");
-                            $stmt->execute([$subCat['id']]);
-                            $products = $stmt->fetchAll();
+            <div class="absolute top-full <?= $isMega ? 'left-1/2 -translate-x-1/2 origin-top w-auto min-w-[540px] max-w-4xl max-w-[92vw]' : 'left-0 origin-top-left min-w-[270px] w-auto max-w-xs' ?> mt-2 shadow-2xl border border-gray-100 rounded-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform overflow-hidden" style="background-color: <?= htmlspecialchars($dropdownBg) ?>;">
+                <?php if (!empty($navDropData)): ?>
+                    <div class="<?= $isMega ? 'p-6 sm:p-7 flex flex-wrap gap-x-8 gap-y-6' : 'p-4 sm:p-5 flex flex-col' ?> overflow-y-auto overflow-x-hidden max-h-[75vh]">
+                        <?php foreach ($navDropData as $categoryItem): 
+                            $subcategories = $categoryItem['subcategories'] ?? [];
+                            $catUrl = !empty($categoryItem['is_customizable']) 
+                                ? BASE_URL . '/customize?category_id=' . urlencode($categoryItem['id']) 
+                                : BASE_URL . '/catalog?category_id=' . urlencode($categoryItem['id']);
                         ?>
-                        <div class="flex flex-col <?= $isMega ? 'flex-1 min-w-[180px] max-w-[260px]' : 'w-full' ?>">
-                            <a href="<?= BASE_URL ?>/catalog?category_id=<?= htmlspecialchars($subCat['id']) ?>" class="block font-bold uppercase mb-3 hover:opacity-80 transition-opacity border-b border-gray-200/80 pb-2.5 text-xs sm:text-sm tracking-wider" style="color: <?= htmlspecialchars($dropdownText) ?>;">
-                                <?= htmlspecialchars($subCat['name']) ?>
-                            </a>
-                            <div class="flex flex-col space-y-2.5">
-                                <?php if (count($products) > 0): ?>
-                                    <?php foreach ($products as $prod): ?>
-                                        <a href="<?= BASE_URL ?>/product?id=<?= htmlspecialchars($prod['id']) ?>" class="hover:opacity-80 transition-opacity flex items-center gap-2.5 group/link font-medium text-xs sm:text-sm" style="color: <?= htmlspecialchars($dropdownText) ?>; opacity: 0.85;">
-                                            <span class="w-1.5 h-1.5 rounded-full flex-shrink-0" style="background-color: <?= htmlspecialchars($dropdownText) ?>; opacity: 0.6;"></span>
-                                            <span class="leading-snug break-words"><?= htmlspecialchars($prod['name']) ?></span>
+                        <div class="flex flex-col <?= $isMega ? 'flex-1 min-w-[180px] max-w-[240px]' : 'w-full' ?>">
+                            <!-- Category Header -->
+                            <div class="flex items-center justify-between pb-2 mb-2 border-b border-gray-100">
+                                <a href="<?= $catUrl ?>" class="font-extrabold uppercase text-xs sm:text-sm tracking-wider hover:opacity-80 transition-opacity" style="color: <?= htmlspecialchars($dropdownText) ?>;">
+                                    <?= htmlspecialchars($categoryItem['name']) ?>
+                                </a>
+                                <a href="<?= $catUrl ?>" class="text-[11px] font-bold opacity-60 hover:opacity-100 transition-opacity flex items-center gap-0.5" style="color: <?= htmlspecialchars($dropdownText) ?>;" title="View all <?= htmlspecialchars($categoryItem['name']) ?>">
+                                    <span>All</span>
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                </a>
+                            </div>
+
+                            <!-- Subcategories List -->
+                            <div class="flex flex-col space-y-1">
+                                <?php if (!empty($subcategories)): ?>
+                                    <?php foreach ($subcategories as $sub): 
+                                        $subUrl = !empty($categoryItem['is_customizable'])
+                                            ? BASE_URL . '/customize?category_id=' . urlencode($categoryItem['id']) . '&sub_category_id=' . urlencode($sub['id'])
+                                            : BASE_URL . '/catalog?category_id=' . urlencode($categoryItem['id']) . '&sub_category_id=' . urlencode($sub['id']);
+                                        $subNameFormatted = ucwords(strtolower(trim($sub['name'])));
+                                    ?>
+                                        <a href="<?= $subUrl ?>" class="group/sub flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all duration-150 hover:bg-black/5 hover:translate-x-1" style="color: <?= htmlspecialchars($dropdownText) ?>; opacity: 0.9;">
+                                            <div class="flex items-center gap-2 min-w-0">
+                                                <span class="w-1.5 h-1.5 rounded-full shrink-0 transition-transform group-hover/sub:scale-125" style="background-color: <?= htmlspecialchars($dropdownText) ?>; opacity: 0.65;"></span>
+                                                <span class="truncate"><?= htmlspecialchars($subNameFormatted) ?></span>
+                                            </div>
+                                            <svg class="w-3.5 h-3.5 shrink-0 opacity-0 -translate-x-1 group-hover/sub:opacity-80 group-hover/sub:translate-x-0 transition-all duration-150" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                                         </a>
                                     <?php endforeach; ?>
                                 <?php else: ?>
-                                    <span class="italic text-xs" style="color: <?= htmlspecialchars($dropdownText) ?>; opacity: 0.5;">No products</span>
+                                    <span class="italic text-xs px-2 py-1 text-gray-400">No subcategories</span>
                                 <?php endif; ?>
                             </div>
                         </div>
                         <?php endforeach; ?>
                     </div>
                 <?php else: ?>
-                    <div class="px-6 py-4 text-sm text-gray-500 italic">No categories found</div>
-                <?php endif; ?>
-                <?php else: ?>
-                    <div class="px-6 py-4 text-sm text-gray-500 italic">No sub-items defined</div>
+                    <div class="px-6 py-4 text-sm text-gray-500 italic">No categories or subcategories found</div>
                 <?php endif; ?>
             </div>
             <?php endif; ?>
@@ -436,15 +481,51 @@ $renderSystemIcons = function() use ($textColor, $bgColorVal, $globalFontSize, $
                         $itemText = !empty($item['text_color']) ? $item['text_color'] : $textColor;
                         $hasDropdown = !empty($item['is_dropdown']);
                         $borderColor = strlen($textColor) === 7 ? $textColor . '25' : $textColor;
+
+                        $mCatIds = [];
+                        if ($hasDropdown && !empty($item['auto_fill_catalog'])) {
+                            $mCatIds = is_string($item['auto_fill_catalog']) ? explode(',', $item['auto_fill_catalog']) : (array)$item['auto_fill_catalog'];
+                            $mCatIds = array_filter(array_map('intval', $mCatIds));
+                        }
+                        $mNavData = !empty($mCatIds) ? $getNavCategoriesWithSubcategories($mCatIds) : [];
                     ?>
-                    <a href="<?= htmlspecialchars($item['cta_url'] ?? '#') ?>" class="block px-6 py-3.5 font-bold text-sm transition-colors border-b last:border-b-0 hover:opacity-80" style="color: <?= htmlspecialchars($itemText) ?>; background-color: <?= htmlspecialchars($itemBg) ?>; border-color: <?= htmlspecialchars($borderColor) ?>;">
-                        <div class="flex items-center justify-between">
-                            <span><?= htmlspecialchars($item['title'] ?? '') ?></span>
-                            <?php if ($hasDropdown): ?>
-                                <svg class="w-4 h-4 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                    <div class="border-b last:border-b-0" style="border-color: <?= htmlspecialchars($borderColor) ?>;">
+                        <div class="flex items-center justify-between px-6 py-3.5 font-bold text-sm" style="color: <?= htmlspecialchars($itemText) ?>; background-color: <?= htmlspecialchars($itemBg) ?>;">
+                            <a href="<?= htmlspecialchars($item['cta_url'] ?? '#') ?>" class="hover:opacity-80 flex-1"><?= htmlspecialchars($item['title'] ?? '') ?></a>
+                            <?php if ($hasDropdown && !empty($mNavData)): ?>
+                                <button type="button" onclick="const mSub = this.closest('div').nextElementSibling; if(mSub) { mSub.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180'); }" class="p-1 -mr-1" aria-label="Toggle submenu">
+                                    <svg class="w-4 h-4 opacity-70 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                </button>
                             <?php endif; ?>
                         </div>
-                    </a>
+                        <?php if ($hasDropdown && !empty($mNavData)): ?>
+                            <div class="hidden bg-black/5 px-6 py-3 space-y-3">
+                                <?php foreach ($mNavData as $mCat): 
+                                    $mCatUrl = !empty($mCat['is_customizable']) ? BASE_URL . '/customize?category_id=' . urlencode($mCat['id']) : BASE_URL . '/catalog?category_id=' . urlencode($mCat['id']);
+                                ?>
+                                    <div class="space-y-1">
+                                        <div class="flex items-center justify-between">
+                                            <a href="<?= $mCatUrl ?>" class="block font-bold text-xs uppercase tracking-wider py-1 hover:opacity-80" style="color: <?= htmlspecialchars($itemText) ?>;">
+                                                <?= htmlspecialchars($mCat['name']) ?>
+                                            </a>
+                                            <a href="<?= $mCatUrl ?>" class="text-[11px] font-semibold opacity-60 hover:opacity-100" style="color: <?= htmlspecialchars($itemText) ?>;">View All</a>
+                                        </div>
+                                        <div class="pl-3 space-y-1 border-l-2 border-black/10">
+                                            <?php foreach ($mCat['subcategories'] ?? [] as $mSub): 
+                                                $mSubUrl = !empty($mCat['is_customizable']) 
+                                                    ? BASE_URL . '/customize?category_id=' . urlencode($mCat['id']) . '&sub_category_id=' . urlencode($mSub['id'])
+                                                    : BASE_URL . '/catalog?category_id=' . urlencode($mCat['id']) . '&sub_category_id=' . urlencode($mSub['id']);
+                                            ?>
+                                                <a href="<?= $mSubUrl ?>" class="block text-xs font-medium py-1 hover:opacity-80 capitalize" style="color: <?= htmlspecialchars($itemText) ?>; opacity: 0.9;">
+                                                    <?= htmlspecialchars(ucwords(strtolower(trim($mSub['name'])))) ?>
+                                                </a>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 <?php endif; ?>
             <?php endforeach; ?>
             

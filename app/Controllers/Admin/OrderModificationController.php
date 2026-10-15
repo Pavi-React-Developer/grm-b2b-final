@@ -98,7 +98,9 @@ class OrderModificationController extends Controller
      */
     public function create()
     {
-        $this->requirePermission('bill_modifications', 'edit');
+        if (!$this->hasPermission('bill_modifications', 'edit') && !$this->hasPermission('custom_orders', 'edit') && !$this->hasPermission('orders', 'edit')) {
+            $this->requirePermission('bill_modifications', 'edit');
+        }
         $orderNumber = $_GET['order'] ?? null;
         if (!$orderNumber) {
             Session::setFlash('error', 'Order not specified.');
@@ -146,15 +148,29 @@ class OrderModificationController extends Controller
         $iStmt->execute([$order['id']]);
         $items = $iStmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        // Get categories for the modal dropdown
-        $catStmt = $db->query("SELECT id, name FROM categories ORDER BY name ASC");
-        $categories = $catStmt->fetchAll(\PDO::FETCH_ASSOC);
+        // Detect if this is a custom order (GBC%, GRM-CUST-%, or custom items)
+        $isCustomOrder = (strpos($orderNumber, 'GBC') === 0 || strpos($orderNumber, 'GRM-CUST-') === 0);
+        if (!$isCustomOrder) {
+            foreach ($items as $item) {
+                if (!empty($item['customization_id']) || !empty($item['customization_data'])) {
+                    $isCustomOrder = true;
+                    break;
+                }
+            }
+        }
+
+        // Get categories for the modal dropdown:
+        // When modifying a custom order, show ONLY customizable categories (is_customizable = 1)
+        // Otherwise, show standard catalog categories (is_customizable = 0 or null)
+        $categoryModel = new \App\Models\Category();
+        $categories = $categoryModel->getAllActive(null, $isCustomOrder ? 1 : 0);
 
         $this->render('admin/order_modifications/create', [
-            'title'      => 'Create Bill Modification — Order ' . $orderNumber,
-            'order'      => $order,
-            'items'      => $items,
-            'categories' => $categories,
+            'title'         => 'Create Bill Modification — Order ' . $orderNumber,
+            'order'         => $order,
+            'items'         => $items,
+            'categories'    => $categories,
+            'isCustomOrder' => $isCustomOrder,
         ], 'admin');
     }
 
@@ -163,7 +179,9 @@ class OrderModificationController extends Controller
      */
     public function store()
     {
-        $this->requirePermission('bill_modifications', 'edit');
+        if (!$this->hasPermission('bill_modifications', 'edit') && !$this->hasPermission('custom_orders', 'edit') && !$this->hasPermission('orders', 'edit')) {
+            $this->requirePermission('bill_modifications', 'edit');
+        }
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('/admin/order-modifications');
         }
@@ -184,6 +202,16 @@ class OrderModificationController extends Controller
         if (!$order) {
             Session::setFlash('error', 'Order not found.');
             $this->redirect('/admin/order-modifications');
+        }
+
+        // Detect if modifying a customized order
+        $isCustomOrder = (strpos($order['order_number'], 'GBC') === 0 || strpos($order['order_number'], 'GRM-CUST-') === 0);
+        if (!$isCustomOrder) {
+            $chkStmt = $db->prepare("SELECT 1 FROM order_items WHERE order_id = ? AND (customization_id IS NOT NULL OR customization_data IS NOT NULL) LIMIT 1");
+            $chkStmt->execute([$orderId]);
+            if ($chkStmt->fetch()) {
+                $isCustomOrder = true;
+            }
         }
 
         $otherFees     = max(0, (float)($_POST['other_fees'] ?? 0));
@@ -322,8 +350,19 @@ class OrderModificationController extends Controller
             $info = $productInfo[$pid];
             $qty = $ic['new_qty'];
             
-            if ($qty > 0 && $qty < $info['moq']) {
-                $validationErrors[] = "Minimum order quantity for <strong>{$info['name']}</strong> is {$info['moq']} pieces.";
+            // For custom orders: validate that all active/added products belong ONLY to customizable categories
+            if ($isCustomOrder) {
+                $catId = $info['category_id'];
+                $catCheck = $db->prepare("SELECT is_customizable FROM categories WHERE id = ?");
+                $catCheck->execute([$catId]);
+                $catRow = $catCheck->fetch(\PDO::FETCH_ASSOC);
+                if (!$catRow || (int)$catRow['is_customizable'] !== 1) {
+                    $validationErrors[] = "Customized orders can only include products from customizable categories. Product <strong>{$info['name']}</strong> is not customizable.";
+                }
+            } else {
+                if ($qty > 0 && $qty < $info['moq']) {
+                    $validationErrors[] = "Minimum order quantity for <strong>{$info['name']}</strong> is {$info['moq']} pieces.";
+                }
             }
             
             $catId = $info['category_id'];
@@ -333,8 +372,11 @@ class OrderModificationController extends Controller
             $categoryTotals[$catId]['total'] += ($qty * $ic['new_price']);
         }
         
-        $ruleErrors = $this->validateOrderRules($categoryTotals);
-        $validationErrors = array_merge($validationErrors, $ruleErrors);
+        // Standard wholesale rules only apply to non-custom orders
+        if (!$isCustomOrder) {
+            $ruleErrors = $this->validateOrderRules($categoryTotals);
+            $validationErrors = array_merge($validationErrors, $ruleErrors);
+        }
         
         if (!empty($validationErrors)) {
             $stmt = $db->prepare("SELECT order_number FROM orders WHERE id = :oid");
@@ -410,13 +452,37 @@ class OrderModificationController extends Controller
      */
     public function searchProducts()
     {
-        $this->requirePermission('bill_modifications', 'edit');
+        if (!$this->hasPermission('bill_modifications', 'edit') && !$this->hasPermission('custom_orders', 'edit') && !$this->hasPermission('orders', 'edit')) {
+            $this->requirePermission('bill_modifications', 'edit');
+        }
         header('Content-Type: application/json');
 
         $categoryId = (int)($_GET['category_id'] ?? 0);
         $subCategoryId = (int)($_GET['sub_category_id'] ?? 0);
+        $isCustom = isset($_GET['is_custom']) ? (int)$_GET['is_custom'] : null;
+        $orderId = (int)($_GET['order_id'] ?? 0);
         
         $db = \Core\Database::getInstance();
+
+        if ($isCustom === null && $orderId > 0) {
+            $stmt = $db->prepare("SELECT order_number FROM orders WHERE id = ?");
+            $stmt->execute([$orderId]);
+            $ordRow = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if ($ordRow && (strpos($ordRow['order_number'], 'GBC') === 0 || strpos($ordRow['order_number'], 'GRM-CUST-') === 0)) {
+                $isCustom = 1;
+            }
+        }
+
+        if ($isCustom === null && $categoryId > 0) {
+            $cStmt = $db->prepare("SELECT is_customizable FROM categories WHERE id = ?");
+            $cStmt->execute([$categoryId]);
+            $catRow = $cStmt->fetch(\PDO::FETCH_ASSOC);
+            if ($catRow && (int)$catRow['is_customizable'] === 1) {
+                $isCustom = 1;
+            }
+        }
+
+        $customCondition = ($isCustom === 1) ? "c.is_customizable = 1" : "(c.is_customizable = 0 OR c.is_customizable IS NULL)";
         
         if ($categoryId > 0) {
             $sql = "
@@ -441,7 +507,7 @@ class OrderModificationController extends Controller
                 FROM products p
                 LEFT JOIN product_variants pv ON p.id = pv.product_id
                 LEFT JOIN categories c ON p.category_id = c.id
-                WHERE p.category_id = :cid AND p.status = 'active'
+                WHERE p.category_id = :cid AND p.status = 'active' AND $customCondition
             ";
             $params = ['cid' => $categoryId];
             
@@ -466,6 +532,9 @@ class OrderModificationController extends Controller
         foreach ($results as $row) {
             $stock = $row['variant_id'] ? (int)($row['variant_stock'] ?? 0) : (int)($row['product_stock'] ?? 0);
             $moq = (int)($row['moq'] ?? 1);
+            if ($isCustom === 1 && empty($row['moq_override'])) {
+                $moq = 1;
+            }
             if ($moq < 1) {
                 $moq = 1;
             }
@@ -551,7 +620,9 @@ class OrderModificationController extends Controller
      */
     public function getSubcategories()
     {
-        $this->requirePermission('bill_modifications', 'edit');
+        if (!$this->hasPermission('bill_modifications', 'edit') && !$this->hasPermission('custom_orders', 'edit') && !$this->hasPermission('orders', 'edit')) {
+            $this->requirePermission('bill_modifications', 'edit');
+        }
         header('Content-Type: application/json');
 
         $categoryId = (int)($_GET['category_id'] ?? 0);
@@ -560,8 +631,26 @@ class OrderModificationController extends Controller
             exit;
         }
 
+        $isCustom = isset($_GET['is_custom']) ? (int)$_GET['is_custom'] : null;
         $db = \Core\Database::getInstance();
-        $stmt = $db->prepare("SELECT id, name FROM sub_categories WHERE category_id = :cid ORDER BY name ASC");
+        if ($isCustom === null) {
+            $cStmt = $db->prepare("SELECT is_customizable FROM categories WHERE id = ?");
+            $cStmt->execute([$categoryId]);
+            $catRow = $cStmt->fetch(\PDO::FETCH_ASSOC);
+            if ($catRow && (int)$catRow['is_customizable'] === 1) {
+                $isCustom = 1;
+            }
+        }
+
+        $customCondition = ($isCustom === 1) ? "c.is_customizable = 1" : "(c.is_customizable = 0 OR c.is_customizable IS NULL)";
+
+        $stmt = $db->prepare("
+            SELECT sc.id, sc.name 
+            FROM sub_categories sc 
+            JOIN categories c ON sc.category_id = c.id
+            WHERE sc.category_id = :cid AND $customCondition
+            ORDER BY sc.name ASC
+        ");
         $stmt->execute(['cid' => $categoryId]);
         $subCategories = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 

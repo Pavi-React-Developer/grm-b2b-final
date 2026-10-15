@@ -61,7 +61,7 @@ class FeeRuleController extends Controller
                 'payment_method' => $_POST['payment_method'] ?? 'Both',
                 'minimum_order_amount' => !empty($_POST['minimum_order_amount']) ? (float)$_POST['minimum_order_amount'] : null,
                 'maximum_order_amount' => !empty($_POST['maximum_order_amount']) ? (float)$_POST['maximum_order_amount'] : null,
-                'active' => isset($_POST['active']) ? 1 : 0,
+                'active' => !empty($_POST['active']) && $_POST['active'] == '1' ? 1 : 0,
                 'weight_slabs' => $weightSlabs
             ];
 
@@ -133,7 +133,7 @@ class FeeRuleController extends Controller
                 'payment_method' => $_POST['payment_method'] ?? 'Both',
                 'minimum_order_amount' => !empty($_POST['minimum_order_amount']) ? (float)$_POST['minimum_order_amount'] : null,
                 'maximum_order_amount' => !empty($_POST['maximum_order_amount']) ? (float)$_POST['maximum_order_amount'] : null,
-                'active' => isset($_POST['active']) ? 1 : 0,
+                'active' => !empty($_POST['active']) && $_POST['active'] == '1' ? 1 : 0,
                 'weight_slabs' => $weightSlabs
             ];
 
@@ -184,9 +184,19 @@ class FeeRuleController extends Controller
         $orders      = $post['slab_order'] ?? [];
 
         foreach ($minWeights as $key => $minWeight) {
+            $minVal = (float)$minWeight;
+            $maxVal = (float)($maxWeights[$key] ?? 0);
+            
+            if ($minVal < 0.1) {
+                throw new \Exception("Minimum weight for slabs must be at least 0.1 kg (received {$minVal} kg).");
+            }
+            if ($maxVal <= $minVal) {
+                throw new \Exception("Max weight must be greater than min weight ({$minVal} kg).");
+            }
+
             $slabs[] = [
-                'minWeight'    => (float)$minWeight,
-                'maxWeight'    => (float)($maxWeights[$key] ?? 0),
+                'minWeight'    => $minVal,
+                'maxWeight'    => $maxVal,
                 'charge'       => (float)($charges[$key] ?? 0),
                 'status'       => isset($statuses[$key]) && $statuses[$key] === '1',
                 'displayOrder' => (int)($orders[$key] ?? $key)

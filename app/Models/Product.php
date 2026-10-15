@@ -600,19 +600,20 @@ class Product extends Model
 
     public function getImages(int $productId)
     {
-        $stmt = $this->db->prepare("SELECT * FROM product_images WHERE product_id = :id AND variant_id IS NULL ORDER BY is_primary DESC, id ASC");
+        $stmt = $this->db->prepare("SELECT * FROM product_images WHERE product_id = :id AND variant_id IS NULL ORDER BY is_primary DESC, sort_order ASC, id ASC");
         $stmt->execute(['id' => $productId]);
         return $stmt->fetchAll();
     }
 
-    public function addImage(int $productId, string $imagePath, bool $isPrimary = false, ?int $variantId = null)
+    public function addImage(int $productId, string $imagePath, bool $isPrimary = false, ?int $variantId = null, int $sortOrder = 0)
     {
-        $stmt = $this->db->prepare("INSERT INTO product_images (product_id, image_path, is_primary, variant_id) VALUES (:product_id, :image_path, :is_primary, :variant_id)");
+        $stmt = $this->db->prepare("INSERT INTO product_images (product_id, image_path, is_primary, variant_id, sort_order) VALUES (:product_id, :image_path, :is_primary, :variant_id, :sort_order)");
         $stmt->execute([
             'product_id' => $productId,
             'image_path' => $imagePath,
             'is_primary' => $isPrimary ? 1 : 0,
-            'variant_id' => $variantId
+            'variant_id' => $variantId,
+            'sort_order' => $sortOrder
         ]);
         return $this->db->lastInsertId();
     }
@@ -854,6 +855,69 @@ class Product extends Model
         unset($v);
 
         return $variants;
+    }
+
+    /**
+     * Batch fetch variants for multiple product IDs in a single query.
+     * Eliminates N+1 DB queries on product listings.
+     * Returns an associative array mapping productId => array of variants.
+     */
+    public function getInventoryVariantsForProducts(array $productIds): array
+    {
+        $productIds = array_values(array_filter(array_map('intval', $productIds), function($id) {
+            return $id > 0;
+        }));
+
+        if (empty($productIds)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($productIds), '?'));
+        $sql = "
+            SELECT pv.*,
+                   pv.current_stock,
+                   (SELECT image_path FROM product_images
+                    WHERE variant_id = pv.id AND is_primary = 1 LIMIT 1) AS image_path,
+                   (SELECT av.color_code 
+                    FROM product_variant_attributes pva 
+                    JOIN attribute_values av ON pva.attribute_value_id = av.id 
+                    WHERE pva.variant_id = pv.id AND av.color_code IS NOT NULL AND av.color_code != '' 
+                    LIMIT 1) AS color_code,
+                   (SELECT av.value 
+                    FROM product_variant_attributes pva 
+                    JOIN attribute_values av ON pva.attribute_value_id = av.id 
+                    JOIN attributes a ON av.attribute_id = a.id
+                    WHERE pva.variant_id = pv.id AND a.input_type = 'colorpicker' 
+                    LIMIT 1) AS color_name,
+                   GROUP_CONCAT(
+                       pi_all.image_path
+                       ORDER BY pi_all.is_primary DESC, pi_all.id ASC
+                       SEPARATOR '||'
+                   ) AS images_concat
+            FROM product_variants pv
+            LEFT JOIN product_images pi_all ON pi_all.variant_id = pv.id
+            WHERE pv.product_id IN ($placeholders)
+            GROUP BY pv.id
+            ORDER BY pv.id ASC
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($productIds);
+        $variants = $stmt->fetchAll();
+
+        $map = [];
+        foreach ($productIds as $pid) {
+            $map[$pid] = [];
+        }
+
+        foreach ($variants as $v) {
+            $v['images'] = !empty($v['images_concat'])
+                ? explode('||', $v['images_concat'])
+                : [];
+            unset($v['images_concat']);
+            $map[$v['product_id']][] = $v;
+        }
+
+        return $map;
     }
 
     /**

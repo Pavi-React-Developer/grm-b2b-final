@@ -69,32 +69,62 @@ class SizeChart extends Model
         return $this->getByCategoryAndSubCategory($categoryId, null);
     }
 
-    public function getByCategoryAndSubCategory(?int $categoryId = null, ?int $subCategoryId = null): array
+    public function getByCategoryAndSubCategory(?int $categoryId = null, ?int $subCategoryId = null, ?string $productName = null): array
     {
         $catId = (int)($categoryId ?? 0);
         $subCatId = (int)($subCategoryId ?? 0);
 
-        if ($subCatId > 0 && $catId > 0) {
+        // 1. If subcategory is specified, look specifically for charts assigned to this subcategory
+        if ($subCatId > 0) {
             $stmt = $this->db->prepare("
                 SELECT * FROM size_charts 
                 WHERE is_active = 1 
-                  AND (sub_category_id = ? OR category_id = ? OR category_id = 0 OR category_id IS NULL) 
-                ORDER BY (sub_category_id = ?) DESC, (category_id = ?) DESC, sort_order ASC, id DESC
+                  AND sub_category_id = ? 
+                ORDER BY sort_order ASC, id DESC
             ");
-            $stmt->execute([$subCatId, $catId, $subCatId, $catId]);
-            return $stmt->fetchAll();
-        } elseif ($catId > 0) {
-            $stmt = $this->db->prepare("
-                SELECT * FROM size_charts 
-                WHERE is_active = 1 
-                  AND (category_id = ? OR category_id = 0 OR category_id IS NULL) 
-                ORDER BY (category_id = ?) DESC, sort_order ASC, id DESC
-            ");
-            $stmt->execute([$catId, $catId]);
-            return $stmt->fetchAll();
+            $stmt->execute([$subCatId]);
+            $subCharts = $stmt->fetchAll();
+            if (!empty($subCharts)) {
+                return $subCharts;
+            }
         }
 
-        return $this->getAllActive();
+        // 2. If product name is provided and we have a category, match by dress_type or title keywords
+        if (!empty($productName) && $catId > 0) {
+            $stmt = $this->db->prepare("
+                SELECT * FROM size_charts 
+                WHERE is_active = 1 
+                  AND category_id = ?
+                  AND (
+                      (dress_type IS NOT NULL AND dress_type != '' AND LOCATE(LOWER(dress_type), LOWER(?)) > 0)
+                      OR (title IS NOT NULL AND title != '' AND LOCATE(LOWER(title), LOWER(?)) > 0)
+                  )
+                ORDER BY sort_order ASC, id DESC
+            ");
+            $stmt->execute([$catId, $productName, $productName]);
+            $nameMatched = $stmt->fetchAll();
+            if (!empty($nameMatched)) {
+                return $nameMatched;
+            }
+        }
+
+        // 3. Fallback to general category charts that have NO specific subcategory bound to them
+        if ($catId > 0) {
+            $stmt = $this->db->prepare("
+                SELECT * FROM size_charts 
+                WHERE is_active = 1 
+                  AND category_id = ? 
+                  AND (sub_category_id IS NULL OR sub_category_id = 0)
+                ORDER BY sort_order ASC, id DESC
+            ");
+            $stmt->execute([$catId]);
+            $catCharts = $stmt->fetchAll();
+            if (!empty($catCharts)) {
+                return $catCharts;
+            }
+        }
+
+        return [];
     }
 
     public function create(array $data): int

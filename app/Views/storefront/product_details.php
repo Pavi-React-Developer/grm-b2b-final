@@ -43,9 +43,27 @@ $variantGst = $productGst;
 $displayPrice = (float)($product['wholesale_price'] ?? 0);
 $displayOriginalPrice = null;
 
+$hasInStockVariant = false;
+$firstInStockIndex = -1;
 if (!empty($variants)) {
-    $firstIndex = isset($firstInStockIndex) && $firstInStockIndex !== -1 ? $firstInStockIndex : 0;
+    foreach($variants as $index => $variant) {
+        if ((int)($variant['current_stock'] ?? 0) >= $moq && $firstInStockIndex === -1) {
+            $firstInStockIndex = $index;
+            $hasInStockVariant = true;
+        }
+    }
+}
+$firstIndex = ($hasInStockVariant && $firstInStockIndex !== -1) ? $firstInStockIndex : 0;
+$initialWeight = null;
+
+if (!empty($variants)) {
     $firstVariant = $variants[$firstIndex];
+    if (isset($firstVariant['weight']) && $firstVariant['weight'] !== null && $firstVariant['weight'] !== '' && (float)$firstVariant['weight'] > 0) {
+        $initialWeight = (float)$firstVariant['weight'];
+    } elseif (isset($product['weight']) && $product['weight'] !== null && $product['weight'] !== '' && (float)$product['weight'] > 0) {
+        $initialWeight = (float)$product['weight'];
+    }
+
     if (isset($firstVariant['base_price']) && (float)$firstVariant['base_price'] > 0) {
         $vGstVal = $catGst > 0 
             ? $catGst 
@@ -63,6 +81,9 @@ if (!empty($variants)) {
     }
 } else {
     $displayPrice = (float)$displayPrice;
+    if (isset($product['weight']) && $product['weight'] !== null && $product['weight'] !== '' && (float)$product['weight'] > 0) {
+        $initialWeight = (float)$product['weight'];
+    }
 }
 ?>
 
@@ -305,8 +326,8 @@ if (!empty($variants)) {
                         <p class="text-sm font-black text-gray-900"><?= $moq ?> units</p>
                     </div>
                     <div class="bg-gray-50 rounded-xl p-3.5 border border-gray-100">
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Weight / Unit</p>
-                        <p class="text-sm font-black text-gray-900"><?= !empty($product['weight']) ? htmlspecialchars($product['weight']) . ' kg' : '-' ?></p>
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1" id="productWeightLabel">Weight / Unit</p>
+                        <p class="text-sm font-black text-gray-900" id="productWeightDisplay"><?= ($initialWeight !== null && $initialWeight > 0) ? number_format($initialWeight, 3) . ' kg' : (!empty($product['weight']) ? htmlspecialchars($product['weight']) . ' kg' : '-') ?></p>
                     </div>
                 </div>
                 <?php else: ?>
@@ -316,8 +337,8 @@ if (!empty($variants)) {
                     <div class="absolute -top-10 -right-10 w-32 h-32 bg-[#e0b0ce] rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
                     
                     <div class="flex items-start gap-4 relative z-10">
-                        <div class="w-10 h-10 rounded-full bg-[#f4e2ec] flex items-center justify-center flex-shrink-0">
-                            <svg class="w-5 h-5 text-[#b94a3e]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                        <div class="w-10 h-10 rounded-full bg-pink-50 flex items-center justify-center flex-shrink-0">
+                            <svg class="w-5 h-5 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                         </div>
                         <div>
                             <p class="font-bold text-gray-900 text-[0.95rem] mb-1">Wholesale Pricing Locked</p>
@@ -325,7 +346,7 @@ if (!empty($variants)) {
                         </div>
                     </div>
                     
-                    <a href="<?= BASE_URL ?>/login" class="relative z-10 flex items-center justify-center gap-2 bg-[#b94a3e] hover:bg-[#a03d32] text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm shrink-0 w-full md:w-auto">
+                    <a href="<?= BASE_URL ?>/login?redirect=<?= urlencode($_SERVER['REQUEST_URI'] ?? ('/product?id=' . $product['id'])) ?>" class="relative z-10 flex items-center justify-center gap-2 bg-[#F25996] hover:bg-[#d8407d] text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm shrink-0 w-full md:w-auto">
                         Login / Register
                     </a>
                 </div>
@@ -341,23 +362,23 @@ if (!empty($variants)) {
 
                 <!-- B2B Category-to-Subcategory Offer Callout -->
                 <?php if (!empty($categoryOfferRule)): ?>
-                <div class="mb-5 bg-gradient-to-br from-amber-500/10 via-orange-500/5 to-amber-50 border border-amber-300/80 rounded-2xl p-4 shadow-sm">
+                <div class="mb-5 bg-gradient-to-br from-pink-500/10 via-rose-500/5 to-pink-50/80 border border-pink-200/90 rounded-2xl p-4 shadow-xs">
                     <div class="flex items-start gap-2.5">
                         <span class="text-xl flex-shrink-0">🎁</span>
                         <div class="flex-1 min-w-0">
                             <div class="flex items-center justify-between gap-2">
-                                <h4 class="text-xs font-black text-amber-950 uppercase tracking-wider">B2B Combo Offer Available</h4>
-                                <span class="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">Tier ₹<?= number_format($categoryOfferRule['min_amount']) ?></span>
+                                <h4 class="text-xs font-black text-[#8a184e] uppercase tracking-wider">B2B Combo Offer Available</h4>
+                                <span class="text-[10px] font-bold text-[#F25996] bg-pink-100/90 border border-pink-200 px-2.5 py-0.5 rounded-full shadow-2xs">Tier ₹<?= number_format($categoryOfferRule['min_amount']) ?></span>
                             </div>
-                            <p class="text-xs text-amber-900 leading-snug mt-1">
+                            <p class="text-xs text-[#521330] leading-snug mt-1">
                                 Order <strong>₹<?= number_format($categoryOfferRule['min_amount']) ?></strong> or more from <em><?= htmlspecialchars($categoryOfferRule['main_category_name']) ?></em> to unlock special low order minimums on:
                             </p>
                             <?php if (!empty($categoryOfferRule['secondary_offers'])): ?>
                             <div class="mt-2.5 flex flex-wrap gap-1.5">
                                 <?php foreach($categoryOfferRule['secondary_offers'] as $so): ?>
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-amber-900 rounded-lg text-[11px] font-bold border border-amber-200 shadow-2xs">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-white text-[#8a184e] rounded-xl text-[11px] font-bold border border-pink-200 shadow-2xs hover:border-pink-300 transition-colors">
                                         <span>✨ <?= htmlspecialchars($so['name']) ?></span>
-                                        <span class="text-amber-700 font-semibold">(Min ₹<?= number_format($so['min_amount']) ?>)</span>
+                                        <span class="text-[#F25996] font-semibold">(Min ₹<?= number_format($so['min_amount']) ?>)</span>
                                     </span>
                                 <?php endforeach; ?>
                             </div>
@@ -405,7 +426,7 @@ if (!empty($variants)) {
                                 $colorCode = !empty($variant['color_code']) ? $variant['color_code'] : null;
                                 ?>
                                 <label class="<?= $isOutOfStock ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer' ?>" <?= $isOutOfStock ? 'title="Out of stock"' : '' ?>>
-                                    <input type="checkbox" name="variant_ids[]" value="<?= $variant['id'] ?>" class="hidden peer variant-checkbox" <?= $isChecked ? 'checked' : '' ?> <?= $isOutOfStock ? 'disabled' : '' ?> onchange="updateVariantSelection()" data-name="<?= htmlspecialchars($variant['name']) ?>" data-stock="<?= $stock ?>" data-moq="<?= $moq ?>" data-color="<?= htmlspecialchars($colorCode ?? '') ?>">
+                                    <input type="checkbox" name="variant_ids[]" value="<?= $variant['id'] ?>" class="hidden peer variant-checkbox" <?= $isChecked ? 'checked' : '' ?> <?= $isOutOfStock ? 'disabled' : '' ?> onchange="updateVariantSelection()" data-name="<?= htmlspecialchars($variant['name']) ?>" data-stock="<?= $stock ?>" data-moq="<?= $moq ?>" data-weight="<?= !empty($variant['weight']) ? (float)$variant['weight'] : '' ?>" data-color="<?= htmlspecialchars($colorCode ?? '') ?>">
                                     <div class="min-w-[72px] sm:min-w-[85px] px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl border-2 border-gray-200 text-gray-800 bg-white transition-all flex flex-col items-center justify-center
                                         peer-checked:border-[#F25996] peer-checked:bg-pink-50/70 peer-checked:text-[#F25996] peer-checked:shadow-xs
                                         <?= !$isOutOfStock ? 'hover:border-pink-300 hover:bg-pink-50/20' : '' ?>
@@ -434,27 +455,7 @@ if (!empty($variants)) {
                         <input type="hidden" name="variant_ids[]" value="">
                     <?php endif; ?>
 
-                    <?php if (!empty($volumeTiers) && $canAddToCart): ?>
-                    <!-- Volume / Wholesale Pricing Tiers -->
-                    <div class="mb-5 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-amber-50 border border-amber-300/80 rounded-2xl p-4 shadow-sm">
-                        <div class="flex items-center gap-1.5 text-xs font-bold text-amber-900 mb-2.5">
-                            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-                            <span>Volume Pricing (Buy More, Save More)</span>
-                        </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                            <?php foreach($volumeTiers as $tier): ?>
-                                <?php 
-                                $rangeText = !empty($tier['max_qty']) ? $tier['min_qty'] . ' - ' . $tier['max_qty'] . ' pcs' : $tier['min_qty'] . '+ pcs';
-                                ?>
-                                <div class="bg-white p-2.5 rounded-xl border border-amber-200/80 shadow-2xs text-center">
-                                    <div class="font-semibold text-gray-500 text-[11px] mb-0.5"><?= htmlspecialchars($rangeText) ?></div>
-                                    <div class="font-black text-amber-700 text-sm">₹<?= format_price($tier['tier_price']) ?></div>
-                                    <div class="text-[10px] text-gray-400 font-medium">/ piece</div>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
-                    <?php endif; ?>
+
 
                 <!-- Quantity + Add to Cart Row -->
                 <?php 
@@ -478,8 +479,10 @@ if (!empty($variants)) {
                         style="background: #F25996;">
                         <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                         <span>Add to Cart</span>
+                        <?php if ($canAddToCart): ?>
                         <span class="text-white/60 font-normal">|</span>
                         <span id="addToCartTotalAmount" class="font-black">₹<?= format_price($initialTotalAmt) ?></span>
+                        <?php endif; ?>
                     </button>
                 </div>
 
@@ -585,8 +588,8 @@ if (!empty($variants)) {
         <!-- ===== PRODUCT INFORMATION TABS (Description, How to play, Why Choose, etc.) ===== -->
         <div class="mt-8 mb-12 bg-white rounded-3xl border border-pink-100/90 p-5 sm:p-8 md:p-10 shadow-sm">
             
-            <!-- Tab Navigation Header (Smooth Horizontal Scrollable, No Arrows, No Dots) -->
-            <div class="border-b border-pink-100 pb-0 mb-8 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
+            <!-- Tab Navigation Header (Smooth Horizontal Scrollable, Left Aligned) -->
+            <div class="border-b border-pink-100 pb-0 mb-8 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none flex justify-start" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
                 <nav class="flex items-center space-x-4 sm:space-x-8 min-w-max px-1" aria-label="Product Information Tabs">
                     <!-- 1. Description Tab (Default Active) -->
                     <button type="button" 
@@ -596,21 +599,6 @@ if (!empty($variants)) {
                         <span class="whitespace-nowrap">Description</span>
                     </button>
 
-                    <!-- 2. How to play / How to use Tab -->
-                    <button type="button" 
-                            onclick="switchProductInfoTab('tab-how-to-use', this)" 
-                            class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
-                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
-                        <span class="whitespace-nowrap"><?= htmlspecialchars($howToUseTabTitle) ?></span>
-                    </button>
-
-                    <!-- 3. Why choose Tab -->
-                    <button type="button" 
-                            onclick="switchProductInfoTab('tab-why-choose', this)" 
-                            class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
-                        <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
-                        <span class="whitespace-nowrap">Why choose</span>
-                    </button>
 
                     <!-- 4. Dynamic Additional Custom Field Tabs -->
                     <?php if (!empty($filteredCustomTabs)): ?>
@@ -631,12 +619,12 @@ if (!empty($variants)) {
                 
                 <!-- 1. Description Panel (Default Active) -->
                 <div id="tab-description" class="product-info-panel block transition-opacity duration-300">
-                    <div class="text-center max-w-3xl mx-auto">
-                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-4 tracking-tight flex items-center justify-center gap-2 text-center">
-                            <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                    <div class="max-w-4xl mx-auto text-left">
+                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-5 tracking-tight flex items-center gap-2.5 text-left">
+                            <span class="w-2 h-6 bg-[#F25996] rounded-full inline-block shrink-0"></span>
                             <span>About <?= htmlspecialchars($product['name']) ?></span>
                         </h3>
-                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4 text-center">
+                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-3.5 text-left">
                             <?php 
                             $descText = trim($product['description'] ?? '');
                             if (!empty($descText)) {
@@ -655,80 +643,17 @@ if (!empty($variants)) {
                     </div>
                 </div>
 
-                <!-- 2. How to use / How to play Panel -->
-                <div id="tab-how-to-use" class="product-info-panel hidden transition-opacity duration-300">
-                    <div class="text-center max-w-3xl mx-auto">
-                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-4 tracking-tight flex items-center justify-center gap-2 text-center">
-                            <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
-                            <span><?= htmlspecialchars($howToUseTabTitle) ?></span>
-                        </h3>
-                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4 text-center">
-                            <?php 
-                            $howText = trim($product['how_to_use'] ?? '');
-                            if (!empty($howText)) {
-                                $howParagraphs = explode("\n", $howText);
-                                foreach ($howParagraphs as $hp) {
-                                    $hp = trim($hp);
-                                    if ($hp !== '') {
-                                        echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($hp) . '</p>';
-                                    }
-                                }
-                            } else {
-                                echo '<div class="space-y-2 text-gray-700">';
-                                if ($isToyContext) {
-                                    echo '<p class="leading-relaxed">1. Unpack all components safely on a clean, flat surface.</p>';
-                                    echo '<p class="leading-relaxed">2. Guide children through hands-on discovery, letter recognition, and creative problem-solving.</p>';
-                                    echo '<p class="leading-relaxed">3. Store safely in a dry place after playtime to maintain wood finish and longevity.</p>';
-                                } else {
-                                    echo '<p class="leading-relaxed">Follow product care instructions and handle with care. For detailed usage assistance or bulk customization guidelines, please contact our support team.</p>';
-                                }
-                                echo '</div>';
-                            }
-                            ?>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 3. Why choose Panel -->
-                <div id="tab-why-choose" class="product-info-panel hidden transition-opacity duration-300">
-                    <div class="max-w-3xl mx-auto">
-                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-6 tracking-tight flex items-center justify-center gap-2 text-center">
-                            <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
-                            <span>Why choose</span>
-                        </h3>
-                        <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4">
-                            <?php 
-                            $whyText = trim($product['why_choose'] ?? '');
-                            if (!empty($whyText)) {
-                                $whyParagraphs = explode("\n", $whyText);
-                                foreach ($whyParagraphs as $wp) {
-                                    $wp = trim($wp);
-                                    if ($wp !== '') {
-                                        echo '<p class="leading-relaxed text-gray-700">' . htmlspecialchars($wp) . '</p>';
-                                    }
-                                }
-                            } else {
-                                echo '<div class="space-y-3 text-gray-700">';
-                                echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Premium Quality Craftsmanship:</strong> Made with top-grade, eco-friendly materials engineered for longevity.</p></div>';
-                                echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Safe & Non-Toxic:</strong> Smooth child-safe finish with rounded corners and non-toxic food-grade coating.</p></div>';
-                                echo '<div class="flex items-start gap-3"><span class="text-[#F25996] font-bold text-lg leading-none">•</span><p class="leading-relaxed"><strong>Direct B2B Pricing:</strong> Factory-direct wholesale rates with flexible MOQ and reliable dispatch.</p></div>';
-                                echo '</div>';
-                            }
-                            ?>
-                        </div>
-                    </div>
-                </div>
 
                 <!-- 4. Dynamic Custom Field Panels -->
                 <?php if (!empty($filteredCustomTabs)): ?>
                     <?php foreach ($filteredCustomTabs as $idx => $tab): ?>
                         <div id="tab-custom-<?= $idx ?>" class="product-info-panel hidden transition-opacity duration-300">
-                            <div class="text-center max-w-3xl mx-auto">
-                                <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-4 tracking-tight flex items-center justify-center gap-2 text-center">
-                                    <span class="w-2 h-5 bg-[#F25996] rounded-full inline-block"></span>
+                            <div class="max-w-4xl mx-auto text-left">
+                                <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-5 tracking-tight flex items-center gap-2.5 text-left">
+                                    <span class="w-2 h-6 bg-[#F25996] rounded-full inline-block shrink-0"></span>
                                     <span><?= htmlspecialchars($tab['name']) ?></span>
                                 </h3>
-                                <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-4 text-center">
+                                <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-3.5 text-left">
                                     <?php 
                                     $valText = trim($tab['value'] ?? '');
                                     if (!empty($valText)) {
@@ -767,7 +692,7 @@ if (!empty($variants)) {
                 <button type="button" <?= $disableAddToCart ? 'disabled' : '' ?> 
                     onclick="document.getElementById('productAddToCartForm').requestSubmit()" 
                     id="mobileAddToCartBtn"
-                    class="flex-1 h-9 px-3 text-white rounded-lg font-bold text-xs flex items-center justify-between transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed active:opacity-80"
+                    class="flex-1 h-9 px-3 text-white rounded-lg font-bold text-xs flex items-center <?= $canAddToCart ? 'justify-between' : 'justify-center' ?> transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed active:opacity-80"
                     style="background: #F25996;">
                     <div class="flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
@@ -855,7 +780,7 @@ if (!empty($variants)) {
                                 </div>
                             <?php else: ?>
                                 <div class="pt-2 md:pt-4 border-t border-gray-100">
-                                    <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#b94a3e] font-medium py-1 md:py-2 text-xs md:text-[0.9375rem] hover:underline" onclick="event.stopPropagation();">
+                                    <a href="<?= BASE_URL ?>/login?redirect=<?= urlencode($_SERVER['REQUEST_URI'] ?? ('/product?id=' . $product['id'])) ?>" class="flex items-center gap-1.5 text-[#F25996] font-medium py-1 md:py-2 text-xs md:text-[0.9375rem] hover:underline" onclick="event.stopPropagation();">
                                         <svg class="w-3.5 h-3.5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
                                         Register to view price
                                     </a>
@@ -1394,6 +1319,7 @@ if (!empty($variants)) {
     const hasVariants = <?= !empty($variants) ? 'true' : 'false' ?>;
     const baseProductPrice = <?= (float)($displayPrice ?? 0) ?>;
     const canAddToCart = <?= $canAddToCart ? 'true' : 'false' ?>;
+    const productWeight = <?= (!empty($product['weight']) && (float)$product['weight'] > 0) ? (float)$product['weight'] : 'null' ?>;
 
     function getSelectedUnitPrice(qty) {
         if (!hasVariants) {
@@ -1437,6 +1363,10 @@ if (!empty($variants)) {
     }
 
     function updateCartButtonAmount() {
+        if (!canAddToCart) {
+            updateMobileButtonTotal();
+            return;
+        }
         const desktopBtnTotal = document.getElementById('addToCartTotalAmount');
         const qtyInput = document.getElementById('qtyInput');
         const qty = parseInt(qtyInput ? qtyInput.value : defaultMoq) || defaultMoq;
@@ -1567,6 +1497,47 @@ if (!empty($variants)) {
                 if (v && v.sku) skus.push(v.sku);
             });
             skuDisplay.innerText = skus.length > 0 ? skus.join(', ') : 'N/A';
+        }
+
+        // Update Weight display for selected variant(s)
+        const weightDisplay = document.getElementById('productWeightDisplay');
+        const weightLabel = document.getElementById('productWeightLabel');
+        if (weightDisplay) {
+            if (hasVariants && checkedIds.length > 0) {
+                let totalWeight = 0;
+                let hasValidWeight = false;
+                checkedIds.forEach(id => {
+                    let v = variants.find(v => String(v.id) === String(id));
+                    let w = (v && v.weight !== null && v.weight !== undefined && v.weight !== '') 
+                        ? parseFloat(v.weight) 
+                        : (productWeight ? parseFloat(productWeight) : 0);
+                    if (!isNaN(w) && w > 0) {
+                        totalWeight += w;
+                        hasValidWeight = true;
+                    }
+                });
+                
+                if (hasValidWeight && totalWeight > 0) {
+                    weightDisplay.innerText = totalWeight.toFixed(3) + ' kg';
+                } else if (productWeight && parseFloat(productWeight) > 0) {
+                    weightDisplay.innerText = parseFloat(productWeight).toFixed(3) + ' kg';
+                } else {
+                    weightDisplay.innerText = '-';
+                }
+
+                if (weightLabel) {
+                    weightLabel.innerText = checkedIds.length > 1 ? 'Weight / Set' : 'Weight / Unit';
+                }
+            } else {
+                if (productWeight && parseFloat(productWeight) > 0) {
+                    weightDisplay.innerText = parseFloat(productWeight).toFixed(3) + ' kg';
+                } else {
+                    weightDisplay.innerText = '-';
+                }
+                if (weightLabel) {
+                    weightLabel.innerText = 'Weight / Unit';
+                }
+            }
         }
 
         // Update pricing display for ALL selected variants (summed)
@@ -1832,7 +1803,7 @@ if (!empty($variants)) {
 
                     if (btn) {
                         btn.disabled = false;
-                        btn.innerHTML = '<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span>Add to Cart</span><span class="text-white/60 font-normal">|</span><span id="addToCartTotalAmount" class="font-black"></span>';
+                        btn.innerHTML = '<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span>Add to Cart</span>' + (canAddToCart ? '<span class="text-white/60 font-normal">|</span><span id="addToCartTotalAmount" class="font-black"></span>' : '');
                         updateCartButtonAmount();
                     }
                 }).catch(err => {
@@ -1840,7 +1811,7 @@ if (!empty($variants)) {
                     console.error('Cart error:', err);
                     if (btn) {
                         btn.disabled = false;
-                        btn.innerHTML = '<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span>Add to Cart</span><span class="text-white/60 font-normal">|</span><span id="addToCartTotalAmount" class="font-black"></span>';
+                        btn.innerHTML = '<svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg><span>Add to Cart</span>' + (canAddToCart ? '<span class="text-white/60 font-normal">|</span><span id="addToCartTotalAmount" class="font-black"></span>' : '');
                         updateCartButtonAmount();
                     }
                 });

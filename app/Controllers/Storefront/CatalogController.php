@@ -24,9 +24,11 @@ class CatalogController extends Controller
         
         $products = $productModel->getAllActive($searchQuery, $categoryId, $subCategoryId, $attributeFilters, $sort);
         
-        // Attach variants to each product
+        // Attach variants to each product (batch loaded in a single query to eliminate N+1 latency)
+        $pIds = array_column($products, 'id');
+        $variantsMap = $productModel->getInventoryVariantsForProducts($pIds);
         foreach ($products as &$product) {
-            $product['variants'] = $productModel->getInventoryProductVariants($product['id']);
+            $product['variants'] = $variantsMap[$product['id']] ?? [];
         }
         
         $categoryModel = new Category();
@@ -69,8 +71,14 @@ class CatalogController extends Controller
 
         $canAddToCart = (Session::get('user_id') && Session::get('user_status') === 'active');
 
-        $cmsData = \Core\Database::getInstance()->query("SELECT content_data FROM cms_components WHERE section_type = 'product_carousel' LIMIT 1")->fetchColumn();
-        $cmsSettings = $cmsData ? json_decode($cmsData, true) : [];
+        $cmsSettings = class_exists('\Core\Cache') ? \Core\Cache::get('cms_product_carousel_settings') : null;
+        if ($cmsSettings === null) {
+            $cmsData = \Core\Database::getInstance()->query("SELECT content_data FROM cms_components WHERE section_type = 'product_carousel' LIMIT 1")->fetchColumn();
+            $cmsSettings = $cmsData ? (json_decode($cmsData, true) ?? []) : [];
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::set('cms_product_carousel_settings', $cmsSettings, 3600);
+            }
+        }
 
         $this->render('storefront/catalog', [
             'title' => $selectedCategoryName,
@@ -176,9 +184,25 @@ class CatalogController extends Controller
             $this->redirect('/catalog');
         }
 
+        // Customizable fabrics belong ONLY to the customization module
+        if (!empty($product['is_customizable'])) {
+            $this->redirect('/customize/fabric/' . (int)$product['id']);
+            return;
+        }
+
         $categoryModel = new Category();
-        $category = $categoryModel->findById($product['category_id']);
+        $category = !empty($product['category_id']) ? $categoryModel->findById($product['category_id']) : null;
+        if (empty($category) || ($category['status'] ?? '') !== 'active') {
+            $this->redirect('/catalog');
+            return;
+        }
         $subCategory = !empty($product['sub_category_id']) ? $categoryModel->findById($product['sub_category_id']) : null;
+
+        // Remember return URL for guest visitors (e.g. from Instagram / direct link)
+        if (!\Core\Session::get('user_id')) {
+            $currentUri = $_SERVER['REQUEST_URI'] ?? ('/product?id=' . (int)$id);
+            \Core\Session::set('return_to', $currentUri);
+        }
 
         $images = $productModel->getImages($id);
         
@@ -204,55 +228,34 @@ class CatalogController extends Controller
             }
         }
 
-        // Fetch frequently bought together (random active products for now)
-        // Fast random sampling: avoids ORDER BY RAND() full table scan
-        // Uses primary key index for near-instant random selection
-        $db = \Core\Database::getInstance();
-        $maxStmt = $db->query("SELECT MAX(id) FROM products WHERE status = 'active'");
-        $maxId   = (int) $maxStmt->fetchColumn();
-        $randomOffset = max(0, rand(0, $maxId - 10));
-
-        $stmt = $db->prepare("
-            SELECT p.*, c.name AS category_name,
-                   img.image_path AS primary_image,
-                   pv_agg.base_price,
-                   pv_agg.discount_price
-            FROM products p
-            JOIN categories c ON p.category_id = c.id
-            LEFT JOIN product_images img ON img.product_id = p.id AND img.is_primary = 1
-            LEFT JOIN (
-                SELECT product_id, 
-                       MIN(base_price) AS base_price,
-                       MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price 
-                FROM product_variants GROUP BY product_id
-            ) pv_agg ON pv_agg.product_id = p.id
-            WHERE p.status = 'active' AND p.id != :id AND p.id >= :offset
-            LIMIT 4
-        ");
-        $stmt->execute(['id' => $id, 'offset' => $randomOffset]);
-        $relatedProducts = $stmt->fetchAll();
-
-        // If we didn't get 4 results (near end of table), get from the top
-        if (count($relatedProducts) < 4) {
+        // Fetch up to 4 related products in a single fast query (cached)
+        $relKey = 'rel_prods_' . (int)$id;
+        $relatedProducts = class_exists('\Core\Cache') ? \Core\Cache::get($relKey) : null;
+        if ($relatedProducts === null) {
+            $db = \Core\Database::getInstance();
             $stmt = $db->prepare("
-                 SELECT p.*, c.name AS category_name,
-                        img.image_path AS primary_image,
-                        pv_agg.base_price,
-                        pv_agg.discount_price
-                 FROM products p
-                 JOIN categories c ON p.category_id = c.id
-                 LEFT JOIN product_images img ON img.product_id = p.id AND img.is_primary = 1
-                 LEFT JOIN (
-                     SELECT product_id, 
-                            MIN(base_price) AS base_price,
-                            MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price 
-                     FROM product_variants GROUP BY product_id
-                 ) pv_agg ON pv_agg.product_id = p.id
-                 WHERE p.status = 'active' AND p.id != :id
+                SELECT p.*, c.name AS category_name,
+                       img.image_path AS primary_image,
+                       pv_agg.base_price,
+                       pv_agg.discount_price
+                FROM products p
+                JOIN categories c ON p.category_id = c.id AND c.status = 'active'
+                LEFT JOIN product_images img ON img.product_id = p.id AND img.is_primary = 1
+                LEFT JOIN (
+                    SELECT product_id, 
+                           MIN(base_price) AS base_price,
+                           MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price 
+                    FROM product_variants GROUP BY product_id
+                ) pv_agg ON pv_agg.product_id = p.id
+                WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) AND p.id != :id
+                ORDER BY p.id DESC
                 LIMIT 4
             ");
             $stmt->execute(['id' => $id]);
             $relatedProducts = $stmt->fetchAll();
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::set($relKey, $relatedProducts, 1800);
+            }
         }
 
         $wishlistIds = [];
@@ -271,8 +274,14 @@ class CatalogController extends Controller
             $activeRules = $ruleModel->getActiveRules();
             foreach ($activeRules as $r) {
                 if ($r['category_id'] == $product['category_id']) {
-                    $categoryModel = new \App\Models\Category();
-                    $allCats = $categoryModel->getAll();
+                    $allCats = class_exists('\Core\Cache') ? \Core\Cache::get('catalog_all_categories_list') : null;
+                    if ($allCats === null) {
+                        $categoryModel = new Category();
+                        $allCats = $categoryModel->getAll();
+                        if (class_exists('\Core\Cache')) {
+                            \Core\Cache::set('catalog_all_categories_list', $allCats, 3600);
+                        }
+                    }
                     $catsById = [];
                     foreach ($allCats as $ac) {
                         $catsById[$ac['id']] = $ac;
@@ -302,12 +311,18 @@ class CatalogController extends Controller
             }
         }
 
-        // Fetch Volume Pricing Tiers for this product
-        $volumeTiers = [];
-        $db = \Core\Database::getInstance();
-        $tierStmt = $db->prepare("SELECT * FROM product_volume_tiers WHERE product_id = ? ORDER BY min_qty ASC");
-        $tierStmt->execute([$id]);
-        $volumeTiers = $tierStmt->fetchAll(\PDO::FETCH_ASSOC);
+        // Fetch Volume Pricing Tiers for this product (cached)
+        $tierCacheKey = 'prod_tiers_' . (int)$id;
+        $volumeTiers = class_exists('\Core\Cache') ? \Core\Cache::get($tierCacheKey) : null;
+        if ($volumeTiers === null) {
+            $db = \Core\Database::getInstance();
+            $tierStmt = $db->prepare("SELECT * FROM product_volume_tiers WHERE product_id = ? ORDER BY min_qty ASC");
+            $tierStmt->execute([$id]);
+            $volumeTiers = $tierStmt->fetchAll(\PDO::FETCH_ASSOC);
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::set($tierCacheKey, $volumeTiers, 1800);
+            }
+        }
 
         $this->render('storefront/product_details', [
             'title' => $product['name'],

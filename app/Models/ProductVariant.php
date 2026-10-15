@@ -37,8 +37,8 @@ class ProductVariant extends Model
     public function create(array $data)
     {
         $stmt = $this->db->prepare("
-            INSERT INTO product_variants (product_id, name, base_price, discount_price, weight, inventory, current_stock, low_stock_alert, sku, status, max_amount, sgst, cgst, total_gst)
-            VALUES (:product_id, :name, :base_price, :discount_price, :weight, :inventory, :current_stock, :low_stock_alert, :sku, :status, :max_amount, :sgst, :cgst, :total_gst)
+            INSERT INTO product_variants (product_id, name, base_price, discount_price, weight, inventory, current_stock, low_stock_alert, sku, status, max_amount, sgst, cgst, total_gst, base_quantity, max_quantity, fabric_consumption)
+            VALUES (:product_id, :name, :base_price, :discount_price, :weight, :inventory, :current_stock, :low_stock_alert, :sku, :status, :max_amount, :sgst, :cgst, :total_gst, :base_quantity, :max_quantity, :fabric_consumption)
         ");
         
         $inventory = ($data['inventory'] === '' || $data['inventory'] === null) ? 0 : $data['inventory'];
@@ -50,6 +50,10 @@ class ProductVariant extends Model
         
         $effectivePrice = ($discountPrice !== null && $discountPrice > 0) ? $discountPrice : $basePrice;
         $maxAmount = isset($data['max_amount']) && $data['max_amount'] !== '' ? (float)$data['max_amount'] : $effectivePrice;
+
+        $baseQuantity = isset($data['base_quantity']) && $data['base_quantity'] !== '' ? (int)$data['base_quantity'] : 2;
+        $maxQuantity = isset($data['max_quantity']) && $data['max_quantity'] !== '' ? (int)$data['max_quantity'] : 4;
+        $fabricConsumption = isset($data['fabric_consumption']) && $data['fabric_consumption'] !== '' ? (float)$data['fabric_consumption'] : 1.0000;
 
         $stmt->execute([
             'product_id' => $data['product_id'],
@@ -65,7 +69,10 @@ class ProductVariant extends Model
             'max_amount' => $maxAmount,
             'sgst' => $sgst,
             'cgst' => $cgst,
-            'total_gst' => $totalGst
+            'total_gst' => $totalGst,
+            'base_quantity' => $baseQuantity,
+            'max_quantity' => $maxQuantity,
+            'fabric_consumption' => $fabricConsumption
         ]);
         
         return $this->db->lastInsertId();
@@ -93,6 +100,10 @@ class ProductVariant extends Model
         $effectivePrice = ($discountPrice !== null && $discountPrice > 0) ? $discountPrice : $basePrice;
         $maxAmount = isset($data['max_amount']) && $data['max_amount'] !== '' ? (float)$data['max_amount'] : $effectivePrice;
 
+        $baseQuantity = isset($data['base_quantity']) && $data['base_quantity'] !== '' ? (int)$data['base_quantity'] : 2;
+        $maxQuantity = isset($data['max_quantity']) && $data['max_quantity'] !== '' ? (int)$data['max_quantity'] : 4;
+        $fabricConsumption = isset($data['fabric_consumption']) && $data['fabric_consumption'] !== '' ? (float)$data['fabric_consumption'] : 1.0000;
+
         $stmt = $this->db->prepare("
             UPDATE product_variants 
             SET name = :name, 
@@ -107,7 +118,10 @@ class ProductVariant extends Model
                 max_amount = :max_amount,
                 sgst = :sgst,
                 cgst = :cgst,
-                total_gst = :total_gst
+                total_gst = :total_gst,
+                base_quantity = :base_quantity,
+                max_quantity = :max_quantity,
+                fabric_consumption = :fabric_consumption
             WHERE id = :id
         ");
         
@@ -125,7 +139,10 @@ class ProductVariant extends Model
             'max_amount' => $maxAmount,
             'sgst' => $sgst,
             'cgst' => $cgst,
-            'total_gst' => $totalGst
+            'total_gst' => $totalGst,
+            'base_quantity' => $baseQuantity,
+            'max_quantity' => $maxQuantity,
+            'fabric_consumption' => $fabricConsumption
         ]);
     }
 

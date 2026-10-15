@@ -13,8 +13,11 @@ class Review extends Model
         $sql = "
             SELECT 
                 COALESCE(oi.product_id, pv.product_id, fc.fabric_id) AS product_id,
+                oi.customization_id,
                 oi.order_id,
                 p.name AS product_name,
+                fc.program_name,
+                fc.garment_type,
                 (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS primary_image,
                 o.order_number,
                 o.created_at AS order_date
@@ -30,8 +33,12 @@ class Review extends Model
                   WHERE r.product_id = p.id 
                     AND r.user_id = o.user_id 
                     AND r.order_id = o.id
+                    AND (
+                        (oi.customization_id IS NULL AND r.customization_id IS NULL)
+                        OR (oi.customization_id IS NOT NULL AND r.customization_id = oi.customization_id)
+                    )
               )
-            GROUP BY COALESCE(oi.product_id, pv.product_id, fc.fabric_id), oi.order_id, p.id, p.name, o.order_number, o.created_at
+            GROUP BY COALESCE(oi.product_id, pv.product_id, fc.fabric_id), oi.customization_id, oi.order_id, p.id, p.name, fc.program_name, fc.garment_type, o.order_number, o.created_at
             ORDER BY o.created_at DESC
         ";
         
@@ -45,28 +52,44 @@ class Review extends Model
      */
     public function createReview(array $data)
     {
-        // First check if a review already exists for this product/user/order combination
-        $stmtCheck = $this->db->prepare("
-            SELECT id FROM reviews 
-            WHERE product_id = ? AND user_id = ? AND order_id = ?
-        ");
-        $stmtCheck->execute([
-            $data['product_id'],
-            $data['user_id'],
-            $data['order_id']
-        ]);
+        $customizationId = !empty($data['customization_id']) ? (int)$data['customization_id'] : null;
+
+        // Check if a review already exists for this product/user/order combination
+        if ($customizationId) {
+            $stmtCheck = $this->db->prepare("
+                SELECT id FROM reviews 
+                WHERE product_id = ? AND user_id = ? AND order_id = ? AND customization_id = ?
+            ");
+            $stmtCheck->execute([
+                $data['product_id'],
+                $data['user_id'],
+                $data['order_id'],
+                $customizationId
+            ]);
+        } else {
+            $stmtCheck = $this->db->prepare("
+                SELECT id FROM reviews 
+                WHERE product_id = ? AND user_id = ? AND order_id = ? AND customization_id IS NULL
+            ");
+            $stmtCheck->execute([
+                $data['product_id'],
+                $data['user_id'],
+                $data['order_id']
+            ]);
+        }
         
         if ($stmtCheck->fetch()) {
-            throw new \Exception("You have already reviewed this product for this order.");
+            throw new \Exception("You have already reviewed this item for this order.");
         }
 
         $stmt = $this->db->prepare("
-            INSERT INTO reviews (product_id, user_id, order_id, rating, review_text, photos, is_approved)
-            VALUES (:pid, :uid, :oid, :rating, :text, :photos, 0)
+            INSERT INTO reviews (product_id, customization_id, user_id, order_id, rating, review_text, photos, is_approved)
+            VALUES (:pid, :cid, :uid, :oid, :rating, :text, :photos, 0)
         ");
 
         return $stmt->execute([
             'pid' => $data['product_id'],
+            'cid' => $customizationId,
             'uid' => $data['user_id'],
             'oid' => $data['order_id'],
             'rating' => $data['rating'],
@@ -84,9 +107,12 @@ class Review extends Model
             SELECT 
                 r.*,
                 p.name AS product_name,
+                fc.program_name,
+                fc.garment_type,
                 (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS primary_image
             FROM reviews r
             LEFT JOIN products p ON r.product_id = p.id
+            LEFT JOIN fabric_customizations fc ON r.customization_id = fc.id
             WHERE r.user_id = ?
             ORDER BY r.created_at DESC
         ";
@@ -97,23 +123,64 @@ class Review extends Model
     }
 
     /**
-     * Get all reviews for the Admin panel
+     * Map of reviewed items for quick lookup in orders/order_detail:
+     * Key: orderId_productId_customizationId => review array
      */
-    public function getAdminReviews()
+    public function getUserReviewedItemMap(int $userId): array
     {
+        $sql = "
+            SELECT r.*
+            FROM reviews r
+            WHERE r.user_id = ?
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$userId]);
+        $rows = $stmt->fetchAll();
+
+        $map = [];
+        foreach ($rows as $row) {
+            $cid = !empty($row['customization_id']) ? $row['customization_id'] : '0';
+            $key = $row['order_id'] . '_' . $row['product_id'] . '_' . $cid;
+            $map[$key] = $row;
+            if (empty($row['customization_id'])) {
+                $map[$row['order_id'] . '_' . $row['product_id']] = $row;
+            }
+        }
+        return $map;
+    }
+
+    /**
+     * Get reviews for the Admin panel
+     * @param string|null $type 'standard' | 'customized' | null
+     */
+    public function getAdminReviews(?string $type = null)
+    {
+        $where = "";
+        $params = [];
+        if ($type === 'standard') {
+            $where = "WHERE r.customization_id IS NULL";
+        } elseif ($type === 'customized') {
+            $where = "WHERE r.customization_id IS NOT NULL";
+        }
+
         $sql = "
             SELECT 
                 r.*,
                 p.name AS product_name,
+                fc.program_name,
+                fc.garment_type,
                 u.name AS reviewer_name,
                 u.email AS reviewer_email
             FROM reviews r
             JOIN products p ON r.product_id = p.id
             JOIN users u ON r.user_id = u.id
+            LEFT JOIN fabric_customizations fc ON r.customization_id = fc.id
+            {$where}
             ORDER BY r.created_at DESC
         ";
         
-        $stmt = $this->db->query($sql);
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
@@ -226,5 +293,71 @@ class Review extends Model
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$productId]);
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Get approved reviews for a specific customization or its fabric
+     */
+    public function getApprovedCustomizationReviews(int $customizationId, int $fabricId = 0)
+    {
+        $params = ['cid' => $customizationId];
+        $whereFabric = "";
+        if ($fabricId > 0) {
+            $whereFabric = " OR r.product_id = :fid";
+            $params['fid'] = $fabricId;
+        }
+
+        $sql = "
+            SELECT 
+                r.*,
+                u.name AS reviewer_name,
+                fc.program_name,
+                fc.garment_type
+            FROM reviews r
+            JOIN users u ON r.user_id = u.id
+            LEFT JOIN fabric_customizations fc ON r.customization_id = fc.id
+            WHERE (r.customization_id = :cid {$whereFabric})
+              AND r.is_approved = 1
+            ORDER BY r.created_at DESC
+        ";
+        
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Get average rating and total approved review count for customization
+     */
+    public function getCustomizationReviewStats(int $customizationId, int $fabricId = 0): array
+    {
+        $params = ['cid' => $customizationId];
+        $whereFabric = "";
+        if ($fabricId > 0) {
+            $whereFabric = " OR product_id = :fid";
+            $params['fid'] = $fabricId;
+        }
+
+        $sql = "
+            SELECT 
+                COUNT(*) as num_reviews,
+                AVG(rating) as average_rating
+            FROM reviews 
+            WHERE (customization_id = :cid {$whereFabric})
+              AND is_approved = 1
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        $stats = $stmt->fetch();
+
+        $numReviews = (int)($stats['num_reviews'] ?? 0);
+        $avgRating = ($numReviews > 0 && !empty($stats['average_rating'])) 
+            ? round((float)$stats['average_rating'], 1) 
+            : 0.0;
+
+        return [
+            'total_reviews' => $numReviews,
+            'avg_rating' => $avgRating
+        ];
     }
 }

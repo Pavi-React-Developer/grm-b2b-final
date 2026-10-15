@@ -40,7 +40,7 @@ class ProductController extends Controller
             $placeholders = implode(',', array_fill(0, count($productIds), '?'));
             
             $db = \Core\Database::getInstance();
-            $stmt = $db->prepare("SELECT product_id, name, sku, base_price, discount_price, inventory, current_stock, sgst, cgst, total_gst, max_amount FROM product_variants WHERE product_id IN ($placeholders) ORDER BY id ASC");
+            $stmt = $db->prepare("SELECT product_id, name, sku, base_price, discount_price, inventory, current_stock, sgst, cgst, total_gst, max_amount, base_quantity, max_quantity, fabric_consumption FROM product_variants WHERE product_id IN ($placeholders) ORDER BY id ASC");
             $stmt->execute($productIds);
             $allVariants = $stmt->fetchAll();
             
@@ -92,6 +92,18 @@ class ProductController extends Controller
             $vendors = $userModel->getActiveVendors();
         }
 
+        $fabricRule = [
+            'minimum_pieces' => 10,
+            'maximum_pieces' => 100,
+            'without_cover_discount_percentage' => 0.00,
+            'delivery_days' => 7,
+            'delivery_base_pieces' => 100,
+            'status' => 'active'
+        ];
+        $customizationLabelModel = new \App\Models\CustomizationLabel();
+        $customizationLabels = $customizationLabelModel->getAllActive();
+        $selectedLabelIds = [];
+
         $this->render('admin/catalog/products/create', [
             'title' => ($module === 'customize') ? 'Add Customizable Product / Fabric' : 'Add Product',
             'categories' => $categories,
@@ -100,7 +112,10 @@ class ProductController extends Controller
             'isVendor' => $isVendor,
             'vendors' => $vendors,
             'module' => $module,
-            'isCustomize' => $isCustomize
+            'isCustomize' => $isCustomize,
+            'fabricRule' => $fabricRule,
+            'customizationLabels' => $customizationLabels,
+            'selectedLabelIds' => $selectedLabelIds
         ], 'admin');
     }
 
@@ -226,6 +241,33 @@ class ProductController extends Controller
             $vendors = $userModel->getActiveVendors();
         }
 
+        $fabricRule = null;
+        $selectedLabelIds = [];
+        $customizationLabelModel = new \App\Models\CustomizationLabel();
+        $customizationLabels = $customizationLabelModel->getAllActive();
+
+        if (!empty($product['id'])) {
+            $db = \Core\Database::getInstance();
+            $stmtFR = $db->prepare("SELECT * FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+            $stmtFR->execute([(int)$product['id']]);
+            $fabricRule = $stmtFR->fetch(\PDO::FETCH_ASSOC);
+
+            if ($fabricRule) {
+                $assignedLabels = $customizationLabelModel->getLabelsByCustomizationId($fabricRule['id']);
+                $selectedLabelIds = array_column($assignedLabels, 'id');
+            }
+        }
+        if (!$fabricRule) {
+            $fabricRule = [
+                'minimum_pieces' => 10,
+                'maximum_pieces' => 100,
+                'without_cover_discount_percentage' => 0.00,
+                'delivery_days' => 7,
+                'delivery_base_pieces' => 100,
+                'status' => 'active'
+            ];
+        }
+
         $this->render('admin/catalog/products/edit', [
             'title' => ($isCustomize) ? 'Edit Customizable Product / Fabric' : 'Edit Product',
             'product' => $product,
@@ -239,7 +281,10 @@ class ProductController extends Controller
             'isVendor' => $isVendor,
             'vendors' => $vendors,
             'module' => $module,
-            'isCustomize' => $isCustomize
+            'isCustomize' => $isCustomize,
+            'fabricRule' => $fabricRule,
+            'customizationLabels' => $customizationLabels,
+            'selectedLabelIds' => $selectedLabelIds
         ], 'admin');
     }
 
@@ -258,7 +303,7 @@ class ProductController extends Controller
         $postedVariants = !empty($_POST['variants']) ? $_POST['variants'] : (!empty($_POST['new_variants']) ? $_POST['new_variants'] : []);
 
         if (empty($postedVariants)) {
-            Session::setFlash('error', 'Please generate or configure at least one variant with price, weight, and stock.');
+            Session::setFlash('error', 'Please generate or configure at least one variant with price' . (!$isCustomize ? ', weight,' : '') . ' and stock.');
             $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
         }
 
@@ -333,7 +378,7 @@ class ProductController extends Controller
                 $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
             }
 
-            if ($weight <= 0) {
+            if (!$isCustomize && $weight <= 0) {
                 Session::setFlash('error', 'Weight is required and must be greater than 0 kg for all variants.');
                 $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
             }
@@ -348,34 +393,54 @@ class ProductController extends Controller
             $db = \Core\Database::getInstance();
             $db->beginTransaction();
 
-            // --- SKU Validation for Store ---
+            // --- SKU Validation & Automatic Deduplication for Store ---
             $skus = [];
-            foreach ($postedVariants as $vData) {
+            foreach ($postedVariants as $vKey => $vData) {
                 $sku = trim($vData['sku'] ?? '');
-                if (in_array($sku, $skus)) {
-                    $db->rollBack();
-                    Session::setFlash('error', 'Duplicate SKU found in the form data: ' . $sku);
-                    $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
+                if (empty($sku)) {
+                    $baseSkuSlug = !empty($data['slug']) ? strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $data['slug']), 0, 6)) : 'PRD';
+                    $sku = $baseSkuSlug . '-' . ($vKey + 1);
                 }
-                $skus[] = $sku;
+
+                if (in_array($sku, $skus)) {
+                    $sku .= '-' . ($vKey + 1);
+                }
                 
                 $existing = $db->prepare("SELECT id FROM product_variants WHERE sku = ?");
                 $existing->execute([$sku]);
                 if ($existing->fetch()) {
-                    $db->rollBack();
-                    Session::setFlash('error', 'The SKU "' . $sku . '" is already in use by another product.');
-                    $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
+                    $origSku = $sku;
+                    $counter = 1;
+                    do {
+                        $counter++;
+                        $candidateSku = $origSku . '-' . $counter;
+                        $chk = $db->prepare("SELECT id FROM product_variants WHERE sku = ?");
+                        $chk->execute([$candidateSku]);
+                        $exists = (bool)$chk->fetch();
+                    } while ($exists || in_array($candidateSku, $skus));
+                    $sku = $candidateSku;
+                }
+                $skus[] = $sku;
+                $postedVariants[$vKey]['sku'] = $sku;
+                if (isset($_POST['variants'][$vKey])) {
+                    $_POST['variants'][$vKey]['sku'] = $sku;
+                }
+                if (isset($_POST['new_variants'][$vKey])) {
+                    $_POST['new_variants'][$vKey]['sku'] = $sku;
                 }
             }
             // ----------------------
 
             $productModel = new Product();
             
-            // Check for duplicate slug
+            // Check for duplicate slug - automatically increment to make unique
             if ($productModel->findBySlug($data['slug'])) {
-                $db->rollBack();
-                Session::setFlash('error', 'A product with this slug already exists. Please choose a different name or manually change the slug to be unique.');
-                $this->redirect('/admin/catalog/products/create' . ($isCustomize ? '?module=customize' : ''));
+                $origSlug = $data['slug'];
+                $slugCounter = 2;
+                while ($productModel->findBySlug($origSlug . '-' . $slugCounter)) {
+                    $slugCounter++;
+                }
+                $data['slug'] = $origSlug . '-' . $slugCounter;
             }
 
             $productId = $productModel->create($data);
@@ -432,7 +497,69 @@ class ProductController extends Controller
             // Handle Primary Image (with fallback to first variant image if primary not specified)
             $primaryImgPath = !empty($_POST['primary_image_path']) ? trim($_POST['primary_image_path']) : $firstVariantImage;
             if (!empty($primaryImgPath)) {
-                $productModel->addImage($productId, $primaryImgPath, true);
+                $productModel->addImage($productId, $primaryImgPath, true, null, 0);
+            }
+
+            // Handle Additional Gallery Images (up to 4 gallery images = total 5 with primary)
+            if (!empty($_POST['gallery_images']) && is_array($_POST['gallery_images'])) {
+                $sort = 1;
+                foreach ($_POST['gallery_images'] as $gImg) {
+                    $gPath = trim($gImg);
+                    if (!empty($gPath) && $gPath !== $primaryImgPath && $sort <= 4) {
+                        $productModel->addImage($productId, $gPath, false, null, $sort);
+                        $sort++;
+                    }
+                }
+            }
+
+            // Handle Fabric Customization Rules & Labels when module is customize or rules provided
+            if ($isCustomize || !empty($_POST['minimum_pieces']) || !empty($_POST['customization_labels'])) {
+                $minPieces = isset($_POST['minimum_pieces']) ? max(1, (int)$_POST['minimum_pieces']) : 10;
+                $maxPieces = isset($_POST['maximum_pieces']) ? max(1, (int)$_POST['maximum_pieces']) : 100;
+                $coverDiscount = isset($_POST['without_cover_discount_percentage']) ? (float)$_POST['without_cover_discount_percentage'] : 0.00;
+                $deliveryDays = isset($_POST['delivery_days']) ? max(1, (int)$_POST['delivery_days']) : 7;
+                $deliveryBasePieces = isset($_POST['delivery_base_pieces']) ? max(1, (int)$_POST['delivery_base_pieces']) : 100;
+                $ruleStatus = $_POST['rule_status'] ?? 'active';
+
+                $stmtRule = $db->prepare("
+                    INSERT INTO fabric_customizations (fabric_id, program_name, garment_type, category_id, sub_category_id, minimum_pieces, maximum_pieces, without_cover_discount_percentage, delivery_days, delivery_base_pieces, status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON DUPLICATE KEY UPDATE 
+                        program_name = VALUES(program_name),
+                        category_id = VALUES(category_id),
+                        sub_category_id = VALUES(sub_category_id),
+                        minimum_pieces = VALUES(minimum_pieces),
+                        maximum_pieces = VALUES(maximum_pieces),
+                        without_cover_discount_percentage = VALUES(without_cover_discount_percentage),
+                        delivery_days = VALUES(delivery_days),
+                        delivery_base_pieces = VALUES(delivery_base_pieces),
+                        status = VALUES(status)
+                ");
+                $stmtRule->execute([
+                    $productId,
+                    $data['name'] . ' Rule',
+                    'Custom Garment',
+                    $data['category_id'],
+                    $data['sub_category_id'],
+                    $minPieces,
+                    $maxPieces,
+                    $coverDiscount,
+                    $deliveryDays,
+                    $deliveryBasePieces,
+                    $ruleStatus
+                ]);
+
+                $ruleId = (int)$db->lastInsertId();
+                if (!$ruleId) {
+                    $stmtF = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ?");
+                    $stmtF->execute([$productId]);
+                    $ruleId = (int)$stmtF->fetchColumn();
+                }
+
+                if ($ruleId) {
+                    $labelIds = isset($_POST['customization_labels']) && is_array($_POST['customization_labels']) ? $_POST['customization_labels'] : [];
+                    (new \App\Models\CustomizationLabel())->syncCustomizationLabels($ruleId, $labelIds);
+                }
             }
             
             $db->commit();
@@ -471,25 +598,6 @@ class ProductController extends Controller
 
         $vendorId = $isVendor ? (int)Session::get('user_id') : (!empty($_POST['vendor_id']) ? (int)$_POST['vendor_id'] : null);
 
-        $postedVariants = $_POST['variants'] ?? [];
-        $newVariants = $_POST['new_variants'] ?? [];
-        $allVariantsList = array_merge(is_array($postedVariants) ? $postedVariants : [], is_array($newVariants) ? $newVariants : []);
-
-        if (empty($allVariantsList)) {
-            Session::setFlash('error', 'Please configure at least one variant with price, weight, and stock.');
-            $this->redirect('/admin/catalog/products/edit?id=' . $id);
-        }
-
-        $firstVariant = reset($allVariantsList);
-        $firstVariantBasePrice = (float)($firstVariant['base_price'] ?? 0);
-        $firstVariantDiscountPrice = (isset($firstVariant['discount_price']) && $firstVariant['discount_price'] !== '') ? (float)$firstVariant['discount_price'] : null;
-        $firstVariantEffectivePrice = ($firstVariantDiscountPrice !== null && $firstVariantDiscountPrice > 0) ? $firstVariantDiscountPrice : $firstVariantBasePrice;
-        $firstVariantWeight = !empty($firstVariant['weight']) ? (float)$firstVariant['weight'] : null;
-        $firstVariantSgst = isset($firstVariant['sgst']) && $firstVariant['sgst'] !== '' ? (float)$firstVariant['sgst'] : 0.00;
-        $firstVariantCgst = isset($firstVariant['cgst']) && $firstVariant['cgst'] !== '' ? (float)$firstVariant['cgst'] : 0.00;
-        $firstVariantTotalGst = isset($firstVariant['total_gst']) && $firstVariant['total_gst'] !== '' ? (float)$firstVariant['total_gst'] : ($firstVariantSgst + $firstVariantCgst);
-        $firstVariantMaxAmount = isset($firstVariant['max_amount']) && $firstVariant['max_amount'] !== '' ? (float)$firstVariant['max_amount'] : null;
-
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
         if (!$isCustomize && !empty($id)) {
@@ -504,6 +612,25 @@ class ProductController extends Controller
                 }
             }
         }
+
+        $postedVariants = $_POST['variants'] ?? [];
+        $newVariants = $_POST['new_variants'] ?? [];
+        $allVariantsList = array_merge(is_array($postedVariants) ? $postedVariants : [], is_array($newVariants) ? $newVariants : []);
+
+        if (empty($allVariantsList)) {
+            Session::setFlash('error', 'Please configure at least one variant with price' . (!$isCustomize ? ', weight,' : '') . ' and stock.');
+            $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
+        }
+
+        $firstVariant = reset($allVariantsList);
+        $firstVariantBasePrice = (float)($firstVariant['base_price'] ?? 0);
+        $firstVariantDiscountPrice = (isset($firstVariant['discount_price']) && $firstVariant['discount_price'] !== '') ? (float)$firstVariant['discount_price'] : null;
+        $firstVariantEffectivePrice = ($firstVariantDiscountPrice !== null && $firstVariantDiscountPrice > 0) ? $firstVariantDiscountPrice : $firstVariantBasePrice;
+        $firstVariantWeight = !empty($firstVariant['weight']) ? (float)$firstVariant['weight'] : null;
+        $firstVariantSgst = isset($firstVariant['sgst']) && $firstVariant['sgst'] !== '' ? (float)$firstVariant['sgst'] : 0.00;
+        $firstVariantCgst = isset($firstVariant['cgst']) && $firstVariant['cgst'] !== '' ? (float)$firstVariant['cgst'] : 0.00;
+        $firstVariantTotalGst = isset($firstVariant['total_gst']) && $firstVariant['total_gst'] !== '' ? (float)$firstVariant['total_gst'] : ($firstVariantSgst + $firstVariantCgst);
+        $firstVariantMaxAmount = isset($firstVariant['max_amount']) && $firstVariant['max_amount'] !== '' ? (float)$firstVariant['max_amount'] : null;
 
         // Extract custom description fields
         $customFields = [];
@@ -565,7 +692,7 @@ class ProductController extends Controller
                 $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
             }
 
-            if ($weight <= 0) {
+            if (!$isCustomize && $weight <= 0) {
                 Session::setFlash('error', 'Weight is required and must be greater than 0 kg for all variants.');
                 $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
             }
@@ -605,20 +732,31 @@ class ProductController extends Controller
                         $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
                     }
                     if (in_array($sku, $skus)) {
-                        $db->rollBack();
-                        Session::setFlash('error', 'Duplicate SKU found in the form data: ' . $sku);
-                        $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
+                        $sku .= '-' . (count($skus) + 1);
                     }
-                    $skus[] = $sku;
                     
                     $existing = $db->prepare("SELECT id FROM product_variants WHERE sku = ? AND product_id != ?");
                     $existing->execute([$sku, $id]);
                     
                     if ($existing->fetch()) {
-                        $db->rollBack();
-                        Session::setFlash('error', 'The SKU "' . $sku . '" is already in use by another product.');
-                        $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
+                        $origSku = $sku;
+                        $counter = 1;
+                        do {
+                            $counter++;
+                            $candidateSku = $origSku . '-' . $counter;
+                            $chk = $db->prepare("SELECT id FROM product_variants WHERE sku = ? AND product_id != ?");
+                            $chk->execute([$candidateSku, $id]);
+                            $exists = (bool)$chk->fetch();
+                        } while ($exists || in_array($candidateSku, $skus));
+                        $sku = $candidateSku;
+                        if (isset($_POST['variants'][$vId])) {
+                            $_POST['variants'][$vId]['sku'] = $sku;
+                        }
+                        if (isset($_POST['new_variants'][$vId])) {
+                            $_POST['new_variants'][$vId]['sku'] = $sku;
+                        }
                     }
+                    $skus[] = $sku;
                 }
             }
             // ----------------------
@@ -628,9 +766,13 @@ class ProductController extends Controller
             // Check for duplicate slug on update
             $existingProduct = $productModel->findBySlug($data['slug']);
             if ($existingProduct && $existingProduct['id'] != $id) {
-                $db->rollBack();
-                Session::setFlash('error', 'Another product with this slug already exists. Please choose a different name or manually change the slug to be unique.');
-                $this->redirect('/admin/catalog/products/edit?id=' . $id . ($isCustomize ? '&module=customize' : ''));
+                $origSlug = $data['slug'];
+                $slugCounter = 2;
+                while ($chk = $productModel->findBySlug($origSlug . '-' . $slugCounter)) {
+                    if ($chk['id'] == $id) break;
+                    $slugCounter++;
+                }
+                $data['slug'] = $origSlug . '-' . $slugCounter;
             }
 
             $productModel->update($id, $data);
@@ -708,21 +850,107 @@ class ProductController extends Controller
             $variantModel->deleteUnused($id, $activeVariantIds);
 
             // Handle Primary Image
+            $primaryImgPath = '';
             if (isset($_POST['primary_image_path'])) {
                 $primaryImgPath = trim($_POST['primary_image_path']);
                 if (!empty($primaryImgPath)) {
                     $productModel->deletePrimaryImage($id);
-                    $productModel->addImage($id, $primaryImgPath, true);
+                    $productModel->addImage($id, $primaryImgPath, true, null, 0);
                 } else {
                     $productModel->deletePrimaryImage($id);
                     if ($firstVariantImage) {
-                        $productModel->addImage($id, $firstVariantImage, true);
+                        $productModel->addImage($id, $firstVariantImage, true, null, 0);
+                        $primaryImgPath = $firstVariantImage;
                     }
                 }
             } else {
                 $existingPrimary = $productModel->getImages($id);
                 if (empty($existingPrimary) && $firstVariantImage) {
-                    $productModel->addImage($id, $firstVariantImage, true);
+                    $productModel->addImage($id, $firstVariantImage, true, null, 0);
+                    $primaryImgPath = $firstVariantImage;
+                }
+            }
+
+            // Handle Additional Gallery Images (up to 4 gallery images = total 5 with primary)
+            if (isset($_POST['gallery_images']) && is_array($_POST['gallery_images'])) {
+                $db = \Core\Database::getInstance();
+                $stmtDel = $db->prepare("DELETE FROM product_images WHERE product_id = ? AND is_primary = 0 AND variant_id IS NULL");
+                $stmtDel->execute([$id]);
+
+                $sort = 1;
+                foreach ($_POST['gallery_images'] as $gImg) {
+                    $gPath = trim($gImg);
+                    if (!empty($gPath) && $gPath !== $primaryImgPath && $sort <= 4) {
+                        $productModel->addImage($id, $gPath, false, null, $sort);
+                        $sort++;
+                    }
+                }
+            }
+
+            // Handle Fabric Customization Rules & Labels update when module is customize or rules provided
+            if ($isCustomize || !empty($_POST['minimum_pieces']) || !empty($_POST['customization_labels'])) {
+                $minPieces = isset($_POST['minimum_pieces']) ? max(1, (int)$_POST['minimum_pieces']) : 10;
+                $maxPieces = isset($_POST['maximum_pieces']) ? max(1, (int)$_POST['maximum_pieces']) : 100;
+                $coverDiscount = isset($_POST['without_cover_discount_percentage']) ? (float)$_POST['without_cover_discount_percentage'] : 0.00;
+                $deliveryDays = isset($_POST['delivery_days']) ? max(1, (int)$_POST['delivery_days']) : 7;
+                $deliveryBasePieces = isset($_POST['delivery_base_pieces']) ? max(1, (int)$_POST['delivery_base_pieces']) : 100;
+                $ruleStatus = $_POST['rule_status'] ?? 'active';
+
+                $stmtCheck = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+                $stmtCheck->execute([$id]);
+                $existingRuleId = $stmtCheck->fetchColumn();
+
+                if ($existingRuleId) {
+                    $stmtRule = $db->prepare("
+                        UPDATE fabric_customizations 
+                        SET program_name = ?,
+                            category_id = ?,
+                            sub_category_id = ?,
+                            minimum_pieces = ?,
+                            maximum_pieces = ?,
+                            without_cover_discount_percentage = ?,
+                            delivery_days = ?,
+                            delivery_base_pieces = ?,
+                            status = ?
+                        WHERE id = ?
+                    ");
+                    $stmtRule->execute([
+                        $data['name'] . ' Rule',
+                        $data['category_id'],
+                        $data['sub_category_id'],
+                        $minPieces,
+                        $maxPieces,
+                        $coverDiscount,
+                        $deliveryDays,
+                        $deliveryBasePieces,
+                        $ruleStatus,
+                        $existingRuleId
+                    ]);
+                    $ruleId = (int)$existingRuleId;
+                } else {
+                    $stmtRule = $db->prepare("
+                        INSERT INTO fabric_customizations (fabric_id, program_name, garment_type, category_id, sub_category_id, minimum_pieces, maximum_pieces, without_cover_discount_percentage, delivery_days, delivery_base_pieces, status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ");
+                    $stmtRule->execute([
+                        $id,
+                        $data['name'] . ' Rule',
+                        'Custom Garment',
+                        $data['category_id'],
+                        $data['sub_category_id'],
+                        $minPieces,
+                        $maxPieces,
+                        $coverDiscount,
+                        $deliveryDays,
+                        $deliveryBasePieces,
+                        $ruleStatus
+                    ]);
+                    $ruleId = (int)$db->lastInsertId();
+                }
+
+                if ($ruleId) {
+                    $labelIds = isset($_POST['customization_labels']) && is_array($_POST['customization_labels']) ? $_POST['customization_labels'] : [];
+                    (new \App\Models\CustomizationLabel())->syncCustomizationLabels($ruleId, $labelIds);
                 }
             }
 

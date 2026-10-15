@@ -18,7 +18,7 @@ class ProductCarouselController extends Controller
     public function __construct()
     {
         parent::__construct();
-        if (\Core\Session::get('user_role') !== 'super_admin') {
+        if (Session::get('user_role') !== 'super_admin') {
             $this->redirect('/admin/dashboard');
         }
         $this->cmsModel = new CmsComponent();
@@ -125,7 +125,7 @@ class ProductCarouselController extends Controller
 
         \Core\Cache::clear();
 
-        \Core\Session::setFlash('success', 'Product Carousel created successfully.');
+        Session::setFlash('success', 'Product Carousel created successfully.');
         $this->redirect('/admin/cms/product-carousels');
     }
 
@@ -135,7 +135,7 @@ class ProductCarouselController extends Controller
         $carousel = $this->cmsModel->getById($id);
         
         if (!$carousel || $carousel['section_type'] !== 'product_carousel') {
-            \Core\Session::setFlash('error', 'Product Carousel not found.');
+            Session::setFlash('error', 'Product Carousel not found.');
             $this->redirect('/admin/cms/product-carousels');
         }
 
@@ -160,7 +160,7 @@ class ProductCarouselController extends Controller
         $carousel = $this->cmsModel->getById($id);
         
         if (!$carousel || $carousel['section_type'] !== 'product_carousel') {
-            \Core\Session::setFlash('error', 'Product Carousel not found.');
+            Session::setFlash('error', 'Product Carousel not found.');
             $this->redirect('/admin/cms/product-carousels');
         }
 
@@ -220,7 +220,7 @@ class ProductCarouselController extends Controller
 
         \Core\Cache::clear();
 
-        \Core\Session::setFlash('success', 'Product Carousel updated successfully.');
+        Session::setFlash('success', 'Product Carousel updated successfully.');
         $this->redirect('/admin/cms/product-carousels');
     }
 
@@ -231,7 +231,7 @@ class ProductCarouselController extends Controller
         
         \Core\Cache::clear();
 
-        \Core\Session::setFlash('success', 'Product Carousel deleted successfully.');
+        Session::setFlash('success', 'Product Carousel deleted successfully.');
         $this->redirect('/admin/cms/product-carousels');
     }
 }

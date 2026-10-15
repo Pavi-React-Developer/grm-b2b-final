@@ -175,9 +175,9 @@
             </div>
         </div>
 
-        <div class="pt-6 border-t border-gray-100 flex justify-end space-x-4">
-            <a href="<?= BASE_URL ?>/admin/catalog/attributes" class="px-6 py-2.5 border border-red-200 text-red-600 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-red-50 transition-colors">CANCEL</a>
-            <button type="submit" class="px-6 py-2.5 bg-[#F25996] hover:bg-[#e04481] text-white rounded-full text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md transition-all">SAVE ATTRIBUTE</button>
+        <div class="pt-6 border-t border-gray-100 flex justify-end space-x-4 items-center">
+            <a href="<?= BASE_URL ?>/admin/catalog/attributes<?= !empty($isCustomize) ? '?module=customize' : '' ?>" class="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-full hover:bg-gray-50 hover:border-gray-300 transition-all shadow-xs inline-flex items-center justify-center cursor-pointer">Cancel</a>
+            <button type="submit" class="px-6 py-2.5 bg-[#F25996] hover:bg-[#e04481] text-white rounded-full text-sm font-bold shadow-md shadow-brand-600/20 transform hover:-translate-y-0.5 transition-all inline-flex items-center justify-center">Save Attribute</button>
         </div>
     </form>
 </div>

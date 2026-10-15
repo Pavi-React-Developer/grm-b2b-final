@@ -19,7 +19,8 @@ class SubCategoryController extends Controller
 
     public function ajaxGetByCategory()
     {
-        $this->requirePermission('subcategories', 'view');
+        $isCustomize = (isset($_GET['module']) && $_GET['module'] === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_subcategories' : 'subcategories', 'view');
         header('Content-Type: application/json');
         $categoryId = isset($_GET['category_id']) ? (int)$_GET['category_id'] : 0;
         
@@ -36,11 +37,10 @@ class SubCategoryController extends Controller
 
     public function index()
     {
-        $this->requirePermission('subcategories', 'view');
-        
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
-
+        $this->requirePermission($isCustomize ? 'customize_subcategories' : 'subcategories', 'view');
+        
         $subCategoryModel = new SubCategory();
         $subCategories = $subCategoryModel->getAll($isCustomize ? 1 : 0);
         
@@ -58,10 +58,9 @@ class SubCategoryController extends Controller
 
     public function store()
     {
-        $this->requirePermission('subcategories', 'create');
-
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize') || (!empty($_POST['is_customizable']) && (int)$_POST['is_customizable'] === 1);
+        $this->requirePermission($isCustomize ? 'customize_subcategories' : 'subcategories', 'create');
         $redirectUrl = '/admin/catalog/subcategories' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -85,10 +84,20 @@ class SubCategoryController extends Controller
         if ($data['category_id'] <= 0 || empty($data['name'])) {
             Session::setFlash('error', 'Parent Category and Name are required.');
             $this->redirect($redirectUrl);
+            return;
         }
 
         try {
             $subCategoryModel = new SubCategory();
+
+            // Prevent duplicate subcategory names within parent category
+            $existingDuplicate = $subCategoryModel->findByName($data['name'], $data['category_id'], $isCustomize ? 1 : 0);
+            if ($existingDuplicate) {
+                Session::setFlash('error', 'A subcategory named "' . htmlspecialchars($data['name']) . '" already exists in this category. Duplicate subcategories are not allowed.');
+                $this->redirect($redirectUrl);
+                return;
+            }
+
             $subCategoryModel->create($data);
             Session::setFlash('success', ($isCustomize ? 'Customize Subcategory' : 'Subcategory') . ' created successfully.');
         } catch (\Exception $e) {
@@ -100,10 +109,9 @@ class SubCategoryController extends Controller
 
     public function update()
     {
-        $this->requirePermission('subcategories', 'edit');
-
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize') || (!empty($_POST['is_customizable']) && (int)$_POST['is_customizable'] === 1);
+        $this->requirePermission($isCustomize ? 'customize_subcategories' : 'subcategories', 'edit');
         $redirectUrl = '/admin/catalog/subcategories' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -128,10 +136,20 @@ class SubCategoryController extends Controller
         if ($id <= 0 || $data['category_id'] <= 0 || empty($data['name'])) {
             Session::setFlash('error', 'Invalid input.');
             $this->redirect($redirectUrl);
+            return;
         }
 
         try {
             $subCategoryModel = new SubCategory();
+
+            // Prevent duplicate subcategory names within parent category
+            $existingDuplicate = $subCategoryModel->findByName($data['name'], $data['category_id'], $isCustomize ? 1 : 0, $id);
+            if ($existingDuplicate) {
+                Session::setFlash('error', 'A subcategory named "' . htmlspecialchars($data['name']) . '" already exists in this category. Duplicate subcategories are not allowed.');
+                $this->redirect($redirectUrl);
+                return;
+            }
+
             $subCategoryModel->update($id, $data);
             Session::setFlash('success', 'Subcategory updated successfully.');
         } catch (\Exception $e) {
@@ -143,10 +161,9 @@ class SubCategoryController extends Controller
 
     public function delete()
     {
-        $this->requirePermission('subcategories', 'delete');
-
         $module = $_POST['module'] ?? ($_GET['module'] ?? '');
         $isCustomize = ($module === 'customize');
+        $this->requirePermission($isCustomize ? 'customize_subcategories' : 'subcategories', 'delete');
         $redirectUrl = '/admin/catalog/subcategories' . ($isCustomize ? '?module=customize' : '');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -165,6 +182,11 @@ class SubCategoryController extends Controller
         if ($id > 0) {
             try {
                 $subCategoryModel = new SubCategory();
+                $existingSub = $subCategoryModel->findById($id);
+                if ($existingSub && !empty($existingSub['is_customizable'])) {
+                    $isCustomize = true;
+                    $redirectUrl = '/admin/catalog/subcategories?module=customize';
+                }
                 $subCategoryModel->delete($id);
                 if (class_exists('\Core\Cache')) {
                     \Core\Cache::delete('catalog_active');
