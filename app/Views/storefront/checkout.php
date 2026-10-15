@@ -699,10 +699,9 @@
                 document.getElementById('final_new_addr_pincode').value = pin;
                 document.getElementById('final_new_addr_country').value = country;
             } else {
-                // Saved address — build from data attributes
+                // Saved address — build from data attributes (excluding [Shop Address] label)
                 const d = selectedRadio.dataset;
                 const parts = [
-                    d.label ? '[' + d.label + ']' : '',
                     d.line1,
                     d.line2,
                     d.city + (d.state && d.state !== 'Unknown' ? ', ' + d.state : ''),

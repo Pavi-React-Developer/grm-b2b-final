@@ -233,7 +233,7 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
 
         <!-- Pagination Dots -->
         <?php if ($showDots): ?>
-            <div class="rev-dots flex items-center justify-center gap-1.5 mt-4 sm:mt-5"></div>
+            <div class="rev-dots flex items-center justify-center space-x-2 sm:space-x-3 md:space-x-4 mt-4 sm:mt-5"></div>
         <?php endif; ?>
 
         </div>
@@ -251,10 +251,41 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
     transform: translateY(-50%) scale(1.05);
 }
 #<?= $sectionUid ?> .rev-dot-btn {
+    width: 6px;
+    height: 6px;
     background-color: <?= htmlspecialchars($dotColor) ?> !important;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    transition: all 0.3s ease;
+    opacity: 0.5;
+    display: inline-block;
+    vertical-align: middle;
+    outline: none !important;
+}
+#<?= $sectionUid ?> .rev-dot-btn:hover:not(.active) {
+    opacity: 0.8;
 }
 #<?= $sectionUid ?> .rev-dot-btn.active {
+    width: 8px;
+    height: 8px;
     background-color: <?= htmlspecialchars($dotActiveColor) ?> !important;
+    opacity: 1;
+    outline: 2px solid <?= htmlspecialchars($dotActiveColor) ?> !important;
+    outline-offset: 2px;
+}
+@media (min-width: 768px) {
+    #<?= $sectionUid ?> .rev-dot-btn {
+        width: 10px;
+        height: 10px;
+    }
+    #<?= $sectionUid ?> .rev-dot-btn.active {
+        width: 12px;
+        height: 12px;
+        outline: 2px solid <?= htmlspecialchars($dotActiveColor) ?> !important;
+        outline-offset: 2px;
+    }
 }
 
 /* Animations Definitions */
@@ -344,7 +375,7 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
         for (let i = 0; i <= max; i++) {
             const dot = document.createElement('button');
             dot.type = 'button';
-            dot.className = 'rev-dot-btn rounded-full transition-all duration-300 ' + (i === currentIndex ? 'w-8 h-2.5 active' : 'w-2.5 h-2.5 opacity-60 hover:opacity-100');
+            dot.className = 'rev-dot-btn transition-all duration-300 rounded-full' + (i === currentIndex ? ' active' : '');
             dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
             dot.addEventListener('click', () => {
                 goToSlide(i);
@@ -359,9 +390,9 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
         const dots = dotsContainer.querySelectorAll('button');
         dots.forEach((dot, idx) => {
             if (idx === currentIndex) {
-                dot.className = 'rev-dot-btn w-8 h-2.5 rounded-full transition-all duration-300 active';
+                dot.classList.add('active');
             } else {
-                dot.className = 'rev-dot-btn w-2.5 h-2.5 rounded-full transition-all duration-300 opacity-60 hover:opacity-100';
+                dot.classList.remove('active');
             }
         });
     }

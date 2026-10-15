@@ -35,29 +35,10 @@
                 </form>
             </div>
         </div>
-
-        <!-- Search Bar with Actions -->
-        <div class="bg-white rounded-full shadow-sm border border-gray-100 p-1.5 flex items-center">
-            <div class="flex-grow flex items-center pl-5">
-                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                <input type="text" id="searchInput" oninput="filterOrders()" placeholder="Search by Order ID, Name..." class="w-full pl-3 pr-4 py-2.5 bg-transparent border-none focus:ring-0 text-gray-700 placeholder-gray-400 outline-none font-medium">
-            </div>
-            
-            <div class="flex items-center space-x-2 pr-2 border-l border-gray-200 pl-4 py-1">
-                <a href="<?= BASE_URL ?>/admin/orders/print" target="_blank" class="bg-[#fdf2f7] text-[#F25996] hover:bg-[#fce7f1] px-5 py-2.5 rounded-full font-bold text-sm transition-all flex items-center tracking-widest border border-[#FDBFDD]">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                    Packing Slip
-                </a>
-                <a href="<?= BASE_URL ?>/admin/orders/print" target="_blank" class="bg-[#F25996] text-white hover:bg-[#e04481] px-5 py-2.5 rounded-full font-bold text-sm shadow-sm transition-all flex items-center tracking-widest">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                    Print
-                </a>
-            </div>
-        </div>
     </div>
     
 <?php if (!$isPendingView): ?>
-<!-- Charts Section -->
+<!-- Charts Section (Diagrams) -->
 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
     <!-- Top Selling Products Chart -->
     <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -83,6 +64,46 @@
 </div>
 <?php endif; ?>
 
+<!-- Single Row: Search Bar (Left) & Packing Slip Buttons (Right) Below Diagram -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+    <!-- Search Bar (Matching Image 1) -->
+    <div class="flex-1 min-w-[260px] h-11 bg-white rounded-full shadow-xs border border-gray-200 px-4 flex items-center transition focus-within:border-pink-300 focus-within:ring-2 focus-within:ring-pink-100">
+        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        </svg>
+        <input type="text" id="searchInput" oninput="filterOrders()" placeholder="Search by Order ID, Name..." class="w-full pl-3 pr-2 py-2 bg-transparent border-none focus:ring-0 text-gray-700 placeholder-gray-400 outline-none font-medium text-sm">
+    </div>
+
+    <!-- Packing Slip Action Buttons (Matching Image 2) -->
+    <div class="flex items-center space-x-2.5 shrink-0 self-end md:self-center">
+        <span id="selectedOrdersCountBadge" class="hidden text-xs bg-pink-100 text-[#F25996] font-bold px-3 py-1.5 rounded-full shadow-2xs">0 selected</span>
+        
+        <!-- Packing Slip Pill Button (White/Light Pink with Pink Border & Text) -->
+        <button type="button" onclick="openBulkPackingSlips(false)" class="h-11 px-5 rounded-full font-bold text-sm bg-white hover:bg-pink-50 text-[#F25996] border border-[#ffadd2] transition-all flex items-center gap-2 cursor-pointer shadow-xs active:scale-95" title="Preview / Open 100mm x 100mm Packing Slips">
+            <svg class="w-4 h-4 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+            <span>Packing Slip</span>
+        </button>
+
+        <!-- Print Pill Button (Hot Pink Solid with White Text) -->
+        <button type="button" onclick="openBulkPackingSlips(true)" class="h-11 px-5 rounded-full font-bold text-sm bg-[#F25996] hover:bg-[#d94480] text-white shadow-xs transition-all flex items-center gap-2 cursor-pointer active:scale-95" title="Direct Instant Print 100mm Slips">
+            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            </svg>
+            <span>Print</span>
+        </button>
+
+        <!-- Configuration Settings Circular Button (White with Border and Cog Icon) -->
+        <a href="<?= BASE_URL ?>/admin/orders/packing-slip-config" class="w-11 h-11 rounded-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-900 flex items-center justify-center transition-colors shadow-xs shrink-0" title="Packing Slip Configuration & Section Ordering">
+            <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+            </svg>
+        </a>
+    </div>
+</div>
+
 <!-- Status Filter Tabs -->
 <?php
     $curStatus = $currentStatus ?? ($_GET['status'] ?? 'all');
@@ -96,7 +117,7 @@
         'cancelled' => ['label' => 'Cancelled', 'icon' => '❌', 'count' => $statusCounts['cancelled'] ?? 0],
     ];
 ?>
-<div class="flex items-center gap-2 overflow-x-auto pb-3 mb-6 scrollbar-thin">
+<div class="flex items-center gap-2 overflow-x-auto scrollbar-thin pb-1 mb-6">
     <?php foreach ($tabs as $key => $tab): 
         $isActive = ($curStatus === $key);
     ?>
@@ -132,6 +153,9 @@
         <table class="w-full text-left border-collapse min-w-[1100px]">
             <thead class="sticky top-0 z-20 bg-gray-50 shadow-2xs">
                 <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
+                    <th class="w-10 px-3 py-4 border-b border-gray-200 text-center">
+                        <input type="checkbox" id="selectAllOrdersCb" onchange="toggleSelectAllOrders(this)" class="rounded text-[#F25996] focus:ring-pink-300 w-4 h-4 cursor-pointer" title="Select All Orders">
+                    </th>
                     <th class="px-5 py-4 border-b border-gray-200">Order ID</th>
                     <th class="px-5 py-4 border-b border-gray-200">Customer</th>
                     <th class="px-5 py-4 border-b border-gray-200">Date</th>
@@ -144,7 +168,7 @@
             <tbody class="divide-y divide-gray-100">
                 <?php if(empty($orders)): ?>
                     <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-gray-500">
+                        <td colspan="8" class="px-6 py-8 text-center text-gray-500">
                             No orders found.
                         </td>
                     </tr>
@@ -165,6 +189,9 @@
                         $avatarClass = $colors[$colorIndex];
                     ?>
                     <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-3 py-4 text-center">
+                            <input type="checkbox" class="order-row-cb rounded text-[#F25996] focus:ring-pink-300 w-4 h-4 cursor-pointer" value="<?= $order['id'] ?>" onchange="updateSelectedOrdersCount()">
+                        </td>
                         <td class="px-6 py-4">
                             <span class="font-bold text-gray-900 block"><?= htmlspecialchars($order['order_number']) ?></span>
                             <?php if (!empty($order['has_modification'])): ?>
@@ -325,6 +352,12 @@
                                 <?php endif; ?>
                                 <a href="<?= BASE_URL ?>/admin/orders/view?id=<?= $order['order_number'] ?>" class="inline-flex items-center justify-center p-1 text-emerald-600 hover:text-emerald-800 transition-colors" title="View Details">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                </a>
+                                <a href="<?= BASE_URL ?>/admin/orders/packing-slip?order_id=<?= $order['id'] ?>" target="_blank" class="inline-flex items-center justify-center p-1 text-pink-600 hover:text-pink-800 transition-colors" title="Packing Slip (100mm × 100mm)">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                                </a>
+                                <a href="<?= BASE_URL ?>/admin/orders/packing-slip?order_id=<?= $order['id'] ?>&auto_print=1" target="_blank" class="inline-flex items-center justify-center p-1 text-gray-700 hover:text-black transition-colors" title="Print Slip">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                                 </a>
                             </div>
                         </td>
@@ -956,4 +989,44 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 <?php endif; ?>
+
+<script>
+// Packing Slip Selection & Bulk Print Handlers
+function toggleSelectAllOrders(master) {
+    const cbs = document.querySelectorAll('.order-row-cb');
+    cbs.forEach(cb => cb.checked = master.checked);
+    updateSelectedOrdersCount();
+}
+
+function updateSelectedOrdersCount() {
+    const selected = document.querySelectorAll('.order-row-cb:checked');
+    const badge = document.getElementById('selectedOrdersCountBadge');
+    if (!badge) return;
+    if (selected.length > 0) {
+        badge.textContent = `${selected.length} selected`;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+function openBulkPackingSlips(autoPrint = false) {
+    const selected = Array.from(document.querySelectorAll('.order-row-cb:checked')).map(cb => cb.value);
+    let url = '<?= BASE_URL ?>/admin/orders/packing-slips/bulk';
+    if (selected.length > 0) {
+        url += '?order_ids=' + encodeURIComponent(selected.join(','));
+    } else {
+        const allOnPage = Array.from(document.querySelectorAll('.order-row-cb')).map(cb => cb.value);
+        if (allOnPage.length === 0) {
+            alert('No orders available on this page to print packing slips.');
+            return;
+        }
+        url += '?order_ids=' + encodeURIComponent(allOnPage.join(','));
+    }
+    if (autoPrint) {
+        url += '&auto_print=1';
+    }
+    window.open(url, '_blank');
+}
+</script>
 </div>

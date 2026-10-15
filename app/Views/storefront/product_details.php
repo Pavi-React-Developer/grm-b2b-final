@@ -144,41 +144,43 @@ if (!empty($variants)) {
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 mb-10 items-start">
             
             <!-- ===== LEFT: Image Gallery ===== -->
-            <div class="lg:col-span-5 lg:sticky lg:top-6 lg:self-start relative z-40 max-w-[460px] w-full mx-auto">
-                <!-- Main Image -->
-                <div class="relative bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm mb-3 group cursor-crosshair" id="mainImageWrap">
-                    <?php 
-                    $initialDiscPct = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
-                    ?>
-                    <div id="mainImageDiscountBadge" class="<?= ($canAddToCart && $initialDiscPct > 0) ? '' : 'hidden' ?> absolute top-3 left-3 z-20 w-16 h-16 sm:w-20 sm:h-20 drop-shadow-lg pointer-events-none">
-                        <?= render_discount_starburst($initialDiscPct > 0 ? $initialDiscPct : 1, 'w-full h-full') ?>
+            <div class="lg:col-span-5 lg:sticky lg:top-6 lg:self-start relative z-40 max-w-[540px] w-full mx-auto">
+                <div class="flex flex-row gap-2.5 sm:gap-3 items-start">
+                    <!-- Thumbnail Strip (Left Side) -->
+                    <div id="thumbnailGallery" class="flex empty:hidden flex-col gap-2 sm:gap-2.5 overflow-y-auto max-h-[560px] scrollbar-thin flex-shrink-0 py-0.5">
+                        <!-- Populated by JS -->
                     </div>
-                    <!-- Zoom Lens -->
-                    <div id="zoomLens" class="absolute hidden border border-gray-300 bg-white/40 pointer-events-none" style="width: 140px; height: 140px; z-index: 10;"></div>
-                    
-                    <div class="w-full overflow-hidden flex items-center justify-center bg-gray-50/40 rounded-xl" style="aspect-ratio: 3 / 4; max-height: 560px;">
-                        <img id="mainImage" 
-                             src="<?= $initialMainImage ?>" 
-                             alt="<?= htmlspecialchars($product['name']) ?>" 
-                             class="w-full h-full object-cover" 
-                             style="width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s ease;"
-                             loading="eager" decoding="async"
-                             onerror="this.src='https://placehold.co/800x800/f9fafb/9ca3af?text=No+Image'">
-                    </div>
-                    <!-- Zoom hint -->
-                    <div class="absolute bottom-3 right-3 bg-black/30 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm hidden md:flex items-center gap-1 pointer-events-none" id="zoomHint">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
-                        Click to zoom
+
+                    <!-- Main Image (Right Side) -->
+                    <div class="relative bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm group cursor-crosshair flex-1 min-w-0" id="mainImageWrap">
+                        <?php 
+                        $initialDiscPct = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
+                        ?>
+                        <div id="mainImageDiscountBadge" class="<?= ($canAddToCart && $initialDiscPct > 0) ? '' : 'hidden' ?> absolute top-3 left-3 z-20 w-16 h-16 sm:w-20 sm:h-20 drop-shadow-lg pointer-events-none">
+                            <?= render_discount_starburst($initialDiscPct > 0 ? $initialDiscPct : 1, 'w-full h-full') ?>
+                        </div>
+                        <!-- Zoom Lens -->
+                        <div id="zoomLens" class="absolute hidden border border-gray-300 bg-white/40 pointer-events-none" style="width: 140px; height: 140px; z-index: 10;"></div>
+                        
+                        <div class="w-full overflow-hidden flex items-center justify-center bg-gray-50/40 rounded-xl" style="aspect-ratio: 3 / 4; max-height: 560px;">
+                            <img id="mainImage" 
+                                 src="<?= $initialMainImage ?>" 
+                                 alt="<?= htmlspecialchars($product['name']) ?>" 
+                                 class="w-full h-full object-cover" 
+                                 style="width: 100%; height: 100%; object-fit: cover; display: block; transition: opacity 0.2s ease;"
+                                 loading="eager" decoding="async"
+                                 onerror="this.src='https://placehold.co/800x800/f9fafb/9ca3af?text=No+Image'">
+                        </div>
+                        <!-- Zoom hint -->
+                        <div class="absolute bottom-3 right-3 bg-black/30 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm hidden md:flex items-center gap-1 pointer-events-none" id="zoomHint">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                            Click to zoom
+                        </div>
                     </div>
                 </div>
                 
                 <!-- Zoom Result Panel (Hidden by default, shown on hover, desktop only) -->
                 <div id="zoomResult" class="hidden absolute top-0 left-full ml-6 w-[500px] h-[560px] bg-white border border-gray-200 shadow-2xl z-50 rounded-2xl bg-no-repeat pointer-events-none" style="background-color: #fff; background-size: 200%;"></div>
-                
-                <!-- Thumbnail Strip -->
-                <div id="thumbnailGallery" class="flex gap-2 overflow-x-auto pb-1 scrollbar-thin justify-center">
-                    <!-- Populated by JS -->
-                </div>
             </div>
 
             <!-- ===== RIGHT: Details Panel ===== -->
@@ -586,15 +588,15 @@ if (!empty($variants)) {
         }
         ?>
         <!-- ===== PRODUCT INFORMATION TABS (Description, How to play, Why Choose, etc.) ===== -->
-        <div class="mt-8 mb-12 bg-white rounded-3xl border border-pink-100/90 p-5 sm:p-8 md:p-10 shadow-sm">
+        <div class="mt-8 mb-12 bg-white rounded-3xl border border-gray-200/80 p-5 sm:p-8 md:p-10 shadow-sm">
             
             <!-- Tab Navigation Header (Smooth Horizontal Scrollable, Left Aligned) -->
-            <div class="border-b border-pink-100 pb-0 mb-8 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none flex justify-start" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
+            <div class="border-b border-gray-200 pb-0 mb-8 overflow-x-auto snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none flex justify-start" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
                 <nav class="flex items-center space-x-4 sm:space-x-8 min-w-max px-1" aria-label="Product Information Tabs">
                     <!-- 1. Description Tab (Default Active) -->
                     <button type="button" 
                             onclick="switchProductInfoTab('tab-description', this)" 
-                            class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-[#F25996] text-[#F25996] font-bold text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                            class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-gray-900 text-gray-900 font-bold text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
                         <span class="w-4 h-4 rounded-full border border-current flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
                         <span class="whitespace-nowrap">Description</span>
                     </button>
@@ -605,8 +607,8 @@ if (!empty($variants)) {
                         <?php foreach ($filteredCustomTabs as $idx => $tab): ?>
                             <button type="button" 
                                     onclick="switchProductInfoTab('tab-custom-<?= $idx ?>', this)" 
-                                    class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-transparent text-gray-500 hover:text-[#F25996] font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
-                                <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-[#F25996] flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
+                                    class="product-info-tab-btn group shrink-0 snap-start pb-3.5 px-3 border-b-2 border-transparent text-gray-500 hover:text-gray-900 font-medium text-sm sm:text-base flex items-center gap-2 transition-all duration-200 outline-none cursor-pointer">
+                                <span class="w-4 h-4 rounded-full border border-gray-400 group-hover:border-gray-900 flex items-center justify-center text-[10px] font-bold italic shrink-0">i</span>
                                 <span class="whitespace-nowrap"><?= htmlspecialchars($tab['name']) ?></span>
                             </button>
                         <?php endforeach; ?>
@@ -620,9 +622,8 @@ if (!empty($variants)) {
                 <!-- 1. Description Panel (Default Active) -->
                 <div id="tab-description" class="product-info-panel block transition-opacity duration-300">
                     <div class="max-w-4xl mx-auto text-left">
-                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-5 tracking-tight flex items-center gap-2.5 text-left">
-                            <span class="w-2 h-6 bg-[#F25996] rounded-full inline-block shrink-0"></span>
-                            <span>About <?= htmlspecialchars($product['name']) ?></span>
+                        <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-5 tracking-tight text-left">
+                            About <?= htmlspecialchars($product['name']) ?>
                         </h3>
                         <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-3.5 text-left">
                             <?php 
@@ -649,9 +650,8 @@ if (!empty($variants)) {
                     <?php foreach ($filteredCustomTabs as $idx => $tab): ?>
                         <div id="tab-custom-<?= $idx ?>" class="product-info-panel hidden transition-opacity duration-300">
                             <div class="max-w-4xl mx-auto text-left">
-                                <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-5 tracking-tight flex items-center gap-2.5 text-left">
-                                    <span class="w-2 h-6 bg-[#F25996] rounded-full inline-block shrink-0"></span>
-                                    <span><?= htmlspecialchars($tab['name']) ?></span>
+                                <h3 class="text-lg sm:text-2xl font-black text-gray-900 mb-5 tracking-tight text-left">
+                                    <?= htmlspecialchars($tab['name']) ?>
                                 </h3>
                                 <div class="text-gray-700 text-sm sm:text-base leading-relaxed space-y-3.5 text-left">
                                     <?php 
@@ -1704,7 +1704,7 @@ if (!empty($variants)) {
             allImages.forEach(function(url, idx) {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-xl bg-white overflow-hidden border-2 transition-all ' + (idx === 0 ? 'border-[#f25996] shadow-xs' : 'border-gray-200 hover:border-[#f25996]/50');
+                btn.className = 'flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-xl bg-white overflow-hidden border-2 transition-all cursor-pointer ' + (idx === 0 ? 'border-[#f25996] shadow-xs' : 'border-gray-200 hover:border-[#f25996]/50');
                 btn.setAttribute('data-img-idx', idx);
                 btn.onclick = function() {
                     mainImg.src = url;
@@ -1957,7 +1957,7 @@ if (!empty($variants)) {
         // Reset all tab buttons
         const tabBtns = document.querySelectorAll('.product-info-tab-btn');
         tabBtns.forEach(tabBtn => {
-            tabBtn.classList.remove('border-[#F25996]', 'text-[#F25996]', 'font-bold');
+            tabBtn.classList.remove('border-gray-900', 'text-gray-900', 'border-[#F25996]', 'text-[#F25996]', 'font-bold');
             tabBtn.classList.add('border-transparent', 'text-gray-500', 'font-medium');
             const icon = tabBtn.querySelector('span:first-child');
             if (icon) {
@@ -1968,7 +1968,7 @@ if (!empty($variants)) {
 
         // Activate clicked tab button
         if (btn) {
-            btn.classList.add('border-[#F25996]', 'text-[#F25996]', 'font-bold');
+            btn.classList.add('border-gray-900', 'text-gray-900', 'font-bold');
             btn.classList.remove('border-transparent', 'text-gray-500', 'font-medium');
             const activeIcon = btn.querySelector('span:first-child');
             if (activeIcon) {

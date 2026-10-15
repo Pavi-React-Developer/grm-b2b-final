@@ -874,6 +874,11 @@ if ($currentUserRole === 'super_admin') {
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">📹 Packing Videos & Backup</span>
                     </a>
                     <?php endif; ?>
+                    <?php if (\Core\Session::get('user_role') === 'super_admin' || $this->hasPermission('all_orders', 'edit') || $this->hasAnyPermission('all_orders')): ?>
+                    <a href="<?= BASE_URL ?>/admin/orders/packing-slip-config" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/orders/packing-slip-config') === 0 ? 'bg-brand-50 text-brand-700 font-bold' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">🏷️ Packing Slip Config</span>
+                    </a>
+                    <?php endif; ?>
                 </div>
             </div>
             <?php endif; ?>

@@ -519,6 +519,14 @@ $router->post('/admin/orders/update-packed', 'App\Controllers\Admin\OrderControl
 $router->post('/admin/orders/update-courier', 'App\Controllers\Admin\OrderController@updateCourier');
 $router->post('/admin/orders/delete-modification', 'App\Controllers\Admin\OrderController@deleteModification');
 
+// Admin Packing Slip Config & 100mm Thermal Slip Printing
+$router->get('/admin/orders/packing-slip-config', 'App\Controllers\Admin\PackingSlipConfigController@index');
+$router->post('/admin/orders/packing-slip-config/save', 'App\Controllers\Admin\PackingSlipConfigController@save');
+$router->get('/admin/orders/packing-slip', 'App\Controllers\Admin\PackingSlipController@printSlip');
+$router->get('/admin/orders/packing-slips/bulk', 'App\Controllers\Admin\PackingSlipController@printBulk');
+$router->post('/admin/orders/packing-slips/bulk', 'App\Controllers\Admin\PackingSlipController@printBulk');
+$router->post('/admin/orders/packing-slips/direct-print', 'App\Controllers\Admin\PackingSlipController@directPrint');
+
 // Admin Fabric Customization Rules
 $router->get('/admin/fabric-customizations', 'App\Controllers\Admin\FabricCustomizationController@index');
 $router->get('/admin/fabric-customizations/create', 'App\Controllers\Admin\FabricCustomizationController@create');

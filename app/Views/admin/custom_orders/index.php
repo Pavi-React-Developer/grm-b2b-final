@@ -22,7 +22,19 @@
             <h1 class="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Customized Garment Orders & Requests</h1>
             <p class="text-sm text-gray-500 mt-1">Manage wholesale fabric customization configurations, stitching orders, and quote requests.</p>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center flex-wrap gap-2.5">
+            <span id="selectedCustomOrdersCountBadge" class="hidden text-xs bg-pink-100 text-[#F25996] font-bold px-3 py-1.5 rounded-xl">0 selected</span>
+            <button type="button" onclick="openBulkCustomPackingSlips(false)" class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#fdf2f7] border border-[#FDBFDD] text-[#F25996] hover:bg-[#fce7f1] text-sm font-bold rounded-xl shadow-xs transition-colors" title="Print 100mm x 100mm Packing Slips">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span>Packing Slip</span>
+            </button>
+            <button type="button" onclick="openBulkCustomPackingSlips(true)" class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#F25996] hover:bg-[#e04481] text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all" title="Instant Print 100mm Slips">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                <span>Print</span>
+            </button>
+            <a href="<?= BASE_URL ?>/admin/orders/packing-slip-config" class="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-600 hover:text-gray-900 flex items-center justify-center transition-colors shadow-xs shrink-0" title="Packing Slip Configuration & Section Ordering">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            </a>
             <a href="<?= BASE_URL ?>/admin/catalog/products?module=customize" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-xl shadow-xs transition-colors">
                 <svg class="w-4 h-4 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 <span>Customizable Fabrics</span>
@@ -93,6 +105,9 @@
         <table class="w-full text-left border-collapse min-w-[1100px]">
             <thead class="sticky top-0 z-20 bg-gray-50 shadow-2xs">
                 <tr class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider font-semibold">
+                    <th class="w-10 px-3 py-4 border-b border-gray-200 text-center">
+                        <input type="checkbox" id="selectAllCustomOrdersCb" onchange="toggleSelectAllCustomOrders(this)" class="rounded text-[#F25996] focus:ring-pink-300 w-4 h-4 cursor-pointer" title="Select All Custom Orders">
+                    </th>
                     <th class="px-5 py-4 border-b border-gray-200">Order ID</th>
                     <th class="px-5 py-4 border-b border-gray-200">Customer</th>
                     <th class="px-5 py-4 border-b border-gray-200">Date</th>
@@ -136,6 +151,9 @@
                 $rawImg     = !empty($firstItem['primary_image']) ? get_image_url($firstItem['primary_image']) : null;
             ?>
             <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-3 py-4 text-center">
+                    <input type="checkbox" class="custom-order-row-cb rounded text-[#F25996] focus:ring-pink-300 w-4 h-4 cursor-pointer" value="<?= $order['id'] ?>" onchange="updateSelectedCustomOrdersCount()">
+                </td>
 
                 <!-- Order ID -->
                 <td class="px-6 py-4">
@@ -315,6 +333,16 @@
                         <a href="<?= BASE_URL ?>/admin/orders/view?id=<?= $order['order_number'] ?>"
                            class="inline-flex items-center justify-center p-1.5 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 rounded-lg transition-colors" title="View Full Order">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </a>
+
+                        <a href="<?= BASE_URL ?>/admin/orders/packing-slip?order_id=<?= $order['id'] ?>" target="_blank"
+                           class="inline-flex items-center justify-center p-1.5 text-pink-600 hover:text-pink-800 hover:bg-pink-50 rounded-lg transition-colors" title="Packing Slip (100mm × 100mm)">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        </a>
+
+                        <a href="<?= BASE_URL ?>/admin/orders/packing-slip?order_id=<?= $order['id'] ?>&auto_print=1" target="_blank"
+                           class="inline-flex items-center justify-center p-1.5 text-gray-700 hover:text-black hover:bg-gray-100 rounded-lg transition-colors" title="Print Slip">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                         </a>
                     </div>
                 </td>
@@ -900,5 +928,43 @@ function executeStatusUpdate(orderId, newStatus, extraData = {}) {
             text: err.message || 'An unexpected network error occurred.'
         });
     });
+}
+
+// Custom Orders Packing Slip Selection & Bulk Print Handlers
+function toggleSelectAllCustomOrders(master) {
+    const cbs = document.querySelectorAll('.custom-order-row-cb');
+    cbs.forEach(cb => cb.checked = master.checked);
+    updateSelectedCustomOrdersCount();
+}
+
+function updateSelectedCustomOrdersCount() {
+    const selected = document.querySelectorAll('.custom-order-row-cb:checked');
+    const badge = document.getElementById('selectedCustomOrdersCountBadge');
+    if (!badge) return;
+    if (selected.length > 0) {
+        badge.textContent = `${selected.length} selected`;
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+function openBulkCustomPackingSlips(autoPrint = false) {
+    const selected = Array.from(document.querySelectorAll('.custom-order-row-cb:checked')).map(cb => cb.value);
+    let url = '<?= BASE_URL ?>/admin/orders/packing-slips/bulk';
+    if (selected.length > 0) {
+        url += '?order_ids=' + encodeURIComponent(selected.join(','));
+    } else {
+        const allOnPage = Array.from(document.querySelectorAll('.custom-order-row-cb')).map(cb => cb.value);
+        if (allOnPage.length === 0) {
+            alert('No custom orders available on this page to print packing slips.');
+            return;
+        }
+        url += '?order_ids=' + encodeURIComponent(allOnPage.join(','));
+    }
+    if (autoPrint) {
+        url += '&auto_print=1';
+    }
+    window.open(url, '_blank');
 }
 </script>
