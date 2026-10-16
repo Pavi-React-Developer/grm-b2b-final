@@ -179,6 +179,35 @@
                             </form>
                         </div>
                     </div>
+
+                    <!-- Rule Breakdown & Size Variants -->
+                    <div class="mt-4 pt-1">
+                        <div class="bg-gray-50/70 p-3.5 rounded-xl border border-gray-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                                    Configured Size Variants & Allowed Limits:
+                                </span>
+                                <span class="text-[11px] font-semibold text-gray-400">
+                                    Total Base: <?= array_sum(array_map(fn($s) => (int)($s['base_quantity'] ?? 2), array_filter($r['sizes'] ?? [], fn($s) => !empty($s['enabled'])))) ?> pcs
+                                </span>
+                            </div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <?php if (!empty($r['sizes'])): ?>
+                                    <?php foreach ($r['sizes'] as $sz): ?>
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-white text-gray-800 px-3 py-1.5 rounded-lg border border-gray-200 shadow-2xs">
+                                            <span class="text-amber-800 font-black"><?= htmlspecialchars($sz['size_name'] ?? $sz['name'] ?? 'M') ?></span>
+                                            <span class="text-gray-400">•</span>
+                                            <span class="text-gray-600">Base: <?= (int)($sz['base_quantity'] ?? 2) ?></span>
+                                            <span class="text-gray-400">|</span>
+                                            <span class="text-amber-700">Max: <?= (int)($sz['max_quantity'] ?? 4) ?> pcs</span>
+                                        </span>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <span class="text-xs text-gray-400 italic">No size variants configured</span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             <?php endforeach; ?>
         </div>
