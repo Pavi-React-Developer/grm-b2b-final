@@ -1,4 +1,12 @@
 <div class="bg-gray-50 min-h-screen pb-12 md:pb-16">
+<?php
+    $totalCustomRevs = !empty($customizationStats['total_reviews']) ? (int)$customizationStats['total_reviews'] : 0;
+    $avgCustomRating = !empty($customizationStats['avg_rating']) ? (float)$customizationStats['avg_rating'] : 0.0;
+    $withoutCoverDiscountPct = (float)($customization['without_cover_discount_percentage'] ?? 0.0);
+    $deliveryDaysBase = (int)($customization['delivery_days'] ?? 7);
+    $deliveryPiecesBase = (int)($customization['delivery_base_pieces'] ?? 100);
+?>
+
 
     <!-- ── Breadcrumb Section (Matches Product Details & Catalog Bar Style) ── -->
     <div class="bg-white border-b border-gray-200/80 mb-5 md:mb-6">
@@ -244,13 +252,74 @@
                         </div>
                     </div>
 
-                    <!-- Pricing Breakdown -->
+                    
+                    <!-- Packaging Selection Option (With Cover vs Without Cover) -->
+                    <div class="space-y-2 mb-4">
+                        <label class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center justify-between">
+                            <span>Packaging Option</span>
+                            <?php if ($withoutCoverDiscountPct > 0): ?>
+                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+                                Save <?= number_format($withoutCoverDiscountPct, 1) ?>% without cover
+                            </span>
+                            <?php endif; ?>
+                        </label>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <button type="button" 
+                                    id="optWithCover"
+                                    onclick="selectPackagingOption('with_cover')"
+                                    class="packaging-opt-btn p-3 rounded-xl border-2 text-left transition-all cursor-pointer border-[#F25996] bg-white ring-2 ring-[#F25996]/20 shadow-xs">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-bold text-gray-900">With Cover</span>
+                                    <span class="pkg-check w-4 h-4 rounded-full bg-[#F25996] text-white flex items-center justify-center text-[10px] font-bold">✓</span>
+                                </div>
+                                <p class="text-[10px] text-gray-500">Standard packaging</p>
+                            </button>
+                            <button type="button" 
+                                    id="optWithoutCover"
+                                    onclick="selectPackagingOption('without_cover')"
+                                    class="packaging-opt-btn p-3 rounded-xl border-2 text-left transition-all cursor-pointer border-gray-200 bg-white hover:border-[#F25996]/50">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-bold text-gray-900">Without Cover</span>
+                                    <span class="pkg-check w-4 h-4 rounded-full border border-gray-300 text-transparent flex items-center justify-center text-[10px] font-bold">✓</span>
+                                </div>
+                                <?php if ($withoutCoverDiscountPct > 0): ?>
+                                    <p class="text-[10px] font-bold text-emerald-700">-<?= number_format($withoutCoverDiscountPct, 1) ?>% Off</p>
+                                <?php else: ?>
+                                    <p class="text-[10px] text-gray-500">Eco packaging</p>
+                                <?php endif; ?>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Dynamic Delivery Schedule Pill -->
+                    <div id="deliverySchedulePill" class="p-3 bg-gradient-to-r from-amber-50/60 to-orange-50/40 border border-amber-200/80 rounded-2xl flex items-center justify-between text-xs mb-3 shadow-2xs">
+                        <div class="flex items-center gap-2">
+                            <span class="text-base">🚚</span>
+                            <div>
+                                <strong class="font-bold text-gray-800 block text-[11px]">Dynamic Delivery Schedule</strong>
+                                <span class="text-[10px] text-gray-500" id="deliveryExpectedDate">Est: <?= $deliveryDaysBase ?> Days for <?= $deliveryPiecesBase ?> pcs</span>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200" id="deliveryDaysBadge">
+                            <?= $deliveryDaysBase ?> Days
+                        </span>
+                    </div>
+<!-- Pricing Breakdown -->
                     <div class="space-y-3 pt-5 pb-6 border-b border-gray-100 text-sm">
                         <div class="flex items-center justify-between text-gray-600">
                             <span>Fabric Cost (@ ₹<?= number_format($customization['fabric_price'], 2) ?>/<?= htmlspecialchars($customization['unit']) ?>):</span>
                             <span class="font-bold text-gray-900" id="summaryFabricCost">₹0.00</span>
                         </div>
-                        <div class="flex items-center justify-between text-gray-600">
+                        
+                        <!-- Without Cover Discount Row -->
+                        <div id="packagingDiscountRow" class="hidden items-center justify-between text-emerald-700 font-semibold text-xs">
+                            <span class="flex items-center gap-1">
+                                <span>🛍️ Without Cover Discount:</span>
+                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold">-<?= number_format($withoutCoverDiscountPct, 1) ?>%</span>
+                            </span>
+                            <span class="font-bold" id="summaryCoverDiscount">-₹0.00</span>
+                        </div>
+<div class="flex items-center justify-between text-gray-600">
                             <span class="flex items-center gap-1.5">
                                 <span>GST (5% Included):</span>
                                 <span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-200">Included in Price</span>
@@ -266,17 +335,27 @@
                     <!-- Error Alert Box (if validation fails) -->
                     <div id="errorAlertBox" class="hidden p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold my-4"></div>
 
-                    <!-- Action Button: Online Payment via Razorpay -->
+                    <!-- Action Buttons: Proceed to Checkout (Step 2) & Direct Razorpay -->
                     <div class="space-y-2 pt-2">
-                        <button type="button" id="btnPayRazorpay" onclick="payViaRazorpay()" class="w-full py-3.5 px-5 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-black text-sm rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer">
-                            <svg class="w-5 h-5 text-white shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                            <span>Pay Online (Razorpay)</span>
+                        <button type="button" 
+                                id="btnProceedCheckout" 
+                                onclick="proceedToCheckout()" 
+                                class="w-full py-3.5 px-5 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-black text-sm rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer group">
+                            <span>Proceed to Checkout</span>
+                            <svg class="w-4 h-4 text-white transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </button>
+                        <button type="button" 
+                                id="btnPayRazorpay" 
+                                onclick="payViaRazorpay()" 
+                                class="w-full py-2.5 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer">
+                            <svg class="w-4 h-4 text-[#F25996] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                            <span>Quick Pay Online (Razorpay)</span>
                         </button>
                         <div class="flex items-center justify-center gap-1.5 text-[11px] text-gray-400 font-medium">
                             <svg class="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/></svg>
                             <span>Secured by 256-Bit Razorpay Payments</span>
                         </div>
-                    </div>
+                    </div></div>
 
                 </div>
 
@@ -284,7 +363,134 @@
 
         </div>
 
+    
+
+<!-- ── Customer Reviews & Stitching Feedback Section ── -->
+        <div id="customReviewsSection" class="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 lg:p-10 shadow-xs mb-10">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-6 mb-6">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-50 text-[#F25996] border border-pink-100">Verified Reviews</span>
+                        <span class="text-xs text-gray-400">•</span>
+                        <span class="text-xs font-medium text-gray-500">Custom Stitching &amp; Fabric Feel</span>
+                    </div>
+                    <h3 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Customer Reviews for this Customized Garment</h3>
+                </div>
+
+                <div class="flex items-center gap-3 bg-gray-50 px-4 py-2.5 rounded-2xl border border-gray-100 self-start sm:self-auto">
+                    <div class="text-2xl font-black text-gray-900"><?= $totalCustomRevs > 0 ? number_format($avgCustomRating, 1) : '—' ?></div>
+                    <div>
+                        <div class="flex">
+                            <?php for($i=1; $i<=5; $i++): ?>
+                                <svg class="w-3.5 h-3.5 <?= ($totalCustomRevs > 0 && $i <= round($avgCustomRating)) ? 'text-amber-400 fill-current' : 'text-gray-200 fill-current' ?>" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                            <?php endfor; ?>
+                        </div>
+                        <p class="text-[10px] text-gray-500 font-semibold mt-0.5"><?= $totalCustomRevs ?> Customer Rating<?= $totalCustomRevs === 1 ? '' : 's' ?></p>
+                    </div>
+                </div>
+            </div>
+
+            <?php if (empty($customizationReviews)): ?>
+                <div class="text-center py-12 px-4 bg-gray-50/60 rounded-2xl border border-dashed border-gray-200">
+                    <span class="w-12 h-12 rounded-full bg-pink-50 text-[#F25996] inline-flex items-center justify-center text-xl mb-3 shadow-2xs">✂️</span>
+                    <h4 class="text-sm sm:text-base font-bold text-gray-800">No reviews yet for this custom program</h4>
+                    <p class="text-xs text-gray-500 max-w-md mx-auto mt-1 leading-relaxed">
+                        Be the first to order and customize this fabric! Once your order status is marked as delivered, you can rate and review your finished garments directly from your order details dashboard.
+                    </p>
+                </div>
+            <?php else: ?>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <?php foreach ($customizationReviews as $rev): 
+                        $revPhotos = !empty($rev['photos']) ? (json_decode($rev['photos'], true) ?: []) : [];
+                    ?>
+                        <div class="p-5 rounded-2xl border border-gray-100 bg-[#fafafa]/60 hover:bg-white hover:shadow-md transition-all space-y-3">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-8 h-8 rounded-full bg-[#F25996]/10 text-[#F25996] flex items-center justify-center font-bold text-xs uppercase">
+                                            <?= htmlspecialchars(substr($rev['reviewer_name'] ?? 'U', 0, 1)) ?>
+                                        </div>
+                                        <div>
+                                            <h5 class="text-xs sm:text-sm font-bold text-gray-900"><?= htmlspecialchars($rev['reviewer_name']) ?></h5>
+                                            <p class="text-[10px] text-gray-400 font-medium"><?= date('M d, Y', strtotime($rev['created_at'])) ?></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
+                                    <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                    Verified Buyer
+                                </span>
+                            </div>
+
+                            <!-- Rating Stars -->
+                            <div class="flex text-amber-400">
+                                <?php for($i=1; $i<=5; $i++): ?>
+                                    <svg class="w-4 h-4 <?= $i <= $rev['rating'] ? 'fill-current' : 'text-gray-200 fill-current' ?>" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                <?php endfor; ?>
+                            </div>
+
+                            <!-- Comment -->
+                            <?php if (!empty($rev['review_text'])): ?>
+                                <p class="text-xs sm:text-sm text-gray-700 leading-relaxed italic">
+                                    “<?= nl2br(htmlspecialchars($rev['review_text'])) ?>”
+                                </p>
+                            <?php endif; ?>
+
+                            <!-- Photos -->
+                            <?php if (!empty($revPhotos)): ?>
+                                <div class="flex flex-wrap gap-2 pt-1">
+                                    <?php foreach ($revPhotos as $p): ?>
+                                        <a href="<?= get_image_url($p) ?>" target="_blank" class="block w-14 h-14 rounded-xl overflow-hidden border border-gray-200 shadow-2xs hover:scale-105 transition-transform">
+                                            <img src="<?= get_image_url($p) ?>" class="w-full h-full object-cover" alt="Buyer custom photo">
+                                        </a>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
     </div>
+</div>
+
+<!-- Fabric Gallery Lightbox Modal -->
+<div id="fabricLightboxModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm hidden flex items-center justify-center p-3 sm:p-6" onclick="if(event.target === this) closeFabricModal()">
+    <div class="relative max-w-4xl w-full flex flex-col items-center">
+        <!-- Close Button -->
+        <button type="button" onclick="closeFabricModal()" class="absolute -top-12 right-0 text-white hover:text-pink-300 p-2 text-sm font-bold flex items-center gap-1.5 transition-colors">
+            <span>Close (Esc)</span>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+
+        <!-- Main Lightbox Image Frame -->
+        <div class="relative max-h-[75vh] w-auto max-w-full overflow-hidden rounded-2xl bg-white shadow-2xl flex items-center justify-center">
+            <img id="fabricModalImg" src="" alt="Fabric Full Preview" class="max-h-[75vh] max-w-full object-contain">
+            
+            <!-- Prev / Next Controls -->
+            <button type="button" onclick="navFabricModal(-1)" class="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/55 hover:bg-black/75 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <button type="button" onclick="navFabricModal(1)" class="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-black/55 hover:bg-black/75 text-white flex items-center justify-center shadow-lg transition-transform hover:scale-110">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+            </button>
+
+            <!-- Counter Badge -->
+            <div id="fabricModalCounter" class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/70 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-xs">
+                1 / 1
+            </div>
+        </div>
+
+        <!-- Lightbox Thumbnails -->
+        <div id="fabricModalThumbs" class="flex items-center gap-2 mt-4 overflow-x-auto max-w-full pb-1 scrollbar-none justify-center"></div>
+    </div>
+</div>
+
+<!-- Razorpay Official Checkout Script -->
+
+
+</div>
 </div>
 
 <!-- Razorpay Official Checkout Script -->
@@ -304,6 +510,34 @@ const IS_LOGGED_IN = <?= \Core\Session::get('user_id') ? 'true' : 'false' ?>;
 const FABRIC_PRICE_PER_UNIT = <?= (float)($customization['fabric_price'] ?? 0) ?>;
 const SIZES_CONFIG = <?= json_encode($customization['sizes'] ?? []) ?>;
 const LABELS_CONFIG = <?= json_encode($customization['labels'] ?? []) ?>;
+const WITHOUT_COVER_DISCOUNT_PCT = <?= (float)($customization['without_cover_discount_percentage'] ?? 0) ?>;
+const DELIVERY_DAYS = <?= (int)($customization['delivery_days'] ?? 7) ?>;
+const DELIVERY_BASE_PIECES = <?= (int)($customization['delivery_base_pieces'] ?? 100) ?>;
+let selectedPackagingOption = 'with_cover';
+
+function selectPackagingOption(option) {
+    selectedPackagingOption = option;
+    const btnWith = document.getElementById('optWithCover');
+    const btnWithout = document.getElementById('optWithoutCover');
+    
+    if (btnWith && btnWithout) {
+        const checkWith = btnWith.querySelector('.pkg-check');
+        const checkWithout = btnWithout.querySelector('.pkg-check');
+        
+        if (option === 'with_cover') {
+            btnWith.className = 'packaging-opt-btn p-3 rounded-xl border-2 text-left transition-all cursor-pointer border-[#F25996] bg-white ring-2 ring-[#F25996]/20 shadow-xs';
+            btnWithout.className = 'packaging-opt-btn p-3 rounded-xl border-2 text-left transition-all cursor-pointer border-gray-200 bg-white hover:border-[#F25996]/50';
+            if (checkWith) checkWith.className = 'pkg-check w-4 h-4 rounded-full bg-[#F25996] text-white flex items-center justify-center text-[10px] font-bold';
+            if (checkWithout) checkWithout.className = 'pkg-check w-4 h-4 rounded-full border border-gray-300 text-transparent flex items-center justify-center text-[10px] font-bold';
+        } else {
+            btnWithout.className = 'packaging-opt-btn p-3 rounded-xl border-2 text-left transition-all cursor-pointer border-emerald-500 bg-emerald-50/20 ring-2 ring-emerald-500/20 shadow-xs';
+            btnWith.className = 'packaging-opt-btn p-3 rounded-xl border-2 text-left transition-all cursor-pointer border-gray-200 bg-white hover:border-[#F25996]/50';
+            if (checkWithout) checkWithout.className = 'pkg-check w-4 h-4 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold';
+            if (checkWith) checkWith.className = 'pkg-check w-4 h-4 rounded-full border border-gray-300 text-transparent flex items-center justify-center text-[10px] font-bold';
+        }
+    }
+    triggerLiveRecalc();
+}
 
 // fabricSets state: array of { setId: 1, labelId: 1, selectedSizes: { 'M': 2, 'L': 2 } }
 let fabricSets = [];
@@ -977,6 +1211,8 @@ function triggerLiveRecalc() {
             customization_id: CUSTOMIZATION_ID,
             fabric_quantity: fabricQuantity,
             sizes: aggregatedSizes,
+            packaging_option: selectedPackagingOption,
+            without_cover: (selectedPackagingOption === "without_cover"),
             sets: setsPayload
         })
     })
@@ -1021,6 +1257,20 @@ function renderCalculation(c, p) {
     const reqFabricContainer = document.getElementById('summaryRequiredFabric').parentElement;
     const statusBadge = document.getElementById('liveStatusBadge');
     const btnPay = document.getElementById('btnPayRazorpay');
+    const btnProceed = document.getElementById('btnProceedCheckout');
+    const setBtnState = (enabled) => {
+        [btnPay, btnProceed].forEach(btn => {
+            if (!btn) return;
+            btn.disabled = !enabled;
+            if (enabled) {
+                btn.classList.remove('opacity-40', 'cursor-not-allowed');
+                btn.classList.add('hover:opacity-95', 'cursor-pointer');
+            } else {
+                btn.classList.add('opacity-40', 'cursor-not-allowed');
+                btn.classList.remove('hover:opacity-95', 'cursor-pointer');
+            }
+        });
+    };
     const errorBox = document.getElementById('errorAlertBox');
 
     // Check separate set compliance
@@ -1322,6 +1572,8 @@ function getPayload() {
         customization_id: CUSTOMIZATION_ID,
         fabric_quantity: fabricQuantity,
         sizes: aggregatedSizes,
+            packaging_option: selectedPackagingOption,
+            without_cover: (selectedPackagingOption === "without_cover"),
         sets: setsBreakdown,
         shipping_address: address,
         notes: notes,
@@ -1332,6 +1584,116 @@ function getPayload() {
 // -------------------------------------------------------------
 // Online Payment via Razorpay
 // -------------------------------------------------------------
+
+// -------------------------------------------------------------
+// Proceed to Step 2: Dedicated Checkout & Razorpay Page
+// -------------------------------------------------------------
+function proceedToCheckout() {
+    if (!checkLoginOrPrompt()) return;
+
+    const sizes = getAggregatedSizes();
+    const fabricQuantity = getFabricQuantity();
+    const mult = fabricQuantity;
+    const effectiveMin = MIN_PIECES_PER_SET * mult;
+    const effectiveMax = MAX_PIECES_PER_SET * mult;
+    const totalPcs = Object.values(sizes).reduce((a, b) => a + b, 0);
+
+    if (totalPcs === 0) {
+        Swal.fire({
+            title: 'Select Size Quantities',
+            text: 'Please select quantities for at least one size variant in each fabric set to proceed to checkout.',
+            icon: 'info',
+            confirmButtonColor: '#F25996'
+        });
+        return;
+    }
+
+    // Validate every separate set container
+    for (let i = 0; i < fabricSets.length; i++) {
+        const setPcs = getSetTotalPieces(i);
+        if (setPcs < MIN_PIECES_PER_SET) {
+            Swal.fire({
+                title: 'Incomplete Fabric Set',
+                text: `Fabric Set #${i + 1} has only ${setPcs} pieces. Each separate fabric set must have at least ${MIN_PIECES_PER_SET} pieces to enable checkout.`,
+                icon: 'warning',
+                confirmButtonColor: '#F25996'
+            });
+            return;
+        }
+        if (setPcs > MAX_PIECES_PER_SET) {
+            Swal.fire({
+                title: 'Fabric Set Limit Exceeded',
+                text: `Fabric Set #${i + 1} has ${setPcs} pieces. Maximum allowed is ${MAX_PIECES_PER_SET} pieces per fabric set.`,
+                icon: 'warning',
+                confirmButtonColor: '#F25996'
+            });
+            return;
+        }
+        if (LABELS_CONFIG.length > 0 && !fabricSets[i].labelId) {
+            Swal.fire({
+                title: 'Select Custom Style',
+                text: `Please assign a custom style/label for Fabric Set #${fabricSets[i].setId} before proceeding to checkout.`,
+                icon: 'warning',
+                confirmButtonColor: '#F25996'
+            });
+            return;
+        }
+    }
+
+    if (fabricQuantity > FABRIC_STOCK) {
+        Swal.fire({
+            title: 'Fabric Stock Shortage',
+            text: `You selected ${fabricQuantity} Sets, but only ${FABRIC_STOCK} Qty are available in stock.`,
+            icon: 'warning',
+            confirmButtonColor: '#F25996'
+        });
+        return;
+    }
+
+    // Submit via dynamic POST form to checkout page
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `${BASE_URL}/fabrics/customize/checkout`;
+
+    const addField = (name, val) => {
+        const inp = document.createElement('input');
+        inp.type = 'hidden';
+        inp.name = name;
+        inp.value = val;
+        form.appendChild(inp);
+    };
+
+    addField('fabric_id', FABRIC_ID);
+    addField('customization_id', CUSTOMIZATION_ID);
+    addField('fabric_quantity', fabricQuantity);
+    addField('packaging_option', selectedPackagingOption);
+    addField('without_cover', selectedPackagingOption === 'without_cover' ? '1' : '0');
+
+    Object.keys(sizes).forEach(sz => {
+        addField(`sizes[${sz}]`, sizes[sz]);
+    });
+
+    // Also pass clean sets JSON
+    const setsBreakdown = fabricSets.map(s => {
+        let setPcs = 0;
+        for (const sz in s.selectedSizes) {
+            setPcs += (parseInt(s.selectedSizes[sz]) || 0);
+        }
+        const lblObj = LABELS_CONFIG.find(l => parseInt(l.id) === parseInt(s.labelId));
+        return {
+            set_id: s.setId,
+            label_id: s.labelId,
+            label_name: lblObj ? lblObj.display_label : 'Standard Style',
+            sizes: s.selectedSizes,
+            total_pieces: setPcs
+        };
+    });
+    addField('sets_json', JSON.stringify(setsBreakdown));
+
+    document.body.appendChild(form);
+    form.submit();
+}
+
 function payViaRazorpay() {
     if (!checkLoginOrPrompt()) return;
 

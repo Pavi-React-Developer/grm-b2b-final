@@ -212,9 +212,19 @@
             <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6 lg:gap-7">
                 <?php foreach ($fabrics as $f): ?>
                     <?php
-                        $rawImg = !empty($f['primary_image']) ? get_image_url($f['primary_image']) : (!empty($f['images'][0]) ? get_image_url($f['images'][0]) : '');
-                        $imgSrc = $rawImg;
-                        $unitLabel = (!empty($f['unit']) && strtolower($f['unit']) !== 'meter') ? htmlspecialchars($f['unit']) : 'Quantity';
+                        $rawImg = !empty($f['primary_image']) ? get_image_url($f['primary_image']) : '';
+                        $fallbackImg = 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80';
+                        $imgSrc = !empty($rawImg) ? $rawImg : $fallbackImg;
+                        $unitLabel = htmlspecialchars($f['unit'] ?? 'Qty');
+
+                        $fBaseP = (float)($f['fabric_base_price'] ?? 0);
+                        $fDiscP = (float)($f['fabric_discount_price'] ?? 0);
+                        if ($fDiscP <= 0 && !empty($f['fabric_price'])) {
+                            $fDiscP = (float)$f['fabric_price'];
+                        }
+                        $fDiscPct = ($fBaseP > 0 && $fDiscP > 0 && $fDiscP < $fBaseP) 
+                            ? round((($fBaseP - $fDiscP) / $fBaseP) * 100) 
+                            : 0;
                     ?>
                     <div class="bg-white rounded-2xl sm:rounded-[22px] border border-gray-100 overflow-hidden shadow-xs hover:shadow-xl hover:border-pink-200 transition-all duration-300 flex flex-col group transform hover:-translate-y-1">
                         
@@ -232,8 +242,13 @@
                             </div>
                             <?php endif; ?>
                             
-                            <!-- Top Left Badges: CUSTOMIZABLE & Garment Type -->
-                            <div class="absolute top-2 left-2 sm:top-3.5 sm:left-3.5 pointer-events-none z-10 flex flex-col gap-1 sm:gap-1.5 items-start">
+                            <!-- Top Left Badges: Starburst Discount, CUSTOMIZABLE & Garment Type -->
+                            <div class="absolute top-2 left-2 sm:top-3 sm:left-3 pointer-events-none z-10 flex flex-col gap-1 sm:gap-1.5 items-start">
+                                <?php if ($fDiscPct > 0 && function_exists('render_discount_starburst')): ?>
+                                    <div class="w-10 h-10 sm:w-12 sm:h-12 drop-shadow-md pointer-events-none mb-0.5">
+                                        <?= render_discount_starburst($fDiscPct, 'w-full h-full') ?>
+                                    </div>
+                                <?php endif; ?>
                                 <span class="px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-[#F25996] text-white font-extrabold text-[8.5px] sm:text-[10px] uppercase tracking-wider rounded sm:rounded-lg shadow-sm flex items-center gap-0.5 sm:gap-1">
                                     <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/></svg>
                                     <span>CUSTOM</span>
@@ -250,7 +265,7 @@
                                 <?php if (isset($f['fabric_stock']) && (float)$f['fabric_stock'] > 0): ?>
                                     <span class="px-1.5 sm:px-2.5 py-0.5 bg-emerald-600/95 backdrop-blur-xs text-white font-bold text-[8px] sm:text-[10px] tracking-wide rounded-full shadow-sm flex items-center gap-1">
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
-                                        <?= (int)$f['fabric_stock'] ?> <?= $unitLabel ?>
+                                        <?= (int)$f['fabric_stock'] ?> Qty
                                     </span>
                                 <?php endif; ?>
 
@@ -272,7 +287,7 @@
                         ?>
                         <div class="-mt-4 sm:-mt-6 mb-1.5 sm:mb-2 px-2.5 sm:px-5 flex items-center gap-1.5 sm:gap-2 relative z-20 overflow-x-auto scrollbar-none pb-0.5">
                             <?php 
-                                foreach (array_slice($validImages, 0, 4) as $idx => $swImg):
+                                foreach (array_slice($validImages, 0, 5) as $idx => $swImg):
                                     $swUrl = get_image_url($swImg, 100, 100);
                                     $fullSwUrl = get_image_url($swImg);
                             ?>
@@ -308,32 +323,42 @@
                                 <!-- Pricing & Min Stitch -->
                                 <div class="mb-2 sm:mb-3">
                                     <div class="flex items-center justify-between gap-1 sm:gap-2">
-                                        <div>
-                                            <div class="flex items-baseline gap-1 sm:gap-2 flex-wrap">
-                                                <?php if (!empty($f['fabric_discount_price']) && (float)$f['fabric_discount_price'] > 0 && (float)$f['fabric_discount_price'] < (float)$f['fabric_base_price']): ?>
-                                                    <span class="text-sm sm:text-xl font-extrabold text-[#0f172a]">
-                                                        ₹<?= number_format($f['fabric_discount_price'], 2) ?>
-                                                    </span>
-                                                    <span class="text-[10px] sm:text-xs font-medium text-[#94a3b8] line-through">
-                                                        ₹<?= number_format($f['fabric_base_price'], 2) ?>
-                                                    </span>
-                                                <?php else: ?>
-                                                    <span class="text-sm sm:text-xl font-extrabold text-[#0f172a]">
-                                                        ₹<?= number_format($f['fabric_price'], 2) ?>
-                                                    </span>
-                                                    <?php if (!empty($f['fabric_base_price']) && (float)$f['fabric_base_price'] > (float)$f['fabric_price']): ?>
+                                        <?php 
+                                            $isLoggedIn = !empty(\Core\Session::get('user_id'));
+                                        ?>
+                                        <?php if ($isLoggedIn): ?>
+                                            <div>
+                                                <div class="flex items-baseline gap-1 sm:gap-2 flex-wrap">
+                                                    <?php if (!empty($f['fabric_discount_price']) && (float)$f['fabric_discount_price'] > 0 && (float)$f['fabric_discount_price'] < (float)$f['fabric_base_price']): ?>
+                                                        <span class="text-sm sm:text-xl font-extrabold text-[#0f172a]">
+                                                            ₹<?= number_format($f['fabric_discount_price'], 2) ?>
+                                                        </span>
                                                         <span class="text-[10px] sm:text-xs font-medium text-[#94a3b8] line-through">
                                                             ₹<?= number_format($f['fabric_base_price'], 2) ?>
                                                         </span>
                                                     <?php else: ?>
-                                                        <span class="text-[10px] sm:text-xs font-medium text-[#94a3b8] line-through">
-                                                            ₹500.00
+                                                        <span class="text-sm sm:text-xl font-extrabold text-[#0f172a]">
+                                                            ₹<?= number_format($f['fabric_price'], 2) ?>
                                                         </span>
+                                                        <?php if (!empty($f['fabric_base_price']) && (float)$f['fabric_base_price'] > (float)$f['fabric_price']): ?>
+                                                            <span class="text-[10px] sm:text-xs font-medium text-[#94a3b8] line-through">
+                                                                ₹<?= number_format($f['fabric_base_price'], 2) ?>
+                                                            </span>
+                                                        <?php endif; ?>
                                                     <?php endif; ?>
-                                                <?php endif; ?>
+                                                </div>
+                                                <span class="text-[10px] sm:text-xs font-medium text-[#64748b] block mt-0.5">/ <?= $unitLabel ?></span>
                                             </div>
-                                            <span class="text-[10px] sm:text-xs font-medium text-[#64748b] block mt-0.5">/ <?= $unitLabel ?></span>
-                                        </div>
+                                        <?php else: ?>
+                                            <div>
+                                                <a href="<?= BASE_URL ?>/login?redirect=<?= urlencode('/fabrics/customize?fabric_id=' . (int)$f['fabric_id']) ?>" class="inline-flex items-center gap-1.5 text-[#F25996] hover:text-[#d8407d] font-bold text-xs sm:text-sm hover:underline py-1 group/lock">
+                                                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F25996] shrink-0 group-hover/lock:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                                    </svg>
+                                                    <span class="leading-tight">Login to view price</span>
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
 
                                         <!-- Min Stitch Badge -->
                                         <div class="text-right flex-shrink-0">
@@ -368,7 +393,12 @@
 
                             <!-- Action Button: Customize & Stitch → -->
                             <div>
-                                <a href="<?= BASE_URL ?>/fabrics/customize?fabric_id=<?= $f['fabric_id'] ?>" 
+                                <?php 
+                                    $customizeUrl = $isLoggedIn 
+                                        ? BASE_URL . '/fabrics/customize?fabric_id=' . (int)$f['fabric_id'] 
+                                        : BASE_URL . '/login?redirect=' . urlencode('/fabrics/customize?fabric_id=' . (int)$f['fabric_id']);
+                                ?>
+                                <a href="<?= $customizeUrl ?>" 
                                    class="w-full py-2 sm:py-3 px-2 sm:px-4 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-bold text-xs sm:text-sm rounded-xl sm:rounded-2xl shadow-sm sm:shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1 sm:gap-2 group/btn active:scale-[0.98]">
                                     <span class="truncate">Customize & Stitch</span>
                                     <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 transition-transform group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

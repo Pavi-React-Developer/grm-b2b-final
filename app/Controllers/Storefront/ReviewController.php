@@ -52,13 +52,14 @@ class ReviewController extends Controller
         header('Content-Type: application/json');
         
         $userId = Session::get('user_id');
-        $productId = $_POST['product_id'] ?? null;
-        $orderId = $_POST['order_id'] ?? null;
-        $rating = $_POST['rating'] ?? 0;
-        $reviewText = $_POST['review_text'] ?? '';
+        $productId = !empty($_POST['product_id']) ? (int)$_POST['product_id'] : null;
+        $orderId = !empty($_POST['order_id']) ? (int)$_POST['order_id'] : null;
+        $customizationId = !empty($_POST['customization_id']) ? (int)$_POST['customization_id'] : null;
+        $rating = !empty($_POST['rating']) ? (int)$_POST['rating'] : 0;
+        $reviewText = trim($_POST['review_text'] ?? '');
 
         if (!$productId || !$orderId || !$rating || $rating < 1 || $rating > 5) {
-            echo json_encode(['success' => false, 'message' => 'Please provide a valid rating.']);
+            echo json_encode(['success' => false, 'message' => 'Please provide a valid rating (1 to 5 stars).']);
             return;
         }
 
@@ -81,14 +82,18 @@ class ReviewController extends Controller
 
         try {
             $this->reviewModel->createReview([
-                'product_id' => $productId,
-                'user_id' => $userId,
-                'order_id' => $orderId,
-                'rating' => $rating,
-                'review_text' => $reviewText,
-                'photos' => !empty($photos) ? $photos : null
+                'product_id'       => $productId,
+                'customization_id' => $customizationId,
+                'user_id'          => $userId,
+                'order_id'         => $orderId,
+                'rating'           => $rating,
+                'review_text'      => $reviewText,
+                'photos'           => !empty($photos) ? $photos : null
             ]);
-            echo json_encode(['success' => true, 'message' => 'Review submitted successfully!']);
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Thank you! Your review has been submitted and is pending verification.'
+            ]);
         } catch (\Exception $e) {
             echo json_encode(['success' => false, 'message' => $e->getMessage()]);
         }

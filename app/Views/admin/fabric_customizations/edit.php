@@ -9,7 +9,7 @@
         <h1 class="text-2xl font-black text-gray-900 font-display">
             ✏️ Edit Fabric Rule: <?= htmlspecialchars($rule['program_name']) ?>
         </h1>
-        <p class="text-sm text-gray-500 mt-1">Update size consumption rates, minimum stitch pieces, and wastage factors.</p>
+        <p class="text-sm text-gray-500 mt-1">Update size consumption rates, minimum stitch pieces, without cover discount, and delivery schedules.</p>
     </div>
 
     <form action="<?= BASE_URL ?>/admin/fabric-customizations/update" method="POST" id="ruleForm" class="space-y-6">
@@ -53,43 +53,83 @@
                     <input type="text" name="garment_type" value="<?= htmlspecialchars($rule['garment_type']) ?>" required class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium">
                 </div>
 
-            <!-- Top Row: Program Name, Garment Type -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Program Name -->
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Program Name <span class="text-red-500">*</span>
+                <!-- Required Pieces to Enable Payment (Min & Max Limits) -->
+                <div class="md:col-span-2 bg-gradient-to-r from-amber-50/50 via-white to-amber-50/30 p-4 rounded-xl border border-amber-200/80">
+                    <label class="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span>Required Order Pieces (Min / Max Limits)</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">Dynamic Scaling</span>
                     </label>
-                    <input type="text" name="program_name" value="<?= htmlspecialchars($rule['program_name']) ?>" required class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                Minimum Required Pieces <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="minimum_pieces" value="<?= isset($rule['minimum_pieces']) ? (int)$rule['minimum_pieces'] : 10 ?>" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs (Min)</span>
+                            </div>
+                            <p class="text-[10px] text-gray-500 mt-1">
+                                Base pieces required before checkout is unlocked (scales with Sets).
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                Maximum Allowed Pieces <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="maximum_pieces" value="<?= isset($rule['maximum_pieces']) ? (int)$rule['maximum_pieces'] : 100 ?>" min="1" required placeholder="e.g. 100" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs (Max)</span>
+                            </div>
+                            <p class="text-[10px] text-gray-500 mt-1">
+                                Maximum total pieces buyer can order per set multiplier.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Garment Type -->
+                <!-- Without Cover Discount Percentage -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Garment Type <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="garment_type" value="<?= htmlspecialchars($rule['garment_type']) ?>" required class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium">
-                </div>
-            </div>
-
-            <!-- Second Row: Required Pieces to Enable Payment, Status -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Required Pieces to Enable Payment -->
-                <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Required Pieces to Enable Payment <span class="text-red-500">*</span>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                        <span>Without Cover Discount (%)</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">Price Reduction</span>
                     </label>
                     <div class="relative">
-                        <input type="number" name="minimum_pieces" value="<?= isset($rule['minimum_pieces']) ? (int)$rule['minimum_pieces'] : 10 ?>" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
-                        <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs</span>
+                        <input type="number" name="without_cover_discount_percentage" value="<?= isset($rule['without_cover_discount_percentage']) ? number_format((float)$rule['without_cover_discount_percentage'], 2, '.', '') : '0.00' ?>" step="0.01" min="0" max="100" placeholder="e.g. 5.00" class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-emerald-700 pr-14">
+                        <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">% OFF</span>
                     </div>
                     <p class="text-[11px] text-gray-500 mt-1">
-                        Minimum total stitch pieces buyer must select before the online payment button is enabled on storefront.
+                        When buyer selects <strong>Without Cover</strong> in UI, the base product price is reduced by this percentage.
+                    </p>
+                </div>
+
+                <!-- Dynamic Delivery Schedule -->
+                <div class="bg-gray-50/80 p-3.5 rounded-xl border border-gray-200">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span>🚚 Dynamic Delivery Schedule</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Days</label>
+                            <div class="relative">
+                                <input type="number" name="delivery_days" value="<?= isset($rule['delivery_days']) ? (int)$rule['delivery_days'] : 7 ?>" min="1" required class="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-12">
+                                <span class="absolute right-2.5 top-2 text-[10px] text-gray-400 font-medium">Days</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Per Pieces</label>
+                            <div class="relative">
+                                <input type="number" name="delivery_base_pieces" value="<?= isset($rule['delivery_base_pieces']) ? (int)$rule['delivery_base_pieces'] : 100 ?>" min="1" required class="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-12">
+                                <span class="absolute right-2.5 top-2 text-[10px] text-gray-400 font-medium">Pcs</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-gray-500 mt-1">
+                        e.g. 7 days for 100 pcs; scales dynamically as buyer qty increases.
                     </p>
                 </div>
 
                 <!-- Status -->
-                <div>
+                <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
                         Rule Status
                     </label>
@@ -98,7 +138,6 @@
                         <option value="inactive" <?= $rule['status'] === 'inactive' ? 'selected' : '' ?>>Inactive (Draft / Hidden)</option>
                     </select>
                 </div>
-            </div>
             </div>
         </div>
 
@@ -132,14 +171,12 @@
                 </div>
             <?php else: ?>
                 <?php
-                    // Group labels by group_name
+                    $assignedIds = !empty($rule['labels']) ? array_column($rule['labels'], 'id') : [];
                     $groupedLabels = [];
                     foreach ($allLabels as $lbl) {
                         $grp = $lbl['group_name'] ?: 'General / Standard';
                         $groupedLabels[$grp][] = $lbl;
                     }
-
-                    $assignedIds = !empty($rule['labels']) ? array_column($rule['labels'], 'id') : [];
                 ?>
                 <div class="space-y-4">
                     <?php foreach ($groupedLabels as $grpName => $lblGroup): ?>
@@ -151,10 +188,8 @@
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                                 <?php foreach ($lblGroup as $lbl): ?>
-                                    <?php 
-                                        $isChecked = in_array($lbl['id'], $assignedIds);
-                                    ?>
-                                    <label class="flex items-start gap-2.5 p-2.5 bg-white rounded-xl border border-gray-200 hover:border-pink-300 hover:bg-pink-50/20 transition-all cursor-pointer select-none">
+                                    <?php $isChecked = in_array((int)$lbl['id'], array_map('intval', $assignedIds)); ?>
+                                    <label class="flex items-start gap-2.5 p-2.5 bg-white rounded-xl border <?= $isChecked ? 'border-pink-300 bg-pink-50/20' : 'border-gray-200' ?> hover:border-pink-300 hover:bg-pink-50/20 transition-all cursor-pointer select-none">
                                         <input type="checkbox" name="label_ids[]" value="<?= $lbl['id'] ?>" <?= $isChecked ? 'checked' : '' ?> class="label-checkbox rounded border-gray-300 text-pink-600 focus:ring-pink-500 mt-0.5">
                                         <div class="flex-1 min-w-0">
                                             <div class="text-xs font-bold text-gray-900 flex items-center gap-1 truncate">
@@ -196,7 +231,6 @@
 
             <!-- Quick Text Parser & Presets -->
             <div class="bg-pink-50/50 p-4 rounded-xl border border-pink-100 space-y-3">
-                <!-- Text input parser -->
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                     <div class="relative flex-1">
                         <input type="text" id="quickShorthandInput" placeholder="Quick paste e.g. M-2, L-2, XL-2, XXL-2, 3XL-2, 4XL-4 (or M:2/4, L:2/4)" class="w-full px-3.5 py-2 text-xs bg-white border border-pink-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#F25996] font-mono text-gray-800">
@@ -240,41 +274,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-50" id="sizesTbody">
-                        <?php 
-                        $sizesList = !empty($rule['sizes']) ? $rule['sizes'] : [];
-                        foreach ($sizesList as $idx => $ds): 
-                            $baseQty = isset($ds['base_quantity']) ? (int)$ds['base_quantity'] : 2;
-                            $maxQty = isset($ds['max_quantity']) ? (int)$ds['max_quantity'] : 4;
-                        ?>
-                            <tr class="size-row group">
-                                <td class="py-2.5 px-3">
-                                    <input type="text" name="sizes[<?= $idx ?>][size_name]" value="<?= htmlspecialchars($ds['size_name']) ?>" required placeholder="e.g. M" class="size-name-input w-28 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white font-bold text-gray-800">
-                                </td>
-                                <td class="py-2.5 px-3">
-                                    <div class="flex items-center gap-2">
-                                        <input type="number" name="sizes[<?= $idx ?>][base_quantity]" value="<?= $baseQty ?>" min="0" required class="size-base-qty-input w-28 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white font-bold text-gray-800" oninput="updateVariantSummary()">
-                                        <span class="text-xs text-gray-400 font-semibold">pcs</span>
-                                    </div>
-                                </td>
-                                <td class="py-2.5 px-3">
-                                    <div class="flex items-center gap-2">
-                                        <input type="number" name="sizes[<?= $idx ?>][max_quantity]" value="<?= $maxQty ?>" min="1" required class="size-max-qty-input w-28 px-3 py-1.5 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:bg-white focus:border-[#F25996] focus:ring-1 focus:ring-[#F25996] font-bold text-[#F25996]" oninput="updateVariantSummary()">
-                                        <span class="text-xs text-gray-400 font-semibold">max pcs</span>
-                                    </div>
-                                </td>
-                                <td class="py-2.5 px-3 text-center">
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" name="sizes[<?= $idx ?>][enabled]" value="1" <?= !empty($ds['enabled']) ? 'checked' : '' ?> class="sr-only peer" onchange="updateVariantSummary()">
-                                        <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#F25996]"></div>
-                                    </label>
-                                </td>
-                                <td class="py-2.5 px-3 text-right">
-                                    <button type="button" onclick="removeSizeVariantRow(this)" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer" title="Delete variant">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                                    </button>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
+                        <!-- Populated by JS -->
                     </tbody>
                 </table>
             </div>
@@ -282,9 +282,9 @@
             <!-- Summary Bar -->
             <div class="bg-gray-50 p-3.5 rounded-xl border border-gray-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
                 <div class="flex items-center gap-4">
-                    <span>Active Size Variants: <strong class="text-gray-900" id="adminActiveVariantsCount"><?= count(array_filter($sizesList, fn($s) => !empty($s['enabled']))) ?></strong></span>
+                    <span>Active Size Variants: <strong class="text-gray-900" id="adminActiveVariantsCount">0</strong></span>
                     <span>•</span>
-                    <span>Total Base Pieces: <strong class="text-[#F25996]" id="adminTotalBasePieces"><?= array_sum(array_map(fn($s) => (int)($s['base_quantity'] ?? 2), array_filter($sizesList, fn($s) => !empty($s['enabled'])))) ?></strong> pcs</span>
+                    <span>Total Base Pieces: <strong class="text-[#F25996]" id="adminTotalBasePieces">0</strong> pcs</span>
                 </div>
                 <div class="text-gray-500 italic">
                     Buyers can adjust quantities up to the configured Max Allowed Limit for each size.
@@ -305,7 +305,8 @@
 </div>
 
 <script>
-let sizeIndex = <?= count($sizesList) ?>;
+let sizeIndex = 0;
+const loadedSizes = <?= !empty($rule['sizes']) ? json_encode($rule['sizes']) : '[]' ?>;
 
 function escapeHtmlStr(str) {
     if (!str) return '';
@@ -412,7 +413,6 @@ function applyShorthandInput() {
         return;
     }
 
-    // Split by comma or space
     const tokens = val.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean);
     if (tokens.length === 0) return;
 
@@ -485,6 +485,18 @@ function selectAllLabels(check) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    updateVariantSummary();
+    if (Array.isArray(loadedSizes) && loadedSizes.length > 0) {
+        document.getElementById('sizesTbody').innerHTML = '';
+        sizeIndex = 0;
+        loadedSizes.forEach(s => {
+            const sName = s.size_name || s.name || '';
+            const bQty = parseInt(s.base_quantity) || 2;
+            const mQty = parseInt(s.max_quantity) || 4;
+            const isEn = (s.enabled === undefined || s.enabled === null) ? true : !!parseInt(s.enabled);
+            addCustomSizeVariant(sName, bQty, mQty, isEn);
+        });
+    } else {
+        applySizeVariantPreset('standard_m_4xl');
+    }
 });
 </script>

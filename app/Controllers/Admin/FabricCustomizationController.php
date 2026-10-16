@@ -49,31 +49,24 @@ class FabricCustomizationController extends Controller
      */
     public function create()
     {
-        $this->redirect('/admin/catalog/products/create?module=customize');
+        $products = $this->model->getAvailableFabricsForDropdown();
+        $defaultProduct = !empty($products[0]) ? $products[0] : null;
+        $customizationLabelModel = new \App\Models\CustomizationLabel();
+        $allLabels = $customizationLabelModel->getAllActive();
+        
+        $this->render('admin/fabric_customizations/create', [
+            'title'          => 'Add New Fabric Rule',
+            'products'       => $products,
+            'defaultProduct' => $defaultProduct,
+            'allLabels'      => $allLabels
+        ], 'admin');
     }
 
     /**
-     * Show edit form (Redirected to Unified Customizable Fabric Edit)
+     * Store new rule
      */
-    public function edit()
+    public function store()
     {
-        $id = (int)($_GET['id'] ?? 0);
-        if ($id) {
-            $rule = $this->model->getById($id);
-            if ($rule && !empty($rule['fabric_id'])) {
-                $this->redirect('/admin/catalog/products/edit?id=' . $rule['fabric_id'] . '&module=customize');
-                return;
-            }
-        }
-        $this->redirect('/admin/catalog/products?module=customize');
-    }
-
-    /**
-     * Update existing rule
-     */
-    public function update()
-    {
-        $id = (int)($_POST['id'] ?? 0);
         $fabricId = (int)($_POST['fabric_id'] ?? 0);
         $programName = trim($_POST['program_name'] ?? '');
         $garmentType = trim($_POST['garment_type'] ?? '');
@@ -92,13 +85,42 @@ class FabricCustomizationController extends Controller
         $minPieces = (int)($_POST['minimum_pieces'] ?? 10);
         $maxPieces = !empty($_POST['maximum_pieces']) ? (int)$_POST['maximum_pieces'] : null;
         $wastagePct = (float)($_POST['wastage_percentage'] ?? 0.00);
+        $withoutCoverDiscountPct = (float)($_POST['without_cover_discount_percentage'] ?? 0.00);
+        $deliveryDays = (int)($_POST['delivery_days'] ?? 7);
+        $deliveryBasePieces = (int)($_POST['delivery_base_pieces'] ?? 100);
         $unit = trim($_POST['unit'] ?? 'Qty');
         $status = $_POST['status'] ?? 'active';
+
         $labelIds = array_filter(array_map('intval', $_POST['label_ids'] ?? []));
 
-        if (!$id || !$fabricId || empty($programName) || empty($garmentType)) {
-            Session::setFlash('error', 'Missing required fields.');
-            $this->redirect('/admin/fabric-customizations/edit?id=' . $id);
+        // Auto-resolve fabric and program if not submitted from form
+        if (!$fabricId) {
+            $db = Database::getInstance();
+            $stmtP = $db->query("SELECT id, name, category_id, sub_category_id FROM products WHERE is_customizable = 1 ORDER BY id DESC LIMIT 1");
+            $pRow = $stmtP ? $stmtP->fetch(\PDO::FETCH_ASSOC) : null;
+            if ($pRow) {
+                $fabricId = (int)$pRow['id'];
+                if (empty($programName)) {
+                    $programName = $pRow['name'] . ' Rule';
+                }
+                if ($categoryId === null) {
+                    $categoryId = $pRow['category_id'];
+                }
+                if ($subCategoryId === null) {
+                    $subCategoryId = $pRow['sub_category_id'];
+                }
+            }
+        }
+        if (empty($programName)) {
+            $programName = 'Fabric Customization Rule';
+        }
+        if (empty($garmentType)) {
+            $garmentType = 'Custom Garment';
+        }
+
+        if (!$fabricId) {
+            Session::setFlash('error', 'No customizable fabric product found in inventory.');
+            $this->redirect('/admin/fabric-customizations');
             return;
         }
 
@@ -123,25 +145,141 @@ class FabricCustomizationController extends Controller
 
         try {
             $data = [
-                'fabric_id'             => $fabricId,
-                'program_name'          => $programName,
-                'garment_type'          => $garmentType,
-                'category_id'           => $categoryId,
-                'sub_category_id'       => $subCategoryId,
-                'feeding_type'          => $feedingType,
-                'minimum_pieces'        => $minPieces,
-                'maximum_pieces'        => $maxPieces,
-                'wastage_percentage'    => $wastagePct,
-                'unit'                  => $unit,
-                'customization_enabled' => 1,
-                'status'                => $status
+                'fabric_id'                         => $fabricId,
+                'program_name'                      => $programName,
+                'garment_type'                      => $garmentType,
+                'category_id'                       => $categoryId,
+                'sub_category_id'                   => $subCategoryId,
+                'feeding_type'                      => $feedingType,
+                'minimum_pieces'                    => $minPieces,
+                'maximum_pieces'                    => $maxPieces,
+                'wastage_percentage'                => $wastagePct,
+                'without_cover_discount_percentage' => $withoutCoverDiscountPct,
+                'delivery_days'                     => $deliveryDays,
+                'delivery_base_pieces'              => $deliveryBasePieces,
+                'unit'                              => $unit,
+                'customization_enabled'             => 1,
+                'status'                            => $status
+            ];
+
+            $newId = $this->model->create($data, $sizes, $labelIds);
+            Session::setFlash('success', "Fabric Customization Rule saved successfully.");
+            $this->redirect('/admin/fabric-customizations');
+        } catch (\Exception $e) {
+            Session::setFlash('error', 'Error creating fabric rule: ' . $e->getMessage());
+            $this->redirect('/admin/fabric-customizations/create');
+        }
+    }
+
+    /**
+     * Show edit form
+     */
+    public function edit()
+    {
+        $id = (int)($_GET['id'] ?? 0);
+        $standalone = !empty($_GET['standalone']);
+        $rule = $id > 0 ? $this->model->getById($id) : null;
+
+        if (!$id || !$rule) {
+            Session::setFlash('error', 'Fabric Rule not found.');
+            $this->redirect('/admin/fabric-customizations');
+            return;
+        }
+
+        if (!empty($rule['fabric_id']) && !$standalone) {
+            $this->redirect('/admin/catalog/products/edit?id=' . $rule['fabric_id'] . '&module=customize');
+            return;
+        }
+
+        $products = $this->model->getAvailableFabricsForDropdown($id);
+        $categories = $this->categoryModel->getAllActive(null, 1);
+        $subCategories = $this->subCategoryModel->getAllActive(1);
+        $customizationLabelModel = new \App\Models\CustomizationLabel();
+        $allLabels = $customizationLabelModel->getAllActive();
+
+        $this->render('admin/fabric_customizations/edit', [
+            'title'         => 'Edit Fabric Rule #' . $rule['id'],
+            'rule'          => $rule,
+            'products'      => $products,
+            'categories'    => $categories,
+            'subCategories' => $subCategories,
+            'allLabels'     => $allLabels
+        ], 'admin');
+    }
+
+    /**
+     * Update existing rule
+     */
+    public function update()
+    {
+        $id = (int)($_POST['id'] ?? 0);
+        $rule = $id > 0 ? $this->model->getById($id) : null;
+        if (!$id || !$rule) {
+            Session::setFlash('error', 'Fabric Rule not found.');
+            $this->redirect('/admin/fabric-customizations');
+            return;
+        }
+
+        $fabricId = (int)($_POST['fabric_id'] ?? $rule['fabric_id'] ?? 0);
+        $programName = trim($_POST['program_name'] ?? $rule['program_name'] ?? 'Fabric Customization Rule');
+        $garmentType = trim($_POST['garment_type'] ?? $rule['garment_type'] ?? 'Custom Garment');
+        $categoryId = !empty($_POST['category_id']) ? (int)$_POST['category_id'] : ($rule['category_id'] ?? null);
+        $subCategoryId = !empty($_POST['sub_category_id']) ? (int)$_POST['sub_category_id'] : ($rule['sub_category_id'] ?? null);
+        $feedingType = $_POST['feeding_type'] ?? ($rule['feeding_type'] ?? 'Non-Feeding');
+
+        $minPieces = (int)($_POST['minimum_pieces'] ?? 10);
+        $maxPieces = !empty($_POST['maximum_pieces']) ? (int)$_POST['maximum_pieces'] : null;
+        $wastagePct = (float)($_POST['wastage_percentage'] ?? 0.00);
+        $withoutCoverDiscountPct = (float)($_POST['without_cover_discount_percentage'] ?? 0.00);
+        $deliveryDays = (int)($_POST['delivery_days'] ?? 7);
+        $deliveryBasePieces = (int)($_POST['delivery_base_pieces'] ?? 100);
+        $unit = trim($_POST['unit'] ?? 'Qty');
+        $status = $_POST['status'] ?? 'active';
+        $labelIds = array_filter(array_map('intval', $_POST['label_ids'] ?? []));
+
+        // Parse sizes array if provided
+        $sizesPost = $_POST['sizes'] ?? [];
+        $sizes = [];
+        if (is_array($sizesPost)) {
+            foreach ($sizesPost as $idx => $s) {
+                if (!empty($s['size_name'])) {
+                    $sizes[] = [
+                        'size_name'          => trim($s['size_name']),
+                        'fabric_consumption' => isset($s['fabric_consumption']) ? (float)$s['fabric_consumption'] : 1.00,
+                        'base_quantity'      => isset($s['base_quantity']) ? max(0, (int)$s['base_quantity']) : 2,
+                        'max_quantity'       => isset($s['max_quantity']) ? max(1, (int)$s['max_quantity']) : 4,
+                        'unit'               => $unit,
+                        'enabled'            => isset($s['enabled']) ? 1 : 0,
+                        'sort_order'         => (int)($idx + 1)
+                    ];
+                }
+            }
+        }
+
+        try {
+            $data = [
+                'fabric_id'                         => $fabricId,
+                'program_name'                      => $programName,
+                'garment_type'                      => $garmentType,
+                'category_id'                       => $categoryId,
+                'sub_category_id'                   => $subCategoryId,
+                'feeding_type'                      => $feedingType,
+                'minimum_pieces'                    => $minPieces,
+                'maximum_pieces'                    => $maxPieces,
+                'wastage_percentage'                => $wastagePct,
+                'without_cover_discount_percentage' => $withoutCoverDiscountPct,
+                'delivery_days'                     => $deliveryDays,
+                'delivery_base_pieces'              => $deliveryBasePieces,
+                'unit'                              => $unit,
+                'customization_enabled'             => 1,
+                'status'                            => $status
             ];
 
             $this->model->update($id, $data, $sizes, $labelIds);
             Session::setFlash('success', "Fabric Customization Rule updated successfully.");
             $this->redirect('/admin/fabric-customizations');
         } catch (\Exception $e) {
-            Session::setFlash('error', 'Error updating rule: ' . $e->getMessage());
+            Session::setFlash('error', 'Error updating fabric rule: ' . $e->getMessage());
             $this->redirect('/admin/fabric-customizations/edit?id=' . $id);
         }
     }

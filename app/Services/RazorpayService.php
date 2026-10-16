@@ -157,6 +157,17 @@ class RazorpayService
         curl_setopt($ch, CURLOPT_TIMEOUT, 15);
         curl_setopt($ch, CURLOPT_TCP_NODELAY, 1);
 
+        // SSL verification handling (for Windows / local development environments)
+        $caBundle = defined('BASE_PATH') ? BASE_PATH . '/cacert.pem' : dirname(__DIR__, 2) . '/cacert.pem';
+        if (file_exists($caBundle) && filesize($caBundle) > 100000) {
+            curl_setopt($ch, CURLOPT_CAINFO, $caBundle);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        } else {
+            // Local dev fallback
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        }
+
         if ($method === 'POST') {
             curl_setopt($ch, CURLOPT_POST, true);
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));

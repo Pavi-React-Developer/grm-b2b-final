@@ -9,7 +9,7 @@
         <h1 class="text-2xl font-black text-gray-900 font-display">
             ➕ Add Fabric Customization Rule
         </h1>
-        <p class="text-sm text-gray-500 mt-1">Configure size consumption rates, minimum stitch pieces, and wastage factors for wholesale fabrics.</p>
+        <p class="text-sm text-gray-500 mt-1">Configure size consumption rates, minimum stitch pieces, without cover discount, and delivery schedules for wholesale fabrics.</p>
     </div>
 
     <form action="<?= BASE_URL ?>/admin/fabric-customizations/store" method="POST" id="ruleForm" class="space-y-6">
@@ -37,8 +37,6 @@
                     </select>
                 </div>
 
-                <!-- Top Row: Program Name, Garment Type -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Program Name -->
                 <div>
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
@@ -54,26 +52,84 @@
                     </label>
                     <input type="text" name="garment_type" required placeholder="e.g. Maxi Dress, Kurti, Shirt, Trousers" class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-medium">
                 </div>
-            </div>
 
-            <!-- Second Row: Required Pieces to Enable Payment, Status -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Required Pieces to Enable Payment -->
+                <!-- Required Pieces to Enable Payment (Min & Max Limits) -->
+                <div class="md:col-span-2 bg-gradient-to-r from-amber-50/50 via-white to-amber-50/30 p-4 rounded-xl border border-amber-200/80">
+                    <label class="block text-xs font-bold text-gray-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span>Required Order Pieces (Min / Max Limits)</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">Dynamic Scaling</span>
+                    </label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                Minimum Required Pieces <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="minimum_pieces" value="10" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs (Min)</span>
+                            </div>
+                            <p class="text-[10px] text-gray-500 mt-1">
+                                Base pieces required before checkout is unlocked (scales with Sets).
+                            </p>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-700 mb-1">
+                                Maximum Allowed Pieces <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="maximum_pieces" value="100" min="1" required placeholder="e.g. 100" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs (Max)</span>
+                            </div>
+                            <p class="text-[10px] text-gray-500 mt-1">
+                                Maximum total pieces buyer can order per set multiplier.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Without Cover Discount Percentage -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
-                        Required Pieces to Enable Payment <span class="text-red-500">*</span>
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                        <span>Without Cover Discount (%)</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">Price Reduction</span>
                     </label>
                     <div class="relative">
-                        <input type="number" name="minimum_pieces" value="10" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
-                        <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs</span>
+                        <input type="number" name="without_cover_discount_percentage" value="0.00" step="0.01" min="0" max="100" placeholder="e.g. 5.00" class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-emerald-700 pr-14">
+                        <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">% OFF</span>
                     </div>
                     <p class="text-[11px] text-gray-500 mt-1">
-                        Minimum total stitch pieces buyer must select before the online payment button is enabled on storefront.
+                        When buyer selects <strong>Without Cover</strong> in UI, the base product price is reduced by this percentage.
+                    </p>
+                </div>
+
+                <!-- Dynamic Delivery Schedule -->
+                <div class="bg-gray-50/80 p-3.5 rounded-xl border border-gray-200">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <span>🚚 Dynamic Delivery Schedule</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Days</label>
+                            <div class="relative">
+                                <input type="number" name="delivery_days" value="7" min="1" required class="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-12">
+                                <span class="absolute right-2.5 top-2 text-[10px] text-gray-400 font-medium">Days</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-gray-600 mb-1">Per Pieces</label>
+                            <div class="relative">
+                                <input type="number" name="delivery_base_pieces" value="100" min="1" required class="w-full px-3 py-2 text-xs bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-12">
+                                <span class="absolute right-2.5 top-2 text-[10px] text-gray-400 font-medium">Pcs</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-[10px] text-gray-500 mt-1">
+                        e.g. 7 days for 100 pcs; scales dynamically as buyer qty increases.
                     </p>
                 </div>
 
                 <!-- Status -->
-                <div>
+                <div class="md:col-span-2">
                     <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
                         Rule Status
                     </label>
@@ -82,7 +138,6 @@
                         <option value="inactive">Inactive (Draft / Hidden)</option>
                     </select>
                 </div>
-            </div>
             </div>
         </div>
 
@@ -357,7 +412,6 @@ function applyShorthandInput() {
         return;
     }
 
-    // Split by comma or space
     const tokens = val.split(/[,;\s]+/).map(t => t.trim()).filter(Boolean);
     if (tokens.length === 0) return;
 
@@ -365,7 +419,6 @@ function applyShorthandInput() {
     sizeIndex = 0;
 
     tokens.forEach(tok => {
-        // Supports formats: M-2, M-2-4, M:2, M:2/4, 4XL-2
         let name = tok;
         let base = 2;
         let max = 4;
@@ -386,7 +439,6 @@ function applyShorthandInput() {
         } else if (tok.includes('-')) {
             const parts = tok.split('-');
             if (parts.length >= 3) {
-                // e.g. 4XL-2-4 -> name: 4XL, base: 2, max: 4
                 name = parts.slice(0, -2).join('-');
                 base = parseInt(parts[parts.length - 2]) || 2;
                 max = parseInt(parts[parts.length - 1]) || (base * 2);

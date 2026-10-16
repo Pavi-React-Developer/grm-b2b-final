@@ -276,6 +276,12 @@ $prodMaxAmount = round($wholesalePrice + $prodTaxAmount, 2);
                                     <p class="text-xs text-gray-500 mb-1">Status</p>
                                     <p class="font-medium <?= ($variant['status'] ?? 'active') === 'active' ? 'text-green-600' : 'text-gray-400' ?>"><?= ucfirst($variant['status'] ?? 'Active') ?></p>
                                 </div>
+                                <?php if (!empty($product['is_customizable'])): ?>
+                                <div class="col-span-2 bg-amber-50 p-2.5 rounded-lg border border-amber-200 flex items-center justify-between text-xs">
+                                    <span class="font-bold text-amber-900">Configured Limits:</span>
+                                    <span class="text-amber-800 font-semibold">Base: <strong><?= (int)($variant['base_quantity'] ?? 2) ?></strong> | Max: <strong><?= (int)($variant['max_quantity'] ?? 4) ?> pcs</strong></span>
+                                </div>
+                                <?php endif; ?>
                             </div>
                         </div>
                     <?php endforeach; ?>

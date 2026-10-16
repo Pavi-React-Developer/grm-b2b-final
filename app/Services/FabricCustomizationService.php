@@ -16,11 +16,12 @@ class FabricCustomizationService
     public function calculateConsumption(array $customization, array $sizeQuantities, ?float $availableStock = null, int $fabricQuantity = 1, array $sets = [])
     {
         $fabricQuantity = max(1, $fabricQuantity);
-        $perSetMin = (int)($customization['minimum_pieces'] ?? 10);
-        $perSetMax = $perSetMin;
-
-        $minPieces = $perSetMin * $fabricQuantity;
-        $maxPieces = $perSetMax * $fabricQuantity;
+        $baseMin = (int)($customization['minimum_pieces'] ?? 1);
+        $baseMax = !empty($customization['maximum_pieces']) ? (int)$customization['maximum_pieces'] : ($baseMin * 20);
+        $perSetMin = $baseMin;
+        $perSetMax = $baseMax;
+        $minPieces = $baseMin * $fabricQuantity;
+        $maxPieces = $baseMax * $fabricQuantity;
         $wastagePct = (float)($customization['wastage_percentage'] ?? 0.00);
         $unit = $customization['unit'] ?? 'Meter';
         $stock = $availableStock !== null ? (float)$availableStock : (float)($customization['fabric_stock'] ?? 0);
@@ -164,31 +165,68 @@ class FabricCustomizationService
     }
 
     /**
-     * Compute total pricing breakdown
-     * Note: Fabric price is tax-inclusive (GST is already included in unit price).
-     * No extra GST is added on top of the total.
+     * Compute total pricing breakdown with optional Without Cover percentage discount
      */
-    public function calculatePricing(float $pricePerUnit, float $requiredFabric, float $stitchingPerPiece = 0.00, int $totalPieces = 0, float $gstRate = 5.0)
+    public function calculatePricing(float $pricePerUnit, float $requiredFabric, float $stitchingPerPiece = 0.00, int $totalPieces = 0, float $gstRate = 5.0, bool $withoutCover = false, float $discountPercentage = 0.00)
     {
-        $fabricCost = round($pricePerUnit * $totalPieces, 2);
-        $stitchingCost = round($stitchingPerPiece * $totalPieces, 2);
-        $total = $fabricCost + $stitchingCost;
+        $effectivePricePerUnit = $pricePerUnit;
+        if ($withoutCover && $discountPercentage > 0) {
+            $effectivePricePerUnit = max(0, round($pricePerUnit * (1.0 - ($discountPercentage / 100.0)), 2));
+        }
 
-        // Calculate taxable subtotal and included GST amount (tax-inclusive back-calculation)
-        $taxableSubtotal = ($gstRate > 0) ? round($total / (1 + ($gstRate / 100.0)), 2) : $total;
-        $gstAmount = round($total - $taxableSubtotal, 2);
+        $originalFabricCost = round($pricePerUnit * $requiredFabric, 2);
+        $fabricCost = round($effectivePricePerUnit * $requiredFabric, 2);
+        $stitchingCost = round($stitchingPerPiece * $totalPieces, 2);
+        $subtotal = $fabricCost + $stitchingCost;
+        $gstAmount = round($subtotal * ($gstRate / 100.0), 2);
+        $total = $subtotal + $gstAmount;
+        $totalSaved = max(0, round($originalFabricCost - $fabricCost, 2));
 
         return [
-            'price_per_unit'    => $pricePerUnit,
-            'required_fabric'   => $requiredFabric,
-            'fabric_cost'       => $fabricCost,
-            'stitching_per_pc'  => $stitchingPerPiece,
-            'total_pieces'      => $totalPieces,
-            'stitching_cost'    => $stitchingCost,
-            'subtotal'          => $taxableSubtotal,
-            'gst_rate'          => $gstRate,
-            'gst_amount'        => $gstAmount,
-            'total'             => $total
+            'original_price_per_unit' => $pricePerUnit,
+            'price_per_unit'          => $effectivePricePerUnit,
+            'fabric_price_original'   => $pricePerUnit,
+            'fabric_price_effective'  => $effectivePricePerUnit,
+            'without_cover'           => $withoutCover,
+            'discount_percentage'     => $discountPercentage,
+            'without_cover_discount'  => $totalSaved,
+            'total_saved'             => $totalSaved,
+            'required_fabric'         => $requiredFabric,
+            'fabric_cost_original'    => $originalFabricCost,
+            'fabric_cost'             => $fabricCost,
+            'stitching_per_pc'        => $stitchingPerPiece,
+            'total_pieces'            => $totalPieces,
+            'stitching_cost'          => $stitchingCost,
+            'subtotal'                => $subtotal,
+            'gst_rate'                => $gstRate,
+            'gst_amount'              => $gstAmount,
+            'total'                   => $total
+        ];
+    }
+
+    /**
+     * Calculate dynamic delivery schedule based on total pieces ordered
+     */
+    public function calculateDeliveryTimeline(int $totalPieces, int $baseDays = 7, int $basePieces = 100)
+    {
+        $totalPieces = max(1, $totalPieces);
+        $baseDays = max(1, $baseDays);
+        $basePieces = max(1, $basePieces);
+        
+        $multiplier = (int)ceil($totalPieces / $basePieces);
+        $totalDays = $multiplier * $baseDays;
+        $formattedDate = date('M d, Y', strtotime("+{$totalDays} days"));
+        $rawDate = date('Y-m-d', strtotime("+{$totalDays} days"));
+        
+        return [
+            'total_days'               => $totalDays,
+            'base_days'                => $baseDays,
+            'base_pieces'              => $basePieces,
+            'multiplier'               => $multiplier,
+            'total_pieces'             => $totalPieces,
+            'estimated_date'           => $rawDate,
+            'formatted_date'           => $formattedDate,
+            'estimated_date_formatted' => $formattedDate
         ];
     }
 }

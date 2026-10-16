@@ -124,6 +124,11 @@ $grandTotal = ($order['grand_total'] ?? 0) > 0 ? $order['grand_total'] : $order[
                                                 <div>
                                                     <p class="font-semibold text-gray-900 leading-tight"><?= htmlspecialchars($item['name']) ?></p>
                                                     <div class="flex items-center gap-2 mt-1 flex-wrap">
+                                                        <?php if (!empty($item['garment_type']) || !empty($item['customization_id'])): ?>
+                                                            <span class="inline-block text-xs font-bold text-[#F25996] bg-pink-50 border border-pink-200 px-2 py-0.5 rounded-full">
+                                                                ✂️ Custom <?= htmlspecialchars($item['garment_type'] ?? 'Garment') ?><?= !empty($item['program_name']) ? ' — ' . htmlspecialchars($item['program_name']) : '' ?>
+                                                            </span>
+                                                        <?php endif; ?>
                                                         <?php if (!empty($item['variant_name'])): ?>
                                                             <span class="inline-block text-xs font-medium text-[#F25996] bg-pink-50 border border-pink-200 px-2 py-0.5 rounded-full">
                                                                 Variant: <?= htmlspecialchars($item['variant_name']) ?>
@@ -137,6 +142,46 @@ $grandTotal = ($order['grand_total'] ?? 0) > 0 ? $order['grand_total'] : $order[
                                                     </div>
                                                     <?php if (!empty($item['weight'])): ?>
                                                         <p class="text-xs text-gray-400 mt-0.5"><?= floatval($item['weight']) ?> <?= htmlspecialchars($item['weight_unit'] ?? 'kg') ?></p>
+                                                    <?php endif; ?>
+
+                                                    <?php if ($order['status'] === 'delivered'): 
+                                                        $rCid = !empty($item['customization_id']) ? $item['customization_id'] : '0';
+                                                        $rPid = $item['resolved_product_id'] ?? $item['product_id'];
+                                                        $reviewKey = $order['id'] . '_' . $rPid . '_' . $rCid;
+                                                        $reviewKeyAlt = $order['id'] . '_' . $rPid;
+                                                        $existingRev = $userReviewedMap[$reviewKey] ?? $userReviewedMap[$reviewKeyAlt] ?? null;
+                                                        $isCustomItem = !empty($item['customization_id']);
+                                                    ?>
+                                                        <div class="mt-2.5 flex items-center gap-2 flex-wrap" id="review-action-container-<?= $order['id'] ?>-<?= $rPid ?>-<?= $rCid ?>">
+                                                            <?php if ($existingRev): ?>
+                                                                <span class="px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-xs">
+                                                                    <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                                                    <span>Reviewed</span>
+                                                                    <span class="text-amber-500 font-bold ml-0.5"><?= str_repeat('★', (int)$existingRev['rating']) ?></span>
+                                                                </span>
+                                                                <?php if (empty($existingRev['is_approved'])): ?>
+                                                                    <span class="text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">Pending Verification</span>
+                                                                <?php else: ?>
+                                                                    <span class="text-[10px] text-green-700 bg-green-100/60 px-2 py-0.5 rounded-md font-medium">Approved &amp; Live</span>
+                                                                <?php endif; ?>
+                                                            <?php else: ?>
+                                                                <button type="button" 
+                                                                        onclick="activateOrderReviewModal({
+                                                                            orderId: <?= (int)$order['id'] ?>,
+                                                                            orderNumber: '<?= htmlspecialchars($order['order_number'], ENT_QUOTES) ?>',
+                                                                            productId: <?= (int)$rPid ?>,
+                                                                            customizationId: <?= !empty($item['customization_id']) ? (int)$item['customization_id'] : 'null' ?>,
+                                                                            productName: '<?= htmlspecialchars(addslashes($item['name']), ENT_QUOTES) ?>',
+                                                                            isCustom: <?= $isCustomItem ? 'true' : 'false' ?>,
+                                                                            garmentType: '<?= htmlspecialchars(addslashes($item['garment_type'] ?? ''), ENT_QUOTES) ?>',
+                                                                            image: '<?= htmlspecialchars($imgUrl ?? '', ENT_QUOTES) ?>'
+                                                                        })" 
+                                                                        class="px-3 py-1.5 <?= $isCustomItem ? 'bg-gradient-to-r from-[#F25996] to-pink-600 text-white hover:from-pink-600 hover:to-pink-700 shadow-sm' : 'bg-pink-50 text-[#F25996] hover:bg-pink-100 border border-pink-200' ?> rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 transform hover:scale-[1.02] active:scale-[0.98]">
+                                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                                                                    <span><?= $isCustomItem ? '✂️ Review Custom Product' : '⭐ Write Review' ?></span>
+                                                                </button>
+                                                            <?php endif; ?>
+                                                        </div>
                                                     <?php endif; ?>
                                                 </div>
                                             </div>
@@ -376,3 +421,273 @@ $grandTotal = ($order['grand_total'] ?? 0) > 0 ? $order['grand_total'] : $order[
         </div>
     </div>
 </div>
+
+<!-- ========================================================================= -->
+<!-- Order Review Activation Modal                                             -->
+<!-- ========================================================================= -->
+<div id="orderReviewModal" class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[150] hidden opacity-0 transition-opacity duration-300 flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-lg transform scale-95 transition-transform duration-300 max-h-[92vh] overflow-hidden flex flex-col border border-gray-100">
+        <!-- Modal Header -->
+        <div class="flex justify-between items-center p-4 sm:p-5 border-b border-gray-100 bg-[#fafafa]">
+            <div class="flex items-center gap-2.5">
+                <span class="w-8 h-8 rounded-full bg-pink-50 text-[#F25996] flex items-center justify-center font-bold text-sm border border-pink-100">⭐</span>
+                <div>
+                    <h2 class="text-base sm:text-lg font-black text-gray-900 leading-tight" id="ormTitle">Write a Review</h2>
+                    <p class="text-[11px] text-gray-500 font-medium" id="ormSubtitle">Order #<?= htmlspecialchars($order['order_number']) ?></p>
+                </div>
+            </div>
+            <button onclick="closeOrderReviewModal()" class="text-gray-400 hover:text-gray-600 bg-white hover:bg-gray-100 rounded-full p-1.5 transition-colors border border-gray-200 shadow-sm">
+                <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+
+        <!-- Product Preview Card -->
+        <div class="px-4 py-3 sm:px-6 bg-pink-50/40 border-b border-pink-100/60 flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-white border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                <img id="ormItemImg" src="" alt="" class="w-full h-full object-cover hidden">
+                <span id="ormItemFallback" class="text-xl">✂️</span>
+            </div>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5">
+                    <span id="ormItemBadge" class="hidden text-[10px] font-bold text-[#F25996] bg-white border border-pink-200 px-2 py-0.5 rounded-full">Custom Garment</span>
+                </div>
+                <h4 id="ormItemName" class="text-xs sm:text-sm font-bold text-gray-900 truncate mt-0.5">Product Name</h4>
+            </div>
+        </div>
+
+        <!-- Form Body -->
+        <form id="orderReviewForm" onsubmit="handleOrderReviewSubmit(event)" class="p-4 sm:p-6 overflow-y-auto space-y-4">
+            <input type="hidden" name="product_id" id="ormProductId">
+            <input type="hidden" name="customization_id" id="ormCustomizationId">
+            <input type="hidden" name="order_id" id="ormOrderId">
+            
+            <!-- Star Rating -->
+            <div class="flex flex-col items-center py-3 bg-gray-50/90 rounded-2xl border border-gray-100">
+                <p class="text-xs sm:text-sm font-bold text-gray-800 mb-1.5" id="ormRatingPrompt">How would you rate this product?</p>
+                <div class="flex items-center gap-1.5 sm:gap-2" id="ormStarRating">
+                    <?php for($i=1; $i<=5; $i++): ?>
+                        <button type="button" data-rating="<?= $i ?>" onclick="setOrmRating(<?= $i ?>)" onmouseover="hoverOrmRating(<?= $i ?>)" onmouseout="resetOrmRatingHover()" class="orm-star-btn text-gray-300 hover:text-yellow-400 focus:outline-none transition-colors p-1">
+                            <svg class="w-8 h-8 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                        </button>
+                    <?php endfor; ?>
+                </div>
+                <input type="hidden" name="rating" id="ormRatingInput" value="0">
+                <span id="ormRatingText" class="text-xs font-semibold text-gray-500 mt-1">Tap a star to rate</span>
+            </div>
+
+            <!-- Review Text -->
+            <div>
+                <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">Your Feedback <span class="text-red-500">*</span></label>
+                <textarea name="review_text" id="ormReviewText" rows="3" required class="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#F25996] focus:border-transparent text-xs sm:text-sm resize-none" placeholder="Share your experience regarding the quality, fabric texture, stitching finish, and fit..."></textarea>
+            </div>
+
+            <!-- Photos -->
+            <div>
+                <label class="block text-xs sm:text-sm font-bold text-gray-700 mb-1.5">Customer Photos (Optional)</label>
+                <input type="file" id="ormPhotosInput" name="photos[]" multiple accept="image/*" onchange="previewOrmPhotos(this)" class="block w-full text-xs sm:text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-[#F25996]/10 file:text-[#F25996] hover:file:bg-[#F25996]/20 transition cursor-pointer">
+                <div id="ormPhotosPreview" class="mt-2.5 flex flex-wrap gap-2 hidden"></div>
+            </div>
+
+            <button type="submit" id="ormSubmitBtn" class="w-full py-3 bg-[#F25996] hover:bg-[#d8407d] text-white font-bold rounded-xl transition-all shadow-md text-xs sm:text-sm flex items-center justify-center gap-2">
+                <span>Submit Review</span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+let ormCurrentRating = 0;
+let ormActiveItemData = null;
+
+const ratingLabels = {
+    1: 'Poor — Unsatisfied',
+    2: 'Fair — Below expectations',
+    3: 'Good — Average quality',
+    4: 'Very Good — Satisfied',
+    5: 'Excellent — Highly recommended!'
+};
+
+function activateOrderReviewModal(data) {
+    ormActiveItemData = data;
+    document.getElementById('ormProductId').value = data.productId;
+    document.getElementById('ormCustomizationId').value = data.customizationId || '';
+    document.getElementById('ormOrderId').value = data.orderId;
+    
+    // Set titles
+    const titleEl = document.getElementById('ormTitle');
+    const badgeEl = document.getElementById('ormItemBadge');
+    const nameEl = document.getElementById('ormItemName');
+    const promptEl = document.getElementById('ormRatingPrompt');
+    const imgEl = document.getElementById('ormItemImg');
+    const fallbackEl = document.getElementById('ormItemFallback');
+    
+    if (data.isCustom) {
+        titleEl.innerText = 'Review Customized Product';
+        badgeEl.classList.remove('hidden');
+        badgeEl.innerText = '✂️ Custom ' + (data.garmentType || 'Garment');
+        promptEl.innerText = 'How was the custom stitching & fabric quality?';
+    } else {
+        titleEl.innerText = 'Write a Review';
+        badgeEl.classList.add('hidden');
+        promptEl.innerText = 'How would you rate this product?';
+    }
+    
+    nameEl.innerText = data.productName;
+    if (data.image && data.image.length > 5) {
+        imgEl.src = data.image;
+        imgEl.classList.remove('hidden');
+        fallbackEl.classList.add('hidden');
+    } else {
+        imgEl.classList.add('hidden');
+        fallbackEl.classList.remove('hidden');
+    }
+
+    // Reset Form
+    document.getElementById('orderReviewForm').reset();
+    const preview = document.getElementById('ormPhotosPreview');
+    if (preview) {
+        preview.innerHTML = '';
+        preview.classList.add('hidden');
+    }
+    setOrmRating(0);
+    
+    const modal = document.getElementById('orderReviewModal');
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        modal.firstElementChild.classList.remove('scale-95');
+    }, 10);
+}
+
+function closeOrderReviewModal() {
+    const modal = document.getElementById('orderReviewModal');
+    modal.classList.add('opacity-0');
+    modal.firstElementChild.classList.add('scale-95');
+    document.body.style.overflow = '';
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 300);
+}
+
+function setOrmRating(rating) {
+    ormCurrentRating = rating;
+    document.getElementById('ormRatingInput').value = rating;
+    updateOrmStars(rating);
+    const txt = document.getElementById('ormRatingText');
+    if (txt) {
+        txt.innerText = ratingLabels[rating] || 'Tap a star to rate';
+        txt.className = rating > 0 ? 'text-xs font-bold text-[#F25996] mt-1' : 'text-xs font-semibold text-gray-500 mt-1';
+    }
+}
+
+function hoverOrmRating(rating) {
+    updateOrmStars(rating);
+    const txt = document.getElementById('ormRatingText');
+    if (txt && rating > 0) {
+        txt.innerText = ratingLabels[rating] || '';
+    }
+}
+
+function resetOrmRatingHover() {
+    updateOrmStars(ormCurrentRating);
+    const txt = document.getElementById('ormRatingText');
+    if (txt) {
+        txt.innerText = ratingLabels[ormCurrentRating] || 'Tap a star to rate';
+        txt.className = ormCurrentRating > 0 ? 'text-xs font-bold text-[#F25996] mt-1' : 'text-xs font-semibold text-gray-500 mt-1';
+    }
+}
+
+function updateOrmStars(rating) {
+    const stars = document.querySelectorAll('.orm-star-btn');
+    stars.forEach(star => {
+        const val = parseInt(star.getAttribute('data-rating'));
+        if (val <= rating) {
+            star.classList.remove('text-gray-300');
+            star.classList.add('text-yellow-400');
+        } else {
+            star.classList.remove('text-yellow-400');
+            star.classList.add('text-gray-300');
+        }
+    });
+}
+
+function previewOrmPhotos(input) {
+    const previewContainer = document.getElementById('ormPhotosPreview');
+    previewContainer.innerHTML = '';
+    if (!input.files || input.files.length === 0) {
+        previewContainer.classList.add('hidden');
+        return;
+    }
+    
+    previewContainer.classList.remove('hidden');
+    Array.from(input.files).forEach(file => {
+        if (!file.type.startsWith('image/')) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const wrap = document.createElement('div');
+            wrap.className = 'w-14 h-14 rounded-xl overflow-hidden border border-gray-200 shadow-sm relative';
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'w-full h-full object-cover';
+            wrap.appendChild(img);
+            previewContainer.appendChild(wrap);
+        }
+        reader.readAsDataURL(file);
+    });
+}
+
+function handleOrderReviewSubmit(e) {
+    e.preventDefault();
+    if (ormCurrentRating === 0) {
+        alert('Please choose a star rating (1 to 5 stars).');
+        return;
+    }
+    
+    const form = e.target;
+    const formData = new FormData(form);
+    const btn = document.getElementById('ormSubmitBtn');
+    
+    btn.disabled = true;
+    btn.innerHTML = `<svg class="animate-spin w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg> Submitting...`;
+    
+    fetch('<?= BASE_URL ?>/dashboard/reviews/submit', {
+        method: 'POST',
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) {
+            // Update container in DOM
+            if (ormActiveItemData) {
+                const cid = ormActiveItemData.customizationId || '0';
+                const contId = 'review-action-container-' + ormActiveItemData.orderId + '-' + ormActiveItemData.productId + '-' + cid;
+                const container = document.getElementById(contId);
+                if (container) {
+                    const stars = '★'.repeat(ormCurrentRating);
+                    container.innerHTML = `
+                        <span class="px-2.5 py-1 bg-green-50 text-green-700 border border-green-200 rounded-lg text-xs font-bold inline-flex items-center gap-1 shadow-xs">
+                            <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                            <span>Reviewed</span>
+                            <span class="text-amber-500 font-bold ml-0.5">${stars}</span>
+                        </span>
+                        <span class="text-[10px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">Pending Verification</span>
+                    `;
+                }
+            }
+            alert(data.message || 'Review submitted successfully!');
+            closeOrderReviewModal();
+        } else {
+            alert(data.message || 'Something went wrong.');
+            btn.disabled = false;
+            btn.innerHTML = '<span>Submit Review</span>';
+        }
+    })
+    .catch(err => {
+        console.error(err);
+        alert('An error occurred while submitting your review.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>Submit Review</span>';
+    });
+}
+</script>

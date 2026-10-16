@@ -191,6 +191,8 @@ $router->get('/customize', 'App\Controllers\Storefront\FabricCustomizationContro
 $router->get('/customize/fabric/{id}', 'App\Controllers\Storefront\FabricCustomizationController@customizeWorkshop');
 $router->get('/fabrics/customize', 'App\Controllers\Storefront\FabricCustomizationController@customizeWorkshop');
 $router->get('/fabrics/customize/{id}', 'App\Controllers\Storefront\FabricCustomizationController@customizeWorkshop');
+$router->get('/fabrics/customize/checkout', 'App\Controllers\Storefront\FabricCustomizationController@checkoutPage');
+$router->post('/fabrics/customize/checkout', 'App\Controllers\Storefront\FabricCustomizationController@checkoutPage');
 $router->post('/fabrics/customization/calculate', 'App\Controllers\Storefront\FabricCustomizationController@calculateAjax');
 $router->post('/fabrics/customization/request-order', 'App\Controllers\Storefront\FabricCustomizationController@requestOrderAjax');
 $router->post('/fabrics/customization/razorpay-init', 'App\Controllers\Storefront\FabricCustomizationController@razorpayInitAjax');
@@ -537,7 +539,7 @@ $router->post('/admin/fabric-customizations/delete', 'App\Controllers\Admin\Fabr
 $router->post('/admin/fabric-customizations/toggle-status', 'App\Controllers\Admin\FabricCustomizationController@toggleStatus');
 $router->get('/admin/fabric-customizations/ajax-product-info', 'App\Controllers\Admin\FabricCustomizationController@ajaxProductInfo');
 
-// Admin Customization Labels & Templates
+// Admin Customization Labels
 $router->get('/admin/customization-labels', 'App\Controllers\Admin\CustomizationLabelController@index');
 $router->get('/admin/customization-labels/create', 'App\Controllers\Admin\CustomizationLabelController@create');
 $router->post('/admin/customization-labels/store', 'App\Controllers\Admin\CustomizationLabelController@store');

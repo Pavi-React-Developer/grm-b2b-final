@@ -378,37 +378,68 @@ function renderTable() {
         let matchedGst = 0;
 
         if (prod.variants && prod.variants.length > 0) {
-            variantsHtml = `<div class="mt-2.5 flex flex-wrap gap-1.5">`;
+            const isCustomizeMod = <?= !empty($isCustomize) ? 'true' : 'false' ?>;
             const prices = [];
-            prod.variants.forEach(v => {
-                const catGst = (parseFloat(prod.category_sgst) || 0) + (parseFloat(prod.category_cgst) || 0);
-                const gst = catGst > 0 ? catGst : ((v.total_gst !== null && v.total_gst !== undefined && v.total_gst !== '' && parseFloat(v.total_gst) > 0) 
-                    ? parseFloat(v.total_gst) 
-                    : (((parseFloat(v.sgst) || 0) + (parseFloat(v.cgst) || 0)) || (parseFloat(prod.total_gst) || 0) || ((parseFloat(prod.sgst) || 0) + (parseFloat(prod.cgst) || 0)) || 0));
-                
-                matchedGst = gst;
-                const baseVal = parseFloat(v.base_price) || 0;
-                const discVal = (v.discount_price && parseFloat(v.discount_price) > 0) ? parseFloat(v.discount_price) : null;
-                const effVal = discVal ?? baseVal;
-
-                const maxAmt = effVal;
-                const baseInclGst = baseVal;
-
-                prices.push(maxAmt);
-                const hasDiscount = discVal && discVal < baseVal;
-                variantsHtml += `
-                    <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-50 border border-gray-100 text-[11px] font-medium text-gray-600 group-hover:bg-white group-hover:border-gray-200 group-hover:shadow-sm transition-all duration-300">
-                        <span class="font-bold text-gray-800">${v.name}</span>
-                        <span class="text-gray-300">•</span>
-                        ${hasDiscount 
-                            ? `<span class="text-brand-600 font-bold">₹${maxAmt.toFixed(2)}</span> <span class="text-gray-400 line-through text-[10px]">₹${baseInclGst.toFixed(2)}</span>` 
-                            : `<span class="text-brand-600 font-bold">₹${maxAmt.toFixed(2)}</span>`}
-                        ${gst > 0 ? `<span class="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold border border-emerald-100">Incl. ${gst}% GST</span>` : ''}
-                        <span class="text-gray-400 ml-1">(${v.current_stock ?? v.inventory} in stock)</span>
-                    </div>
+            
+            if (isCustomizeMod) {
+                const totalBase = prod.variants.reduce((sum, v) => sum + (parseInt(v.base_quantity) || 2), 0);
+                variantsHtml = `
+                    <div class="mt-2.5 bg-gray-50/80 p-2.5 rounded-xl border border-gray-100">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-gray-500">Configured Size Variants & Allowed Limits:</span>
+                            <span class="text-[10px] font-semibold text-gray-400">Total Base: ${totalBase} pcs</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-wrap">
                 `;
-            });
-            variantsHtml += `</div>`;
+                prod.variants.forEach(v => {
+                    const baseQty = (v.base_quantity !== null && v.base_quantity !== undefined) ? v.base_quantity : 2;
+                    const maxQty = (v.max_quantity !== null && v.max_quantity !== undefined) ? v.max_quantity : 4;
+                    variantsHtml += `
+                        <span class="inline-flex items-center gap-1.5 text-xs font-bold bg-white text-gray-800 px-2.5 py-1 rounded-lg border border-gray-200 shadow-2xs">
+                            <span class="text-amber-800 font-black">${v.name}</span>
+                            <span class="text-gray-300">•</span>
+                            <span class="text-gray-600">Base: ${baseQty}</span>
+                            <span class="text-gray-300">|</span>
+                            <span class="text-amber-700">Max: ${maxQty} pcs</span>
+                        </span>
+                    `;
+                    const baseVal = parseFloat(v.base_price) || 0;
+                    const discVal = (v.discount_price && parseFloat(v.discount_price) > 0) ? parseFloat(v.discount_price) : null;
+                    prices.push(discVal ?? baseVal);
+                });
+                variantsHtml += `</div></div>`;
+            } else {
+                variantsHtml = `<div class="mt-2.5 flex flex-wrap gap-1.5">`;
+                prod.variants.forEach(v => {
+                    const catGst = (parseFloat(prod.category_sgst) || 0) + (parseFloat(prod.category_cgst) || 0);
+                    const gst = catGst > 0 ? catGst : ((v.total_gst !== null && v.total_gst !== undefined && v.total_gst !== '' && parseFloat(v.total_gst) > 0) 
+                        ? parseFloat(v.total_gst) 
+                        : (((parseFloat(v.sgst) || 0) + (parseFloat(v.cgst) || 0)) || (parseFloat(prod.total_gst) || 0) || ((parseFloat(prod.sgst) || 0) + (parseFloat(prod.cgst) || 0)) || 0));
+                    
+                    matchedGst = gst;
+                    const baseVal = parseFloat(v.base_price) || 0;
+                    const discVal = (v.discount_price && parseFloat(v.discount_price) > 0) ? parseFloat(v.discount_price) : null;
+                    const effVal = discVal ?? baseVal;
+
+                    const maxAmt = effVal;
+                    const baseInclGst = baseVal;
+
+                    prices.push(maxAmt);
+                    const hasDiscount = discVal && discVal < baseVal;
+                    variantsHtml += `
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-gray-50 border border-gray-100 text-[11px] font-medium text-gray-600 group-hover:bg-white group-hover:border-gray-200 group-hover:shadow-sm transition-all duration-300">
+                            <span class="font-bold text-gray-800">${v.name}</span>
+                            <span class="text-gray-300">•</span>
+                            ${hasDiscount 
+                                ? `<span class="text-brand-600 font-bold">₹${maxAmt.toFixed(2)}</span> <span class="text-gray-400 line-through text-[10px]">₹${baseInclGst.toFixed(2)}</span>` 
+                                : `<span class="text-brand-600 font-bold">₹${maxAmt.toFixed(2)}</span>`}
+                            ${gst > 0 ? `<span class="text-[9px] bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded font-bold border border-emerald-100">Incl. ${gst}% GST</span>` : ''}
+                            <span class="text-gray-400 ml-1">(${v.current_stock ?? v.inventory} in stock)</span>
+                        </div>
+                    `;
+                });
+                variantsHtml += `</div>`;
+            }
 
             if (prices.length > 0) {
                 minPrice = Math.min(...prices);

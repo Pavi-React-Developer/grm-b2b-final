@@ -600,19 +600,20 @@ class Product extends Model
 
     public function getImages(int $productId)
     {
-        $stmt = $this->db->prepare("SELECT * FROM product_images WHERE product_id = :id AND variant_id IS NULL ORDER BY is_primary DESC, id ASC");
+        $stmt = $this->db->prepare("SELECT * FROM product_images WHERE product_id = :id AND variant_id IS NULL ORDER BY is_primary DESC, sort_order ASC, id ASC");
         $stmt->execute(['id' => $productId]);
         return $stmt->fetchAll();
     }
 
-    public function addImage(int $productId, string $imagePath, bool $isPrimary = false, ?int $variantId = null)
+    public function addImage(int $productId, string $imagePath, bool $isPrimary = false, ?int $variantId = null, int $sortOrder = 0)
     {
-        $stmt = $this->db->prepare("INSERT INTO product_images (product_id, image_path, is_primary, variant_id) VALUES (:product_id, :image_path, :is_primary, :variant_id)");
+        $stmt = $this->db->prepare("INSERT INTO product_images (product_id, image_path, is_primary, variant_id, sort_order) VALUES (:product_id, :image_path, :is_primary, :variant_id, :sort_order)");
         $stmt->execute([
             'product_id' => $productId,
             'image_path' => $imagePath,
             'is_primary' => $isPrimary ? 1 : 0,
-            'variant_id' => $variantId
+            'variant_id' => $variantId,
+            'sort_order' => $sortOrder
         ]);
         return $this->db->lastInsertId();
     }
@@ -857,20 +858,21 @@ class Product extends Model
     }
 
     /**
-     * Batch fetch variants for multiple products in a SINGLE database query.
-     * Eliminates N+1 database queries when listing products in Catalog or Home.
-     *
-     * @param array $productIds List of product IDs
-     * @return array [ product_id => [ variant1, variant2, ... ] ]
+     * Batch fetch variants for multiple product IDs in a single query.
+     * Eliminates N+1 DB queries on product listings.
+     * Returns an associative array mapping productId => array of variants.
      */
     public function getInventoryVariantsForProducts(array $productIds): array
     {
-        $cleanIds = array_values(array_filter(array_map('intval', $productIds), fn($id) => $id > 0));
-        if (empty($cleanIds)) {
+        $productIds = array_values(array_filter(array_map('intval', $productIds), function($id) {
+            return $id > 0;
+        }));
+
+        if (empty($productIds)) {
             return [];
         }
 
-        $placeholders = implode(',', array_fill(0, count($cleanIds), '?'));
+        $placeholders = implode(',', array_fill(0, count($productIds), '?'));
         $sql = "
             SELECT pv.*,
                    pv.current_stock,
@@ -894,29 +896,28 @@ class Product extends Model
                    ) AS images_concat
             FROM product_variants pv
             LEFT JOIN product_images pi_all ON pi_all.variant_id = pv.id
-            WHERE pv.product_id IN ({$placeholders})
+            WHERE pv.product_id IN ($placeholders)
             GROUP BY pv.id
-            ORDER BY pv.product_id ASC, pv.id ASC
+            ORDER BY pv.id ASC
         ";
-
         $stmt = $this->db->prepare($sql);
-        $stmt->execute($cleanIds);
-        $allVariants = $stmt->fetchAll();
+        $stmt->execute($productIds);
+        $variants = $stmt->fetchAll();
 
-        $result = [];
-        foreach ($cleanIds as $pId) {
-            $result[$pId] = [];
+        $map = [];
+        foreach ($productIds as $pid) {
+            $map[$pid] = [];
         }
 
-        foreach ($allVariants as $v) {
+        foreach ($variants as $v) {
             $v['images'] = !empty($v['images_concat'])
                 ? explode('||', $v['images_concat'])
                 : [];
             unset($v['images_concat']);
-            $result[$v['product_id']][] = $v;
+            $map[$v['product_id']][] = $v;
         }
 
-        return $result;
+        return $map;
     }
 
     /**
