@@ -9,7 +9,6 @@ use App\Models\FabricCustomization;
 use App\Models\Category;
 use App\Models\SubCategory;
 use App\Models\Product;
-use App\Models\CustomizationLabel;
 use PDO;
 
 class FabricCustomizationController extends Controller
@@ -18,7 +17,6 @@ class FabricCustomizationController extends Controller
     private $categoryModel;
     private $subCategoryModel;
     private $productModel;
-    private $labelModel;
 
     public function __construct()
     {
@@ -33,32 +31,48 @@ class FabricCustomizationController extends Controller
         $this->categoryModel = new Category();
         $this->subCategoryModel = new SubCategory();
         $this->productModel = new Product();
-        $this->labelModel = new CustomizationLabel();
     }
 
     /**
-     * List all Fabric Customization Rules (Redirected to Unified Customizable Products/Fabrics)
+     * List all Fabric Customization Rules
      */
     public function index()
     {
-        $this->redirect('/admin/catalog/products?module=customize');
+        $filters = [
+            'status'        => $_GET['status'] ?? '',
+            'garment_type'  => $_GET['garment_type'] ?? '',
+            'search'        => $_GET['search'] ?? ''
+        ];
+
+        $rules = $this->model->getAllWithProductInfo($filters);
+        
+        // Calculate statistics
+        $totalRules = count($rules);
+        $activeRules = count(array_filter($rules, fn($r) => $r['status'] === 'active'));
+        $totalConfiguredFabrics = count(array_unique(array_column($rules, 'fabric_id')));
+
+        $this->render('admin/fabric_customizations/index', [
+            'title'                  => 'Fabric Customization Rules',
+            'rules'                  => $rules,
+            'filters'                => $filters,
+            'totalRules'             => $totalRules,
+            'activeRules'            => $activeRules,
+            'totalConfiguredFabrics' => $totalConfiguredFabrics
+        ], 'admin');
     }
 
     /**
-     * Show create rule form (Redirected to Unified Customizable Fabric Create)
+     * Show create rule form
      */
     public function create()
     {
         $products = $this->model->getAvailableFabricsForDropdown();
         $defaultProduct = !empty($products[0]) ? $products[0] : null;
-        $customizationLabelModel = new \App\Models\CustomizationLabel();
-        $allLabels = $customizationLabelModel->getAllActive();
         
         $this->render('admin/fabric_customizations/create', [
             'title'          => 'Add New Fabric Rule',
             'products'       => $products,
-            'defaultProduct' => $defaultProduct,
-            'allLabels'      => $allLabels
+            'defaultProduct' => $defaultProduct
         ], 'admin');
     }
 
@@ -90,8 +104,6 @@ class FabricCustomizationController extends Controller
         $deliveryBasePieces = (int)($_POST['delivery_base_pieces'] ?? 100);
         $unit = trim($_POST['unit'] ?? 'Qty');
         $status = $_POST['status'] ?? 'active';
-
-        $labelIds = array_filter(array_map('intval', $_POST['label_ids'] ?? []));
 
         // Auto-resolve fabric and program if not submitted from form
         if (!$fabricId) {
@@ -162,7 +174,7 @@ class FabricCustomizationController extends Controller
                 'status'                            => $status
             ];
 
-            $newId = $this->model->create($data, $sizes, $labelIds);
+            $newId = $this->model->create($data, $sizes);
             Session::setFlash('success', "Fabric Customization Rule saved successfully.");
             $this->redirect('/admin/fabric-customizations');
         } catch (\Exception $e) {
@@ -177,33 +189,29 @@ class FabricCustomizationController extends Controller
     public function edit()
     {
         $id = (int)($_GET['id'] ?? 0);
-        $standalone = !empty($_GET['standalone']);
-        $rule = $id > 0 ? $this->model->getById($id) : null;
-
-        if (!$id || !$rule) {
-            Session::setFlash('error', 'Fabric Rule not found.');
+        if (!$id) {
+            Session::setFlash('error', 'Invalid Fabric Rule ID.');
             $this->redirect('/admin/fabric-customizations');
             return;
         }
 
-        if (!empty($rule['fabric_id']) && !$standalone) {
-            $this->redirect('/admin/catalog/products/edit?id=' . $rule['fabric_id'] . '&module=customize');
+        $rule = $this->model->getById($id);
+        if (!$rule) {
+            Session::setFlash('error', 'Fabric Rule not found.');
+            $this->redirect('/admin/fabric-customizations');
             return;
         }
 
         $products = $this->model->getAvailableFabricsForDropdown($id);
         $categories = $this->categoryModel->getAllActive(null, 1);
         $subCategories = $this->subCategoryModel->getAllActive(1);
-        $customizationLabelModel = new \App\Models\CustomizationLabel();
-        $allLabels = $customizationLabelModel->getAllActive();
 
         $this->render('admin/fabric_customizations/edit', [
             'title'         => 'Edit Fabric Rule #' . $rule['id'],
             'rule'          => $rule,
             'products'      => $products,
             'categories'    => $categories,
-            'subCategories' => $subCategories,
-            'allLabels'     => $allLabels
+            'subCategories' => $subCategories
         ], 'admin');
     }
 
@@ -235,7 +243,6 @@ class FabricCustomizationController extends Controller
         $deliveryBasePieces = (int)($_POST['delivery_base_pieces'] ?? 100);
         $unit = trim($_POST['unit'] ?? 'Qty');
         $status = $_POST['status'] ?? 'active';
-        $labelIds = array_filter(array_map('intval', $_POST['label_ids'] ?? []));
 
         // Parse sizes array if provided
         $sizesPost = $_POST['sizes'] ?? [];
@@ -275,7 +282,7 @@ class FabricCustomizationController extends Controller
                 'status'                            => $status
             ];
 
-            $this->model->update($id, $data, $sizes, $labelIds);
+            $this->model->update($id, $data, $sizes);
             Session::setFlash('success', "Fabric Customization Rule updated successfully.");
             $this->redirect('/admin/fabric-customizations');
         } catch (\Exception $e) {
