@@ -1,12 +1,4 @@
 <div class="bg-gray-50 min-h-screen pb-12 md:pb-16">
-<?php
-    $totalCustomRevs = !empty($customizationStats['total_reviews']) ? (int)$customizationStats['total_reviews'] : 0;
-    $avgCustomRating = !empty($customizationStats['avg_rating']) ? (float)$customizationStats['avg_rating'] : 0.0;
-    $withoutCoverDiscountPct = (float)($customization['without_cover_discount_percentage'] ?? 0.0);
-    $deliveryDaysBase = (int)($customization['delivery_days'] ?? 7);
-    $deliveryPiecesBase = (int)($customization['delivery_base_pieces'] ?? 100);
-?>
-
 
     <!-- ── Breadcrumb Section (Matches Product Details & Catalog Bar Style) ── -->
     <div class="bg-white border-b border-gray-200/80 mb-5 md:mb-6">
@@ -32,190 +24,431 @@
 
     <div class="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8">
 
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            <!-- Left 7 Cols: Fabric Overview & Size Matrix -->
-            <div class="lg:col-span-7 space-y-6">
+        <?php 
+            $rawImages = !empty($customization['images']) && is_array($customization['images']) ? array_values(array_filter($customization['images'])) : [];
+            $fallbackImg = 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80';
+            $galleryList = !empty($rawImages) ? array_slice($rawImages, 0, 6) : [$fallbackImg];
+            $mainImgUrl = get_image_url($galleryList[0]);
+
+            $baseP = (float)($customization['fabric_base_price'] ?? 0);
+            $discP = (float)($customization['fabric_discount_price'] ?? 0);
+            if ($discP <= 0 && !empty($customization['fabric_price'])) {
+                $discP = (float)$customization['fabric_price'];
+            }
+            $discPercent = ($baseP > 0 && $discP > 0 && $discP < $baseP) 
+                ? round((($baseP - $discP) / $baseP) * 100) 
+                : 0;
+
+            $isWishlisted = !empty($wishlistIds) && in_array((int)$customization['fabric_id'], $wishlistIds);
+        ?>
+
+        <!-- ── Top Fabric Product Showcase Hero (Matches Screenshot Layout) ── -->
+        <div class="bg-white rounded-3xl border border-gray-100 p-5 sm:p-7 lg:p-8 shadow-xs mb-8">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
                 
-                <!-- Fabric Info Card -->
-                <div class="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 shadow-xs">
-                    <div class="flex flex-col sm:flex-row gap-6 items-start">
-                        <!-- Product Image -->
-                        <div class="w-full sm:w-44 h-44 rounded-2xl bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden flex-shrink-0 border border-gray-100 relative group shadow-sm">
-                            <?php 
-                                $rawImg = !empty($customization['primary_image']) ? get_image_url($customization['primary_image']) : (!empty($customization['images'][0]) ? get_image_url($customization['images'][0]) : '');
+                <!-- Left Column: Image Gallery (Vertical Thumbnails on Left + 3:4 Main Image on Right) -->
+                <div class="lg:col-span-6 xl:col-span-6 w-full space-y-6">
+                    <div class="flex flex-col-reverse md:flex-row gap-3 sm:gap-4 items-start w-full">
+                        
+                        <!-- Left Vertical Thumbnails Strip -->
+                        <?php if (count($galleryList) > 1): ?>
+                        <div id="fabricThumbnails" class="flex md:flex-col gap-2.5 sm:gap-3 overflow-x-auto md:overflow-y-auto max-h-[660px] xl:max-h-[720px] w-full md:w-20 shrink-0 no-scrollbar order-2 md:order-1 pb-1 md:pb-0">
+                            <?php foreach ($galleryList as $idx => $gImg): 
+                                $tUrl = get_image_url($gImg, 200, 200);
                             ?>
-                            <?php if (!empty($rawImg)): ?>
-                            <img src="<?= htmlspecialchars($rawImg) ?>" 
-                                 alt="<?= htmlspecialchars($customization['fabric_name']) ?>" 
-                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
-                            <?php else: ?>
-                            <div class="w-full h-full flex flex-col items-center justify-center p-3 text-center">
-                                <span class="text-3xl mb-1">🧵</span>
-                                <span class="text-xs font-bold text-gray-700 line-clamp-2"><?= htmlspecialchars($customization['fabric_name']) ?></span>
+                            <button type="button" 
+                                    onclick="setFabricActiveImage(<?= $idx ?>)"
+                                    onmouseenter="setFabricActiveImage(<?= $idx ?>)"
+                                    id="fabric_thumb_btn_<?= $idx ?>"
+                                    class="fabric-thumb-btn w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 aspect-square rounded-2xl bg-white overflow-hidden border-2 transition-all cursor-pointer shrink-0 <?= $idx === 0 ? 'border-[#F25996] ring-2 ring-[#F25996]/30 shadow-xs' : 'border-gray-200 hover:border-[#F25996]/50 opacity-80 hover:opacity-100' ?>">
+                                <img src="<?= htmlspecialchars($tUrl) ?>" 
+                                     alt="" 
+                                     onerror="this.src='<?= $fallbackImg ?>';" 
+                                     class="w-full h-full object-cover">
+                            </button>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endif; ?>
+
+                        <!-- Main Showcase Image Frame (3:4 aspect ratio) -->
+                        <div class="relative flex-1 w-full bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm group cursor-pointer order-1 md:order-2" onclick="openFabricModal(fabricActiveImgIndex)" title="Click to view full image">
+                            
+                            <!-- Top-Left Scallop Starburst Discount Rosette Badge (Aqua Blue) -->
+                            <?php if ($discPercent > 0 && function_exists('render_discount_starburst')): ?>
+                            <div class="absolute top-3.5 left-3.5 z-20 w-16 h-16 sm:w-20 sm:h-20 drop-shadow-md pointer-events-none transition-transform duration-300 group-hover:scale-105">
+                                <?= render_discount_starburst($discPercent, 'w-full h-full') ?>
                             </div>
-                            <?php endif; ?>
-                            <span class="absolute top-2 left-2 px-2.5 py-1 bg-[#F25996] text-white font-black text-[10px] uppercase tracking-wider rounded-md shadow-sm">
+                            <?php else: ?>
+                            <span class="absolute top-3.5 left-3.5 z-20 px-3 py-1 bg-[#F25996] text-white font-black text-[10px] uppercase tracking-wider rounded-lg shadow-sm">
                                 ✂️ Custom Ready
                             </span>
-                        </div>
+                            <?php endif; ?>
 
-                        <!-- Product Meta -->
-                        <div class="flex-1 min-w-0">
-                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-50 text-[#F25996] text-xs font-bold border border-pink-200 mb-2">
-                                <span><?= htmlspecialchars($customization['program_name']) ?></span>
-                                <span>•</span>
-                                <span><?= htmlspecialchars($customization['garment_type']) ?></span>
+                            <!-- Bottom-Right Click to Zoom Pill -->
+                            <div class="absolute bottom-3.5 right-3.5 z-20 bg-black/60 text-white text-xs px-3.5 py-1.5 rounded-full backdrop-blur-sm flex items-center gap-1.5 shadow-md pointer-events-none select-none transition-all duration-200 group-hover:bg-black/80">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7"/></svg>
+                                <span>Click to zoom</span>
                             </div>
 
-                            <h1 class="text-2xl font-black text-gray-900 font-display leading-tight mb-2">
-                                <?= htmlspecialchars($customization['fabric_name']) ?>
-                            </h1>
-
-                            <div class="flex items-center gap-4 text-xs text-gray-500 mb-4 flex-wrap">
-                                <span>SKU: <strong class="text-gray-800"><?= htmlspecialchars($customization['fabric_sku'] ?? 'N/A') ?></strong></span>
-                                <span>•</span>
-                                <span>Feature Types: <strong class="text-gray-800"><?= htmlspecialchars($customization['feeding_type']) ?></strong></span>
-                                <span>•</span>
-                                <span>Available Stock: <strong class="text-emerald-700 font-bold"><?= (int)$customization['fabric_stock'] ?> <?= htmlspecialchars($customization['unit']) ?></strong></span>
-                            </div>
-
-                            <div class="flex items-baseline gap-2 flex-wrap">
-                                <?php if (!empty($customization['fabric_discount_price']) && (float)$customization['fabric_discount_price'] > 0 && (float)$customization['fabric_discount_price'] < (float)$customization['fabric_base_price']): ?>
-                                    <span class="text-2xl font-black text-gray-900">
-                                        ₹<?= number_format($customization['fabric_discount_price'], 2) ?>
-                                    </span>
-                                    <span class="text-sm font-semibold text-gray-400 line-through">
-                                        ₹<?= number_format($customization['fabric_base_price'], 2) ?>
-                                    </span>
-                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-600 border border-rose-200">
-                                        <?= round((((float)$customization['fabric_base_price'] - (float)$customization['fabric_discount_price']) / (float)$customization['fabric_base_price']) * 100) ?>% OFF
-                                    </span>
-                                <?php else: ?>
-                                    <span class="text-2xl font-black text-gray-900">
-                                        ₹<?= number_format($customization['fabric_price'], 2) ?>
-                                    </span>
-                                <?php endif; ?>
-                                <span class="text-xs font-semibold text-gray-500">per <?= htmlspecialchars($customization['unit'] ?? 'Qty') ?> (Wholesale Rate)</span>
+                            <!-- 3:4 Aspect Ratio Portrait Container -->
+                            <div class="w-full overflow-hidden flex items-center justify-center bg-gray-50/40 rounded-3xl" style="aspect-ratio: 3 / 4; min-height: 540px; max-height: 720px; width: 100%;">
+                                <img id="fabricMainImage" 
+                                     src="<?= htmlspecialchars($mainImgUrl) ?>" 
+                                     alt="<?= htmlspecialchars($customization['fabric_name']) ?>" 
+                                     onerror="this.onerror=null; this.src='<?= $fallbackImg ?>';"
+                                     class="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
+                                     style="width: 100%; height: 100%; object-fit: cover; display: block;">
                             </div>
                         </div>
+
                     </div>
 
-                </div>
-
-                <!-- Size & Piece Distribution Matrix (Fabric Rules Matrix) -->
-                <div class="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 shadow-xs space-y-6">
-                    <div>
-                        <div class="flex items-center justify-between">
-                            <h2 class="text-lg font-bold text-gray-900 font-display flex items-center gap-2">
-                                <span>📏 Select Sizes & Stitch Pieces</span>
-                            </h2>
-                            <span class="text-xs font-semibold px-2.5 py-1 bg-pink-50 text-[#F25996] rounded-full border border-pink-200">
-                                Step 1 of 2
+                    <!-- Fabric Description & Details Card (Admin Added Description) -->
+                    <div class="bg-gradient-to-br from-pink-50/30 via-white to-gray-50/50 rounded-3xl p-5 sm:p-6 border border-gray-200/90 shadow-2xs space-y-4">
+                        <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                            <h3 class="text-xs sm:text-sm font-black text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                                <span>📄 Fabric Description &amp; Details</span>
+                            </h3>
+                            <span class="text-[10px] font-black px-2.5 py-0.5 rounded-full bg-pink-50 text-[#F25996] border border-pink-200">
+                                Fabric Details
                             </span>
                         </div>
-                        <p class="text-xs text-gray-500 mt-1">
-                            Choose how many pieces you would like to stitch for each available size. Fabric consumption is automatically computed per piece based on admin engineering rules.
-                        </p>
-                    </div>
 
-                    <!-- Fabric Quantity (Multiplier) Section -->
-                    <div class="bg-gradient-to-r from-pink-50/80 via-rose-50/50 to-pink-50/80 p-4 rounded-2xl border border-pink-200 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 rounded-xl bg-[#F25996] text-white font-black text-lg flex items-center justify-center shadow-xs flex-shrink-0">
-                                📦
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2">
-                                    <span>Fabric Quantity / Sets</span>
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-[#db2777] border border-pink-300/70" id="fabricQtyBadge">
-                                        1 Set (1x)
-                                    </span>
-                                </h4>
-                                <p class="text-xs text-gray-500">Default quantities, min requirements, and maximum limits scale automatically for the chosen fabric quantity.</p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3 flex-shrink-0">
-                            <div class="inline-flex items-center border-2 border-[#F25996] rounded-full bg-white px-2 py-0.5 shadow-xs">
-                                <button type="button" onclick="adjustFabricMultiplier(-1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-lg text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
-                                    -
-                                </button>
-                                <div class="h-4 w-px bg-pink-200 mx-1"></div>
-                                <input type="number" id="fabric_multiplier" value="1" min="1" max="999" oninput="onFabricMultiplierChange(this)" class="w-12 h-7 sm:h-8 text-center font-black text-sm sm:text-base text-[#F25996] bg-transparent focus:outline-none">
-                                <div class="h-4 w-px bg-pink-200 mx-1"></div>
-                                <button type="button" onclick="adjustFabricMultiplier(1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-lg text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
-                                    +
-                                </button>
-                            </div>
+                        <!-- Admin Added Description -->
+                        <div class="text-xs sm:text-sm text-gray-700 leading-relaxed">
+                            <?php if (!empty($customization['fabric_description'])): ?>
+                                <div class="text-gray-700 leading-relaxed whitespace-pre-line bg-white p-4 rounded-2xl border border-gray-100 shadow-2xs text-xs sm:text-sm">
+                                    <?= nl2br(htmlspecialchars(trim($customization['fabric_description']))) ?>
+                                </div>
+                            <?php else: ?>
+                                <p class="text-xs text-gray-400 italic bg-white p-4 rounded-2xl border border-gray-100">No description provided for this fabric.</p>
+                            <?php endif; ?>
                         </div>
                     </div>
-
-                    <!-- Dynamic Fabric Set Containers List -->
-                    <div id="fabricSetsContainer" class="space-y-6">
-                        <!-- Containers are dynamically rendered by JavaScript based on Fabric Quantity / Sets -->
-                    </div>
-
                 </div>
 
-                <!-- Customization Style Labels Quantity Allocation (Step 2) -->
-                <?php if (!empty($customization['labels'])): ?>
-                    <div class="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 shadow-xs space-y-5">
-                        <div class="border-b border-gray-100 pb-3">
-                            <div>
-                                <h2 class="text-base font-bold text-gray-900 font-display flex items-center gap-2">
-                                    <span>✂️ Customization Style & Label Allocation</span>
-                                </h2>
-                                <p class="text-xs text-gray-500 mt-0.5">
-                                    Select the style label directly in each Fabric Set container above. Total pieces from each set are allocated to its chosen style.
-                                </p>
+                <!-- Right Column: Product Details & Step 1 Sizing Matrix -->
+                <div class="lg:col-span-6 xl:col-span-6 flex flex-col justify-start space-y-4">
+                    
+                    <!-- Category / Program Pill Badge -->
+                    <div class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-pink-50 text-[#F25996] text-xs font-bold border border-pink-100 self-start">
+                        <span><?= htmlspecialchars($customization['fabric_name']) ?> | Customization</span>
+                        <span>•</span>
+                        <span><?= htmlspecialchars($customization['garment_type'] ?? 'Custom Garment') ?></span>
+                    </div>
+
+                    <!-- Title -->
+                    <h1 class="text-2xl sm:text-3xl font-black text-gray-900 font-display tracking-tight leading-tight">
+                        <?= htmlspecialchars($customization['fabric_name']) ?>
+                    </h1>
+
+                    <!-- Meta: SKU -->
+                    <div class="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
+                        <span>SKU: <strong class="text-gray-800"><?= htmlspecialchars($customization['fabric_sku'] ?? 'N/A') ?></strong></span>
+                    </div>
+
+                    <!-- Star Rating Row -->
+                    <?php
+                        $avgCustomRating = !empty($customizationStats['avg_rating']) ? (float)$customizationStats['avg_rating'] : 0.0;
+                        $totalCustomRevs = !empty($customizationStats['total_reviews']) ? (int)$customizationStats['total_reviews'] : 0;
+                    ?>
+                    <div class="flex items-center gap-2">
+                        <div class="flex">
+                            <?php for($i=1; $i<=5; $i++): ?>
+                            <svg class="w-4 h-4 <?= ($totalCustomRevs > 0 && $i <= round($avgCustomRating)) ? 'text-amber-400 fill-current' : 'text-gray-200 fill-current' ?>" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                            <?php endfor; ?>
+                        </div>
+                        <?php if ($totalCustomRevs > 0): ?>
+                            <span class="text-xs font-bold text-gray-800"><?= number_format($avgCustomRating, 1) ?></span>
+                            <a href="#customReviewsSection" class="text-xs text-[#F25996] hover:underline font-semibold">
+                                (<?= $totalCustomRevs ?> <?= $totalCustomRevs === 1 ? 'Review' : 'Reviews' ?>)
+                            </a>
+                        <?php else: ?>
+                            <span class="text-xs font-semibold text-gray-400">Not rated yet</span>
+                            <a href="#customReviewsSection" class="text-xs text-[#F25996] hover:underline font-semibold">
+                                (No reviews yet)
+                            </a>
+                        <?php endif; ?>
+                    </div>
+
+                    <!-- Available Stock (in Emerald Green bold) -->
+                    <div class="text-sm font-bold text-emerald-600 flex items-center gap-1.5">
+                        <span>Available Stock:</span>
+                        <span class="text-emerald-700 font-extrabold"><?= number_format((int)$customization['fabric_stock']) ?> Qty</span>
+                    </div>
+
+                    <!-- Price Block -->
+                    <div class="bg-gradient-to-r from-pink-50/70 via-rose-50/30 to-white p-4 sm:p-5 rounded-2xl border border-pink-100 flex items-baseline gap-3 flex-wrap">
+                        <span class="text-3xl sm:text-4xl font-black text-gray-900">
+                            ₹<?= number_format($discP, 2) ?>
+                        </span>
+                        <?php if ($discPercent > 0): ?>
+                        <span class="text-base font-semibold text-gray-400 line-through">
+                            ₹<?= number_format($baseP, 2) ?>
+                        </span>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-md bg-rose-50 text-rose-600 border border-rose-200">
+                            <?= $discPercent ?>% OFF
+                        </span>
+                        <?php endif; ?>
+                        <span class="text-xs font-semibold text-gray-500">per <?= htmlspecialchars($customization['unit'] ?? 'Quantity') ?> (Wholesale Rate)</span>
+                    </div>
+
+                    <!-- Step 1: Custom Stitching & Sizing Workshop -->
+                    <div class="pt-4 border-t border-gray-100 space-y-5">
+                        <div>
+                            <div class="flex items-center justify-between">
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900 font-display flex items-center gap-2">
+                                    <span>📏 Select Sizes & Stitch Pieces</span>
+                                </h3>
+                                <span class="text-xs font-semibold px-2.5 py-1 bg-pink-50 text-[#F25996] rounded-full border border-pink-200">
+                                    Step 1 of 2
+                                </span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">
+                                Choose how many pieces you would like to stitch for each available size. Fabric consumption is automatically computed per piece based on admin engineering rules.
+                            </p>
+                        </div>
+
+                        <!-- Fabric Quantity (Multiplier) Section -->
+                        <div class="bg-gradient-to-r from-pink-50/80 via-rose-50/50 to-pink-50/80 p-3.5 sm:p-4 rounded-2xl border border-pink-200 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 shadow-2xs">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-[#F25996] text-white font-black text-lg flex items-center justify-center shadow-xs shrink-0">
+                                    📦
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2 flex-wrap">
+                                        <span>Fabric Quantity / Sets</span>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-[#db2777] border border-pink-300/70" id="fabricQtyBadge">
+                                            1 Set (1x)
+                                        </span>
+                                        <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-white text-[#F25996] border border-pink-300 shadow-2xs" id="fabricRequiredBadge">
+                                            Required: <strong id="fabricRequiredPcs"><?= (int)$customization['minimum_pieces'] ?> Pcs</strong> (Max: <strong id="fabricMaxPcs"><?= (int)($customization['maximum_pieces'] ?? ($customization['minimum_pieces'] * 20)) ?> Pcs</strong>)
+                                        </span>
+                                    </h4>
+                                    <p class="text-[11px] text-gray-500">Limits scale automatically for the chosen quantity.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3 shrink-0">
+                                <div class="inline-flex items-center border-2 border-[#F25996] rounded-full bg-white px-2 py-0.5 shadow-xs">
+                                    <button type="button" onclick="adjustFabricMultiplier(-1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-lg text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
+                                        -
+                                    </button>
+                                    <div class="h-4 w-px bg-pink-200 mx-1"></div>
+                                    <input type="number" id="fabric_multiplier" value="1" min="1" max="999" oninput="onFabricMultiplierChange(this)" class="w-12 h-7 sm:h-8 text-center font-black text-sm sm:text-base text-[#F25996] bg-transparent focus:outline-none">
+                                    <div class="h-4 w-px bg-pink-200 mx-1"></div>
+                                    <button type="button" onclick="adjustFabricMultiplier(1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-lg text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
+                                        +
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Pieces Allocation Tracker Banner -->
-                        <div class="bg-gradient-to-r from-pink-50/70 via-rose-50/40 to-pink-50/70 p-3.5 rounded-2xl border border-pink-200/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-gray-700">Total Stitched Pieces:</span>
-                                <span class="font-black text-sm text-gray-900" id="labelTrackerTotalRequired">0 Pcs</span>
+                        <!-- Interactive Size Variant Buttons Grid -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2.5">
+                                <label class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
+                                    <span>1. Choose Size Variants:</span>
+                                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-pink-50 text-[#F25996] font-bold border border-pink-200">Click to Select</span>
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="selectAllVariants()" class="text-xs font-bold text-[#F25996] hover:underline cursor-pointer">Select All</button>
+                                    <span class="text-gray-300">•</span>
+                                    <button type="button" onclick="clearAllVariants()" class="text-xs font-bold text-gray-500 hover:text-red-500 cursor-pointer">Clear</button>
+                                </div>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <span class="font-bold text-gray-700">Allocated to Styles:</span>
-                                <span class="font-black text-sm text-[#F25996]" id="labelTrackerTotalAllocated">0 Pcs</span>
-                            </div>
-                            <div id="labelTrackerUnassignedContainer" class="hidden items-center gap-2">
-                                <span class="font-bold text-amber-800">Unassigned:</span>
-                                <span class="font-black text-sm text-amber-600" id="labelTrackerTotalUnassigned">0 Pcs</span>
-                            </div>
-                            <div id="labelTrackerBadge" class="px-2.5 py-1 rounded-lg font-bold text-[11px] bg-gray-100 text-gray-600 border border-gray-200">
-                                Select sizes above
+
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-3" id="variantButtonsGrid">
+                                <?php if (!empty($customization['sizes'])): ?>
+                                    <?php foreach ($customization['sizes'] as $sz): 
+                                        $baseQty = isset($sz['base_quantity']) ? (int)$sz['base_quantity'] : 2;
+                                        $maxQty = isset($sz['max_quantity']) && (int)$sz['max_quantity'] > 0 ? (int)$sz['max_quantity'] : 4;
+                                        $fabricPricePerMeter = (float)($customization['fabric_price'] ?? 0);
+                                        $consumptionRate = (float)($sz['fabric_consumption'] ?? 1);
+                                        $pricePerPiece = round($fabricPricePerMeter * $consumptionRate, 2);
+                                    ?>
+                                        <button type="button" 
+                                                id="btn_size_<?= htmlspecialchars($sz['size_name']) ?>"
+                                                onclick="toggleSizeVariant('<?= htmlspecialchars($sz['size_name']) ?>')"
+                                                data-size="<?= htmlspecialchars($sz['size_name']) ?>"
+                                                data-base-qty="<?= $baseQty ?>"
+                                                data-base-max="<?= $maxQty ?>"
+                                                data-price-per-pc="<?= $pricePerPiece ?>"
+                                                data-consumption="<?= $consumptionRate ?>"
+                                                class="variant-btn relative p-3 rounded-2xl border-2 transition-all text-left flex flex-col justify-between group cursor-pointer border-gray-200 bg-white hover:border-pink-300 hover:shadow-xs">
+                                            
+                                            <!-- Top: Size Badge & Check Icon -->
+                                            <div class="flex items-center justify-between mb-1.5">
+                                                <span class="w-7 h-7 rounded-xl bg-pink-50 text-[#F25996] font-black text-xs flex items-center justify-center border border-pink-200 group-hover:scale-105 transition-transform">
+                                                    <?= htmlspecialchars($sz['size_name']) ?>
+                                                </span>
+                                                <span class="check-icon w-4.5 h-4.5 rounded-full border border-gray-300 flex items-center justify-center text-[9px] text-transparent group-hover:border-pink-400 font-bold transition-all">
+                                                    ✓
+                                                </span>
+                                            </div>
+
+                                            <!-- Price Per Piece -->
+                                            <div class="text-xs font-bold text-gray-900 mb-0.5">
+                                                ₹<?= number_format($pricePerPiece, 2) ?><span class="text-[10px] text-gray-500 font-normal">/pc</span>
+                                            </div>
+
+                                            <!-- Base & Max Info -->
+                                            <div class="text-[10px] text-gray-500 space-y-0.5 border-t border-gray-100 pt-1 mt-1">
+                                                <div class="flex items-center justify-between">
+                                                    <span>Required:</span>
+                                                    <strong class="text-[#F25996] font-bold" id="btn_range_label_<?= htmlspecialchars($sz['size_name']) ?>"><?= $baseQty ?> – <?= $maxQty ?> pcs</strong>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </div>
                         </div>
 
-                        <!-- Live Label Allocation Cards List -->
-                        <div class="space-y-3" id="labelsAllocationOverviewList">
-                            <!-- Populated dynamically by updateLabelAllocationOverview() -->
+                        <!-- Active Size Quantity Adjusters Section -->
+                        <div id="activeSizesSection" class="space-y-2.5 pt-2 border-t border-gray-100">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs font-bold text-gray-700">
+                                <span class="uppercase tracking-wider">2. Selected Size Quantities:</span>
+                                <span class="text-[#F25996] font-medium text-[11px]" id="activeVariantNotice"></span>
+                            </div>
+
+                            <div class="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden bg-gray-50/50" id="selectedSizesSteppersList">
+                                <!-- Empty State Placeholder when no variant selected -->
+                                <div id="emptyVariantsPlaceholder" class="p-5 sm:p-6 text-center bg-white flex flex-col items-center justify-center gap-2">
+                                    <div class="w-9 h-9 rounded-full bg-pink-50 text-[#F25996] flex items-center justify-center text-base">
+                                        👆
+                                    </div>
+                                    <p class="text-xs font-bold text-gray-700">No Size Variants Selected</p>
+                                    <p class="text-[11px] text-gray-500 max-w-sm">Click on any size variant buttons above to choose the sizes and pieces you want to customize.</p>
+                                </div>
+
+                                <?php if (!empty($customization['sizes'])): ?>
+                                    <?php foreach ($customization['sizes'] as $sz): 
+                                        $baseQty = isset($sz['base_quantity']) ? (int)$sz['base_quantity'] : 2;
+                                        $maxQty = isset($sz['max_quantity']) && (int)$sz['max_quantity'] > 0 ? (int)$sz['max_quantity'] : 4;
+                                        $fabricPricePerMeter = (float)($customization['fabric_price'] ?? 0);
+                                        $consumptionRate = (float)($sz['fabric_consumption'] ?? 1);
+                                        $pricePerPiece = round($fabricPricePerMeter * $consumptionRate, 2);
+                                    ?>
+                                        <div id="row_size_<?= htmlspecialchars($sz['size_name']) ?>" class="size-row p-3.5 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-pink-50/30 transition-colors hidden">
+                                            
+                                            <!-- Size Info -->
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-9 h-9 rounded-xl bg-pink-100 text-[#F25996] font-black text-xs flex items-center justify-center border border-pink-200 shrink-0">
+                                                    <?= htmlspecialchars($sz['size_name']) ?>
+                                                </div>
+                                                <div>
+                                                    <div class="font-bold text-xs sm:text-sm text-gray-900 flex items-center gap-2 flex-wrap">
+                                                        <span>Size <?= htmlspecialchars($sz['size_name']) ?></span>
+                                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-[#db2777] border border-pink-200" id="range_label_<?= htmlspecialchars($sz['size_name']) ?>">
+                                                            Required: <?= $baseQty ?> pcs (Max: <?= $maxQty ?> pcs)
+                                                        </span>
+                                                    </div>
+                                                    <div class="text-[11px] text-gray-500 mt-0.5">
+                                                        Rate: <strong class="text-green-700">₹<?= number_format($pricePerPiece, 2) ?>/pc</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Stepper & Subtotal & Delete Action -->
+                                            <div class="flex items-center gap-2.5 sm:gap-3">
+                                                <div class="inline-flex items-center border-2 border-[#F25996] rounded-full bg-white px-1.5 py-0.5 shadow-xs">
+                                                    <button type="button" onclick="adjustQty('<?= htmlspecialchars($sz['size_name']) ?>', -1)" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-black text-base text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
+                                                        -
+                                                    </button>
+                                                    <div class="h-3.5 w-px bg-pink-200 mx-1"></div>
+                                                    <input type="number" id="qty_<?= htmlspecialchars($sz['size_name']) ?>" data-size="<?= htmlspecialchars($sz['size_name']) ?>" data-rate="<?= (float)$sz['fabric_consumption'] ?>" data-price-per-pc="<?= $pricePerPiece ?>" data-base-qty="<?= $baseQty ?>" data-base-max="<?= $maxQty ?>" data-min="<?= $baseQty ?>" data-max="<?= $maxQty ?>" value="0" min="<?= $baseQty ?>" max="<?= $maxQty ?>" oninput="validateAndRecalc(this)" class="size-qty-input w-10 sm:w-11 h-6 sm:h-7 text-center font-black text-xs sm:text-sm text-[#F25996] bg-transparent focus:outline-none">
+                                                    <div class="h-3.5 w-px bg-pink-200 mx-1"></div>
+                                                    <button type="button" onclick="adjustQty('<?= htmlspecialchars($sz['size_name']) ?>', 1)" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-black text-base text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
+                                                        +
+                                                    </button>
+                                                </div>
+
+                                                <!-- Size Subtotal Gauge -->
+                                                <div class="text-right min-w-[65px]">
+                                                    <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block">Subtotal</span>
+                                                    <span class="text-xs font-bold text-gray-800" id="sub_<?= htmlspecialchars($sz['size_name']) ?>">
+                                                         0 Pcs
+                                                    </span>
+                                                    <span class="text-[10px] font-bold text-green-700 block" id="price_sub_<?= htmlspecialchars($sz['size_name']) ?>">
+                                                        ₹0.00
+                                                    </span>
+                                                </div>
+
+                                                <!-- Delete / Remove Size Button -->
+                                                <button type="button" 
+                                                        onclick="removeSizeVariant('<?= htmlspecialchars($sz['size_name']) ?>')" 
+                                                        title="Remove size <?= htmlspecialchars($sz['size_name']) ?>"
+                                                        class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gray-50 hover:bg-rose-50 text-gray-400 hover:text-rose-600 flex items-center justify-center transition-all cursor-pointer border border-gray-200 hover:border-rose-200 group/del shrink-0">
+                                                    <svg class="w-3.5 h-3.5 transition-transform group-hover/del:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                        </div>
+                                    <?php endforeach; ?>
+                                <?php else: ?>
+                                    <div class="p-6 text-center text-sm text-gray-500 italic">No sizes configured for this fabric.</div>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                    <!-- Packaging Cover Option Selection -->
+                    <div class="mt-5 bg-gradient-to-r from-pink-50/60 via-purple-50/30 to-pink-50/60 p-4 rounded-2xl border border-pink-100 space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-bold uppercase tracking-wider text-gray-800 flex items-center gap-1.5">
+                                <span>Packaging Type:</span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-100 text-[#F25996]">Choose Cover</span>
+                            </label>
+                            <?php if ((float)($customization['without_cover_discount_percentage'] ?? 0) > 0): ?>
+                                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    Save <?= number_format($customization['without_cover_discount_percentage'], 1) ?>% without cover
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <!-- With Cover Option -->
+                            <button type="button" 
+                                    id="optWithCover" 
+                                    onclick="selectPackagingOption('with_cover')"
+                                    class="packaging-opt-btn p-3 rounded-xl border-2 text-left transition-all cursor-pointer border-[#F25996] bg-white ring-2 ring-[#F25996]/20 shadow-xs">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-black text-gray-900 flex items-center gap-1">
+                                        <span>🛍️ With Cover</span>
+                                    </span>
+                                    <span class="pkg-check w-4 h-4 rounded-full bg-[#F25996] text-white flex items-center justify-center text-[10px] font-bold">✓</span>
+                                </div>
+                                <p class="text-[10px] text-gray-500 leading-tight">Individual protective garment poly cover packing.</p>
+                                <span class="inline-block mt-1 text-[9px] font-bold text-gray-700 bg-gray-100 px-1.5 py-0.5 rounded">Standard Rate</span>
+                            </button>
+
+                            <!-- Without Cover Option -->
+                            <button type="button" 
+                                    id="optWithoutCover" 
+                                    onclick="selectPackagingOption('without_cover')"
+                                    class="packaging-opt-btn p-3 rounded-xl border-2 text-left transition-all cursor-pointer border-gray-200 bg-white hover:border-[#F25996]/50">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-xs font-black text-gray-900 flex items-center gap-1">
+                                        <span>📦 Without Cover</span>
+                                    </span>
+                                    <span class="pkg-check w-4 h-4 rounded-full border border-gray-300 text-transparent flex items-center justify-center text-[10px] font-bold">✓</span>
+                                </div>
+                                <p class="text-[10px] text-gray-500 leading-tight">Bulk loose packing directly in carton.</p>
+                                <?php if ((float)($customization['without_cover_discount_percentage'] ?? 0) > 0): ?>
+                                    <span class="inline-block mt-1 text-[9px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200">
+                                        -<?= number_format($customization['without_cover_discount_percentage'], 1) ?>% Off
+                                    </span>
+                                <?php else: ?>
+                                    <span class="inline-block mt-1 text-[9px] font-bold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Standard</span>
+                                <?php endif; ?>
+                            </button>
                         </div>
                     </div>
-                <?php endif; ?>
-
-                <!-- Delivery Address & Special Instructions removed as requested -->
-
-            </div>
-
-            <!-- Right 5 Cols: Live Summary & 2 Action Paths -->
-            <div class="lg:col-span-5 lg:sticky lg:top-24 space-y-6">
-                
-                <div class="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 shadow-lg relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-32 h-32 bg-[#F25996]/10 rounded-full blur-2xl pointer-events-none"></div>
-
-                    <h3 class="text-xs sm:text-sm font-bold text-gray-900 font-display uppercase tracking-wider border-b border-gray-100 pb-3 mb-4 flex items-center justify-between gap-2">
-                        <span class="truncate">Fabric Consumption & Bill</span>
-                        <span class="text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 whitespace-nowrap" id="liveStatusBadge">
-                            Live Calc
-                        </span>
-                    </h3>
 
                     <!-- Piece Count & Constraint Tracker -->
-                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 mb-5 space-y-2">
+                    <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-2">
                         <div class="flex items-center justify-between text-xs">
                             <span class="font-bold text-gray-600">Total Stitch Pieces:</span>
                             <span class="font-black text-sm text-gray-900" id="summaryTotalPieces">0 Pcs</span>
@@ -227,145 +460,80 @@
                         </div>
 
                         <div class="flex items-center justify-between text-[11px] text-gray-500" id="pieceConstraintText">
-                            <span>Required to Enable Payment: <strong class="text-gray-900"><?= (int)$customization['minimum_pieces'] ?> Pcs</strong> <span class="text-gray-400 font-normal">(<?= (int)$customization['minimum_pieces'] ?>/set)</span></span>
-                            <span>Max Allowed: <strong class="text-gray-900"><?= (int)$customization['minimum_pieces'] ?> Pcs</strong></span>
+                            <span>Min to Enable Checkout: <?= (int)$customization['minimum_pieces'] ?> Pcs</span>
+                            <span>Max Allowed: <?= (int)($customization['maximum_pieces'] ?? ($customization['minimum_pieces'] * 20)) ?> Pcs</span>
                         </div>
                     </div>
 
-                    <!-- Fabric Calculations Metric breakdown -->
-                    <div class="space-y-3 text-sm pb-5 border-b border-gray-100">
-                        <div class="flex items-center justify-between text-gray-600">
-                            <span>Base Fabric Needed:</span>
-                            <span class="font-bold text-gray-900" id="summaryBaseConsumption">0.00 <?= htmlspecialchars($customization['unit']) ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-gray-600">
-                            <span>Wastage Buffer (<?= number_format($customization['wastage_percentage'], 1) ?>%):</span>
-                            <span class="font-bold text-[#F25996]" id="summaryWastageAmount">+0.00 <?= htmlspecialchars($customization['unit']) ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-gray-800 font-bold bg-pink-50/60 p-2.5 rounded-xl border border-pink-100">
-                            <span class="text-[#db2777]">Total Required Fabric:</span>
-                            <span class="text-[#db2777] font-black text-base" id="summaryRequiredFabric">0.00 <?= htmlspecialchars($customization['unit']) ?></span>
-                        </div>
-                        <div class="flex items-center justify-between text-xs text-gray-500">
-                            <span>Fabric Stock Available:</span>
-                            <span class="font-bold text-gray-700" id="summaryStockDisplay"><?= (int)$customization['fabric_stock'] ?> <?= htmlspecialchars($customization['unit']) ?></span>
-                        </div>
-                    </div>
-
-                    
-                    <!-- Packaging Selection Option (With Cover vs Without Cover) -->
-                    <div class="space-y-2 mb-4">
-                        <label class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center justify-between">
-                            <span>Packaging Option</span>
-                            <?php if ($withoutCoverDiscountPct > 0): ?>
-                            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
-                                Save <?= number_format($withoutCoverDiscountPct, 1) ?>% without cover
+                    <!-- Live Summary Highlights (Compact Card) -->
+                    <div class="bg-gradient-to-br from-pink-50/60 to-purple-50/30 p-4 rounded-2xl border border-pink-100 space-y-2.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-gray-600 font-medium">Calculation Status:</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0 whitespace-nowrap" id="liveStatusBadge">
+                                Live Ready
                             </span>
-                            <?php endif; ?>
-                        </label>
-                        <div class="grid grid-cols-2 gap-2.5">
-                            <button type="button" 
-                                    id="optWithCover"
-                                    onclick="selectPackagingOption('with_cover')"
-                                    class="packaging-opt-btn p-3 rounded-xl border-2 text-left transition-all cursor-pointer border-[#F25996] bg-white ring-2 ring-[#F25996]/20 shadow-xs">
-                                <div class="flex items-center justify-between mb-1">
-                                    <span class="text-xs font-bold text-gray-900">With Cover</span>
-                                    <span class="pkg-check w-4 h-4 rounded-full bg-[#F25996] text-white flex items-center justify-center text-[10px] font-bold">✓</span>
-                                </div>
-                                <p class="text-[10px] text-gray-500">Standard packaging</p>
-                            </button>
-                            <button type="button" 
-                                    id="optWithoutCover"
-                                    onclick="selectPackagingOption('without_cover')"
-                                    class="packaging-opt-btn p-3 rounded-xl border-2 text-left transition-all cursor-pointer border-gray-200 bg-white hover:border-[#F25996]/50">
-                                <div class="flex items-center justify-between mb-1">
-                                    <span class="text-xs font-bold text-gray-900">Without Cover</span>
-                                    <span class="pkg-check w-4 h-4 rounded-full border border-gray-300 text-transparent flex items-center justify-center text-[10px] font-bold">✓</span>
-                                </div>
-                                <?php if ($withoutCoverDiscountPct > 0): ?>
-                                    <p class="text-[10px] font-bold text-emerald-700">-<?= number_format($withoutCoverDiscountPct, 1) ?>% Off</p>
-                                <?php else: ?>
-                                    <p class="text-[10px] text-gray-500">Eco packaging</p>
-                                <?php endif; ?>
-                            </button>
                         </div>
-                    </div>
-
-                    <!-- Dynamic Delivery Schedule Pill -->
-                    <div id="deliverySchedulePill" class="p-3 bg-gradient-to-r from-amber-50/60 to-orange-50/40 border border-amber-200/80 rounded-2xl flex items-center justify-between text-xs mb-3 shadow-2xs">
-                        <div class="flex items-center gap-2">
-                            <span class="text-base">🚚</span>
-                            <div>
-                                <strong class="font-bold text-gray-800 block text-[11px]">Dynamic Delivery Schedule</strong>
-                                <span class="text-[10px] text-gray-500" id="deliveryExpectedDate">Est: <?= $deliveryDaysBase ?> Days for <?= $deliveryPiecesBase ?> pcs</span>
-                            </div>
+                        <div class="flex items-center justify-between text-xs text-gray-600">
+                            <span>Total Required Fabric:</span>
+                            <span class="font-bold text-gray-900" id="summaryRequiredFabric">0.00 <?= htmlspecialchars($customization['unit'] ?? 'Meters') ?></span>
                         </div>
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200" id="deliveryDaysBadge">
-                            <?= $deliveryDaysBase ?> Days
-                        </span>
-                    </div>
-<!-- Pricing Breakdown -->
-                    <div class="space-y-3 pt-5 pb-6 border-b border-gray-100 text-sm">
-                        <div class="flex items-center justify-between text-gray-600">
-                            <span>Fabric Cost (@ ₹<?= number_format($customization['fabric_price'], 2) ?>/<?= htmlspecialchars($customization['unit']) ?>):</span>
-                            <span class="font-bold text-gray-900" id="summaryFabricCost">₹0.00</span>
+                        <div class="flex items-center justify-between text-xs text-gray-600">
+                            <span>Fabric Stock Available:</span>
+                            <span class="font-bold text-emerald-700" id="summaryStockDisplay"><?= (int)$customization['fabric_stock'] ?> Qty</span>
                         </div>
                         
-                        <!-- Without Cover Discount Row -->
-                        <div id="packagingDiscountRow" class="hidden items-center justify-between text-emerald-700 font-semibold text-xs">
-                            <span class="flex items-center gap-1">
-                                <span>🛍️ Without Cover Discount:</span>
-                                <span class="text-[10px] px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 font-bold">-<?= number_format($withoutCoverDiscountPct, 1) ?>%</span>
-                            </span>
-                            <span class="font-bold" id="summaryCoverDiscount">-₹0.00</span>
-                        </div>
-<div class="flex items-center justify-between text-gray-600">
-                            <span class="flex items-center gap-1.5">
-                                <span>GST (5% Included):</span>
-                                <span class="text-[10px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-200">Included in Price</span>
-                            </span>
-                            <span class="font-bold text-gray-700" id="summaryGstAmount">₹0.00</span>
-                        </div>
-                        <div class="flex items-center justify-between text-base font-black text-gray-900 pt-2">
-                            <span>Estimated Grand Total:</span>
+                        <!-- Hidden elements to preserve ID bindings for JS calculations -->
+                        <span id="summaryBaseConsumption" class="hidden">0.00</span>
+                        <span id="summaryWastageAmount" class="hidden">+0.00</span>
+                        <span id="summaryFabricCost" class="hidden">₹0.00</span>
+                        <div id="packagingDiscountRow" class="hidden"><span id="summaryCoverDiscount"></span></div>
+                        <span id="summaryGstAmount" class="hidden">₹0.00</span>
+                        <span id="deliveryDaysBadge" class="hidden"></span>
+                        <span id="deliveryExpectedDate" class="hidden"></span>
+                        <span id="deliveryScaleNote" class="hidden"></span>
+                        <input type="hidden" id="shippingAddressInput" value="">
+                        <input type="hidden" id="orderNotesInput" value="">
+
+                        <div class="flex items-center justify-between pt-2.5 border-t border-pink-200/60">
+                            <div>
+                                <span class="text-xs font-bold text-gray-800 block">Estimated Subtotal:</span>
+                                <span class="text-[10px] text-gray-400">Includes 5% GST &amp; discounts</span>
+                            </div>
                             <span class="text-2xl font-black text-[#F25996]" id="summaryGrandTotal">₹0.00</span>
                         </div>
                     </div>
 
                     <!-- Error Alert Box (if validation fails) -->
-                    <div id="errorAlertBox" class="hidden p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold my-4"></div>
+                    <div id="errorAlertBox" class="hidden p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-semibold"></div>
 
-                    <!-- Action Buttons: Proceed to Checkout (Step 2) & Direct Razorpay -->
-                    <div class="space-y-2 pt-2">
+                    <!-- Step 1 to Step 2 Proceed to Checkout CTA -->
+                    <div class="space-y-2.5 pt-2">
                         <button type="button" 
                                 id="btnProceedCheckout" 
                                 onclick="proceedToCheckout()" 
-                                class="w-full py-3.5 px-5 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-black text-sm rounded-2xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer group">
+                                class="w-full py-4 px-6 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-black text-base rounded-2xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2.5 cursor-pointer group">
                             <span>Proceed to Checkout</span>
-                            <svg class="w-4 h-4 text-white transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                            <svg class="w-5 h-5 text-white transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
                         </button>
-                        <button type="button" 
-                                id="btnPayRazorpay" 
-                                onclick="payViaRazorpay()" 
-                                class="w-full py-2.5 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer">
-                            <svg class="w-4 h-4 text-[#F25996] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
-                            <span>Quick Pay Online (Razorpay)</span>
-                        </button>
-                        <div class="flex items-center justify-center gap-1.5 text-[11px] text-gray-400 font-medium">
-                            <svg class="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/></svg>
-                            <span>Secured by 256-Bit Razorpay Payments</span>
+                        <!-- Keep a hidden button for any legacy bindings -->
+                        <button type="button" id="btnPayRazorpay" class="hidden"></button>
+
+                        <div class="flex items-center justify-center gap-2 text-[11px] text-gray-400 font-medium">
+                            <svg class="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/>
+                            </svg>
+                            <span>Next: Review sizes, delivery address, subtotals &amp; secure Razorpay payment</span>
                         </div>
-                    </div></div>
+                    </div>
 
                 </div>
 
             </div>
-
         </div>
 
-    
-
-<!-- ── Customer Reviews & Stitching Feedback Section ── -->
+        <!-- ── Customer Reviews & Stitching Feedback Section ── -->
         <div id="customReviewsSection" class="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 lg:p-10 shadow-xs mb-10">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-6 mb-6">
                 <div>
@@ -488,32 +656,133 @@
 </div>
 
 <!-- Razorpay Official Checkout Script -->
-
-
-</div>
-</div>
-
-<!-- Razorpay Official Checkout Script -->
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 <script>
+const FABRIC_GALLERY_IMAGES = <?= json_encode(array_values(array_map(fn($p) => get_image_url($p), $galleryList))) ?>;
+let fabricActiveImgIndex = 0;
+
+function setFabricActiveImage(idx) {
+    if (!FABRIC_GALLERY_IMAGES || !FABRIC_GALLERY_IMAGES[idx]) return;
+    fabricActiveImgIndex = idx;
+    const mainImg = document.getElementById('fabricMainImage');
+    if (mainImg) {
+        mainImg.style.opacity = '0.6';
+        mainImg.src = FABRIC_GALLERY_IMAGES[idx];
+        setTimeout(() => { mainImg.style.opacity = '1'; }, 100);
+    }
+    document.querySelectorAll('.fabric-thumb-btn').forEach((btn, i) => {
+        if (i === idx) {
+            btn.className = 'fabric-thumb-btn w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 aspect-square rounded-2xl bg-white overflow-hidden border-2 transition-all cursor-pointer shrink-0 border-[#F25996] ring-2 ring-[#F25996]/30 shadow-xs';
+        } else {
+            btn.className = 'fabric-thumb-btn w-16 h-16 sm:w-18 sm:h-18 md:w-20 md:h-20 aspect-square rounded-2xl bg-white overflow-hidden border-2 transition-all cursor-pointer shrink-0 border-gray-200 hover:border-[#F25996]/50 opacity-80 hover:opacity-100';
+        }
+    });
+}
+
+function shareFabricProduct() {
+    const url = window.location.href;
+    const title = document.title;
+    if (navigator.share) {
+        navigator.share({ title: title, url: url }).catch(() => {});
+    } else {
+        navigator.clipboard.writeText(url).then(() => {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'Link copied to clipboard!',
+                    showConfirmButton: false,
+                    timer: 2000
+                });
+            } else {
+                alert('Product link copied to clipboard!');
+            }
+        });
+    }
+}
+
+function handleAddToCartClick() {
+    proceedToCheckout();
+}
+
+function onTopFabricMultiplierChange(inp) {
+    let mult = parseInt(inp.value) || 1;
+    if (mult < 1) mult = 1;
+    const bottomInp = document.getElementById('fabric_multiplier');
+    if (bottomInp) bottomInp.value = mult;
+    onFabricMultiplierChange(inp);
+}
+
+function openFabricModal(idx) {
+    if (idx !== undefined) fabricActiveImgIndex = idx;
+    const modal = document.getElementById('fabricLightboxModal');
+    const modalImg = document.getElementById('fabricModalImg');
+    const counter = document.getElementById('fabricModalCounter');
+    if (!modal || !modalImg) return;
+
+    modalImg.src = FABRIC_GALLERY_IMAGES[fabricActiveImgIndex] || '';
+    if (counter) counter.innerText = `${fabricActiveImgIndex + 1} / ${FABRIC_GALLERY_IMAGES.length}`;
+    modal.classList.remove('hidden');
+    renderModalThumbs();
+}
+
+function closeFabricModal() {
+    const modal = document.getElementById('fabricLightboxModal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function navFabricModal(direction) {
+    if (!FABRIC_GALLERY_IMAGES || FABRIC_GALLERY_IMAGES.length <= 1) return;
+    fabricActiveImgIndex = (fabricActiveImgIndex + direction + FABRIC_GALLERY_IMAGES.length) % FABRIC_GALLERY_IMAGES.length;
+    const modalImg = document.getElementById('fabricModalImg');
+    const counter = document.getElementById('fabricModalCounter');
+    if (modalImg) modalImg.src = FABRIC_GALLERY_IMAGES[fabricActiveImgIndex];
+    if (counter) counter.innerText = `${fabricActiveImgIndex + 1} / ${FABRIC_GALLERY_IMAGES.length}`;
+    setFabricActiveImage(fabricActiveImgIndex);
+    renderModalThumbs();
+}
+
+function renderModalThumbs() {
+    const wrap = document.getElementById('fabricModalThumbs');
+    if (!wrap) return;
+    if (FABRIC_GALLERY_IMAGES.length <= 1) {
+        wrap.innerHTML = '';
+        return;
+    }
+    wrap.innerHTML = FABRIC_GALLERY_IMAGES.map((url, i) => `
+        <button type="button" onclick="setFabricActiveImage(${i}); document.getElementById('fabricModalImg').src='${url}'; document.getElementById('fabricModalCounter').innerText='${i + 1} / ${FABRIC_GALLERY_IMAGES.length}'; renderModalThumbs();" class="w-12 h-12 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${i === fabricActiveImgIndex ? 'border-[#F25996] ring-2 ring-[#F25996]/50' : 'border-white/40 opacity-70 hover:opacity-100'}">
+            <img src="${url}" class="w-full h-full object-cover">
+        </button>
+    `).join('');
+}
+
+document.addEventListener('keydown', function(e) {
+    const modal = document.getElementById('fabricLightboxModal');
+    if (!modal || modal.classList.contains('hidden')) return;
+    if (e.key === 'Escape') closeFabricModal();
+    if (e.key === 'ArrowLeft') navFabricModal(-1);
+    if (e.key === 'ArrowRight') navFabricModal(1);
+});
+
 const FABRIC_ID = <?= (int)$customization['fabric_id'] ?>;
 const CUSTOMIZATION_ID = <?= (int)$customization['id'] ?>;
-const MIN_PIECES_PER_SET = <?= (int)$customization['minimum_pieces'] ?>;
-const MAX_PIECES_PER_SET = <?= (int)$customization['minimum_pieces'] ?>;
-const MIN_PIECES = MIN_PIECES_PER_SET;
-const MAX_PIECES = MAX_PIECES_PER_SET;
+const MIN_PIECES = <?= (int)$customization['minimum_pieces'] ?>;
+const MAX_PIECES = <?= (int)($customization['maximum_pieces'] ?? ($customization['minimum_pieces'] * 20)) ?>;
 const FABRIC_STOCK = <?= (float)$customization['fabric_stock'] ?>;
 const UNIT = <?= json_encode($customization['unit'] ?? 'Qty') ?>;
 const BASE_URL = <?= json_encode(BASE_URL) ?>;
 const IS_LOGGED_IN = <?= \Core\Session::get('user_id') ? 'true' : 'false' ?>;
 const FABRIC_PRICE_PER_UNIT = <?= (float)($customization['fabric_price'] ?? 0) ?>;
 const SIZES_CONFIG = <?= json_encode($customization['sizes'] ?? []) ?>;
-const LABELS_CONFIG = <?= json_encode($customization['labels'] ?? []) ?>;
 const WITHOUT_COVER_DISCOUNT_PCT = <?= (float)($customization['without_cover_discount_percentage'] ?? 0) ?>;
 const DELIVERY_DAYS = <?= (int)($customization['delivery_days'] ?? 7) ?>;
 const DELIVERY_BASE_PIECES = <?= (int)($customization['delivery_base_pieces'] ?? 100) ?>;
+
 let selectedPackagingOption = 'with_cover';
+let selectedSizeNames = []; // Preserves selection sequence
+let currentCalc = null;
 
 function selectPackagingOption(option) {
     selectedPackagingOption = option;
@@ -536,40 +805,12 @@ function selectPackagingOption(option) {
             if (checkWith) checkWith.className = 'pkg-check w-4 h-4 rounded-full border border-gray-300 text-transparent flex items-center justify-center text-[10px] font-bold';
         }
     }
-    triggerLiveRecalc();
-}
-
-// fabricSets state: array of { setId: 1, labelId: 1, selectedSizes: { 'M': 2, 'L': 2 } }
-let fabricSets = [];
-let currentCalc = null;
-
-function getSizeLimits(sz) {
-    if (!sz) return { baseMin: 1, baseMax: 35 };
-    const rawMax = parseInt(sz.max_quantity);
-    const baseMax = rawMax > 0 ? rawMax : 35;
-    const rawMin = parseInt(sz.base_quantity);
-    const baseMin = (rawMin > 0) ? Math.min(rawMin, baseMax) : Math.min(1, baseMax);
-    return { baseMin, baseMax };
-}
-
-function escapeHtmlStr(str) {
-    if (str === null || str === undefined) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    triggerRecalc();
 }
 
 function getFabricQuantity() {
     const inp = document.getElementById('fabric_multiplier');
     return inp ? Math.max(1, parseInt(inp.value) || 1) : 1;
-}
-
-function getSetTotalPieces(setIdx) {
-    if (!fabricSets[setIdx] || !fabricSets[setIdx].selectedSizes) return 0;
-    return Object.values(fabricSets[setIdx].selectedSizes).reduce((sum, q) => sum + (parseInt(q) || 0), 0);
 }
 
 function adjustFabricMultiplier(delta) {
@@ -581,6 +822,19 @@ function adjustFabricMultiplier(delta) {
     onFabricMultiplierChange(inp);
 }
 
+function getSizeLimits(sizeName, mult) {
+    if (!mult) mult = getFabricQuantity();
+    const sObj = SIZES_CONFIG.find(s => s.size_name === sizeName);
+    const baseMin = sObj && parseInt(sObj.base_quantity) > 0 ? parseInt(sObj.base_quantity) : 2;
+    const baseMax = sObj && parseInt(sObj.max_quantity) > 0 ? parseInt(sObj.max_quantity) : 35;
+    return {
+        min: baseMin * mult,
+        max: baseMax * mult,
+        baseMin: baseMin,
+        baseMax: baseMax
+    };
+}
+
 function onFabricMultiplierChange(inp) {
     let mult = parseInt(inp.value) || 1;
     if (mult < 1) {
@@ -588,621 +842,374 @@ function onFabricMultiplierChange(inp) {
         inp.value = 1;
     }
 
+    const topInp = document.getElementById('fabric_multiplier_top');
+    if (topInp && topInp !== inp) topInp.value = mult;
+    const bottomInp = document.getElementById('fabric_multiplier');
+    if (bottomInp && bottomInp !== inp) bottomInp.value = mult;
+
     // Update multiplier badge
     const badge = document.getElementById('fabricQtyBadge');
     if (badge) {
         badge.textContent = mult === 1 ? '1 Set (1x)' : `${mult} Sets (${mult}x)`;
     }
 
-    // Adjust fabricSets array length
-    while (fabricSets.length < mult) {
-        const newIdx = fabricSets.length;
-        fabricSets.push({
-            setId: newIdx + 1,
-            labelId: null,
-            selectedSizes: {}
-        });
-    }
-    if (fabricSets.length > mult) {
-        fabricSets = fabricSets.slice(0, mult);
-    }
+    // Update required pieces Min & Max labels dynamically
+    const reqMinPcs = MIN_PIECES * mult;
+    const reqMaxPcs = MAX_PIECES * mult;
+    const reqBadge = document.getElementById('fabricRequiredPcs');
+    if (reqBadge) reqBadge.textContent = `${reqMinPcs} Pcs`;
+    const maxBadge = document.getElementById('fabricMaxPcs');
+    if (maxBadge) maxBadge.textContent = `${reqMaxPcs} Pcs`;
 
-    renderFabricSetContainers();
+    // Update button & row labels and clamp input values
+    SIZES_CONFIG.forEach(sz => {
+        const sizeName = sz.size_name;
+        const limits = getSizeLimits(sizeName, mult);
+
+        const btnRange = document.getElementById('btn_range_label_' + sizeName);
+        if (btnRange) btnRange.textContent = `${limits.min} – ${limits.max} pcs`;
+
+        const rangeBadge = document.getElementById('range_label_' + sizeName);
+        if (rangeBadge) rangeBadge.textContent = `Required: ${limits.min} pcs (Max: ${limits.max} pcs)`;
+
+        const input = document.getElementById('qty_' + sizeName);
+        if (input) {
+            input.setAttribute('data-min', limits.min);
+            input.setAttribute('data-max', limits.max);
+            input.min = limits.min;
+            input.max = limits.max;
+            if (selectedSizeNames.includes(sizeName)) {
+                let val = parseInt(input.value) || 0;
+                if (val < limits.min) input.value = limits.min;
+                else if (val > limits.max) input.value = limits.max;
+            } else {
+                input.value = 0;
+            }
+        }
+    });
+
+    // Reapply flow with scaled multiplier
+    applyVariantSelectionFlow();
 }
 
-function initFabricSets() {
+function toggleSizeVariant(sizeName) {
+    const idx = selectedSizeNames.indexOf(sizeName);
     const mult = getFabricQuantity();
-    fabricSets = [];
-    for (let i = 0; i < mult; i++) {
-        fabricSets.push({
-            setId: i + 1,
-            labelId: null,
-            selectedSizes: {}
-        });
+    const overallMax = MAX_PIECES * mult;
+    const limits = getSizeLimits(sizeName, mult);
+    const input = document.getElementById('qty_' + sizeName);
+
+    if (idx >= 0) {
+        selectedSizeNames.splice(idx, 1);
+        if (input) input.value = 0;
+    } else {
+        selectedSizeNames.push(sizeName);
+        if (input) {
+            let otherPieces = getTotalSelectedPieces(sizeName);
+            let remainingOverall = Math.max(0, overallMax - otherPieces);
+            let initialVal = Math.min(limits.min, remainingOverall);
+            input.value = initialVal;
+        }
     }
-    renderFabricSetContainers();
+    applyVariantSelectionFlow();
 }
 
-function renderFabricSetContainers() {
-    const container = document.getElementById('fabricSetsContainer');
-    if (!container) return;
-
-    if (fabricSets.length === 0) {
-        initFabricSets();
-        return;
+function removeSizeVariant(sizeName) {
+    const idx = selectedSizeNames.indexOf(sizeName);
+    if (idx >= 0) {
+        selectedSizeNames.splice(idx, 1);
     }
+    const input = document.getElementById('qty_' + sizeName);
+    if (input) {
+        input.value = 0;
+    }
+    applyVariantSelectionFlow();
+}
 
-    let html = '';
+function selectAllVariants() {
+    selectedSizeNames = SIZES_CONFIG.map(s => s.size_name);
+    const mult = getFabricQuantity();
+    const overallMax = MAX_PIECES * mult;
+    let accumulated = 0;
 
-    fabricSets.forEach((set, setIdx) => {
-        const activeSizes = Object.keys(set.selectedSizes);
-        // Auto-clamp active sizes to their allowed baseMax
-        activeSizes.forEach(sName => {
-            const szObj = SIZES_CONFIG.find(s => s.size_name === sName);
-            if (szObj) {
-                const { baseMin, baseMax } = getSizeLimits(szObj);
-                if (set.selectedSizes[sName] > baseMax) {
-                    set.selectedSizes[sName] = baseMax;
+    SIZES_CONFIG.forEach(sz => {
+        const limits = getSizeLimits(sz.size_name, mult);
+        const input = document.getElementById('qty_' + sz.size_name);
+        if (input) {
+            let remaining = Math.max(0, overallMax - accumulated);
+            let val = Math.min(limits.min, remaining);
+            input.value = val;
+            accumulated += val;
+        }
+    });
+    applyVariantSelectionFlow();
+}
+
+function clearAllVariants() {
+    selectedSizeNames = [];
+    SIZES_CONFIG.forEach(sz => {
+        const input = document.getElementById('qty_' + sz.size_name);
+        if (input) input.value = 0;
+    });
+    applyVariantSelectionFlow();
+}
+
+function applyVariantSelectionFlow() {
+    const mult = getFabricQuantity();
+
+    // Update UI elements for each configured size independently
+    SIZES_CONFIG.forEach(sz => {
+        const sizeName = sz.size_name;
+        const btn = document.getElementById('btn_size_' + sizeName);
+        const row = document.getElementById('row_size_' + sizeName);
+        const input = document.getElementById('qty_' + sizeName);
+        const rangeBadge = document.getElementById('range_label_' + sizeName);
+        const btnRange = document.getElementById('btn_range_label_' + sizeName);
+        const isSelected = selectedSizeNames.includes(sizeName);
+        const limits = getSizeLimits(sizeName, mult);
+
+        // Update button visual state
+        if (btn) {
+            const checkIcon = btn.querySelector('.check-icon');
+            if (isSelected) {
+                btn.classList.add('border-[#F25996]', 'bg-pink-50/40', 'shadow-xs', 'ring-2', 'ring-[#F25996]/20');
+                btn.classList.remove('border-gray-200', 'bg-white');
+                if (checkIcon) {
+                    checkIcon.classList.add('bg-[#F25996]', 'border-[#F25996]', 'text-white');
+                    checkIcon.classList.remove('border-gray-300', 'text-transparent');
+                }
+            } else {
+                btn.classList.remove('border-[#F25996]', 'bg-pink-50/40', 'shadow-xs', 'ring-2', 'ring-[#F25996]/20');
+                btn.classList.add('border-gray-200', 'bg-white');
+                if (checkIcon) {
+                    checkIcon.classList.remove('bg-[#F25996]', 'border-[#F25996]', 'text-white');
+                    checkIcon.classList.add('border-gray-300', 'text-transparent');
                 }
             }
-        });
-        const setPcs = getSetTotalPieces(setIdx);
-        const isSetComplete = (setPcs === MIN_PIECES_PER_SET);
-        const isSetOver = (setPcs > MIN_PIECES_PER_SET);
-        const setPct = MIN_PIECES_PER_SET > 0 ? Math.min(100, Math.round((setPcs / MIN_PIECES_PER_SET) * 100)) : 100;
+        }
 
-        let badgeHtml = '';
-        if (setPcs === 0) {
-            badgeHtml = `<span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-gray-100 text-gray-600 border border-gray-200">0 / ${MIN_PIECES_PER_SET} pcs (Empty)</span>`;
-        } else if (setPcs < MIN_PIECES_PER_SET) {
-            badgeHtml = `<span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">⚠️ ${setPcs} / ${MIN_PIECES_PER_SET} pcs (Need ${MIN_PIECES_PER_SET - setPcs} more)</span>`;
-        } else if (isSetComplete) {
-            badgeHtml = `<span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">✓ Complete (${setPcs}/${MIN_PIECES_PER_SET} pcs)</span>`;
+        // Show/hide row in the stepper list
+        if (row) {
+            if (isSelected) {
+                row.classList.remove('hidden');
+            } else {
+                row.classList.add('hidden');
+            }
+        }
+
+        // Update bounds and values independently for this size
+        if (input) {
+            input.setAttribute('data-min', limits.min);
+            input.setAttribute('data-max', limits.max);
+            input.min = limits.min;
+            input.max = limits.max;
+
+            if (isSelected) {
+                let val = parseInt(input.value) || 0;
+                if (val < limits.min) val = limits.min;
+                if (val > limits.max) val = limits.max;
+                input.value = val;
+            } else {
+                input.value = 0;
+            }
+        }
+
+        if (rangeBadge) {
+            rangeBadge.textContent = `Required: ${limits.min} pcs (Max: ${limits.max} pcs)`;
+        }
+        if (btnRange) {
+            btnRange.textContent = `${limits.min} – ${limits.max} pcs`;
+        }
+
+        // Update top size pill button
+        const topPill = document.getElementById('top_size_pill_' + sizeName);
+        if (topPill) {
+            if (isSelected) {
+                topPill.className = 'top-size-pill min-w-[44px] h-10 px-3.5 rounded-xl border-2 font-bold text-sm transition-all cursor-pointer flex items-center justify-center border-[#F25996] bg-pink-50 text-[#F25996] shadow-xs ring-2 ring-[#F25996]/20';
+            } else {
+                topPill.className = 'top-size-pill min-w-[44px] h-10 px-3.5 rounded-xl border-2 font-bold text-sm transition-all cursor-pointer flex items-center justify-center border-gray-200 bg-white text-gray-700 hover:border-[#F25996]';
+            }
+        }
+    });
+
+    // Empty placeholder toggle
+    const placeholder = document.getElementById('emptyVariantsPlaceholder');
+    if (placeholder) {
+        if (selectedSizeNames.length === 0) {
+            placeholder.classList.remove('hidden');
         } else {
-            badgeHtml = `<span class="text-[10px] font-bold px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-1">❌ ${setPcs} / ${MIN_PIECES_PER_SET} pcs (Exceeds Limit)</span>`;
+            placeholder.classList.add('hidden');
         }
-
-        html += `
-        <div class="bg-white rounded-3xl border border-gray-100 p-5 md:p-6 shadow-xs space-y-5" id="set_card_${setIdx}">
-            <!-- Set Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100 pb-3.5">
-                <div class="flex items-center gap-3">
-                    <div class="w-9 h-9 rounded-xl ${isSetComplete ? 'bg-emerald-600' : 'bg-[#F25996]'} text-white font-black text-sm flex items-center justify-center shadow-xs shrink-0 transition-colors">
-                        #${set.setId}
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <h3 class="font-bold text-gray-900 text-sm">Fabric Set #${set.setId}</h3>
-                            ${badgeHtml}
-                        </div>
-                        <p class="text-[11px] text-gray-400 mt-0.5">Required for this fabric: <strong class="text-gray-800 font-bold">${MIN_PIECES_PER_SET} pcs</strong> (Max: ${MIN_PIECES_PER_SET} pcs)</p>
-                    </div>
-                </div>
-
-                <div class="flex items-center gap-3 shrink-0">
-                    <!-- Progress Bar per set -->
-                    <div class="w-24 sm:w-28 bg-gray-100 h-2 rounded-full overflow-hidden border border-gray-200 hidden sm:block" title="Set progress: ${setPcs}/${MIN_PIECES_PER_SET} pcs">
-                        <div class="h-full ${isSetComplete ? 'bg-emerald-500' : (isSetOver ? 'bg-rose-500' : 'bg-[#F25996]')} transition-all duration-300" style="width: ${setPct}%;"></div>
-                    </div>
-
-                    <!-- Custom Style / Label Dropdown for this Set -->
-                    ${LABELS_CONFIG.length > 0 ? `
-                    <div class="flex items-center gap-1.5">
-                        <span class="text-[11px] font-bold text-[#F25996] hidden md:inline">Style:</span>
-                        <select onchange="onSetLabelChange(${setIdx}, this.value, this)" class="text-xs font-bold py-1.5 px-3 rounded-xl border-2 ${set.labelId ? 'border-pink-400 bg-pink-50/70 text-[#db2777]' : 'border-pink-300 bg-pink-50/30 text-gray-800'} focus:outline-none focus:ring-2 focus:ring-[#F25996]/20 focus:border-[#F25996] cursor-pointer transition-all shadow-2xs">
-                            <option value="" ${!set.labelId ? 'selected' : ''}>🏷️ Select Style / Label...</option>
-                            ${LABELS_CONFIG.map(lbl => `
-                                <option value="${lbl.id}" ${parseInt(set.labelId) === parseInt(lbl.id) ? 'selected' : ''}>
-                                    🏷️ ${escapeHtmlStr(lbl.display_label)}
-                                </option>
-                            `).join('')}
-                        </select>
-                    </div>
-                    ` : ''}
-                </div>
-            </div>
-
-            <!-- 1. Choose Size Variants for this Set -->
-            <div>
-                <div class="flex items-center justify-between mb-2.5">
-                    <label class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
-                        <span>1. Choose Size Variants:</span>
-                        <span class="text-[10px] px-2 py-0.5 rounded-md bg-pink-50 text-[#F25996] font-bold border border-pink-200">Click to Select</span>
-                    </label>
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="selectAllSetVariants(${setIdx})" class="text-xs font-bold text-[#F25996] hover:underline cursor-pointer">Select All</button>
-                        <span class="text-gray-300">•</span>
-                        <button type="button" onclick="clearSetVariants(${setIdx})" class="text-xs font-bold text-gray-500 hover:text-red-500 cursor-pointer">Clear</button>
-                    </div>
-                </div>
-
-                <!-- Variant Buttons Grid for this Set -->
-                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-                    ${SIZES_CONFIG.map(sz => {
-                        const isSelected = !!set.selectedSizes[sz.size_name];
-                        const { baseMin, baseMax } = getSizeLimits(sz);
-                        const consumption = parseFloat(sz.fabric_consumption) || 1;
-                        const pricePerPc = Math.round(FABRIC_PRICE_PER_UNIT * consumption * 100) / 100;
-
-                        return `
-                            <button type="button" 
-                                    onclick="toggleSetSizeVariant(${setIdx}, '${escapeHtmlStr(sz.size_name)}')"
-                                    class="variant-btn relative p-3 rounded-2xl border-2 transition-all text-left flex flex-col justify-between group cursor-pointer ${isSelected ? 'border-[#F25996] bg-pink-50/40 shadow-xs ring-2 ring-[#F25996]/20' : 'border-gray-200 bg-white hover:border-pink-300 hover:shadow-sm'}">
-                                
-                                <div class="flex items-center justify-between mb-1.5">
-                                    <span class="w-7 h-7 rounded-xl bg-pink-50 text-[#F25996] font-black text-xs flex items-center justify-center border border-pink-200 group-hover:scale-105 transition-transform">
-                                        ${escapeHtmlStr(sz.size_name)}
-                                    </span>
-                                    <span class="w-4 h-4 rounded-full border flex items-center justify-center text-[10px] font-bold transition-all ${isSelected ? 'bg-[#F25996] border-[#F25996] text-white' : 'border-gray-300 text-transparent group-hover:border-pink-400'}">
-                                        ✓
-                                    </span>
-                                </div>
-
-                                <div class="text-xs font-bold text-gray-900 mb-0.5">
-                                    ₹${pricePerPc.toFixed(2)}<span class="text-[10px] text-gray-500 font-normal">/pc</span>
-                                </div>
-
-                                <div class="text-[10px] text-gray-500 border-t border-gray-100 pt-1 mt-0.5">
-                                    <span>Allowed: <strong class="text-[#F25996] font-bold">${baseMin} – ${baseMax} pcs</strong></span>
-                                </div>
-                            </button>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-
-            <!-- 2. Selected Size Quantities for this Set -->
-            <div class="space-y-2 pt-2 border-t border-gray-100">
-                <div class="flex items-center justify-between text-xs font-bold text-gray-700">
-                    <span class="uppercase tracking-wider">2. Selected Size Quantities (Set #${set.setId}):</span>
-                    <span class="text-[#F25996] font-medium text-[11px]">${activeSizes.length} variant(s) active (${setPcs}/${MIN_PIECES_PER_SET} Pcs)</span>
-                </div>
-
-                <div class="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden bg-gray-50/50">
-                    ${activeSizes.length === 0 ? `
-                        <div class="p-5 text-center bg-white flex flex-col items-center justify-center gap-1.5">
-                            <div class="w-8 h-8 rounded-full bg-pink-50 text-[#F25996] flex items-center justify-center text-sm">
-                                👆
-                            </div>
-                            <p class="text-xs font-bold text-gray-700">No Size Variants Selected for Set #${set.setId}</p>
-                            <p class="text-[11px] text-gray-400">Click size buttons above to add variants for this fabric set (${MIN_PIECES_PER_SET} pcs required).</p>
-                        </div>
-                    ` : activeSizes.map(sName => {
-                        const szObj = SIZES_CONFIG.find(s => s.size_name === sName) || {};
-                        const { baseMin, baseMax } = getSizeLimits(szObj);
-                        const qty = parseInt(set.selectedSizes[sName]) || baseMin;
-                        const consumption = parseFloat(szObj.fabric_consumption) || 1;
-                        const pricePerPc = Math.round(FABRIC_PRICE_PER_UNIT * consumption * 100) / 100;
-                        const totalPcPrice = (pricePerPc * qty).toFixed(2);
-
-                        return `
-                            <div class="p-3.5 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-pink-50/30 transition-colors">
-                                <div class="flex items-center gap-2.5">
-                                    <div class="w-9 h-9 rounded-xl bg-pink-100 text-[#F25996] font-black text-xs flex items-center justify-center border border-pink-200 shrink-0">
-                                        ${escapeHtmlStr(sName)}
-                                    </div>
-                                    <div>
-                                        <div class="font-bold text-xs text-gray-900 flex items-center gap-1.5">
-                                            <span>Size ${escapeHtmlStr(sName)}</span>
-                                            <span class="text-[9.5px] font-bold px-1.5 py-0.5 rounded bg-pink-50 text-[#F25996] border border-pink-200">
-                                                Allowed: ${baseMin} – ${baseMax} pcs
-                                            </span>
-                                        </div>
-                                        <div class="text-[10.5px] text-gray-500 mt-0.5">
-                                            Rate: <strong class="text-emerald-700">₹${pricePerPc.toFixed(2)}/pc</strong>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="flex items-center gap-3">
-                                    <div class="inline-flex items-center border-2 border-[#F25996] rounded-full bg-white px-2 py-0.5 shadow-xs">
-                                        <button type="button" onclick="adjustSetSizeQty(${setIdx}, '${escapeHtmlStr(sName)}', -1)" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-black text-base text-[#F25996] hover:bg-pink-50 transition-colors cursor-pointer select-none">
-                                            -
-                                        </button>
-                                        <div class="h-3 w-px bg-pink-200 mx-1"></div>
-                                        <input type="number" 
-                                               value="${qty}" 
-                                               min="${baseMin}" 
-                                               max="${baseMax}" 
-                                               oninput="onSetSizeQtyInput(${setIdx}, '${escapeHtmlStr(sName)}', this)" 
-                                               class="w-10 h-6 sm:h-7 text-center font-black text-xs sm:text-sm text-[#F25996] bg-transparent focus:outline-none">
-                                        <div class="h-3 w-px bg-pink-200 mx-1"></div>
-                                        <button type="button" onclick="adjustSetSizeQty(${setIdx}, '${escapeHtmlStr(sName)}', 1)" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-black text-base text-[#F25996] hover:bg-pink-50 transition-colors cursor-pointer select-none">
-                                            +
-                                        </button>
-                                    </div>
-
-                                    <div class="text-right min-w-[65px]">
-                                        <span class="text-[9.5px] font-bold uppercase tracking-wider text-gray-400 block">Subtotal</span>
-                                        <span class="text-xs font-bold text-gray-800">${qty} Pcs</span>
-                                        <span class="text-[10.5px] font-bold text-emerald-700 block">₹${totalPcPrice}</span>
-                                    </div>
-
-                                    <button type="button" 
-                                             onclick="removeSetSizeVariant(${setIdx}, '${escapeHtmlStr(sName)}')" 
-                                             title="Remove size ${escapeHtmlStr(sName)}"
-                                             class="w-7 h-7 rounded-lg bg-gray-50 hover:bg-rose-50 text-gray-400 hover:text-rose-600 flex items-center justify-center transition-all cursor-pointer border border-gray-200 hover:border-rose-200 shrink-0">
-                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                     </button>
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>
-        </div>
-        `;
-    });
-
-    container.innerHTML = html;
-
-    updateLabelAllocationOverview();
-    triggerLiveRecalc();
-}
-
-function toggleSetSizeVariant(setIdx, sizeName) {
-    if (!fabricSets[setIdx]) return;
-    const set = fabricSets[setIdx];
-    const szObj = SIZES_CONFIG.find(s => s.size_name === sizeName) || {};
-    const { baseMin, baseMax } = getSizeLimits(szObj);
-
-    if (set.selectedSizes[sizeName]) {
-        delete set.selectedSizes[sizeName];
-    } else {
-        const currentPcs = getSetTotalPieces(setIdx);
-        if (currentPcs + baseMin > MAX_PIECES_PER_SET) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Fabric Set Limit Reached',
-                    text: `Fabric Set #${set.setId} is set for ${MAX_PIECES_PER_SET} pcs maximum. Currently: ${currentPcs} pcs (Adding size ${sizeName} with min ${baseMin} pcs would exceed ${MAX_PIECES_PER_SET} pcs).`,
-                    confirmButtonColor: '#F25996'
-                });
-            }
-            return;
-        }
-        set.selectedSizes[sizeName] = baseMin;
     }
-    renderFabricSetContainers();
+
+    // Update active notice banner
+    const notice = document.getElementById('activeVariantNotice');
+    if (notice) {
+        if (selectedSizeNames.length > 0) {
+            notice.textContent = `• ${selectedSizeNames.length} size(s) selected with independent allowed limits (${mult}x Sets)`;
+        } else {
+            notice.textContent = '• Please click one or more size buttons above to select variants';
+        }
+    }
+
+    triggerRecalc();
 }
 
-function removeSetSizeVariant(setIdx, sizeName) {
-    if (!fabricSets[setIdx]) return;
-    delete fabricSets[setIdx].selectedSizes[sizeName];
-    renderFabricSetContainers();
-}
-
-function selectAllSetVariants(setIdx) {
-    if (!fabricSets[setIdx]) return;
-    const set = fabricSets[setIdx];
-    let runningTotal = 0;
-    SIZES_CONFIG.forEach(sz => {
-        const { baseMin } = getSizeLimits(sz);
-        if (runningTotal + baseMin <= MAX_PIECES_PER_SET) {
-            set.selectedSizes[sz.size_name] = baseMin;
-            runningTotal += baseMin;
-        } else if (runningTotal < MAX_PIECES_PER_SET) {
-            const rem = MAX_PIECES_PER_SET - runningTotal;
-            if (rem >= 1) {
-                set.selectedSizes[sz.size_name] = rem;
-                runningTotal += rem;
-            }
+function getTotalSelectedPieces(excludeSizeName = null) {
+    const inputs = document.querySelectorAll('.size-qty-input');
+    let total = 0;
+    inputs.forEach(input => {
+        const sz = input.getAttribute('data-size');
+        if (sz !== excludeSizeName && selectedSizeNames.includes(sz)) {
+            total += parseInt(input.value) || 0;
         }
     });
-    renderFabricSetContainers();
+    return total;
 }
 
-function clearSetVariants(setIdx) {
-    if (!fabricSets[setIdx]) return;
-    fabricSets[setIdx].selectedSizes = {};
-    renderFabricSetContainers();
-}
+function adjustQty(sizeName, delta) {
+    const input = document.getElementById('qty_' + sizeName);
+    if (!input) return;
+    const mult = getFabricQuantity();
+    const overallMax = MAX_PIECES * mult;
+    const limits = getSizeLimits(sizeName, mult);
+    const min = limits.min;
+    const sizeMax = limits.max;
 
-function adjustSetSizeQty(setIdx, sizeName, delta) {
-    if (!fabricSets[setIdx]) return;
-    const set = fabricSets[setIdx];
-    const szObj = SIZES_CONFIG.find(s => s.size_name === sizeName) || {};
-    const { baseMin, baseMax } = getSizeLimits(szObj);
-
-    let currentVal = parseInt(set.selectedSizes[sizeName]) || baseMin;
-    let nextVal = currentVal + delta;
+    let currentVal = parseInt(input.value) || 0;
+    let otherPieces = getTotalSelectedPieces(sizeName);
+    let remainingOverall = Math.max(0, overallMax - otherPieces);
+    let effectiveMaxForThisSize = Math.min(sizeMax, remainingOverall);
 
     if (delta > 0) {
-        const currentSetTotal = getSetTotalPieces(setIdx);
-        if (currentSetTotal + delta > MAX_PIECES_PER_SET) {
+        if (currentVal >= effectiveMaxForThisSize) {
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    icon: 'warning',
-                    title: 'Fabric Set Limit Reached',
-                    text: `Fabric Set #${set.setId} cannot exceed ${MAX_PIECES_PER_SET} total pieces. Currently: ${currentSetTotal} pcs.`,
+                    icon: 'info',
+                    title: 'Max Limit Reached',
+                    text: currentVal >= sizeMax 
+                        ? `Maximum allowed pieces for size ${sizeName} is ${sizeMax} pcs.`
+                        : `Maximum total pieces allowed for ${mult} Set(s) is ${overallMax} pcs.`,
                     confirmButtonColor: '#F25996',
                     timer: 2500
                 });
             }
             return;
         }
-        if (nextVal > baseMax) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Variant Limit Reached',
-                    text: `Maximum allowed pieces for size ${sizeName} in Fabric Set #${set.setId} is ${baseMax} pcs.`,
-                    confirmButtonColor: '#F25996',
-                    timer: 2000
-                });
-            }
-            return;
-        }
+        input.value = Math.min(effectiveMaxForThisSize, currentVal + delta);
+    } else {
+        let val = currentVal + delta;
+        if (val < min) val = min;
+        input.value = val;
     }
-    if (nextVal < baseMin) {
-        nextVal = baseMin;
-    }
-    set.selectedSizes[sizeName] = nextVal;
-    renderFabricSetContainers();
+    triggerRecalc();
 }
 
-function onSetSizeQtyInput(setIdx, sizeName, inp) {
-    if (!fabricSets[setIdx]) return;
-    const set = fabricSets[setIdx];
-    const szObj = SIZES_CONFIG.find(s => s.size_name === sizeName) || {};
-    const { baseMin, baseMax } = getSizeLimits(szObj);
+function validateAndRecalc(input) {
+    const sizeName = input.getAttribute('data-size');
+    const mult = getFabricQuantity();
+    const overallMax = MAX_PIECES * mult;
+    const limits = getSizeLimits(sizeName, mult);
+    const min = limits.min;
+    const sizeMax = limits.max;
 
-    let val = parseInt(inp.value);
-    if (isNaN(val) || val < baseMin) val = baseMin;
-    
-    const currentVal = parseInt(set.selectedSizes[sizeName]) || baseMin;
-    const otherSizesTotal = getSetTotalPieces(setIdx) - currentVal;
+    let val = parseInt(input.value);
+    if (isNaN(val) || val < min) {
+        val = min;
+        input.value = min;
+    }
 
-    if (otherSizesTotal + val > MAX_PIECES_PER_SET) {
-        val = Math.max(baseMin, MAX_PIECES_PER_SET - otherSizesTotal);
+    let otherPieces = getTotalSelectedPieces(sizeName);
+    let remainingOverall = Math.max(0, overallMax - otherPieces);
+    let effectiveMaxForThisSize = Math.min(sizeMax, remainingOverall);
+
+    if (val > effectiveMaxForThisSize) {
+        val = effectiveMaxForThisSize;
+        input.value = effectiveMaxForThisSize;
         if (typeof Swal !== 'undefined') {
             Swal.fire({
-                icon: 'warning',
-                title: 'Set Piece Limit Reached',
-                text: `Quantity adjusted to ${val} pcs so Fabric Set #${set.setId} does not exceed ${MAX_PIECES_PER_SET} total pieces.`,
+                icon: 'info',
+                title: 'Max Limit Reached',
+                text: val >= sizeMax 
+                    ? `Maximum allowed pieces for size ${sizeName} is ${sizeMax} pcs.`
+                    : `Maximum total pieces allowed for ${mult} Set(s) is ${overallMax} pcs.`,
                 confirmButtonColor: '#F25996',
                 timer: 2500
             });
         }
     }
-
-    if (val > baseMax) {
-        val = baseMax;
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'info',
-                title: 'Variant Limit Reached',
-                text: `Maximum allowed pieces for size ${sizeName} in Fabric Set #${set.setId} is ${baseMax} pcs.`,
-                confirmButtonColor: '#F25996',
-                timer: 2000
-            });
-        }
-    }
-    inp.value = val;
-    set.selectedSizes[sizeName] = val;
-    renderFabricSetContainers();
+    triggerRecalc();
 }
 
-function onSetLabelChange(setIdx, labelId, selElem) {
-    if (!fabricSets[setIdx]) return;
-    fabricSets[setIdx].labelId = parseInt(labelId) || null;
-    if (selElem) {
-        if (fabricSets[setIdx].labelId) {
-            selElem.className = 'text-xs font-bold py-1.5 px-3 rounded-xl border-2 border-pink-400 bg-pink-50/70 text-[#db2777] focus:outline-none focus:ring-2 focus:ring-[#F25996]/20 focus:border-[#F25996] cursor-pointer transition-all shadow-2xs';
-        } else {
-            selElem.className = 'text-xs font-bold py-1.5 px-3 rounded-xl border-2 border-pink-300 bg-pink-50/30 text-gray-800 focus:outline-none focus:ring-2 focus:ring-[#F25996]/20 focus:border-[#F25996] cursor-pointer transition-all shadow-2xs';
+function getSelectedSizes() {
+    const inputs = document.querySelectorAll('.size-qty-input');
+    const sizes = {};
+    inputs.forEach(input => {
+        const sz = input.getAttribute('data-size');
+        const qty = parseInt(input.value) || 0;
+        if (qty > 0 && selectedSizeNames.includes(sz)) {
+            sizes[sz] = qty;
         }
-    }
-    updateLabelAllocationOverview();
-    triggerLiveRecalc();
+    });
+    return sizes;
 }
 
-function autoDistributeLabelsAcrossSets() {
-    if (LABELS_CONFIG.length === 0) return;
-    fabricSets.forEach((set, idx) => {
-        const lbl = LABELS_CONFIG[idx % LABELS_CONFIG.length];
-        set.labelId = lbl ? lbl.id : null;
-    });
-    renderFabricSetContainers();
-}
-
-function resetAllSetLabels() {
-    if (LABELS_CONFIG.length === 0) return;
-    const firstLabelId = LABELS_CONFIG[0].id;
-    fabricSets.forEach(set => {
-        set.labelId = firstLabelId;
-    });
-    renderFabricSetContainers();
-}
-
-function updateLabelAllocationOverview() {
-    const listElem = document.getElementById('labelsAllocationOverviewList');
-    if (!listElem) return;
-
-    let totalStitchedPieces = 0;
-    let totalAllocatedPieces = 0;
-    const labelBreakdown = {};
-    const unassignedSets = [];
-
-    LABELS_CONFIG.forEach(lbl => {
-        labelBreakdown[lbl.id] = {
-            label: lbl,
-            assignedSets: [],
-            totalPieces: 0
-        };
-    });
-
-    fabricSets.forEach(set => {
-        let setPcs = 0;
-        for (const sz in set.selectedSizes) {
-            setPcs += (parseInt(set.selectedSizes[sz]) || 0);
-        }
-        totalStitchedPieces += setPcs;
-
-        if (set.labelId && labelBreakdown[set.labelId]) {
-            labelBreakdown[set.labelId].assignedSets.push({
-                setId: set.setId,
-                pieces: setPcs
-            });
-            labelBreakdown[set.labelId].totalPieces += setPcs;
-            totalAllocatedPieces += setPcs;
-        } else {
-            unassignedSets.push({
-                setId: set.setId,
-                pieces: setPcs
-            });
-        }
-    });
-
-    const unassignedPieces = totalStitchedPieces - totalAllocatedPieces;
-    const unassignedSetsWithPcs = unassignedSets.filter(s => s.pieces > 0);
-
-    let html = '';
-
-    // If there are unassigned sets that have pieces selected, show pink guided notification box
-    if (unassignedSetsWithPcs.length > 0) {
-        html += `
-            <div class="p-4 rounded-2xl border border-pink-200 bg-pink-50/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-2xs">
-                <div class="flex items-start gap-2.5 text-gray-800">
-                    <span class="text-base">🏷️</span>
-                    <div>
-                        <strong class="font-bold text-[#db2777] block">Unassigned Fabric Set(s)</strong>
-                        <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                            ${unassignedSetsWithPcs.map(s => `<span class="px-2.5 py-1 rounded-lg bg-white border border-pink-200 font-bold text-[#F25996] text-[11px] shadow-2xs">Fabric Set #${s.setId}: ${s.pieces} pcs (Choose Style)</span>`).join(' ')}
-                        </div>
-                    </div>
-                </div>
-                <span class="text-[11px] font-bold text-[#F25996] bg-white px-2.5 py-1 rounded-lg border border-pink-200 shrink-0 shadow-2xs">
-                    Please choose a style in each fabric container above
-                </span>
-            </div>
-        `;
-    }
-
-    // Only display style labels that the user has chosen in at least one fabric set
-    const activeAllocatedLabels = LABELS_CONFIG.filter(lbl => {
-        const data = labelBreakdown[lbl.id];
-        return data && data.assignedSets.length > 0;
-    });
-
-    if (activeAllocatedLabels.length === 0) {
-        html += `
-            <div class="p-6 rounded-2xl border border-dashed border-pink-200 bg-pink-50/20 text-center">
-                <span class="text-2xl mb-1.5 block">🏷️</span>
-                <p class="text-xs font-bold text-gray-800">No Customization Style Selected Yet</p>
-                <p class="text-[11px] text-gray-500 mt-1 max-w-sm mx-auto">Choose a style label in Fabric Set #1 above to dynamically allocate quantities and view the breakdown here.</p>
-            </div>
-        `;
-    } else {
-        activeAllocatedLabels.forEach(lbl => {
-            const data = labelBreakdown[lbl.id];
-            const assignedSetsHtml = data.assignedSets.map(s => `<span class="inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-[#db2777]">Set #${s.setId}: ${s.pieces} pcs</span>`).join(' ');
-
-            html += `
-                <div class="p-4 rounded-2xl border border-pink-200 bg-pink-50/20 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                    <div class="flex-1 min-w-0">
-                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white text-gray-900 text-xs font-bold border border-gray-200 shadow-2xs">
-                            <span>🏷️</span>
-                            <span>${escapeHtmlStr(lbl.display_label)}</span>
-                        </div>
-                        ${lbl.description ? `<p class="text-[11px] text-gray-500 mt-1">${escapeHtmlStr(lbl.description)}</p>` : ''}
-                        <div class="flex items-center gap-1.5 mt-2 flex-wrap">
-                            ${assignedSetsHtml}
-                        </div>
-                    </div>
-
-                    <div class="flex items-center gap-2 shrink-0">
-                        <span class="text-xs font-bold text-gray-500">Allocated:</span>
-                        <span class="font-black text-sm text-[#F25996] px-3.5 py-1 bg-white rounded-xl border border-pink-200 shadow-2xs">
-                            ${data.totalPieces} Pcs
-                        </span>
-                    </div>
-                </div>
-            `;
-        });
-    }
-
-    listElem.innerHTML = html;
-
-    const reqElem = document.getElementById('labelTrackerTotalRequired');
-    if (reqElem) reqElem.textContent = `${totalStitchedPieces} Pcs`;
-
-    const allocElem = document.getElementById('labelTrackerTotalAllocated');
-    if (allocElem) allocElem.textContent = `${totalAllocatedPieces} Pcs`;
-
-    const unassignedContainer = document.getElementById('labelTrackerUnassignedContainer');
-    const unassignedElem = document.getElementById('labelTrackerTotalUnassigned');
-    if (unassignedContainer && unassignedElem) {
-        if (unassignedPieces > 0) {
-            unassignedElem.textContent = `${unassignedPieces} Pcs`;
-            unassignedContainer.classList.remove('hidden');
-            unassignedContainer.classList.add('flex');
-        } else {
-            unassignedContainer.classList.add('hidden');
-            unassignedContainer.classList.remove('flex');
-        }
-    }
-
-    const badgeElem = document.getElementById('labelTrackerBadge');
-    if (badgeElem) {
-        if (totalStitchedPieces === 0) {
-            badgeElem.className = 'px-2.5 py-1 rounded-lg font-bold text-[11px] bg-gray-100 text-gray-600 border border-gray-200';
-            badgeElem.textContent = 'Select sizes above';
-        } else if (unassignedPieces > 0 || unassignedSetsWithPcs.length > 0) {
-            badgeElem.className = 'px-2.5 py-1 rounded-lg font-bold text-[11px] bg-amber-100 text-amber-900 border border-amber-300';
-            badgeElem.textContent = `⚠️ ${unassignedSetsWithPcs.length} Set(s) Unassigned`;
-        } else {
-            badgeElem.className = 'px-2.5 py-1 rounded-lg font-bold text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200';
-            badgeElem.textContent = '✓ Perfectly Allocated';
+function onAddressSelectChange(sel) {
+    const input = document.getElementById('shippingAddressInput');
+    if (input) {
+        input.value = sel.value;
+        if (!sel.value) {
+            input.focus();
         }
     }
 }
 
-function getAggregatedSizes() {
-    const aggregated = {};
-    fabricSets.forEach(set => {
-        for (const [sz, qty] of Object.entries(set.selectedSizes)) {
-            const num = parseInt(qty) || 0;
-            if (num > 0) {
-                aggregated[sz] = (aggregated[sz] || 0) + num;
-            }
-        }
+function applyPreset(minQty) {
+    const inputs = document.querySelectorAll('.size-qty-input');
+    if (inputs.length === 0) return;
+    
+    const mult = getFabricQuantity();
+    const effectiveMin = (minQty !== undefined ? minQty : MIN_PIECES) * mult;
+    const perSize = Math.max(1, Math.floor(effectiveMin / inputs.length));
+    
+    inputs.forEach((inp) => {
+        const max = parseInt(inp.getAttribute('data-max')) || 9999;
+        inp.value = Math.min(max, perSize);
     });
-    return aggregated;
+    triggerRecalc();
 }
 
-function getSelectedLabelQuantities() {
-    const labelBreakdown = {};
-    LABELS_CONFIG.forEach(lbl => {
-        labelBreakdown[lbl.id] = {
-            label_id: lbl.id,
-            label_name: lbl.display_label,
-            quantity: 0
-        };
-    });
-
-    fabricSets.forEach(set => {
-        if (!set.labelId) return;
-        let setPcs = 0;
-        for (const sz in set.selectedSizes) {
-            setPcs += (parseInt(set.selectedSizes[sz]) || 0);
-        }
-        if (labelBreakdown[set.labelId]) {
-            labelBreakdown[set.labelId].quantity += setPcs;
-        }
-    });
-
-    return Object.values(labelBreakdown).filter(l => l.quantity > 0);
+function resetAllQty() {
+    document.querySelectorAll('.size-qty-input').forEach(inp => inp.value = 0);
+    triggerRecalc();
 }
 
-function triggerLiveRecalc() {
-    const aggregatedSizes = getAggregatedSizes();
+function triggerRecalc() {
+    const inputs = document.querySelectorAll('.size-qty-input');
+    const sizes = {};
     const fabricQuantity = getFabricQuantity();
-    const setsPayload = fabricSets.map(s => ({
-        set_id: s.setId,
-        sizes: s.selectedSizes
-    }));
+    
+    inputs.forEach(input => {
+        const sz = input.getAttribute('data-size');
+        const rate = parseFloat(input.getAttribute('data-rate')) || 0;
+        const qty = parseInt(input.value) || 0;
+        sizes[sz] = qty;
+        
+        // Update pieces count
+        const subElem = document.getElementById('sub_' + sz);
+        if (subElem) {
+            subElem.textContent = qty > 0 ? `${qty} Pcs` : '0 Pcs';
+        }
+        // Update ₹ price subtotal per size
+        const pricePerPc = parseFloat(input.getAttribute('data-price-per-pc')) || (rate * FABRIC_PRICE_PER_UNIT);
+        const priceSub = document.getElementById('price_sub_' + sz);
+        if (priceSub) {
+            const total = pricePerPc * qty;
+            priceSub.textContent = total > 0 ? `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '₹0.00';
+        }
+    });
 
+    // Call calculation API
     fetch(`${BASE_URL}/fabrics/customization/calculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1210,17 +1217,16 @@ function triggerLiveRecalc() {
             fabric_id: FABRIC_ID,
             customization_id: CUSTOMIZATION_ID,
             fabric_quantity: fabricQuantity,
-            sizes: aggregatedSizes,
+            sizes: sizes,
             packaging_option: selectedPackagingOption,
-            without_cover: (selectedPackagingOption === "without_cover"),
-            sets: setsPayload
+            without_cover: (selectedPackagingOption === 'without_cover')
         })
     })
     .then(r => r.json())
     .then(data => {
         if (data.success) {
             currentCalc = data;
-            renderCalculation(data.consumption, data.pricing);
+            renderCalculation(data.consumption, data.pricing, data.delivery);
         }
     })
     .catch(err => {
@@ -1228,28 +1234,74 @@ function triggerLiveRecalc() {
     });
 }
 
-function renderCalculation(c, p) {
-    const effectiveMin = c.minimum_pieces || (MIN_PIECES_PER_SET * getFabricQuantity());
-    const effectiveMax = c.maximum_pieces || effectiveMin;
+function renderCalculation(c, p, delivery) {
+    const effectiveMin = c.minimum_pieces || (MIN_PIECES * getFabricQuantity());
+    const effectiveMax = c.maximum_pieces || (MAX_PIECES * getFabricQuantity());
     const totalPieces = c.total_pieces || 0;
 
     // Piece Tracker Text & Progress
-    document.getElementById('summaryTotalPieces').textContent = `${totalPieces} / ${effectiveMax} Pcs`;
+    document.getElementById('summaryTotalPieces').textContent = `${totalPieces} / ${effectiveMin}–${effectiveMax} Pcs`;
     
     const constraintText = document.getElementById('pieceConstraintText');
     if (constraintText) {
         constraintText.innerHTML = `
-            <span>Min to Enable Payment: <strong class="text-gray-900">${effectiveMin} Pcs</strong> <span class="text-gray-400 font-normal">(${MIN_PIECES_PER_SET}/set)</span></span>
+            <span>Min to Enable Payment: <strong class="text-gray-900">${effectiveMin} Pcs</strong></span>
             <span>Max Allowed: <strong class="text-gray-900">${effectiveMax} Pcs</strong></span>
         `;
     }
 
     document.getElementById('summaryBaseConsumption').textContent = `${c.base_consumption} ${c.unit}`;
-    const wastageElem = document.getElementById('summaryWastageAmount');
-    if (wastageElem) wastageElem.textContent = `+${c.wastage_amount} ${c.unit}`;
-
+    document.getElementById('summaryWastageAmount').textContent = `+${c.wastage_amount} ${c.unit}`;
     document.getElementById('summaryRequiredFabric').textContent = `${c.required_fabric} ${c.unit}`;
-    document.getElementById('summaryFabricCost').textContent = `₹${p.fabric_cost.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+
+    // Fabric cost display with original cost line-through if without cover discount applied
+    const fabricCostElem = document.getElementById('summaryFabricCost');
+    if (p.without_cover && p.without_cover_discount > 0) {
+        if (fabricCostElem) {
+            fabricCostElem.innerHTML = `<span class="line-through text-xs text-gray-400 mr-1.5">₹${p.fabric_cost_original.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span> ₹${p.fabric_cost.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        }
+    } else {
+        if (fabricCostElem) {
+            fabricCostElem.textContent = `₹${p.fabric_cost.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        }
+    }
+
+    // Without Cover Discount row toggle in bill
+    const pkgRow = document.getElementById('packagingDiscountRow');
+    const pkgDiscElem = document.getElementById('summaryCoverDiscount');
+    if (pkgRow && pkgDiscElem) {
+        if (p.without_cover && p.without_cover_discount > 0) {
+            pkgRow.classList.remove('hidden');
+            pkgDiscElem.textContent = `-₹${p.without_cover_discount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+        } else {
+            pkgRow.classList.add('hidden');
+        }
+    }
+
+    // Dynamic Delivery Schedule update
+    const delBadge = document.getElementById('deliveryDaysBadge');
+    const delDateElem = document.getElementById('deliveryExpectedDate');
+    const delNoteElem = document.getElementById('deliveryScaleNote');
+    if (delivery && delBadge && delDateElem) {
+        delBadge.textContent = `${delivery.total_days} Days`;
+        delDateElem.textContent = delivery.estimated_date_formatted || delivery.estimated_date;
+        if (delNoteElem) {
+            delNoteElem.textContent = `Dynamically scales: ${delivery.total_days} days for ${delivery.total_pieces} pcs (${delivery.base_days} days per ${delivery.base_pieces} pcs batch)`;
+        }
+    } else if (delBadge && delDateElem) {
+        const baseDays = DELIVERY_DAYS || 7;
+        const basePcs = DELIVERY_BASE_PIECES || 100;
+        const multBatch = Math.max(1, Math.ceil(totalPieces / basePcs));
+        const calcDays = multBatch * baseDays;
+        delBadge.textContent = `${calcDays} Days`;
+        const est = new Date();
+        est.setDate(est.getDate() + calcDays);
+        delDateElem.textContent = est.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        if (delNoteElem) {
+            delNoteElem.textContent = `Dynamically scales: ${calcDays} days for ${totalPieces} pcs (${baseDays} days per ${basePcs} pcs batch)`;
+        }
+    }
+
     document.getElementById('summaryGstAmount').textContent = `₹${p.gst_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
     document.getElementById('summaryGrandTotal').textContent = `₹${p.total.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
 
@@ -1258,6 +1310,13 @@ function renderCalculation(c, p) {
     const statusBadge = document.getElementById('liveStatusBadge');
     const btnPay = document.getElementById('btnPayRazorpay');
     const btnProceed = document.getElementById('btnProceedCheckout');
+    const errorBox = document.getElementById('errorAlertBox');
+
+    // Progress bar for minimum pieces
+    const bar = document.getElementById('pieceProgressBar');
+    const pct = effectiveMax > 0 ? Math.min(100, Math.round((totalPieces / effectiveMax) * 100)) : 100;
+    if (bar) bar.style.width = pct + '%';
+
     const setBtnState = (enabled) => {
         [btnPay, btnProceed].forEach(btn => {
             if (!btn) return;
@@ -1271,255 +1330,109 @@ function renderCalculation(c, p) {
             }
         });
     };
-    const errorBox = document.getElementById('errorAlertBox');
-
-    // Check separate set compliance
-    const incompleteSets = [];
-    const overLimitSets = [];
-    const unassignedStyleSets = [];
-
-    fabricSets.forEach(s => {
-        const setPcs = getSetTotalPieces(s.setId - 1);
-        if (setPcs < MIN_PIECES_PER_SET) {
-            incompleteSets.push({ id: s.setId, pcs: setPcs, needed: MIN_PIECES_PER_SET - setPcs });
-        } else if (setPcs > MAX_PIECES_PER_SET) {
-            overLimitSets.push({ id: s.setId, pcs: setPcs, excess: setPcs - MAX_PIECES_PER_SET });
-        }
-        if (setPcs > 0 && !s.labelId) {
-            unassignedStyleSets.push({ id: s.setId, pcs: setPcs });
-        }
-    });
-
-    const hasSetErrors = (incompleteSets.length > 0) || (overLimitSets.length > 0) || (unassignedStyleSets.length > 0 && LABELS_CONFIG.length > 0);
-
-    // Progress bar for total pieces
-    const bar = document.getElementById('pieceProgressBar');
-    const pct = effectiveMax > 0 ? Math.min(100, Math.round((totalPieces / effectiveMax) * 100)) : 100;
-    bar.style.width = pct + '%';
 
     if (isOverStock) {
         // Exceeded Fabric stock
-        bar.className = 'h-full bg-rose-600 transition-all duration-300';
-        reqFabricContainer.className = 'flex items-center justify-between font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-rose-900';
-        statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shrink-0 whitespace-nowrap';
-        statusBadge.textContent = '❌ Exceeds Fabric Stock';
-
-        errorBox.innerHTML = `
-            <div class="flex items-start gap-2.5">
-                <span class="text-base">⚠️</span>
-                <div>
-                    <strong class="font-bold block mb-1">Fabric Stock Exceeded!</strong>
-                    <span>You selected <strong>${getFabricQuantity()} Sets</strong>, but only <strong>${FABRIC_STOCK} ${UNIT}</strong> are available in inventory. Please reduce the fabric set quantity.</span>
-                </div>
-            </div>
-        `;
-        errorBox.classList.remove('hidden');
-
-        btnPay.disabled = true;
-        btnPay.classList.add('opacity-40', 'cursor-not-allowed');
-        btnPay.classList.remove('hover:opacity-95', 'cursor-pointer');
-
-    } else if (totalPieces > effectiveMax || overLimitSets.length > 0) {
-        bar.className = 'h-full bg-rose-600 transition-all duration-300';
-        reqFabricContainer.className = 'flex items-center justify-between font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-rose-900';
-        statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shrink-0 whitespace-nowrap';
-        statusBadge.textContent = `❌ Exceeds Limit (${totalPieces}/${effectiveMax} Pcs)`;
-
-        let overMsg = '';
-        if (overLimitSets.length > 0) {
-            overMsg = overLimitSets.map(ov => `<p>• <strong>Fabric Set #${ov.id}</strong> has <strong>${ov.pcs} pcs</strong> (${ov.excess} pcs over the ${MAX_PIECES_PER_SET} pcs limit).</p>`).join('');
-        } else {
-            overMsg = `<p>Maximum allowed is <strong>${effectiveMax} pcs</strong> for ${getFabricQuantity()} Set(s).</p>`;
+        if (bar) bar.className = 'h-full bg-rose-600 transition-all duration-300';
+        if (reqFabricContainer) reqFabricContainer.className = 'flex items-center justify-between font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-rose-900';
+        if (statusBadge) {
+            statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shrink-0 whitespace-nowrap';
+            statusBadge.textContent = '❌ Exceeds Fabric Stock';
         }
 
-        errorBox.innerHTML = `
-            <div class="flex items-start gap-2.5">
-                <span class="text-base">⚠️</span>
-                <div>
-                    <strong class="font-bold block mb-0.5 text-rose-900">Set Piece Limit Exceeded</strong>
-                    <div class="text-rose-800 text-xs leading-relaxed space-y-1">
-                        ${overMsg}
-                        <p class="font-bold pt-0.5 text-[11px]">Please reduce variant quantities to enable payment.</p>
+        if (errorBox) {
+            errorBox.innerHTML = `
+                <div class="flex items-start gap-2.5">
+                    <span class="text-base">⚠️</span>
+                    <div>
+                        <strong class="font-bold block mb-1">Fabric Stock Exceeded!</strong>
+                        <span>You selected <strong>${getFabricQuantity()} Sets</strong>, but only <strong>${FABRIC_STOCK} Qty</strong> are available in inventory. Please reduce the fabric set quantity.</span>
                     </div>
                 </div>
-            </div>
-        `;
-        errorBox.classList.remove('hidden');
-
-        btnPay.disabled = true;
-        btnPay.classList.add('opacity-40', 'cursor-not-allowed');
-        btnPay.classList.remove('hover:opacity-95', 'cursor-pointer');
-
-    } else if (incompleteSets.length > 0 && totalPieces > 0) {
-        const firstInc = incompleteSets[0];
-        const multNotice = incompleteSets.length > 1 ? ` (${incompleteSets.length} sets need pieces)` : '';
-        bar.className = 'h-full bg-[#F25996] transition-all duration-300';
-        reqFabricContainer.className = 'flex items-center justify-between font-bold bg-pink-50/60 p-2.5 rounded-xl border border-pink-100 text-[#db2777]';
-        statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0 whitespace-nowrap';
-        statusBadge.textContent = `⏳ Set #${firstInc.id} Needs ${firstInc.needed} Pcs${multNotice}`;
-
-        errorBox.innerHTML = `
-            <div class="flex items-start gap-2.5">
-                <span class="text-base">⏳</span>
-                <div>
-                    <strong class="font-bold block mb-0.5 text-pink-900">Separate Fabric Set Requirement (${MIN_PIECES_PER_SET} Pcs / Set)</strong>
-                    <div class="text-pink-800 text-xs leading-relaxed space-y-1">
-                        ${incompleteSets.map(inc => `
-                            <p>• <strong>Fabric Set #${inc.id}</strong> currently has <strong>${inc.pcs} pcs</strong> (Please add <strong>${inc.needed} more pcs</strong>).</p>
-                        `).join('')}
-                        <p class="font-bold pt-1 text-[11px]">Each separate fabric set container must have at least ${MIN_PIECES_PER_SET} pieces to enable online payment.</p>
-                    </div>
-                </div>
-            </div>
-        `;
-        errorBox.classList.remove('hidden');
-
-        btnPay.disabled = true;
-        btnPay.classList.add('opacity-40', 'cursor-not-allowed');
-        btnPay.classList.remove('hover:opacity-95', 'cursor-pointer');
-
-    } else if (unassignedStyleSets.length > 0 && LABELS_CONFIG.length > 0 && totalPieces > 0) {
-        const firstUn = unassignedStyleSets[0];
-        bar.className = 'h-full bg-[#F25996] transition-all duration-300';
-        reqFabricContainer.className = 'flex items-center justify-between font-bold bg-pink-50/60 p-2.5 rounded-xl border border-pink-100 text-[#db2777]';
-        statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0 whitespace-nowrap';
-        statusBadge.textContent = `⏳ Set #${firstUn.id} Style Needed`;
-
-        errorBox.innerHTML = `
-            <div class="flex items-start gap-2.5">
-                <span class="text-base">🏷️</span>
-                <div>
-                    <strong class="font-bold block mb-0.5 text-pink-900">Custom Style Selection Required</strong>
-                    <div class="text-pink-800 text-xs leading-relaxed space-y-1">
-                        ${unassignedStyleSets.map(s => `
-                            <p>• <strong>Fabric Set #${s.id}</strong> has <strong>${s.pcs} pcs</strong> but no custom style is assigned.</p>
-                        `).join('')}
-                        <p class="font-bold pt-1 text-[11px]">Please assign a style label for each fabric set above to enable online payment.</p>
-                    </div>
-                </div>
-            </div>
-        `;
-        errorBox.classList.remove('hidden');
-
-        btnPay.disabled = true;
-        btnPay.classList.add('opacity-40', 'cursor-not-allowed');
-        btnPay.classList.remove('hover:opacity-95', 'cursor-pointer');
-
-    } else if (c.is_valid && !hasSetErrors && totalPieces >= effectiveMin && totalPieces <= effectiveMax) {
-        bar.className = 'h-full bg-emerald-500 transition-all duration-300';
-        reqFabricContainer.className = 'flex items-center justify-between font-bold bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-emerald-950';
-        statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0 whitespace-nowrap';
-        statusBadge.textContent = `✅ Payment Enabled (${totalPieces} Pcs)`;
-
-        errorBox.classList.add('hidden');
-
-        btnPay.disabled = false;
-        btnPay.classList.remove('opacity-40', 'cursor-not-allowed');
-        btnPay.classList.add('hover:opacity-95', 'cursor-pointer');
-
-    } else if (c.errors && c.errors.length > 0) {
-        bar.className = 'h-full bg-rose-600 transition-all duration-300';
-        reqFabricContainer.className = 'flex items-center justify-between font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-rose-900';
-        statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shrink-0 whitespace-nowrap';
-        statusBadge.textContent = '⚠️ Check Variant Limits';
-
-        errorBox.innerHTML = `
-            <div class="flex items-start gap-2.5">
-                <span class="text-base">⚠️</span>
-                <div>
-                    <strong class="font-bold block mb-0.5 text-rose-900">Size Variant Limit Issue</strong>
-                    <div class="text-rose-800 text-xs leading-relaxed space-y-1">
-                        ${c.errors.map(err => `<p>• ${err}</p>`).join('')}
-                    </div>
-                </div>
-            </div>
-        `;
-        errorBox.classList.remove('hidden');
-
-        btnPay.disabled = true;
-        btnPay.classList.add('opacity-40', 'cursor-not-allowed');
-        btnPay.classList.remove('hover:opacity-95', 'cursor-pointer');
-
-    } else {
-        bar.className = 'h-full bg-gray-300 transition-all duration-300';
-        reqFabricContainer.className = 'flex items-center justify-between font-bold bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-gray-800';
-        statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 shrink-0 whitespace-nowrap';
-        statusBadge.textContent = `Min ${effectiveMin} Pcs Required (${MIN_PIECES_PER_SET}/set)`;
-
-        errorBox.classList.add('hidden');
-        btnPay.disabled = true;
-        btnPay.classList.add('opacity-40', 'cursor-not-allowed');
-        btnPay.classList.remove('hover:opacity-95', 'cursor-pointer');
-    }
-}
-
-function onAddressSelectChange(sel) {
-    const input = document.getElementById('shippingAddressInput');
-    const previewCard = document.getElementById('savedAddressPreviewCard');
-    const customContainer = document.getElementById('customAddressContainer');
-    const labelElem = document.getElementById('addressCardLabel');
-    const textElem = document.getElementById('addressCardText');
-
-    if (sel.value === '__CUSTOM__' || !sel.value) {
-        enableCustomAddressMode();
-    } else {
-        if (customContainer) customContainer.classList.add('hidden');
-        if (previewCard) previewCard.classList.remove('hidden');
-        if (input) input.value = sel.value;
-
-        const opt = sel.options[sel.selectedIndex];
-        const label = opt ? opt.getAttribute('data-label') || 'Saved Address' : 'Saved Address';
-        if (labelElem) labelElem.textContent = label;
-        if (textElem) textElem.textContent = sel.value;
-    }
-}
-
-function enableCustomAddressMode() {
-    const previewCard = document.getElementById('savedAddressPreviewCard');
-    const customContainer = document.getElementById('customAddressContainer');
-    const selectElem = document.getElementById('shippingAddressSelect');
-    const input = document.getElementById('shippingAddressInput');
-
-    if (previewCard) previewCard.classList.add('hidden');
-    if (customContainer) customContainer.classList.remove('hidden');
-    if (selectElem) selectElem.value = '__CUSTOM__';
-    if (input) {
-        input.focus();
-    }
-}
-
-function cancelCustomAddressMode() {
-    const selectElem = document.getElementById('shippingAddressSelect');
-    if (selectElem && selectElem.options.length > 1) {
-        selectElem.selectedIndex = 0;
-        onAddressSelectChange(selectElem);
-    }
-}
-
-function appendTailoringSpec(specText) {
-    const textarea = document.getElementById('orderNotesInput');
-    if (!textarea) return;
-
-    let current = textarea.value.trim();
-    if (current.includes(specText)) {
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'info',
-                title: 'Specification Added',
-                text: 'This specification is already included in your tailoring notes.',
-                confirmButtonColor: '#F25996',
-                timer: 1500
-            });
+            `;
+            errorBox.classList.remove('hidden');
         }
-        return;
-    }
 
-    if (current.length > 0) {
-        textarea.value = current + '\n• ' + specText;
+        setBtnState(false);
+
+    } else if (totalPieces > effectiveMax) {
+        // Exceeds Maximum allowed pieces for chosen sets
+        const excess = totalPieces - effectiveMax;
+        if (bar) bar.className = 'h-full bg-rose-600 transition-all duration-300';
+        if (reqFabricContainer) reqFabricContainer.className = 'flex items-center justify-between font-bold bg-rose-50 p-2.5 rounded-xl border border-rose-200 text-rose-900';
+        if (statusBadge) {
+            statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shrink-0 whitespace-nowrap';
+            statusBadge.textContent = `❌ Exceeds Max (${totalPieces}/${effectiveMax} Pcs)`;
+        }
+
+        if (errorBox) {
+            errorBox.innerHTML = `
+                <div class="flex items-start gap-2.5">
+                    <span class="text-base">⚠️</span>
+                    <div>
+                        <strong class="font-bold block mb-0.5 text-rose-900">Maximum ${effectiveMax} Pieces Allowed</strong>
+                        <span class="text-rose-800 text-xs leading-relaxed">
+                            You currently have <strong>${totalPieces} pcs</strong> selected (${excess} pcs in excess). Maximum allowed is <strong>${effectiveMax} pcs</strong> for ${getFabricQuantity()} Set(s). Please reduce variant quantities to enable checkout.
+                        </span>
+                    </div>
+                </div>
+            `;
+            errorBox.classList.remove('hidden');
+        }
+
+        setBtnState(false);
+
+    } else if (totalPieces < effectiveMin && totalPieces > 0) {
+        // Under minimum pieces - show clear message to take required pieces
+        const remainingPcs = effectiveMin - totalPieces;
+        if (bar) bar.className = 'h-full bg-[#F25996] transition-all duration-300';
+        if (reqFabricContainer) reqFabricContainer.className = 'flex items-center justify-between font-bold bg-pink-50/60 p-2.5 rounded-xl border border-pink-100 text-[#db2777]';
+        if (statusBadge) {
+            statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0 whitespace-nowrap';
+            statusBadge.textContent = `⏳ Need ${remainingPcs} More Pcs`;
+        }
+
+        if (errorBox) {
+            errorBox.innerHTML = `
+                <div class="flex items-start gap-2.5">
+                    <span class="text-base">⏳</span>
+                    <div>
+                        <strong class="font-bold block mb-0.5 text-pink-900">Minimum ${effectiveMin} Pieces Required to Enable Checkout</strong>
+                        <span class="text-pink-800 text-xs leading-relaxed">
+                            You currently have <strong>${totalPieces} pcs</strong> selected. Please add <strong>${remainingPcs} more pcs</strong> from the sizes above to proceed to checkout.
+                        </span>
+                    </div>
+                </div>
+            `;
+            errorBox.classList.remove('hidden');
+        }
+
+        setBtnState(false);
+
+    } else if (c.is_valid && totalPieces >= effectiveMin && totalPieces <= effectiveMax) {
+        // Valid & Ready
+        if (bar) bar.className = 'h-full bg-emerald-500 transition-all duration-300';
+        if (reqFabricContainer) reqFabricContainer.className = 'flex items-center justify-between font-bold bg-emerald-50 p-2.5 rounded-xl border border-emerald-200 text-emerald-950';
+        if (statusBadge) {
+            statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0 whitespace-nowrap';
+            statusBadge.textContent = `✅ Ready for Checkout (${totalPieces} Pcs)`;
+        }
+
+        if (errorBox) errorBox.classList.add('hidden');
+        setBtnState(true);
+
     } else {
-        textarea.value = '• ' + specText;
+        // Default / Empty
+        if (bar) bar.className = 'h-full bg-gray-300 transition-all duration-300';
+        if (reqFabricContainer) reqFabricContainer.className = 'flex items-center justify-between font-bold bg-gray-50 p-2.5 rounded-xl border border-gray-100 text-gray-800';
+        if (statusBadge) {
+            statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 shrink-0 whitespace-nowrap';
+            statusBadge.textContent = `Min ${effectiveMin} Pcs Required`;
+        }
+
+        if (errorBox) errorBox.classList.add('hidden');
+        setBtnState(false);
     }
-    textarea.focus();
 }
 
 function checkLoginOrPrompt() {
@@ -1543,47 +1456,22 @@ function checkLoginOrPrompt() {
 }
 
 function getPayload() {
-    const aggregatedSizes = getAggregatedSizes();
+    const sizes = getSelectedSizes();
     const fabricQuantity = getFabricQuantity();
-    const addrElem = document.getElementById('shippingAddressInput');
-    const address = addrElem ? addrElem.value.trim() : '';
-    const notesElem = document.getElementById('orderNotesInput');
-    const notes = notesElem ? notesElem.value.trim() : '';
-    const labelQuantities = getSelectedLabelQuantities();
-
-    // Prepare clean sets breakdown for backend record keeping
-    const setsBreakdown = fabricSets.map(s => {
-        let setPcs = 0;
-        for (const sz in s.selectedSizes) {
-            setPcs += (parseInt(s.selectedSizes[sz]) || 0);
-        }
-        const lblObj = LABELS_CONFIG.find(l => parseInt(l.id) === parseInt(s.labelId));
-        return {
-            set_id: s.setId,
-            label_id: s.labelId,
-            label_name: lblObj ? lblObj.display_label : 'Standard Style',
-            sizes: s.selectedSizes,
-            total_pieces: setPcs
-        };
-    });
+    const address = document.getElementById('shippingAddressInput').value.trim();
+    const notes = document.getElementById('orderNotesInput').value.trim();
 
     return {
         fabric_id: FABRIC_ID,
         customization_id: CUSTOMIZATION_ID,
         fabric_quantity: fabricQuantity,
-        sizes: aggregatedSizes,
-            packaging_option: selectedPackagingOption,
-            without_cover: (selectedPackagingOption === "without_cover"),
-        sets: setsBreakdown,
+        sizes: sizes,
         shipping_address: address,
         notes: notes,
-        label_quantities: labelQuantities
+        packaging_option: selectedPackagingOption,
+        without_cover: (selectedPackagingOption === 'without_cover')
     };
 }
-
-// -------------------------------------------------------------
-// Online Payment via Razorpay
-// -------------------------------------------------------------
 
 // -------------------------------------------------------------
 // Proceed to Step 2: Dedicated Checkout & Razorpay Page
@@ -1591,53 +1479,41 @@ function getPayload() {
 function proceedToCheckout() {
     if (!checkLoginOrPrompt()) return;
 
-    const sizes = getAggregatedSizes();
+    const sizes = getSelectedSizes();
     const fabricQuantity = getFabricQuantity();
     const mult = fabricQuantity;
-    const effectiveMin = MIN_PIECES_PER_SET * mult;
-    const effectiveMax = MAX_PIECES_PER_SET * mult;
+    const effectiveMin = MIN_PIECES * mult;
+    const effectiveMax = MAX_PIECES * mult;
     const totalPcs = Object.values(sizes).reduce((a, b) => a + b, 0);
 
     if (totalPcs === 0) {
         Swal.fire({
             title: 'Select Size Quantities',
-            text: 'Please select quantities for at least one size variant in each fabric set to proceed to checkout.',
+            text: 'Please select quantities for at least one size variant to proceed to checkout.',
             icon: 'info',
             confirmButtonColor: '#F25996'
         });
         return;
     }
 
-    // Validate every separate set container
-    for (let i = 0; i < fabricSets.length; i++) {
-        const setPcs = getSetTotalPieces(i);
-        if (setPcs < MIN_PIECES_PER_SET) {
-            Swal.fire({
-                title: 'Incomplete Fabric Set',
-                text: `Fabric Set #${i + 1} has only ${setPcs} pieces. Each separate fabric set must have at least ${MIN_PIECES_PER_SET} pieces to enable checkout.`,
-                icon: 'warning',
-                confirmButtonColor: '#F25996'
-            });
-            return;
-        }
-        if (setPcs > MAX_PIECES_PER_SET) {
-            Swal.fire({
-                title: 'Fabric Set Limit Exceeded',
-                text: `Fabric Set #${i + 1} has ${setPcs} pieces. Maximum allowed is ${MAX_PIECES_PER_SET} pieces per fabric set.`,
-                icon: 'warning',
-                confirmButtonColor: '#F25996'
-            });
-            return;
-        }
-        if (LABELS_CONFIG.length > 0 && !fabricSets[i].labelId) {
-            Swal.fire({
-                title: 'Select Custom Style',
-                text: `Please assign a custom style/label for Fabric Set #${fabricSets[i].setId} before proceeding to checkout.`,
-                icon: 'warning',
-                confirmButtonColor: '#F25996'
-            });
-            return;
-        }
+    if (totalPcs < effectiveMin) {
+        Swal.fire({
+            title: 'Minimum Pieces Required',
+            text: `Please select at least ${effectiveMin} total pieces to continue (currently ${totalPcs} pcs).`,
+            icon: 'warning',
+            confirmButtonColor: '#F25996'
+        });
+        return;
+    }
+
+    if (totalPcs > effectiveMax) {
+        Swal.fire({
+            title: 'Maximum Limit Exceeded',
+            text: `Maximum allowed pieces for ${mult} set(s) is ${effectiveMax} pcs (currently ${totalPcs} pcs).`,
+            icon: 'warning',
+            confirmButtonColor: '#F25996'
+        });
+        return;
     }
 
     if (fabricQuantity > FABRIC_STOCK) {
@@ -1673,27 +1549,13 @@ function proceedToCheckout() {
         addField(`sizes[${sz}]`, sizes[sz]);
     });
 
-    // Also pass clean sets JSON
-    const setsBreakdown = fabricSets.map(s => {
-        let setPcs = 0;
-        for (const sz in s.selectedSizes) {
-            setPcs += (parseInt(s.selectedSizes[sz]) || 0);
-        }
-        const lblObj = LABELS_CONFIG.find(l => parseInt(l.id) === parseInt(s.labelId));
-        return {
-            set_id: s.setId,
-            label_id: s.labelId,
-            label_name: lblObj ? lblObj.display_label : 'Standard Style',
-            sizes: s.selectedSizes,
-            total_pieces: setPcs
-        };
-    });
-    addField('sets_json', JSON.stringify(setsBreakdown));
-
     document.body.appendChild(form);
     form.submit();
 }
 
+// -------------------------------------------------------------
+// Online Payment via Razorpay
+// -------------------------------------------------------------
 function payViaRazorpay() {
     if (!checkLoginOrPrompt()) return;
 
@@ -1703,42 +1565,10 @@ function payViaRazorpay() {
         return;
     }
 
-    // Validate every separate set container
-    for (let i = 0; i < fabricSets.length; i++) {
-        const setPcs = getSetTotalPieces(i);
-        if (setPcs < MIN_PIECES_PER_SET) {
-            Swal.fire({
-                title: 'Incomplete Fabric Set',
-                text: `Fabric Set #${i + 1} has only ${setPcs} pieces. Each separate fabric set must have at least ${MIN_PIECES_PER_SET} pieces to enable payment.`,
-                icon: 'warning',
-                confirmButtonColor: '#F25996'
-            });
-            return;
-        }
-        if (setPcs > MAX_PIECES_PER_SET) {
-            Swal.fire({
-                title: 'Fabric Set Limit Exceeded',
-                text: `Fabric Set #${i + 1} has ${setPcs} pieces. Maximum allowed is ${MAX_PIECES_PER_SET} pieces per fabric set.`,
-                icon: 'warning',
-                confirmButtonColor: '#F25996'
-            });
-            return;
-        }
-        if (LABELS_CONFIG.length > 0 && !fabricSets[i].labelId) {
-            Swal.fire({
-                title: 'Select Custom Style',
-                text: `Please assign a custom style/label for Fabric Set #${fabricSets[i].setId} before proceeding to payment.`,
-                icon: 'warning',
-                confirmButtonColor: '#F25996'
-            });
-            return;
-        }
-    }
-
     if (!currentCalc || !currentCalc.consumption.is_valid || (getFabricQuantity() > FABRIC_STOCK)) {
         let msg = 'Please satisfy the required piece requirements.';
         if (getFabricQuantity() > FABRIC_STOCK || (currentCalc && !currentCalc.consumption.is_stock_sufficient)) {
-            msg = `<strong>Fabric Inventory Shortage:</strong> You selected <strong>${getFabricQuantity()} Sets</strong>, but only <strong>${FABRIC_STOCK} ${UNIT}</strong> are available in stock.`;
+            msg = `<strong>Fabric Inventory Shortage:</strong> You selected <strong>${getFabricQuantity()} Sets</strong>, but only <strong>${FABRIC_STOCK} Qty</strong> are available in stock.`;
         } else if (currentCalc && currentCalc.consumption.errors) {
             msg = currentCalc.consumption.errors.join('<br>');
         }
@@ -1958,7 +1788,7 @@ function initCustomPinkSelects() {
 
 // Initial calculation & dropdown initialization on load
 document.addEventListener('DOMContentLoaded', () => {
-    initFabricSets();
+    clearAllVariants();
     initCustomPinkSelects();
 });
 </script>
