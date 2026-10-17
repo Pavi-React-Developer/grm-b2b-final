@@ -11,7 +11,6 @@ class SizeChart extends Model
     public function __construct()
     {
         parent::__construct();
-        $this->ensureTableExists();
     }
 
     private function ensureTableExists(): void

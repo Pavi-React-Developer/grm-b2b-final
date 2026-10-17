@@ -37,9 +37,26 @@ if (php_sapi_name() === 'cli-server') {
 
         if (isset($mimes[$ext])) {
             $mime = $mimes[$ext];
+            $mtime = filemtime($targetFile);
+            $size = filesize($targetFile);
+            $etag = '"' . md5($targetFile . $mtime . $size) . '"';
+
             header('Content-Type: ' . $mime);
-            header('Content-Length: ' . filesize($targetFile));
+            header('ETag: ' . $etag);
+            header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $mtime) . ' GMT');
+            header('Cache-Control: public, max-age=86400');
             header('Accept-Ranges: bytes');
+
+            // Return 304 if browser already has fresh copy
+            if (
+                (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) ||
+                (isset($_SERVER['HTTP_IF_MODIFIED_SINCE']) && @strtotime($_SERVER['HTTP_IF_MODIFIED_SINCE']) >= $mtime)
+            ) {
+                header('HTTP/1.1 304 Not Modified');
+                exit;
+            }
+
+            header('Content-Length: ' . $size);
             if (in_array($ext, ['mp4', 'webm', 'mov'])) {
                 header('Content-Disposition: inline; filename="' . basename($targetFile) . '"');
             }

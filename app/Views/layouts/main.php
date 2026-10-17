@@ -90,21 +90,21 @@ if ($hasDynamicNavbar) {
                 _w.apply(console, arguments);
             };
         })();
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-                        display: ['Outfit', 'Inter', 'sans-serif'],
-                        body: ['Inter', 'sans-serif']
+        window.tailwind = {
+            config: {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                            display: ['Outfit', 'Inter', 'sans-serif'],
+                            body: ['Inter', 'sans-serif']
+                        }
                     }
                 }
             }
-        }
+        };
     </script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
     
     <!-- Global Font & Layout Override -->
     <style>

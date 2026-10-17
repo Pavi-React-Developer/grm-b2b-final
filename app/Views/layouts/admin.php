@@ -23,18 +23,22 @@ $currentCustomRole = '';
 $currentStoreName = '';
 
 if ($currentUserId) {
-    $dbUser = \Core\Database::getInstance();
-    $stmtU = $dbUser->prepare("
-        SELECT u.email, u.name, u.role, r.name as custom_role_name, vp.store_name 
-        FROM users u 
-        LEFT JOIN roles r ON u.role_id = r.id 
-        LEFT JOIN vendor_profiles vp ON u.id = vp.user_id 
-        WHERE u.id = ? LIMIT 1
-    ");
-    $stmtU->execute([$currentUserId]);
-    $uRow = $stmtU->fetch();
+    $uRow = \Core\Session::get('admin_profile_memo_' . $currentUserId);
+    if ($uRow === null) {
+        $dbUser = \Core\Database::getInstance();
+        $stmtU = $dbUser->prepare("
+            SELECT u.email, u.name, u.role, r.name as custom_role_name, vp.store_name 
+            FROM users u 
+            LEFT JOIN roles r ON u.role_id = r.id 
+            LEFT JOIN vendor_profiles vp ON u.id = vp.user_id 
+            WHERE u.id = ? LIMIT 1
+        ");
+        $stmtU->execute([$currentUserId]);
+        $uRow = $stmtU->fetch() ?: [];
+        \Core\Session::set('admin_profile_memo_' . $currentUserId, $uRow);
+    }
     if ($uRow) {
-        $currentUserName = $uRow['name'] ?: $currentUserName;
+        $currentUserName = !empty($uRow['name']) ? $uRow['name'] : $currentUserName;
         $currentUserEmail = $uRow['email'] ?? '';
         $currentCustomRole = $uRow['custom_role_name'] ?? '';
         $currentStoreName = $uRow['store_name'] ?? '';
@@ -115,35 +119,35 @@ if ($currentUserRole === 'super_admin') {
                 _w.apply(console, arguments);
             };
         })();
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50:  '#fdf2f7',
-                            100: '#fce7f1',
-                            200: '#fbaed2',
-                            300: '#f784b7',
-                            400: '#f56b9c',
-                            500: '#F25996',
-                            600: '#e04481',
-                            700: '#c72e6b',
-                            800: '#a32457',
-                            900: '#831e46',
+        window.tailwind = {
+            config: {
+                theme: {
+                    extend: {
+                        colors: {
+                            brand: {
+                                50:  '#fdf2f7',
+                                100: '#fce7f1',
+                                200: '#fbaed2',
+                                300: '#f784b7',
+                                400: '#f56b9c',
+                                500: '#F25996',
+                                600: '#e04481',
+                                700: '#c72e6b',
+                                800: '#a32457',
+                                900: '#831e46',
+                            }
+                        },
+                        fontFamily: {
+                            sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                            display: ['Outfit', 'Inter', 'sans-serif'],
+                            body: ['Inter', 'sans-serif']
                         }
-                    },
-                    fontFamily: {
-                        sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
-                        display: ['Outfit', 'Inter', 'sans-serif'],
-                        body: ['Inter', 'sans-serif']
                     }
                 }
             }
-        }
+        };
     </script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
 
     <style>
         html, body, input, select, textarea, button {

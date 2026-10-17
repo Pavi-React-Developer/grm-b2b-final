@@ -334,6 +334,8 @@ class Category extends Model
             \Core\Cache::delete('catalog_all_categories_list');
             \Core\Cache::delete('layout_mega_categories_data');
             \Core\Cache::delete('catalog_active');
+            \Core\Cache::deleteByPrefix('nav_drop_v2_');
+            \Core\Cache::delete('cms_layout_home');
         }
     }
 }

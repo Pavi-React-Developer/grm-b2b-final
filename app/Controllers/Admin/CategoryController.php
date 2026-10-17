@@ -33,17 +33,8 @@ class CategoryController extends Controller
         // Fetch global minimum order cart value setting
         $globalMinCartValue = 0.0;
         try {
-            $db = \Core\Database::getInstance();
-            $db->exec("CREATE TABLE IF NOT EXISTS settings (
-                setting_key VARCHAR(100) PRIMARY KEY,
-                setting_value TEXT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )");
-            $stmt = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'min_order_cart_value' LIMIT 1");
-            if ($stmt && ($row = $stmt->fetch(\PDO::FETCH_ASSOC))) {
-                $globalMinCartValue = (float)($row['setting_value'] ?? 0);
-            }
+            $settingModel = new \App\Models\Setting();
+            $globalMinCartValue = (float)$settingModel->get('min_order_cart_value', 0);
         } catch (\Throwable $e) {}
         
         $this->render('admin/catalog/categories/index', [
@@ -70,17 +61,8 @@ class CategoryController extends Controller
         $limit = ($rawVal !== '' && is_numeric($rawVal) && (float)$rawVal >= 0) ? (float)$rawVal : 0.0;
 
         try {
-            $db = \Core\Database::getInstance();
-            $db->exec("CREATE TABLE IF NOT EXISTS settings (
-                setting_key VARCHAR(100) PRIMARY KEY,
-                setting_value TEXT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-            )");
-            
-            $valStr = (string)$limit;
-            $stmt = $db->prepare("INSERT INTO settings (setting_key, setting_value) VALUES ('min_order_cart_value', :val) ON DUPLICATE KEY UPDATE setting_value = :val2");
-            $stmt->execute([':val' => $valStr, ':val2' => $valStr]);
+            $settingModel = new \App\Models\Setting();
+            $settingModel->set('min_order_cart_value', (string)$limit);
 
             if ($limit > 0) {
                 Session::setFlash('success', 'Global minimum order cart value set to ₹' . number_format($limit, 2) . ' successfully.');

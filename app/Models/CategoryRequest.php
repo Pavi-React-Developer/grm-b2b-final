@@ -40,7 +40,11 @@ class CategoryRequest extends Model
             'attributes_json' => $attributesJson
         ]);
 
-        return (int)$this->db->lastInsertId();
+        $newId = (int)$this->db->lastInsertId();
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::delete('pending_cat_req_count');
+        }
+        return $newId;
     }
 
     public function getAllWithFilters(?string $status = null, ?string $search = null): array
@@ -116,10 +120,21 @@ class CategoryRequest extends Model
         return $row ?: null;
     }
 
-    public function getPendingCount(): int
+    public function getPendingCount(bool $forceRefresh = false): int
     {
+        $cacheKey = 'pending_cat_req_count';
+        if (!$forceRefresh && class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return (int)$cached;
+            }
+        }
         $stmt = $this->db->query("SELECT COUNT(*) FROM category_requests WHERE status = 'pending'");
-        return (int)$stmt->fetchColumn();
+        $count = (int)$stmt->fetchColumn();
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set($cacheKey, $count, 120);
+        }
+        return $count;
     }
 
     public function approve(int $id, ?int $adminUserId = null): array
@@ -189,6 +204,10 @@ class CategoryRequest extends Model
             'reviewer' => $adminUserId
         ]);
 
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::delete('pending_cat_req_count');
+        }
+
         return [
             'success' => true,
             'request_type' => $request['request_type'],
@@ -217,11 +236,15 @@ class CategoryRequest extends Model
                 reviewed_at = CURRENT_TIMESTAMP 
             WHERE id = :id
         ");
-        return $stmt->execute([
+        $res = $stmt->execute([
             'id' => $id,
             'reason' => $reason,
             'reviewer' => $adminUserId
         ]);
+        if ($res && class_exists('\Core\Cache')) {
+            \Core\Cache::delete('pending_cat_req_count');
+        }
+        return $res;
     }
 
     private function generateSlug(string $text): string

@@ -33,6 +33,7 @@ class Cache
         self::init();
         $file = self::$cacheDir . '/' . md5($key) . '.json';
         $data = [
+            'key' => $key,
             'expiry' => time() + $ttl,
             'content' => $content
         ];
@@ -45,6 +46,22 @@ class Cache
         $file = self::$cacheDir . '/' . md5($key) . '.json';
         if (file_exists($file)) {
             @unlink($file);
+        }
+    }
+
+    public static function deleteByPrefix(string $prefix)
+    {
+        self::init();
+        $files = glob(self::$cacheDir . '/*.json');
+        if ($files) {
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    $data = json_decode(@file_get_contents($file), true);
+                    if (!empty($data['key']) && str_starts_with($data['key'], $prefix)) {
+                        @unlink($file);
+                    }
+                }
+            }
         }
     }
 

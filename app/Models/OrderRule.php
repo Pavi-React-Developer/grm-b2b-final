@@ -341,11 +341,7 @@ class OrderRule
             }
 
             // B. Global site-wide cart minimum limit (settings.min_order_cart_value)
-            $globalCartMin = 0.0;
-            $settStmt = $db->query("SELECT setting_value FROM settings WHERE setting_key = 'min_order_cart_value' LIMIT 1");
-            if ($settStmt && ($settRow = $settStmt->fetch(\PDO::FETCH_ASSOC))) {
-                $globalCartMin = (float)($settRow['setting_value'] ?? 0);
-            }
+            $globalCartMin = (float)(new \App\Models\Setting())->get('min_order_cart_value', 0.0);
 
             if ($globalCartMin > 0 && $overallCartSubtotal > 0 && $overallCartSubtotal < $globalCartMin) {
                 $globalShortfall = $globalCartMin - $overallCartSubtotal;

@@ -199,7 +199,12 @@ if (!function_exists('is_vendor_module_enabled')) {
      * Checks if the dynamic Multi-Vendor Module is enabled by Super Admin.
      * Default: true ('1')
      */
-    function is_vendor_module_enabled(): bool {
+    function is_vendor_module_enabled(bool $forceRefresh = false): bool {
+        static $requestMemo = null;
+        if (!$forceRefresh && $requestMemo !== null) {
+            return $requestMemo;
+        }
+
         try {
             if (!class_exists('Core\Cache')) {
                 $cacheFile = defined('CORE_PATH') ? (CORE_PATH . '/Cache.php') : (__DIR__ . '/../core/Cache.php');
@@ -214,7 +219,7 @@ if (!function_exists('is_vendor_module_enabled')) {
                 }
             }
 
-            $val = class_exists('Core\Cache') ? \Core\Cache::get('setting_vendor_module_enabled') : null;
+            $val = ($forceRefresh || !class_exists('Core\Cache')) ? null : \Core\Cache::get('setting_vendor_module_enabled');
             if ($val === null) {
                 $db = \Core\Database::getInstance();
                 $stmt = $db->prepare("SELECT setting_value FROM settings WHERE setting_key = 'vendor_module_enabled' LIMIT 1");
@@ -225,7 +230,8 @@ if (!function_exists('is_vendor_module_enabled')) {
                     \Core\Cache::set('setting_vendor_module_enabled', $val, 3600);
                 }
             }
-            return ($val === '1' || $val === 1 || $val === true || $val === 'true');
+            $requestMemo = ($val === '1' || $val === 1 || $val === true || $val === 'true');
+            return $requestMemo;
         } catch (\Throwable $e) {
             return true;
         }

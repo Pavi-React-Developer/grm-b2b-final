@@ -19,6 +19,11 @@ class Backup
      */
     public function getTableStats(): array
     {
+        $cached = class_exists('\Core\Cache') ? \Core\Cache::get('db_table_stats') : null;
+        if ($cached !== null && is_array($cached)) {
+            return $cached;
+        }
+
         $stmt = $this->db->query("
             SELECT 
                 TABLE_NAME as table_name,
@@ -36,11 +41,10 @@ class Backup
         $stats = [];
         foreach ($tables as $t) {
             $tName = $t['table_name'];
-            $countStmt = $this->db->query("SELECT COUNT(*) FROM `{$tName}`");
-            $exactRows = (int)$countStmt->fetchColumn();
+            $exactRows = (int)($t['estimated_rows'] ?? 0);
 
-            $dataBytes = (int)$t['data_bytes'];
-            $indexBytes = (int)$t['index_bytes'];
+            $dataBytes = (int)($t['data_bytes'] ?? 0);
+            $indexBytes = (int)($t['index_bytes'] ?? 0);
             $bytes = $dataBytes + $indexBytes;
 
             $stats[] = [
@@ -55,6 +59,10 @@ class Backup
                 'engine'          => $t['engine'] ?? 'InnoDB',
                 'last_updated'    => $t['last_updated'] ?? '—'
             ];
+        }
+
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set('db_table_stats', $stats, 1800); // 30 mins cache
         }
 
         return $stats;
@@ -236,6 +244,7 @@ class Backup
             Cache::delete('layout_admin_navbar');
             Cache::delete('catalog_active');
             Cache::delete('setting_vendor_module_enabled');
+            Cache::delete('db_table_stats');
 
             $this->db->commit();
 

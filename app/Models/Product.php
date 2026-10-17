@@ -456,10 +456,16 @@ class Product extends Model
                 approved_at = CURRENT_TIMESTAMP 
             WHERE id = :id
         ");
-        return $stmt->execute([
+        $res = $stmt->execute([
             'id' => $id,
             'admin_id' => $adminId
         ]);
+        if ($res && class_exists('\Core\Cache')) {
+            \Core\Cache::deleteByPrefix('pending_prod_count_');
+            \Core\Cache::delete('catalog_active');
+            \Core\Cache::delete('home_active_products');
+        }
+        return $res;
     }
 
     public function rejectProduct(int $id, ?int $adminId = null, ?string $reason = null): bool
@@ -473,22 +479,39 @@ class Product extends Model
                 approved_at = CURRENT_TIMESTAMP 
             WHERE id = :id
         ");
-        return $stmt->execute([
+        $res = $stmt->execute([
             'id' => $id,
             'admin_id' => $adminId,
             'reason' => $reason
         ]);
+        if ($res && class_exists('\Core\Cache')) {
+            \Core\Cache::deleteByPrefix('pending_prod_count_');
+            \Core\Cache::delete('catalog_active');
+            \Core\Cache::delete('home_active_products');
+        }
+        return $res;
     }
 
-    public function getPendingApprovalCount(?int $vendorId = null): int
+    public function getPendingApprovalCount(?int $vendorId = null, bool $forceRefresh = false): int
     {
+        $cacheKey = 'pending_prod_count_' . ($vendorId ?? 'all');
+        if (!$forceRefresh && class_exists('\Core\Cache')) {
+            $cached = \Core\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return (int)$cached;
+            }
+        }
         if ($vendorId !== null) {
             $stmt = $this->db->prepare("SELECT COUNT(*) FROM products WHERE vendor_id = :vendor_id AND approval_status = 'pending'");
             $stmt->execute(['vendor_id' => $vendorId]);
         } else {
             $stmt = $this->db->query("SELECT COUNT(*) FROM products WHERE approval_status = 'pending'");
         }
-        return (int)$stmt->fetchColumn();
+        $count = (int)$stmt->fetchColumn();
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::set($cacheKey, $count, 120);
+        }
+        return $count;
     }
 
     public function delete(int $id)

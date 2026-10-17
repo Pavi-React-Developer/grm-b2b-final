@@ -294,6 +294,7 @@ class SubCategory extends Model
             \Core\Cache::delete('subcat_active_1');
             \Core\Cache::delete('layout_mega_categories_data');
             \Core\Cache::delete('catalog_active');
+            \Core\Cache::deleteByPrefix('nav_drop_v2_');
         }
     }
 }

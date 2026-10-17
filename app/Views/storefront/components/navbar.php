@@ -94,21 +94,22 @@ $getNavCategoriesWithSubcategories = function($catIds) {
         $inClause = implode(',', array_map('intval', $catIds));
         $categoriesList = $db->query("SELECT id, name, slug, is_customizable FROM categories WHERE id IN ($inClause) AND status = 'active' ORDER BY name ASC")->fetchAll();
         $navDropData = [];
-        foreach ($categoriesList as $cat) {
-            $stmt = $db->prepare("SELECT id, name, slug, is_customizable FROM sub_categories WHERE category_id = ? AND status = 'active' ORDER BY name ASC");
-            $stmt->execute([$cat['id']]);
-            $rawSub = $stmt->fetchAll();
-            $uniqueSub = [];
-            $seen = [];
-            foreach ($rawSub as $sub) {
+        if (!empty($categoriesList)) {
+            $subStmt = $db->query("SELECT id, name, slug, category_id, is_customizable FROM sub_categories WHERE category_id IN ($inClause) AND status = 'active' ORDER BY name ASC");
+            $allSubs = $subStmt->fetchAll();
+            $subsByCat = [];
+            foreach ($allSubs as $sub) {
+                $cId = (int)$sub['category_id'];
                 $norm = strtolower(trim($sub['name']));
-                if (!isset($seen[$norm])) {
-                    $seen[$norm] = true;
-                    $uniqueSub[] = $sub;
+                if (!isset($subsByCat[$cId][$norm])) {
+                    $subsByCat[$cId][$norm] = $sub;
                 }
             }
-            $cat['subcategories'] = $uniqueSub;
-            $navDropData[] = $cat;
+            foreach ($categoriesList as $cat) {
+                $cId = (int)$cat['id'];
+                $cat['subcategories'] = isset($subsByCat[$cId]) ? array_values($subsByCat[$cId]) : [];
+                $navDropData[] = $cat;
+            }
         }
         if (class_exists('\Core\Cache')) {
             \Core\Cache::set($navDropCacheKey, $navDropData, 3600);

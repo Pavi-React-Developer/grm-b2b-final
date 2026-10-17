@@ -128,8 +128,11 @@ class SettingsController extends Controller
                                   ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()");
             $stmt->execute([$newState]);
 
-            // Flush cache
+            // Flush cache and in-memory memoization
             Cache::delete('setting_vendor_module_enabled');
+            if (function_exists('is_vendor_module_enabled')) {
+                is_vendor_module_enabled(true);
+            }
 
             $statusText = ($newState === '1') ? 'ENABLED' : 'DISABLED';
             $msg = "Vendor Module has been successfully {$statusText}. " . 
