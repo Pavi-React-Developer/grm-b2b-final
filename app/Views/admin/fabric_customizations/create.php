@@ -13,7 +13,6 @@
     </div>
 
     <form action="<?= BASE_URL ?>/admin/fabric-customizations/store" method="POST" id="ruleForm" class="space-y-6">
-        <input type="hidden" name="fabric_id" value="<?= !empty($_GET['fabric_id']) ? (int)$_GET['fabric_id'] : (!empty($defaultProduct['id']) ? $defaultProduct['id'] : 30001) ?>">
         <input type="hidden" name="program_name" value="<?= htmlspecialchars(!empty($defaultProduct['name']) ? $defaultProduct['name'] . ' Rule' : 'Fabric Customization Rule') ?>">
         <input type="hidden" name="garment_type" value="Custom Garment">
         <input type="hidden" name="category_id" value="<?= !empty($defaultProduct['category_id']) ? $defaultProduct['category_id'] : '' ?>">
@@ -24,25 +23,46 @@
         <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs space-y-5">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
+                <!-- Fabric Product Selection -->
+                <div class="sm:col-span-2">
+                    <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                        <span>Select Fabric Product <span class="text-red-500">*</span></span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-bold border border-amber-200">Customizable Fabric</span>
+                    </label>
+                    <select name="fabric_id" id="fabric_id_select" class="w-full px-4 py-2.5 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900" onchange="window.location.href='<?= BASE_URL ?>/admin/fabric-customizations/create?fabric_id=' + this.value">
+                        <?php if (empty($products)): ?>
+                            <option value="">No customizable fabrics found</option>
+                        <?php else: ?>
+                            <?php foreach ($products as $p): ?>
+                                <?php $isSel = (!empty($_GET['fabric_id']) && (int)$_GET['fabric_id'] === (int)$p['id']) || (!empty($defaultProduct['id']) && (int)$defaultProduct['id'] === (int)$p['id']); ?>
+                                <option value="<?= $p['id'] ?>" <?= $isSel ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($p['name']) ?> (ID: <?= $p['id'] ?>, SKU: <?= htmlspecialchars($p['base_sku'] ?? 'N/A') ?>) - Stock: <?= (int)$p['stock_quantity'] ?> Qty
+                                </option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                </div>
+
                 <!-- Required Pieces to Enable Payment (Min & Max Limits) -->
                 <div class="sm:col-span-2 bg-gradient-to-r from-amber-50/50 via-white to-amber-50/30 p-4 rounded-xl border border-amber-200/80">
                     <div class="flex items-center justify-between mb-2">
                         <label class="block text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
-                            <span>Required Order Pieces (Min / Max Limits)</span>
+                            <span>Required Order Pieces (For 1 Fabric Qty / Set)</span>
                             <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">Dynamic Scaling</span>
                         </label>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 mb-1">
-                                Minimum Required Pieces <span class="text-red-500">*</span>
+                                Required Pieces (for 1 Fabric Qty) <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
-                                <input type="number" name="minimum_pieces" value="10" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
-                                <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs (Min)</span>
+                                <input type="number" name="required_pieces" id="required_pieces" value="35" min="1" required placeholder="e.g. 35" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14" oninput="document.getElementById('minimum_pieces').value = this.value">
+                                <input type="hidden" name="minimum_pieces" id="minimum_pieces" value="35">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs (Req)</span>
                             </div>
                             <p class="text-[10px] text-gray-500 mt-1">
-                                Base pieces required before checkout is unlocked (scales with Sets).
+                                Required pieces for 1 fabric quantity (e.g. 35 pcs). Scales dynamically per set (e.g. 100 sets = 3500 pcs).
                             </p>
                         </div>
                         <div>

@@ -117,6 +117,19 @@ class FabricCustomizationController extends Controller
         $customizationReviews = $reviewModel->getApprovedCustomizationReviews((int)$customization['id'], (int)$customization['fabric_id']);
         $customizationStats = $reviewModel->getCustomizationReviewStats((int)$customization['id'], (int)$customization['fabric_id']);
 
+        $savedSizes = Session::get('custom_checkout_sizes_' . $customization['id']) 
+            ?? Session::get('custom_checkout_sizes_f_' . $customization['fabric_id']) 
+            ?? [];
+        $savedSets  = Session::get('custom_checkout_sets_' . $customization['id']) 
+            ?? Session::get('custom_checkout_sets_f_' . $customization['fabric_id']) 
+            ?? [];
+        $savedQty   = (int)(Session::get('custom_checkout_qty_' . $customization['id']) 
+            ?? Session::get('custom_checkout_qty_f_' . $customization['fabric_id']) 
+            ?? 1);
+        $savedPkg   = Session::get('custom_checkout_pkg_' . $customization['id']) 
+            ?? Session::get('custom_checkout_pkg_f_' . $customization['fabric_id']) 
+            ?? 'with_cover';
+
         $this->render('storefront/fabric_customize', [
             'title'                => 'Customize: ' . htmlspecialchars($customization['fabric_name']) . ' (' . htmlspecialchars($customization['garment_type']) . ')',
             'customization'        => $customization,
@@ -124,7 +137,11 @@ class FabricCustomizationController extends Controller
             'wishlistIds'          => $wishlistIds,
             'userId'               => $userId,
             'customizationReviews' => $customizationReviews,
-            'customizationStats'   => $customizationStats
+            'customizationStats'   => $customizationStats,
+            'savedSizes'           => $savedSizes,
+            'savedSets'            => $savedSets,
+            'savedQty'             => $savedQty,
+            'savedPkg'             => $savedPkg
         ]);
     }
 
@@ -158,16 +175,50 @@ class FabricCustomizationController extends Controller
             return;
         }
 
+        // Parse sets from POST, session or GET
+        $sets = [];
+        if (!empty($_POST['sets']) && is_array($_POST['sets'])) {
+            $sets = $_POST['sets'];
+            Session::set('custom_checkout_sets_' . $customization['id'], $sets);
+            Session::set('custom_checkout_sets_f_' . $customization['fabric_id'], $sets);
+        } elseif (!empty($_POST['sets_json'])) {
+            $sets = json_decode($_POST['sets_json'], true) ?: [];
+            Session::set('custom_checkout_sets_' . $customization['id'], $sets);
+            Session::set('custom_checkout_sets_f_' . $customization['fabric_id'], $sets);
+        } else {
+            $sets = Session::get('custom_checkout_sets_' . $customization['id']) 
+                ?? Session::get('custom_checkout_sets_f_' . $customization['fabric_id']) 
+                ?? [];
+        }
+
         // Parse sizes from POST, session or GET
         $sizes = [];
         if (!empty($_POST['sizes']) && is_array($_POST['sizes'])) {
             $sizes = $_POST['sizes'];
             Session::set('custom_checkout_sizes_' . $customization['id'], $sizes);
+            Session::set('custom_checkout_sizes_f_' . $customization['fabric_id'], $sizes);
         } elseif (!empty($_GET['sizes']) && is_array($_GET['sizes'])) {
             $sizes = $_GET['sizes'];
             Session::set('custom_checkout_sizes_' . $customization['id'], $sizes);
+            Session::set('custom_checkout_sizes_f_' . $customization['fabric_id'], $sizes);
         } else {
-            $sizes = Session::get('custom_checkout_sizes_' . $customization['id']) ?? [];
+            $sizes = Session::get('custom_checkout_sizes_' . $customization['id']) 
+                ?? Session::get('custom_checkout_sizes_f_' . $customization['fabric_id']) 
+                ?? [];
+        }
+
+        // If sizes is empty but sets are available, aggregate sizes from sets
+        if (empty($sizes) && !empty($sets)) {
+            $sizes = [];
+            foreach ($sets as $setData) {
+                if (!empty($setData['sizes']) && is_array($setData['sizes'])) {
+                    foreach ($setData['sizes'] as $szName => $szVal) {
+                        $sizes[$szName] = ($sizes[$szName] ?? 0) + (int)$szVal;
+                    }
+                }
+            }
+            Session::set('custom_checkout_sizes_' . $customization['id'], $sizes);
+            Session::set('custom_checkout_sizes_f_' . $customization['fabric_id'], $sizes);
         }
 
         // If sizes are still empty, default to base configuration from the program
@@ -177,11 +228,13 @@ class FabricCustomizationController extends Controller
             }
         }
 
-        $fabricQuantity = max(1, (int)($_POST['fabric_quantity'] ?? ($_GET['fabric_quantity'] ?? (Session::get('custom_checkout_qty_' . $customization['id']) ?? 1))));
+        $fabricQuantity = max(1, (int)($_POST['fabric_quantity'] ?? ($_GET['fabric_quantity'] ?? (Session::get('custom_checkout_qty_' . $customization['id']) ?? Session::get('custom_checkout_qty_f_' . $customization['fabric_id']) ?? 1))));
         Session::set('custom_checkout_qty_' . $customization['id'], $fabricQuantity);
+        Session::set('custom_checkout_qty_f_' . $customization['fabric_id'], $fabricQuantity);
 
-        $packagingOption = $_POST['packaging_option'] ?? ($_GET['packaging_option'] ?? (Session::get('custom_checkout_pkg_' . $customization['id']) ?? 'with_cover'));
+        $packagingOption = $_POST['packaging_option'] ?? ($_GET['packaging_option'] ?? (Session::get('custom_checkout_pkg_' . $customization['id']) ?? Session::get('custom_checkout_pkg_f_' . $customization['fabric_id']) ?? 'with_cover'));
         Session::set('custom_checkout_pkg_' . $customization['id'], $packagingOption);
+        Session::set('custom_checkout_pkg_f_' . $customization['fabric_id'], $packagingOption);
         $withoutCover = ($packagingOption === 'without_cover');
         $discountPct = (float)($customization['without_cover_discount_percentage'] ?? 0.0);
 
@@ -190,7 +243,8 @@ class FabricCustomizationController extends Controller
             $customization, 
             $sizes, 
             (float)$customization['fabric_stock'],
-            $fabricQuantity
+            $fabricQuantity,
+            $sets
         );
 
         $pricing = $this->service->calculatePricing(
@@ -223,6 +277,7 @@ class FabricCustomizationController extends Controller
             'title'           => 'Checkout & Payment: ' . htmlspecialchars($customization['fabric_name']) . ' Customization',
             'customization'   => $customization,
             'sizes'           => $sizes,
+            'sets'            => $sets,
             'fabricQuantity'  => $fabricQuantity,
             'packagingOption' => $packagingOption,
             'consumption'     => $consumption,

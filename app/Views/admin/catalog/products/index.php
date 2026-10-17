@@ -15,10 +15,12 @@ $safeProducts = array_map(function($p) {
         'name' => htmlspecialchars($p['name'] ?? ''),
         'slug' => htmlspecialchars($p['slug'] ?? ''),
         'category_name' => htmlspecialchars($p['category_name'] ?? ''),
+        'category_hsn_code' => htmlspecialchars($p['category_hsn_code'] ?? ''),
         'sub_category_name' => htmlspecialchars($p['sub_category_name'] ?? ''),
         'primary_image' => htmlspecialchars($p['primary_image'] ?? ''),
         'base_price' => (float)($p['base_price'] ?? $p['wholesale_price']),
         'discount_price' => isset($p['discount_price']) && $p['discount_price'] > 0 ? (float)$p['discount_price'] : null,
+        'stock_quantity' => (int)($p['stock_quantity'] ?? 0),
         'moq_override' => $p['moq_override'] ? (int)$p['moq_override'] : null,
         'status' => htmlspecialchars($p['status'] ?? 'draft'),
         'approval_status' => htmlspecialchars($p['approval_status'] ?? 'approved'),
@@ -43,6 +45,8 @@ $safeProducts = array_map(function($p) {
                 'discount_price' => isset($v['discount_price']) && $v['discount_price'] > 0 ? (float)$v['discount_price'] : null,
                 'inventory' => (int)$v['inventory'],
                 'current_stock' => (int)($v['current_stock'] ?? $v['inventory']),
+                'base_quantity' => isset($v['base_quantity']) ? (int)$v['base_quantity'] : 2,
+                'max_quantity' => isset($v['max_quantity']) ? (int)$v['max_quantity'] : 4,
                 'sgst' => $vSgst,
                 'cgst' => $vCgst,
                 'total_gst' => $vGst,
@@ -262,6 +266,7 @@ let filteredProducts = [...allProducts];
 let currentPage = 1;
 const itemsPerPage = 10;
 const baseUrl = "<?= BASE_URL ?>";
+const isCustomizeMod = <?= !empty($isCustomize) ? 'true' : 'false' ?>;
 
 function refreshTable() {
     window.location.reload();
@@ -275,6 +280,8 @@ function exportToExcel() {
     const headers = ['ID', 'Product Name', 'Slug', 'Category', 'HSN Code', 'Sub Category', 'Base Price (Excl. Tax)', 'GST (%)', 'Tax Added Price (Incl. Tax)', 'MOQ Override', 'Status'];
     let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n";
     filteredProducts.forEach(p => {
+        const effPrice = (p.discount_price && parseFloat(p.discount_price) > 0) ? parseFloat(p.discount_price) : (parseFloat(p.base_price) || 0);
+        const gst = parseFloat(p.total_gst) || 0;
         const taxAddedPrice = (p.max_amount && parseFloat(p.max_amount) > 0) ? parseFloat(p.max_amount) : effPrice;
 
         const row = [
@@ -378,7 +385,6 @@ function renderTable() {
         let matchedGst = 0;
 
         if (prod.variants && prod.variants.length > 0) {
-            const isCustomizeMod = <?= !empty($isCustomize) ? 'true' : 'false' ?>;
             const prices = [];
             
             if (isCustomizeMod) {
@@ -462,6 +468,7 @@ function renderTable() {
             const productGst = (prod.total_gst !== null && prod.total_gst !== undefined && prod.total_gst !== '') 
                 ? parseFloat(prod.total_gst) 
                 : (((parseFloat(prod.sgst)||0) + (parseFloat(prod.cgst)||0)) || ((parseFloat(prod.category_sgst)||0) + (parseFloat(prod.category_cgst)||0)));
+            const rawEffective = (prod.discount_price && parseFloat(prod.discount_price) > 0) ? parseFloat(prod.discount_price) : (parseFloat(prod.base_price) || 0);
             const fallbackPrice = (prod.max_amount && parseFloat(prod.max_amount) > 0) ? parseFloat(prod.max_amount) : rawEffective;
             const taxBadge = productGst > 0 
                 ? `<div class="text-[11px] font-medium text-emerald-600 flex items-center gap-1 mt-0.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Incl. ${productGst}% GST</div>` 
@@ -576,6 +583,14 @@ function renderTable() {
             </td>
             <td class="px-6 py-5 text-sm text-gray-500">
                 ${moqHtml}
+                ${isCustomizeMod ? `
+                    <div class="mt-1">
+                        ${(parseInt(prod.stock_quantity) || 0) > 0 
+                            ? `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">Stock: ${prod.stock_quantity} Qty</span>`
+                            : `<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">⚠️ Stock: 0 Qty</span>`
+                        }
+                    </div>
+                ` : ''}
             </td>
             <td class="px-6 py-5">
                 ${statusHtml}

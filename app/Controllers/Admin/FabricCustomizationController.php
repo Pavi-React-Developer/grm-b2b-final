@@ -66,12 +66,34 @@ class FabricCustomizationController extends Controller
      */
     public function create()
     {
-        $products = $this->model->getAvailableFabricsForDropdown();
+        $fabricId = !empty($_GET['fabric_id']) ? (int)$_GET['fabric_id'] : 0;
+        if ($fabricId > 0) {
+            $existing = $this->model->getByFabricId($fabricId);
+            if ($existing) {
+                $this->redirect('/admin/fabric-customizations/edit?id=' . $existing['id']);
+                return;
+            }
+        }
+
+        $availableProducts = $this->model->getAvailableFabricsForDropdown();
+        // If all customizable products already have rules, fetch all customizable fabrics with their rule IDs
+        $db = Database::getInstance();
+        $stmtAll = $db->query("SELECT p.id, p.name, p.base_sku, p.wholesale_price, p.stock_quantity, p.category_id, p.sub_category_id, fc.id as rule_id FROM products p LEFT JOIN fabric_customizations fc ON fc.fabric_id = p.id WHERE p.status = 'active' AND p.is_customizable = 1 ORDER BY p.id DESC");
+        $allProducts = $stmtAll ? $stmtAll->fetchAll(PDO::FETCH_ASSOC) : [];
+
+        $products = !empty($availableProducts) ? $availableProducts : $allProducts;
         $defaultProduct = !empty($products[0]) ? $products[0] : null;
+
+        // If no unassigned fabrics remain and user navigated without fabric_id, redirect to edit first existing rule
+        if ($fabricId === 0 && empty($availableProducts) && !empty($defaultProduct['rule_id'])) {
+            $this->redirect('/admin/fabric-customizations/edit?id=' . $defaultProduct['rule_id']);
+            return;
+        }
         
         $this->render('admin/fabric_customizations/create', [
             'title'          => 'Add New Fabric Rule',
             'products'       => $products,
+            'allProducts'    => $allProducts,
             'defaultProduct' => $defaultProduct
         ], 'admin');
     }
@@ -96,7 +118,8 @@ class FabricCustomizationController extends Controller
             $feedingType = 'Non-Feeding';
         }
 
-        $minPieces = (int)($_POST['minimum_pieces'] ?? 10);
+        $requiredPieces = (int)($_POST['required_pieces'] ?? ($_POST['minimum_pieces'] ?? 10));
+        $minPieces = $requiredPieces;
         $maxPieces = !empty($_POST['maximum_pieces']) ? (int)$_POST['maximum_pieces'] : null;
         $wastagePct = (float)($_POST['wastage_percentage'] ?? 0.00);
         $withoutCoverDiscountPct = (float)($_POST['without_cover_discount_percentage'] ?? 0.00);
@@ -109,7 +132,7 @@ class FabricCustomizationController extends Controller
         if (!$fabricId) {
             $db = Database::getInstance();
             $stmtP = $db->query("SELECT id, name, category_id, sub_category_id FROM products WHERE is_customizable = 1 ORDER BY id DESC LIMIT 1");
-            $pRow = $stmtP ? $stmtP->fetch(\PDO::FETCH_ASSOC) : null;
+            $pRow = $stmtP ? $stmtP->fetch(PDO::FETCH_ASSOC) : null;
             if ($pRow) {
                 $fabricId = (int)$pRow['id'];
                 if (empty($programName)) {
@@ -164,6 +187,7 @@ class FabricCustomizationController extends Controller
                 'sub_category_id'                   => $subCategoryId,
                 'feeding_type'                      => $feedingType,
                 'minimum_pieces'                    => $minPieces,
+                'required_pieces'                   => $requiredPieces,
                 'maximum_pieces'                    => $maxPieces,
                 'wastage_percentage'                => $wastagePct,
                 'without_cover_discount_percentage' => $withoutCoverDiscountPct,
@@ -173,6 +197,15 @@ class FabricCustomizationController extends Controller
                 'customization_enabled'             => 1,
                 'status'                            => $status
             ];
+
+            // If a rule for this fabric already exists, update it seamlessly!
+            $existing = $this->model->getByFabricId($fabricId);
+            if ($existing) {
+                $this->model->update((int)$existing['id'], $data, $sizes);
+                Session::setFlash('success', "Fabric Customization Rule updated successfully.");
+                $this->redirect('/admin/fabric-customizations');
+                return;
+            }
 
             $newId = $this->model->create($data, $sizes);
             Session::setFlash('success', "Fabric Customization Rule saved successfully.");
@@ -229,13 +262,22 @@ class FabricCustomizationController extends Controller
         }
 
         $fabricId = (int)($_POST['fabric_id'] ?? $rule['fabric_id'] ?? 0);
+        if ($fabricId > 0 && $fabricId !== (int)$rule['fabric_id']) {
+            $duplicateCheck = $this->model->getByFabricId($fabricId);
+            if ($duplicateCheck && (int)$duplicateCheck['id'] !== $id) {
+                Session::setFlash('error', "A customization rule already exists for that fabric (Rule #{$duplicateCheck['id']}).");
+                $this->redirect('/admin/fabric-customizations/edit?id=' . $id);
+                return;
+            }
+        }
         $programName = trim($_POST['program_name'] ?? $rule['program_name'] ?? 'Fabric Customization Rule');
         $garmentType = trim($_POST['garment_type'] ?? $rule['garment_type'] ?? 'Custom Garment');
         $categoryId = !empty($_POST['category_id']) ? (int)$_POST['category_id'] : ($rule['category_id'] ?? null);
         $subCategoryId = !empty($_POST['sub_category_id']) ? (int)$_POST['sub_category_id'] : ($rule['sub_category_id'] ?? null);
         $feedingType = $_POST['feeding_type'] ?? ($rule['feeding_type'] ?? 'Non-Feeding');
 
-        $minPieces = (int)($_POST['minimum_pieces'] ?? 10);
+        $requiredPieces = (int)($_POST['required_pieces'] ?? ($_POST['minimum_pieces'] ?? 10));
+        $minPieces = $requiredPieces;
         $maxPieces = !empty($_POST['maximum_pieces']) ? (int)$_POST['maximum_pieces'] : null;
         $wastagePct = (float)($_POST['wastage_percentage'] ?? 0.00);
         $withoutCoverDiscountPct = (float)($_POST['without_cover_discount_percentage'] ?? 0.00);
@@ -272,6 +314,7 @@ class FabricCustomizationController extends Controller
                 'sub_category_id'                   => $subCategoryId,
                 'feeding_type'                      => $feedingType,
                 'minimum_pieces'                    => $minPieces,
+                'required_pieces'                   => $requiredPieces,
                 'maximum_pieces'                    => $maxPieces,
                 'wastage_percentage'                => $wastagePct,
                 'without_cover_discount_percentage' => $withoutCoverDiscountPct,

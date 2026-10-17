@@ -144,7 +144,14 @@ class MediaController extends Controller
         foreach ($filesToProcess as $file) {
             $tmpName = $file['tmp_name'];
             $fileHash = md5_file($tmpName);
-            
+
+            // Validate video size (max 100 MB)
+            if (strpos($file['type'] ?? '', 'video') !== false && ($file['size'] ?? 0) > 104857600) {
+                $failCount++;
+                $lastError = 'Video file exceeds 100 MB size limit.';
+                continue;
+            }
+
             $existingMedia = $mediaModel->findByHash($fileHash);
             if ($existingMedia) {
                 // If it's a single AJAX request, we can just return the existing URL

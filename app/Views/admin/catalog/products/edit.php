@@ -63,10 +63,12 @@
                 <div>
                     <div class="flex items-center justify-between gap-2 mb-1.5">
                         <label class="block text-sm font-bold text-gray-800">Category <span class="text-red-500">*</span></label>
+                        <?php if (function_exists('is_vendor_module_enabled') && is_vendor_module_enabled()): ?>
                         <button type="button" onclick="openCategoryRequestModal('category')" class="text-xs font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-lg border border-brand-200 transition-colors shrink-0 flex items-center gap-1">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                             <span>Request New</span>
                         </button>
+                        <?php endif; ?>
                     </div>
                     <select name="category_id" id="category_id" required class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs">
                         <option value="">Select Category...</option>
@@ -78,10 +80,12 @@
                 <div>
                     <div class="flex items-center justify-between gap-2 mb-1.5">
                         <label class="block text-sm font-bold text-gray-800">Subcategory</label>
+                        <?php if (function_exists('is_vendor_module_enabled') && is_vendor_module_enabled()): ?>
                         <button type="button" onclick="openCategoryRequestModal('subcategory')" class="text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg border border-indigo-200 transition-colors shrink-0 flex items-center gap-1">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                             <span>Request New</span>
                         </button>
+                        <?php endif; ?>
                     </div>
                     <select name="sub_category_id" id="sub_category_id" class="w-full border border-gray-300 rounded-xl focus:ring-brand-500 focus:border-brand-500 px-3.5 py-2.5 bg-white text-sm text-gray-800 shadow-2xs <?= empty($subCategories) ? 'opacity-50' : '' ?>" <?= empty($subCategories) ? 'disabled' : '' ?>>
                         <option value="">Select Category first...</option>
@@ -677,6 +681,30 @@
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Total Amount (Incl. GST)</label>
                                         <input type="text" step="0.01" name="variants[<?= $variant['id'] ?>][max_amount]" value="<?= number_format($vMaxAmount, 2, '.', '') ?>" readonly class="variant-total-amount w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 cursor-not-allowed font-bold text-[#8C6B4D] shadow-sm">
                                     </div>
+                                    <?php if (!empty($isCustomize)): ?>
+                                    <!-- Variant Fabric Rules (Base & Max Qty only) -->
+                                    <div class="col-span-1 md:col-span-2 bg-gradient-to-r from-amber-50/80 to-pink-50/50 p-3.5 rounded-xl border border-amber-200/90 shadow-2xs">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <span class="text-xs font-bold text-amber-950 flex items-center gap-1.5">
+                                                <span>📏 Fabric Rules (Variant Limits)</span>
+                                            </span>
+                                            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">Per-Variant Rule</span>
+                                        </div>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-amber-900 mb-1">Base Qty (Pcs) <span class="text-red-500">*</span></label>
+                                                <input type="number" min="1" name="variants[<?= $variant['id'] ?>][base_quantity]" value="<?= isset($variant['base_quantity']) ? (int)$variant['base_quantity'] : 2 ?>" required placeholder="e.g. 2" class="variant-base-qty-input w-full border border-amber-300 rounded-lg focus:ring-amber-500 focus:border-amber-500 px-3 py-1.5 text-sm bg-white font-bold text-gray-800" data-variant-id="<?= $variant['id'] ?>">
+                                                <span class="text-[10px] text-gray-500">Base pieces per set</span>
+                                            </div>
+                                            <div>
+                                                <label class="block text-[11px] font-bold text-amber-900 mb-1">Max Allowed (Pcs) <span class="text-red-500">*</span></label>
+                                                <input type="number" min="1" name="variants[<?= $variant['id'] ?>][max_quantity]" value="<?= isset($variant['max_quantity']) ? (int)$variant['max_quantity'] : 4 ?>" required placeholder="e.g. 4" class="variant-max-qty-input w-full border border-amber-300 rounded-lg focus:ring-amber-500 focus:border-amber-500 px-3 py-1.5 text-sm bg-white font-bold text-gray-800" data-variant-id="<?= $variant['id'] ?>">
+                                                <span class="text-[10px] text-gray-500">Max limit per multiplier</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="variants[<?= $variant['id'] ?>][fabric_consumption]" value="<?= htmlspecialchars($variant['fabric_consumption'] ?? '1.00') ?>">
+                                    <?php endif; ?>
                                     <?php if (empty($isCustomize)): ?>
                                     <div>
                                         <label class="block text-xs font-bold text-gray-500 mb-1">Inventory <span class="text-red-500">*</span></label>
@@ -803,7 +831,6 @@
                                     <span class="text-[9px] font-black px-1.5 py-0.5 rounded bg-rose-100 text-rose-700 normal-case tracking-normal">Upper Limit</span>
                                 </span>
                             </th>
-                            <th class="px-5 py-3.5">Fabric Consumption</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100" id="variant-size-rules-tbody">
@@ -848,19 +875,7 @@
                                            data-variant-id="<?= $variant['id'] ?>">
                                     <span class="absolute right-2 top-2 text-[10px] text-rose-500 font-semibold pointer-events-none">Pcs</span>
                                 </div>
-                            </td>
-                            <td class="px-5 py-3.5">
-                                <div class="relative w-28">
-                                    <input type="number"
-                                           name="variants[<?= $variant['id'] ?>][fabric_consumption]"
-                                           min="0.01"
-                                           step="0.01"
-                                           value="<?= isset($variant['fabric_consumption']) ? number_format((float)$variant['fabric_consumption'], 2, '.', '') : '1.00' ?>"
-                                           placeholder="e.g. 1.00"
-                                           class="w-full px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400/20 focus:border-gray-400 font-medium text-gray-700"
-                                           data-variant-id="<?= $variant['id'] ?>">
-                                    <span class="absolute right-2 top-2 text-[10px] text-gray-400 font-semibold pointer-events-none">Mtr</span>
-                                </div>
+                                <input type="hidden" name="variants[<?= $variant['id'] ?>][fabric_consumption]" value="<?= isset($variant['fabric_consumption']) ? number_format((float)$variant['fabric_consumption'], 2, '.', '') : '1.00' ?>">
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -1613,15 +1628,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div><label class="block text-xs font-bold text-gray-500 mb-1">CGST (%)</label><input type="number" step="0.01" name="${inputPrefix}[cgst]" value="${escapeHtml(vCgst)}" readonly class="variant-cgst w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 cursor-not-allowed text-gray-600 shadow-sm"></div>
                         <div><label class="block text-xs font-bold text-gray-500 mb-1">Total GST (%)</label><input type="number" step="0.01" name="${inputPrefix}[total_gst]" value="${escapeHtml(vTotalGst)}" readonly class="variant-total-gst w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 cursor-not-allowed font-semibold text-gray-700 shadow-sm"></div>
                         <div><label class="block text-xs font-bold text-gray-500 mb-1">Total Amount (Incl. GST)</label><input type="number" step="0.01" name="${inputPrefix}[max_amount]" value="${escapeHtml(vMaxAmount)}" readonly class="variant-total-amount w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 cursor-not-allowed font-bold text-[#8C6B4D] shadow-sm"></div>
-                        <!-- Variant Fabric Rules (Base & Max Qty, Consumption) -->
+                        ${<?= !empty($isCustomize) ? 'true' : 'false' ?> ? `
+                        <!-- Variant Fabric Rules (Base & Max Qty only) -->
                         <div class="col-span-2 bg-gradient-to-r from-amber-50/80 to-pink-50/50 p-3.5 rounded-xl border border-amber-200/90 shadow-2xs">
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-xs font-bold text-amber-950 flex items-center gap-1.5">
-                                    <span>📏 Fabric Rules (Variant Limits & Consumption)</span>
+                                    <span>📏 Fabric Rules (Variant Limits)</span>
                                 </span>
                                 <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">Per-Variant Rule</span>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-[11px] font-bold text-amber-900 mb-1">Base Qty (Pcs) <span class="text-red-500">*</span></label>
                                     <input type="number" min="1" name="${inputPrefix}[base_quantity]" value="${escapeHtml(v && v.base_quantity ? v.base_quantity : 2)}" required placeholder="e.g. 2" class="w-full border border-amber-300 rounded-lg focus:ring-amber-500 focus:border-amber-500 px-3 py-1.5 text-sm bg-white font-bold text-gray-800">
@@ -1632,13 +1648,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <input type="number" min="1" name="${inputPrefix}[max_quantity]" value="${escapeHtml(v && v.max_quantity ? v.max_quantity : 4)}" required placeholder="e.g. 4" class="w-full border border-amber-300 rounded-lg focus:ring-amber-500 focus:border-amber-500 px-3 py-1.5 text-sm bg-white font-bold text-gray-800">
                                     <span class="text-[10px] text-gray-500">Max limit per multiplier</span>
                                 </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-pink-900 mb-1">Fabric Consumption <span class="text-red-500">*</span></label>
-                                    <input type="number" step="0.01" min="0.01" name="${inputPrefix}[fabric_consumption]" value="${escapeHtml(v && v.fabric_consumption ? v.fabric_consumption : 1.00)}" required placeholder="e.g. 1.00" class="w-full border border-pink-300 rounded-lg focus:ring-pink-500 focus:border-pink-500 px-3 py-1.5 text-sm bg-white font-bold text-gray-800">
-                                    <span class="text-[10px] text-gray-500">Meters per piece</span>
-                                </div>
                             </div>
                         </div>
+                        <input type="hidden" name="${inputPrefix}[fabric_consumption]" value="${escapeHtml(v && v.fabric_consumption ? v.fabric_consumption : 1.00)}">
+                        ` : `
+                        <input type="hidden" name="${inputPrefix}[base_quantity]" value="${escapeHtml(v && v.base_quantity ? v.base_quantity : 2)}">
+                        <input type="hidden" name="${inputPrefix}[max_quantity]" value="${escapeHtml(v && v.max_quantity ? v.max_quantity : 4)}">
+                        <input type="hidden" name="${inputPrefix}[fabric_consumption]" value="${escapeHtml(v && v.fabric_consumption ? v.fabric_consumption : 1.00)}">
+                        `}
 
                         ${!<?= !empty($isCustomize) ? 'true' : 'false' ?> ? `
                         <div><label class="block text-xs font-bold text-gray-500 mb-1">Inventory <span class="text-red-500">*</span></label><input type="number" name="${inputPrefix}[inventory]" value="${escapeHtml(inventory)}" required class="w-full border border-gray-200 rounded-lg focus:ring-brown focus:border-brown px-3 py-2 text-sm text-gray-700 shadow-sm"></div>
@@ -2142,6 +2159,19 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => { row.style.background = ''; }, 700);
         });
     }
+
+    document.addEventListener('input', function(e) {
+        if (e.target.matches('.variant-base-qty-input') && e.target.dataset.variantId) {
+            document.querySelectorAll(`.variant-base-qty-input[data-variant-id="${e.target.dataset.variantId}"]`).forEach(el => {
+                if (el !== e.target) el.value = e.target.value;
+            });
+        }
+        if (e.target.matches('.variant-max-qty-input') && e.target.dataset.variantId) {
+            document.querySelectorAll(`.variant-max-qty-input[data-variant-id="${e.target.dataset.variantId}"]`).forEach(el => {
+                if (el !== e.target) el.value = e.target.value;
+            });
+        }
+    });
 </script>
 
 <?php include __DIR__ . '/../../media/_selector_modal.php'; ?>

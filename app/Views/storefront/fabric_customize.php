@@ -1,4 +1,4 @@
-<div class="bg-gray-50 min-h-screen pb-12 md:pb-16">
+<div class="bg-gray-50 min-h-screen pb-6 md:pb-8">
 
     <!-- ── Breadcrumb Section (Matches Product Details & Catalog Bar Style) ── -->
     <div class="bg-white border-b border-gray-200/80 mb-5 md:mb-6">
@@ -40,6 +40,17 @@
                 : 0;
 
             $isWishlisted = !empty($wishlistIds) && in_array((int)$customization['fabric_id'], $wishlistIds);
+
+            $savedSizes = !empty($savedSizes) && is_array($savedSizes) ? $savedSizes : [];
+            $savedSets = !empty($savedSets) && is_array($savedSets) ? $savedSets : [];
+            $savedQty = !empty($savedQty) && (int)$savedQty > 0 ? (int)$savedQty : 1;
+            $savedPkg = !empty($savedPkg) ? $savedPkg : 'with_cover';
+            $reqPcsForOneQty = isset($customization['required_pieces']) && (int)$customization['required_pieces'] > 0 
+                ? (int)$customization['required_pieces'] 
+                : (int)($customization['minimum_pieces'] ?? 35);
+            $maxPcsForOneQty = isset($customization['maximum_pieces']) && (int)$customization['maximum_pieces'] > 0 
+                ? (int)$customization['maximum_pieces'] 
+                : (int)($reqPcsForOneQty * 10);
         ?>
 
         <!-- ── Top Fabric Product Showcase Hero (Matches Screenshot Layout) ── -->
@@ -144,7 +155,7 @@
 
                     <!-- Meta: SKU -->
                     <div class="flex items-center gap-3 text-xs text-gray-500 flex-wrap">
-                        <span>SKU: <strong class="text-gray-800"><?= htmlspecialchars($customization['fabric_sku'] ?? 'N/A') ?></strong></span>
+                        <span>SKU: <strong class="text-gray-800 font-mono" id="fabricSkuDisplay"><?= htmlspecialchars(!empty($customization['fabric_sku']) ? $customization['fabric_sku'] : ($customization['sizes'][0]['variant_sku'] ?? 'N/A')) ?></strong></span>
                     </div>
 
                     <!-- Star Rating Row -->
@@ -179,22 +190,6 @@
                         <span class="text-emerald-700 font-extrabold"><?= number_format((int)$customization['fabric_stock']) ?> Qty</span>
                     </div>
 
-                    <!-- Price Block -->
-                    <div class="bg-gradient-to-r from-pink-50/70 via-rose-50/30 to-white p-4 sm:p-5 rounded-2xl border border-pink-100 flex items-baseline gap-3 flex-wrap">
-                        <span class="text-3xl sm:text-4xl font-black text-gray-900">
-                            ₹<?= number_format($discP, 2) ?>
-                        </span>
-                        <?php if ($discPercent > 0): ?>
-                        <span class="text-base font-semibold text-gray-400 line-through">
-                            ₹<?= number_format($baseP, 2) ?>
-                        </span>
-                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-md bg-rose-50 text-rose-600 border border-rose-200">
-                            <?= $discPercent ?>% OFF
-                        </span>
-                        <?php endif; ?>
-                        <span class="text-xs font-semibold text-gray-500">per <?= htmlspecialchars($customization['unit'] ?? 'Quantity') ?> (Wholesale Rate)</span>
-                    </div>
-
                     <!-- Step 1: Custom Stitching & Sizing Workshop -->
                     <div class="pt-4 border-t border-gray-100 space-y-5">
                         <div>
@@ -221,10 +216,10 @@
                                     <h4 class="font-bold text-gray-900 text-sm flex items-center gap-2 flex-wrap">
                                         <span>Fabric Quantity / Sets</span>
                                         <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-[#db2777] border border-pink-300/70" id="fabricQtyBadge">
-                                            1 Set (1x)
+                                            <?= $savedQty ?> Set<?= $savedQty > 1 ? 's' : '' ?> (<?= $savedQty ?>x)
                                         </span>
-                                        <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-md bg-white text-[#F25996] border border-pink-300 shadow-2xs" id="fabricRequiredBadge">
-                                            Required: <strong id="fabricRequiredPcs"><?= (int)$customization['minimum_pieces'] ?> Pcs</strong> (Max: <strong id="fabricMaxPcs"><?= (int)($customization['maximum_pieces'] ?? ($customization['minimum_pieces'] * 20)) ?> Pcs</strong>)
+                                        <span class="text-xs font-bold px-3 py-1 rounded-full bg-white text-[#F25996] border border-pink-300 shadow-2xs" id="fabricRequiredBadge">
+                                            Required: <strong id="fabricRequiredPcs"><?= (int)($reqPcsForOneQty * $savedQty) ?> Pcs</strong> (Max: <strong id="fabricMaxPcs"><?= (int)($maxPcsForOneQty * $savedQty) ?> Pcs</strong>)
                                         </span>
                                     </h4>
                                     <p class="text-[11px] text-gray-500">Limits scale automatically for the chosen quantity.</p>
@@ -236,7 +231,7 @@
                                         -
                                     </button>
                                     <div class="h-4 w-px bg-pink-200 mx-1"></div>
-                                    <input type="number" id="fabric_multiplier" value="1" min="1" max="999" oninput="onFabricMultiplierChange(this)" class="w-12 h-7 sm:h-8 text-center font-black text-sm sm:text-base text-[#F25996] bg-transparent focus:outline-none">
+                                    <input type="number" id="fabric_multiplier" value="<?= $savedQty ?>" min="1" max="999" oninput="onFabricMultiplierChange(this)" class="w-12 h-7 sm:h-8 text-center font-black text-sm sm:text-base text-[#F25996] bg-transparent focus:outline-none">
                                     <div class="h-4 w-px bg-pink-200 mx-1"></div>
                                     <button type="button" onclick="adjustFabricMultiplier(1)" class="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-black text-lg text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
                                         +
@@ -247,16 +242,21 @@
 
                         <!-- Interactive Size Variant Buttons Grid -->
                         <div>
-                            <div class="flex items-center justify-between mb-2.5">
+                            <div class="flex items-center justify-between mb-2">
                                 <label class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
                                     <span>1. Choose Size Variants:</span>
-                                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-pink-50 text-[#F25996] font-bold border border-pink-200">Click to Select</span>
+                                    <span class="text-[10px] px-2 py-0.5 rounded-md bg-pink-50 text-[#F25996] font-bold border border-pink-200" id="currentConfigSetLabel">Roll / Set #1</span>
                                 </label>
                                 <div class="flex items-center gap-2">
                                     <button type="button" onclick="selectAllVariants()" class="text-xs font-bold text-[#F25996] hover:underline cursor-pointer">Select All</button>
                                     <span class="text-gray-300">•</span>
                                     <button type="button" onclick="clearAllVariants()" class="text-xs font-bold text-gray-500 hover:text-red-500 cursor-pointer">Clear</button>
                                 </div>
+                            </div>
+
+                            <!-- Roll / Set Selector Tabs (when multiple sets exist) -->
+                            <div id="rollTabsContainer" class="flex items-center gap-1.5 overflow-x-auto pb-1 mb-2.5 hide-scrollbar">
+                                <!-- Populated dynamically by renderRollTabs() -->
                             </div>
 
                             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 gap-3" id="variantButtonsGrid">
@@ -272,20 +272,24 @@
                                                 id="btn_size_<?= htmlspecialchars($sz['size_name']) ?>"
                                                 onclick="toggleSizeVariant('<?= htmlspecialchars($sz['size_name']) ?>')"
                                                 data-size="<?= htmlspecialchars($sz['size_name']) ?>"
+                                                data-sku="<?= htmlspecialchars($sz['variant_sku'] ?? '') ?>"
                                                 data-base-qty="<?= $baseQty ?>"
                                                 data-base-max="<?= $maxQty ?>"
                                                 data-price-per-pc="<?= $pricePerPiece ?>"
                                                 data-consumption="<?= $consumptionRate ?>"
                                                 class="variant-btn relative p-3 rounded-2xl border-2 transition-all text-left flex flex-col justify-between group cursor-pointer border-gray-200 bg-white hover:border-pink-300 hover:shadow-xs">
                                             
-                                            <!-- Top: Size Badge & Check Icon -->
+                                            <!-- Top: Size Badge & Piece Count & Check Icon -->
                                             <div class="flex items-center justify-between mb-1.5">
                                                 <span class="w-7 h-7 rounded-xl bg-pink-50 text-[#F25996] font-black text-xs flex items-center justify-center border border-pink-200 group-hover:scale-105 transition-transform">
                                                     <?= htmlspecialchars($sz['size_name']) ?>
                                                 </span>
-                                                <span class="check-icon w-4.5 h-4.5 rounded-full border border-gray-300 flex items-center justify-center text-[9px] text-transparent group-hover:border-pink-400 font-bold transition-all">
-                                                    ✓
-                                                </span>
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="text-xs font-bold text-gray-400 group-hover:text-[#F25996]" id="btn_count_badge_<?= htmlspecialchars($sz['size_name']) ?>">0</span>
+                                                    <span class="check-icon w-4.5 h-4.5 rounded-full border border-gray-300 flex items-center justify-center text-[9px] text-transparent group-hover:border-pink-400 font-bold transition-all">
+                                                        ✓
+                                                    </span>
+                                                </div>
                                             </div>
 
                                             <!-- Price Per Piece -->
@@ -306,92 +310,25 @@
                             </div>
                         </div>
 
-                        <!-- Active Size Quantity Adjusters Section -->
-                        <div id="activeSizesSection" class="space-y-2.5 pt-2 border-t border-gray-100">
+                        <!-- Active Size Quantity Adjusters Section (Dynamic Set Containers) -->
+                        <div id="activeSizesSection" class="space-y-3 pt-2 border-t border-gray-100">
                             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs font-bold text-gray-700">
-                                <span class="uppercase tracking-wider">2. Selected Size Quantities:</span>
+                                <span class="uppercase tracking-wider">2. Selected Size Quantities (By Fabric Set):</span>
                                 <span class="text-[#F25996] font-medium text-[11px]" id="activeVariantNotice"></span>
                             </div>
 
-                            <div class="divide-y divide-gray-100 border border-gray-100 rounded-2xl overflow-hidden bg-gray-50/50" id="selectedSizesSteppersList">
-                                <!-- Empty State Placeholder when no variant selected -->
-                                <div id="emptyVariantsPlaceholder" class="p-5 sm:p-6 text-center bg-white flex flex-col items-center justify-center gap-2">
-                                    <div class="w-9 h-9 rounded-full bg-pink-50 text-[#F25996] flex items-center justify-center text-base">
-                                        👆
-                                    </div>
-                                    <p class="text-xs font-bold text-gray-700">No Size Variants Selected</p>
-                                    <p class="text-[11px] text-gray-500 max-w-sm">Click on any size variant buttons above to choose the sizes and pieces you want to customize.</p>
+                            <!-- Empty State Placeholder when no variant selected -->
+                            <div id="emptyVariantsPlaceholder" class="p-6 text-center bg-white rounded-2xl border border-dashed border-gray-200 flex flex-col items-center justify-center gap-2 hidden">
+                                <div class="w-10 h-10 rounded-full bg-pink-50 text-[#F25996] flex items-center justify-center text-lg">
+                                    👆
                                 </div>
+                                <p class="text-xs font-bold text-gray-700">No Size Variants Selected</p>
+                                <p class="text-[11px] text-gray-500 max-w-sm">Click on any size variant buttons above to choose the sizes and pieces you want to customize.</p>
+                            </div>
 
-                                <?php if (!empty($customization['sizes'])): ?>
-                                    <?php foreach ($customization['sizes'] as $sz): 
-                                        $baseQty = isset($sz['base_quantity']) ? (int)$sz['base_quantity'] : 2;
-                                        $maxQty = isset($sz['max_quantity']) && (int)$sz['max_quantity'] > 0 ? (int)$sz['max_quantity'] : 4;
-                                        $fabricPricePerMeter = (float)($customization['fabric_price'] ?? 0);
-                                        $consumptionRate = (float)($sz['fabric_consumption'] ?? 1);
-                                        $pricePerPiece = round($fabricPricePerMeter * $consumptionRate, 2);
-                                    ?>
-                                        <div id="row_size_<?= htmlspecialchars($sz['size_name']) ?>" class="size-row p-3.5 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-pink-50/30 transition-colors hidden">
-                                            
-                                            <!-- Size Info -->
-                                            <div class="flex items-center gap-3">
-                                                <div class="w-9 h-9 rounded-xl bg-pink-100 text-[#F25996] font-black text-xs flex items-center justify-center border border-pink-200 shrink-0">
-                                                    <?= htmlspecialchars($sz['size_name']) ?>
-                                                </div>
-                                                <div>
-                                                    <div class="font-bold text-xs sm:text-sm text-gray-900 flex items-center gap-2 flex-wrap">
-                                                        <span>Size <?= htmlspecialchars($sz['size_name']) ?></span>
-                                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-100 text-[#db2777] border border-pink-200" id="range_label_<?= htmlspecialchars($sz['size_name']) ?>">
-                                                            Required: <?= $baseQty ?> pcs (Max: <?= $maxQty ?> pcs)
-                                                        </span>
-                                                    </div>
-                                                    <div class="text-[11px] text-gray-500 mt-0.5">
-                                                        Rate: <strong class="text-green-700">₹<?= number_format($pricePerPiece, 2) ?>/pc</strong>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Stepper & Subtotal & Delete Action -->
-                                            <div class="flex items-center gap-2.5 sm:gap-3">
-                                                <div class="inline-flex items-center border-2 border-[#F25996] rounded-full bg-white px-1.5 py-0.5 shadow-xs">
-                                                    <button type="button" onclick="adjustQty('<?= htmlspecialchars($sz['size_name']) ?>', -1)" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-black text-base text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
-                                                        -
-                                                    </button>
-                                                    <div class="h-3.5 w-px bg-pink-200 mx-1"></div>
-                                                    <input type="number" id="qty_<?= htmlspecialchars($sz['size_name']) ?>" data-size="<?= htmlspecialchars($sz['size_name']) ?>" data-rate="<?= (float)$sz['fabric_consumption'] ?>" data-price-per-pc="<?= $pricePerPiece ?>" data-base-qty="<?= $baseQty ?>" data-base-max="<?= $maxQty ?>" data-min="<?= $baseQty ?>" data-max="<?= $maxQty ?>" value="0" min="<?= $baseQty ?>" max="<?= $maxQty ?>" oninput="validateAndRecalc(this)" class="size-qty-input w-10 sm:w-11 h-6 sm:h-7 text-center font-black text-xs sm:text-sm text-[#F25996] bg-transparent focus:outline-none">
-                                                    <div class="h-3.5 w-px bg-pink-200 mx-1"></div>
-                                                    <button type="button" onclick="adjustQty('<?= htmlspecialchars($sz['size_name']) ?>', 1)" class="w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-black text-base text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
-                                                        +
-                                                    </button>
-                                                </div>
-
-                                                <!-- Size Subtotal Gauge -->
-                                                <div class="text-right min-w-[65px]">
-                                                    <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block">Subtotal</span>
-                                                    <span class="text-xs font-bold text-gray-800" id="sub_<?= htmlspecialchars($sz['size_name']) ?>">
-                                                         0 Pcs
-                                                    </span>
-                                                    <span class="text-[10px] font-bold text-green-700 block" id="price_sub_<?= htmlspecialchars($sz['size_name']) ?>">
-                                                        ₹0.00
-                                                    </span>
-                                                </div>
-
-                                                <!-- Delete / Remove Size Button -->
-                                                <button type="button" 
-                                                        onclick="removeSizeVariant('<?= htmlspecialchars($sz['size_name']) ?>')" 
-                                                        title="Remove size <?= htmlspecialchars($sz['size_name']) ?>"
-                                                        class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gray-50 hover:bg-rose-50 text-gray-400 hover:text-rose-600 flex items-center justify-center transition-all cursor-pointer border border-gray-200 hover:border-rose-200 group/del shrink-0">
-                                                    <svg class="w-3.5 h-3.5 transition-transform group-hover/del:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-
-                                        </div>
-                                    <?php endforeach; ?>
-                                <?php else: ?>
-                                    <div class="p-6 text-center text-sm text-gray-500 italic">No sizes configured for this fabric.</div>
-                                <?php endif; ?>
+                            <!-- Dynamic Fabric Set Containers List -->
+                            <div id="fabricSetsContainer" class="space-y-4">
+                                <!-- Generated dynamically via renderFabricSetContainers() -->
                             </div>
                         </div>
 
@@ -447,11 +384,11 @@
                         </div>
                     </div>
 
-                    <!-- Piece Count & Constraint Tracker -->
+                    <!-- Piece Count & Constraint Tracker (Matches Image 3) -->
                     <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 space-y-2">
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="font-bold text-gray-600">Total Stitch Pieces:</span>
-                            <span class="font-black text-sm text-gray-900" id="summaryTotalPieces">0 Pcs</span>
+                        <div class="flex items-center justify-between text-xs sm:text-sm">
+                            <span class="font-bold text-gray-800">Total Stitch Pieces:</span>
+                            <span class="font-black text-sm sm:text-base text-gray-900" id="summaryTotalPieces">0 / <?= (int)($reqPcsForOneQty * $savedQty) ?>–<?= (int)($maxPcsForOneQty * $savedQty) ?> Pcs</span>
                         </div>
                         
                         <!-- Visual Progress Meter -->
@@ -459,9 +396,9 @@
                             <div id="pieceProgressBar" class="h-full bg-[#F25996] transition-all duration-300" style="width: 0%;"></div>
                         </div>
 
-                        <div class="flex items-center justify-between text-[11px] text-gray-500" id="pieceConstraintText">
-                            <span>Min to Enable Checkout: <?= (int)$customization['minimum_pieces'] ?> Pcs</span>
-                            <span>Max Allowed: <?= (int)($customization['maximum_pieces'] ?? ($customization['minimum_pieces'] * 20)) ?> Pcs</span>
+                        <div class="flex items-center justify-between text-[11px] sm:text-xs text-gray-500 font-medium" id="pieceConstraintText">
+                            <span>Min / Roll: <strong class="text-gray-900 font-bold" id="summaryMinPcsDisplay"><?= (int)$reqPcsForOneQty ?> Pcs</strong></span>
+                            <span>Max / Roll: <strong class="text-gray-900 font-bold" id="summaryMaxPcsDisplay"><?= (int)$maxPcsForOneQty ?> Pcs</strong></span>
                         </div>
                     </div>
 
@@ -485,9 +422,14 @@
                         <!-- Hidden elements to preserve ID bindings for JS calculations -->
                         <span id="summaryBaseConsumption" class="hidden">0.00</span>
                         <span id="summaryWastageAmount" class="hidden">+0.00</span>
-                        <span id="summaryFabricCost" class="hidden">₹0.00</span>
-                        <div id="packagingDiscountRow" class="hidden"><span id="summaryCoverDiscount"></span></div>
-                        <span id="summaryGstAmount" class="hidden">₹0.00</span>
+                        <!-- Without Cover Discount Row -->
+                        <div id="packagingDiscountRow" class="hidden items-center justify-between text-xs bg-emerald-50 text-emerald-800 px-2.5 py-1.5 rounded-xl border border-emerald-200">
+                            <span class="flex items-center gap-1 font-bold">
+                                <span>📦 Without Cover Discount</span>
+                                <span class="text-[10px] font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-200/70 text-emerald-900" id="summaryCoverDiscountPct">(-0%)</span>
+                            </span>
+                            <span class="font-black text-emerald-700" id="summaryCoverDiscount">-₹0.00</span>
+                        </div>
                         <span id="deliveryDaysBadge" class="hidden"></span>
                         <span id="deliveryExpectedDate" class="hidden"></span>
                         <span id="deliveryScaleNote" class="hidden"></span>
@@ -532,93 +474,301 @@
 
             </div>
         </div>
+        </div>
 
-        <!-- ── Customer Reviews & Stitching Feedback Section ── -->
-        <div id="customReviewsSection" class="bg-white rounded-3xl border border-gray-100 p-6 sm:p-8 lg:p-10 shadow-xs mb-10">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-gray-100 pb-6 mb-6">
-                <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-pink-50 text-[#F25996] border border-pink-100">Verified Reviews</span>
-                        <span class="text-xs text-gray-400">•</span>
-                        <span class="text-xs font-medium text-gray-500">Custom Stitching &amp; Fabric Feel</span>
-                    </div>
-                    <h3 class="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">Customer Reviews for this Customized Garment</h3>
-                </div>
+        <!-- ── Customer Reviews Section (Matches Product Details Page Pink Container Style) ── -->
+        <?php
+            $crList = !empty($customizationReviews) ? $customizationReviews : [];
+            $crTotal = count($crList);
+            $crCounts = [1 => 0, 2 => 0, 3 => 0, 4 => 0, 5 => 0];
+            foreach ($crList as $crItem) {
+                $r = (int)($crItem['rating'] ?? 5);
+                if ($r < 1) $r = 1;
+                if ($r > 5) $r = 5;
+                $crCounts[$r]++;
+            }
+            $crAvg = $crTotal > 0 ? round(array_sum(array_column($crList, 'rating')) / $crTotal, 1) : (!empty($customizationStats['avg_rating']) ? (float)$customizationStats['avg_rating'] : 0.0);
+        ?>
+        <div id="customReviewsSection" class="w-full max-w-full mx-auto py-2 sm:py-4 mb-4 sm:mb-6">
+            <div class="rounded-2xl sm:rounded-3xl shadow-sm overflow-hidden" style="background-color: #fce7f1; border: 1.5px solid #fbcfe8;">
 
-                <div class="flex items-center gap-3 bg-gray-50 px-4 py-2.5 rounded-2xl border border-gray-100 self-start sm:self-auto">
-                    <div class="text-2xl font-black text-gray-900"><?= $totalCustomRevs > 0 ? number_format($avgCustomRating, 1) : '—' ?></div>
+                <!-- Mobile View Header -->
+                <div class="sm:hidden p-4 pb-2 flex items-center justify-between">
                     <div>
-                        <div class="flex">
-                            <?php for($i=1; $i<=5; $i++): ?>
-                                <svg class="w-3.5 h-3.5 <?= ($totalCustomRevs > 0 && $i <= round($avgCustomRating)) ? 'text-amber-400 fill-current' : 'text-gray-200 fill-current' ?>" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                            <?php endfor; ?>
-                        </div>
-                        <p class="text-[10px] text-gray-500 font-semibold mt-0.5"><?= $totalCustomRevs ?> Customer Rating<?= $totalCustomRevs === 1 ? '' : 's' ?></p>
+                        <h2 class="text-xl font-extrabold text-gray-900 tracking-tight">Customer Reviews</h2>
+                        <p class="text-xs text-gray-500 font-normal mt-0.5"><?= $crTotal ?> verified review<?= $crTotal !== 1 ? 's' : '' ?></p>
                     </div>
+                    <?php if ($crTotal > 1): ?>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="slideCustomReviewPrev()" class="w-8 h-8 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 transition shadow-sm active:scale-95" title="Previous">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+                        <button type="button" onclick="slideCustomReviewNext()" class="w-8 h-8 flex items-center justify-center rounded-full bg-[#F25996] hover:bg-[#d8407d] text-white transition shadow-sm active:scale-95" title="Next">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                    </div>
+                    <?php endif; ?>
                 </div>
-            </div>
 
-            <?php if (empty($customizationReviews)): ?>
-                <div class="text-center py-12 px-4 bg-gray-50/60 rounded-2xl border border-dashed border-gray-200">
-                    <span class="w-12 h-12 rounded-full bg-pink-50 text-[#F25996] inline-flex items-center justify-center text-xl mb-3 shadow-2xs">✂️</span>
-                    <h4 class="text-sm sm:text-base font-bold text-gray-800">No reviews yet for this custom program</h4>
-                    <p class="text-xs text-gray-500 max-w-md mx-auto mt-1 leading-relaxed">
-                        Be the first to order and customize this fabric! Once your order status is marked as delivered, you can rate and review your finished garments directly from your order details dashboard.
-                    </p>
-                </div>
-            <?php else: ?>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                    <?php foreach ($customizationReviews as $rev): 
-                        $revPhotos = !empty($rev['photos']) ? (json_decode($rev['photos'], true) ?: []) : [];
-                    ?>
-                        <div class="p-5 rounded-2xl border border-gray-100 bg-[#fafafa]/60 hover:bg-white hover:shadow-md transition-all space-y-3">
-                            <div class="flex items-start justify-between gap-3">
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        <div class="w-8 h-8 rounded-full bg-[#F25996]/10 text-[#F25996] flex items-center justify-center font-bold text-xs uppercase">
-                                            <?= htmlspecialchars(substr($rev['reviewer_name'] ?? 'U', 0, 1)) ?>
+                <!-- Single Row Reviews Section (Left: Rating Summary, Right: Review Cards) -->
+                <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 p-3 sm:p-8">
+                    
+                    <?php if (!empty($crList)): ?>
+                    <!-- 1. Customer Reviews Rating Summary Card (Left Side) -->
+                    <div class="hidden sm:block w-[320px] flex-shrink-0">
+                        <div class="bg-white rounded-2xl p-5 border border-pink-100 h-full flex flex-col justify-center text-center shadow-xs">
+                            <div>
+                                <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Customer Reviews</div>
+                                <!-- Star Emblem with Rating -->
+                                <div class="relative w-28 h-28 mx-auto flex items-center justify-center my-2 flex-shrink-0">
+                                    <svg class="w-full h-full text-[#F25996] drop-shadow-xs" fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.784 1.399 8.163L12 18.896l-7.333 3.861 1.399-8.163-5.934-5.784 8.2-1.192zm0 0"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center pt-2">
+                                        <span class="text-3xl font-black text-white leading-none"><?= number_format($crAvg, 1) ?></span>
+                                        <span class="text-[10px] font-bold text-white/90 tracking-tight mt-1">Out of 5</span>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-500 font-medium mt-2 mb-5">Based on <?= $crTotal ?> review<?= $crTotal !== 1 ? 's' : '' ?></p>
+                            </div>
+
+                            <!-- 5-Star Breakdown Bars -->
+                            <div class="space-y-2 w-full text-left px-2">
+                                <?php for ($star = 5; $star >= 1; $star--): ?>
+                                    <?php 
+                                        $count = $crCounts[$star] ?? 0;
+                                        $pct = $crTotal > 0 ? round(($count / $crTotal) * 100) : 0;
+                                    ?>
+                                    <div class="flex items-center gap-2 text-sm">
+                                        <div class="flex text-amber-400 w-16 justify-end text-xs gap-0.5 flex-shrink-0">
+                                            <?php for ($s = 1; $s <= $star; $s++): ?>★<?php endfor; ?>
                                         </div>
+                                        <div class="flex-1 h-2.5 bg-pink-100 rounded-full overflow-hidden">
+                                            <div class="h-full bg-[#F25996] rounded-full transition-all duration-500" style="width: <?= $pct ?>%;"></div>
+                                        </div>
+                                        <span class="w-4 text-right text-xs font-semibold text-gray-500 flex-shrink-0"><?= $count ?></span>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+
+                    <!-- RIGHT COLUMN: Reviews Slider / Grid -->
+                    <div class="flex-1 min-w-0">
+                        <!-- Desktop Header Controls -->
+                        <div class="hidden sm:flex items-center justify-between mb-4">
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900">Buyer Reviews</h3>
+                                <?php if ($crTotal > 0): ?>
+                                    <span class="bg-gray-100 text-gray-600 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                                        <span id="custom-review-slide-num">1</span> / <?= $crTotal ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                            
+                            <?php if ($crTotal > 1): ?>
+                            <div class="flex items-center gap-2">
+                                <button type="button" id="customReviewPrevBtn" onclick="slideCustomReviewPrev()" class="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 transition shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none" title="Previous Review">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
+                                </button>
+                                <button type="button" id="customReviewNextBtn" onclick="slideCustomReviewNext()" class="w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-full bg-[#F25996] hover:bg-[#d8407d] text-white transition shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none" title="Next Review">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
+                                </button>
+                            </div>
+                            <?php endif; ?>
+                        </div>
+
+                        <?php if (empty($crList)): ?>
+                            <div class="text-center py-8 sm:py-10 px-4 bg-white/70 rounded-2xl border border-pink-100">
+                                <svg class="w-10 h-10 text-pink-300 mx-auto mb-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                                <p class="text-gray-700 font-bold text-sm">No reviews yet for this custom program</p>
+                                <p class="text-gray-500 font-medium text-xs mt-1 max-w-md mx-auto">Be the first to order and customize this fabric! Once your order status is marked as delivered, you can rate and review your finished garments.</p>
+                            </div>
+                        <?php else: ?>
+                            <!-- Slider Track -->
+                            <div id="custom-review-slider-track" class="flex overflow-x-auto gap-3 sm:gap-4 pb-3 pt-1 snap-x snap-mandatory scroll-smooth touch-pan-x hide-scrollbar select-none cursor-grab">
+                                
+                                <!-- Mobile-only Rating Summary Slide -->
+                                <div class="custom-review-slide-card sm:hidden flex-none w-[85vw] max-w-[320px]">
+                                    <div class="bg-white rounded-2xl p-4 border border-pink-100 h-full flex flex-col justify-between text-center shadow-xs">
                                         <div>
-                                            <h5 class="text-xs sm:text-sm font-bold text-gray-900"><?= htmlspecialchars($rev['reviewer_name']) ?></h5>
-                                            <p class="text-[10px] text-gray-400 font-medium"><?= date('M d, Y', strtotime($rev['created_at'])) ?></p>
+                                            <div class="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Customer Reviews</div>
+                                            <div class="relative w-24 h-24 mx-auto flex items-center justify-center my-1 flex-shrink-0">
+                                                <svg class="w-full h-full text-[#F25996] drop-shadow-xs" fill="currentColor" viewBox="0 0 24 24">
+                                                    <path d="M12 .587l3.668 7.431 8.2 1.192-5.934 5.784 1.399 8.163L12 18.896l-7.333 3.861 1.399-8.163-5.934-5.784 8.2-1.192zm0 0"/>
+                                                </svg>
+                                                <div class="absolute inset-0 flex flex-col items-center justify-center text-center pt-1.5">
+                                                    <span class="text-2xl font-black text-white leading-none"><?= number_format($crAvg, 1) ?></span>
+                                                    <span class="text-[9px] font-bold text-white/90 tracking-tight mt-0.5">Out of 5</span>
+                                                </div>
+                                            </div>
+                                            <p class="text-xs text-gray-500 font-medium mt-1 mb-3">Based on <?= $crTotal ?> review<?= $crTotal !== 1 ? 's' : '' ?></p>
+                                        </div>
+
+                                        <!-- 5-Star Breakdown Bars -->
+                                        <div class="space-y-1.5 w-full text-left">
+                                            <?php for ($star = 5; $star >= 1; $star--): ?>
+                                                <?php 
+                                                    $count = $crCounts[$star] ?? 0;
+                                                    $pct = $crTotal > 0 ? round(($count / $crTotal) * 100) : 0;
+                                                ?>
+                                                <div class="flex items-center gap-2 text-xs">
+                                                    <div class="flex text-amber-400 w-16 justify-end text-[11px] gap-0.5 flex-shrink-0">
+                                                        <?php for ($s = 1; $s <= $star; $s++): ?>★<?php endfor; ?>
+                                                    </div>
+                                                    <div class="flex-1 h-2 bg-pink-100 rounded-full overflow-hidden">
+                                                        <div class="h-full bg-[#F25996] rounded-full transition-all duration-500" style="width: <?= $pct ?>%;"></div>
+                                                    </div>
+                                                    <span class="w-4 text-right text-xs font-semibold text-gray-500 flex-shrink-0"><?= $count ?></span>
+                                                </div>
+                                            <?php endfor; ?>
                                         </div>
                                     </div>
                                 </div>
-                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200 flex items-center gap-1">
-                                    <svg class="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-                                    Verified Buyer
-                                </span>
+
+                                <!-- Buyer Review Cards -->
+                                <?php foreach ($crList as $idx => $rev): ?>
+                                    <?php
+                                        $initials = strtoupper(substr($rev['reviewer_name'] ?? 'U', 0, 1));
+                                        $avatarColors = ['bg-amber-100 text-amber-800', 'bg-violet-100 text-violet-800', 'bg-blue-100 text-blue-800', 'bg-emerald-100 text-emerald-800', 'bg-rose-100 text-rose-800'];
+                                        $avatarClass  = $avatarColors[ord($initials) % count($avatarColors)];
+                                        $photos = !empty($rev['photos']) ? (is_array($rev['photos']) ? $rev['photos'] : json_decode($rev['photos'], true)) : [];
+                                        
+                                        $lines = explode("\n", trim($rev['review_text'] ?? ''));
+                                        $hasHeadline = count($lines) > 1 && strlen($lines[0]) < 50;
+                                        $headline = $hasHeadline ? $lines[0] : '';
+                                        $bodyContent = $hasHeadline ? implode("\n", array_slice($lines, 1)) : ($rev['review_text'] ?? '');
+                                    ?>
+                                    <div class="custom-review-slide-card flex-none w-[85vw] max-w-[320px] sm:w-[300px] lg:w-[calc((100%-32px)/3)]">
+                                        <div class="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 h-full flex flex-col shadow-xs hover:shadow-md transition-shadow">
+                                            <!-- Top Row: Avatar + Name + Verified Purchase Badge -->
+                                            <div class="flex items-start gap-3 mb-2.5">
+                                                <div class="w-10 h-10 rounded-full <?= $avatarClass ?> flex items-center justify-center font-bold text-sm flex-shrink-0 shadow-2xs">
+                                                    <?= $initials ?>
+                                                </div>
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="flex items-center gap-2 flex-wrap">
+                                                        <span class="font-bold text-gray-900 text-sm leading-snug truncate"><?= htmlspecialchars($rev['reviewer_name'] ?? 'Customer') ?></span>
+                                                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                                                            <svg class="w-2.5 h-2.5 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                            Verified Purchase
+                                                        </span>
+                                                    </div>
+                                                    <div class="flex items-center gap-2 mt-1">
+                                                        <div class="flex text-amber-400 text-xs gap-0.5">
+                                                            <?php for($i=1; $i<=5; $i++): ?>
+                                                                <svg class="w-3.5 h-3.5 <?= $i <= (int)($rev['rating'] ?? 5) ? 'fill-current text-amber-400' : 'fill-current text-gray-200' ?>" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                                            <?php endfor; ?>
+                                                        </div>
+                                                        <span class="text-xs text-gray-400"><?= !empty($rev['created_at']) ? date('d M Y', strtotime($rev['created_at'])) : '' ?></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Headline if present -->
+                                            <?php if ($headline): ?>
+                                                <h4 class="font-bold text-gray-900 text-sm mt-1 leading-snug break-words"><?= htmlspecialchars($headline) ?></h4>
+                                            <?php endif; ?>
+
+                                            <!-- Body text -->
+                                            <?php $textToDisplay = $bodyContent ?: ($rev['review_text'] ?? ''); ?>
+                                            <?php if (!empty($textToDisplay)): ?>
+                                                <p class="text-gray-600 text-xs sm:text-sm leading-relaxed flex-1 mt-1.5 mb-3 break-words"><?= nl2br(htmlspecialchars($textToDisplay)) ?></p>
+                                            <?php else: ?>
+                                                <div class="flex-1"></div>
+                                            <?php endif; ?>
+
+                                            <!-- Attached Photos Row -->
+                                            <?php if (!empty($photos)): ?>
+                                                <div class="flex gap-2 mt-auto flex-wrap pt-1 mb-2">
+                                                    <?php foreach (array_slice($photos, 0, 4) as $photo): ?>
+                                                        <a href="<?= get_image_url($photo) ?>" target="_blank" class="block group">
+                                                            <img src="<?= get_image_url($photo) ?>" class="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border border-gray-200 group-hover:border-emerald-400 group-hover:scale-105 transition-all duration-200 shadow-2xs" alt="Review photo">
+                                                        </a>
+                                                    <?php endforeach; ?>
+                                                    <?php if (count($photos) > 4): ?>
+                                                        <div class="w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-xl flex items-center justify-center text-xs text-gray-500 font-bold border border-gray-200">+<?= count($photos) - 4 ?></div>
+                                                    <?php endif; ?>
+                                                </div>
+                                            <?php endif; ?>
+
+                                            <!-- Card Footer: Helpful Feedback -->
+                                            <div class="pt-2.5 border-t border-gray-100 flex items-center justify-between mt-auto text-xs">
+                                                <span class="text-gray-400 font-medium text-[10px] sm:text-[11px]">Helpful?</span>
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold">
+                                                        <span>👍</span> <span><?= (int)($rev['helpful_yes'] ?? 0) ?></span>
+                                                    </span>
+                                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold">
+                                                        <span>👎</span> <span><?= (int)($rev['helpful_no'] ?? 0) ?></span>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                <?php endforeach; ?>
                             </div>
-
-                            <!-- Rating Stars -->
-                            <div class="flex text-amber-400">
-                                <?php for($i=1; $i<=5; $i++): ?>
-                                    <svg class="w-4 h-4 <?= $i <= $rev['rating'] ? 'fill-current' : 'text-gray-200 fill-current' ?>" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                                <?php endfor; ?>
-                            </div>
-
-                            <!-- Comment -->
-                            <?php if (!empty($rev['review_text'])): ?>
-                                <p class="text-xs sm:text-sm text-gray-700 leading-relaxed italic">
-                                    “<?= nl2br(htmlspecialchars($rev['review_text'])) ?>”
-                                </p>
-                            <?php endif; ?>
-
-                            <!-- Photos -->
-                            <?php if (!empty($revPhotos)): ?>
-                                <div class="flex flex-wrap gap-2 pt-1">
-                                    <?php foreach ($revPhotos as $p): ?>
-                                        <a href="<?= get_image_url($p) ?>" target="_blank" class="block w-14 h-14 rounded-xl overflow-hidden border border-gray-200 shadow-2xs hover:scale-105 transition-transform">
-                                            <img src="<?= get_image_url($p) ?>" class="w-full h-full object-cover" alt="Buyer custom photo">
-                                        </a>
-                                    <?php endforeach; ?>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
                 </div>
-            <?php endif; ?>
+            </div>
         </div>
+
+        <script>
+        let activeCustomReviewIndex = 0;
+        const totalCustomReviewSlides = <?= $crTotal ?>;
+
+        function getCustomReviewTrack() {
+            return document.getElementById('custom-review-slider-track');
+        }
+
+        function getCustomVisibleCards() {
+            const track = getCustomReviewTrack();
+            if (!track) return [];
+            return Array.from(track.querySelectorAll('.custom-review-slide-card')).filter(c => c.offsetWidth > 0);
+        }
+
+        function slideCustomReviewPrev() {
+            const track = getCustomReviewTrack();
+            if (!track) return;
+            const cards = getCustomVisibleCards();
+            if (activeCustomReviewIndex > 0) {
+                goToCustomReviewSlide(activeCustomReviewIndex - 1);
+            } else {
+                const cardWidth = cards[0]?.offsetWidth || 300;
+                track.scrollBy({ left: -(cardWidth + 16), behavior: 'smooth' });
+            }
+        }
+
+        function slideCustomReviewNext() {
+            const track = getCustomReviewTrack();
+            if (!track) return;
+            const cards = getCustomVisibleCards();
+            if (activeCustomReviewIndex < cards.length - 1) {
+                goToCustomReviewSlide(activeCustomReviewIndex + 1);
+            } else {
+                const cardWidth = cards[0]?.offsetWidth || 300;
+                track.scrollBy({ left: (cardWidth + 16), behavior: 'smooth' });
+            }
+        }
+
+        function goToCustomReviewSlide(index) {
+            const track = getCustomReviewTrack();
+            if (!track) return;
+            const cards = getCustomVisibleCards();
+            if (cards[index]) {
+                cards[index].scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' });
+                activeCustomReviewIndex = index;
+                const counter = document.getElementById('custom-review-slide-num');
+                if (counter) counter.innerText = (index + 1);
+                const prevBtn = document.getElementById('customReviewPrevBtn');
+                const nextBtn = document.getElementById('customReviewNextBtn');
+                if (prevBtn) prevBtn.disabled = (index <= 0);
+                if (nextBtn) nextBtn.disabled = (index >= cards.length - 1);
+            }
+        }
+        </script>
 
     </div>
 </div>
@@ -768,8 +918,8 @@ document.addEventListener('keydown', function(e) {
 
 const FABRIC_ID = <?= (int)$customization['fabric_id'] ?>;
 const CUSTOMIZATION_ID = <?= (int)$customization['id'] ?>;
-const MIN_PIECES = <?= (int)$customization['minimum_pieces'] ?>;
-const MAX_PIECES = <?= (int)($customization['maximum_pieces'] ?? ($customization['minimum_pieces'] * 20)) ?>;
+const MIN_PIECES = <?= (int)$reqPcsForOneQty ?>;
+const MAX_PIECES = <?= (int)$maxPcsForOneQty ?>;
 const FABRIC_STOCK = <?= (float)$customization['fabric_stock'] ?>;
 const UNIT = <?= json_encode($customization['unit'] ?? 'Qty') ?>;
 const BASE_URL = <?= json_encode(BASE_URL) ?>;
@@ -780,7 +930,15 @@ const WITHOUT_COVER_DISCOUNT_PCT = <?= (float)($customization['without_cover_dis
 const DELIVERY_DAYS = <?= (int)($customization['delivery_days'] ?? 7) ?>;
 const DELIVERY_BASE_PIECES = <?= (int)($customization['delivery_base_pieces'] ?? 100) ?>;
 
-let selectedPackagingOption = 'with_cover';
+const SAVED_SIZES = <?= json_encode($savedSizes) ?>;
+const SAVED_SETS = <?= json_encode($savedSets) ?>;
+const SAVED_QTY = <?= (int)$savedQty ?>;
+const SAVED_PKG = <?= json_encode($savedPkg) ?>;
+const CUSTOMIZATION_LABELS = <?= json_encode($customization['labels'] ?? []) ?>;
+
+let fabricSetsData = [];
+let activeConfigSet = 1; // 1, 2, ... or 'all'
+let selectedPackagingOption = SAVED_PKG || 'with_cover';
 let selectedSizeNames = []; // Preserves selection sequence
 let currentCalc = null;
 
@@ -816,16 +974,29 @@ function getFabricQuantity() {
 function adjustFabricMultiplier(delta) {
     const inp = document.getElementById('fabric_multiplier');
     if (!inp) return;
+    const maxStock = Math.max(1, Math.floor(FABRIC_STOCK));
     let val = (parseInt(inp.value) || 1) + delta;
     if (val < 1) val = 1;
+    if (val > maxStock) {
+        val = maxStock;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stock Limit Reached',
+                text: `Quantity cannot exceed available stock (${maxStock} Qty).`,
+                confirmButtonColor: '#F25996'
+            });
+        }
+    }
     inp.value = val;
     onFabricMultiplierChange(inp);
 }
 
 function getSizeLimits(sizeName, mult) {
-    if (!mult) mult = getFabricQuantity();
+    if (!mult) mult = 1;
     const sObj = SIZES_CONFIG.find(s => s.size_name === sizeName);
-    const baseMin = sObj && parseInt(sObj.base_quantity) > 0 ? parseInt(sObj.base_quantity) : 2;
+    const rawMin = sObj && parseInt(sObj.base_quantity) > 0 ? parseInt(sObj.base_quantity) : 2;
+    const baseMin = Math.max(1, Math.min(rawMin, MIN_PIECES));
     const baseMax = sObj && parseInt(sObj.max_quantity) > 0 ? parseInt(sObj.max_quantity) : 35;
     return {
         min: baseMin * mult,
@@ -835,11 +1006,480 @@ function getSizeLimits(sizeName, mult) {
     };
 }
 
+// Synchronize fabricSetsData array to match targetCount sets
+function syncFabricSets(targetCount) {
+    const mult = Math.max(1, targetCount);
+
+    // Expand if more sets needed
+    while (fabricSetsData.length < mult) {
+        const setIdx = fabricSetsData.length + 1;
+        let defaultLabel = null;
+        if (CUSTOMIZATION_LABELS && CUSTOMIZATION_LABELS.length > 0) {
+            defaultLabel = CUSTOMIZATION_LABELS[(setIdx - 1) % CUSTOMIZATION_LABELS.length];
+        }
+
+        // Initialize with sizes respecting MAX_PIECES
+        const defaultSizes = [];
+        const setSizes = {};
+        let currentSum = 0;
+        SIZES_CONFIG.forEach(sz => {
+            const limits = getSizeLimits(sz.size_name, 1);
+            if (currentSum + limits.baseMin <= MAX_PIECES) {
+                defaultSizes.push(sz.size_name);
+                setSizes[sz.size_name] = limits.baseMin;
+                currentSum += limits.baseMin;
+            } else if (defaultSizes.length === 0) {
+                const q = Math.max(1, Math.min(limits.baseMin, MAX_PIECES));
+                defaultSizes.push(sz.size_name);
+                setSizes[sz.size_name] = q;
+                currentSum += q;
+            }
+        });
+
+        fabricSetsData.push({
+            set_id: setIdx,
+            label_id: defaultLabel ? defaultLabel.id : '',
+            label_name: defaultLabel ? (defaultLabel.display_label || defaultLabel.name) : 'Default Custom Garment',
+            selected_sizes: defaultSizes.length > 0 ? [...defaultSizes] : SIZES_CONFIG.map(s => s.size_name),
+            sizes: setSizes
+        });
+    }
+
+    // Shrink if fewer sets needed
+    if (fabricSetsData.length > mult) {
+        fabricSetsData = fabricSetsData.slice(0, mult);
+    }
+
+    if (activeConfigSet !== 'all' && activeConfigSet > mult) {
+        activeConfigSet = 1;
+    }
+}
+
+// Render Roll / Set Selector Tabs in Section 1
+function renderRollTabs() {
+    const container = document.getElementById('rollTabsContainer');
+    if (!container) return;
+
+    const mult = getFabricQuantity();
+    if (mult <= 1) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        return;
+    }
+
+    container.classList.remove('hidden');
+
+    let tabsHtml = `
+        <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider shrink-0 mr-1 flex items-center gap-1">
+            <span>Roll:</span>
+        </span>
+    `;
+
+    fabricSetsData.forEach((st, sIdx) => {
+        const setNum = sIdx + 1;
+        const isActive = activeConfigSet === setNum;
+        const sizeCount = (st.selected_sizes || []).length;
+        const btnClass = isActive 
+            ? 'px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 shadow-xs bg-[#F25996] text-white border-2 border-[#F25996] cursor-pointer'
+            : 'px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 border border-pink-200 text-gray-700 bg-white hover:bg-pink-50 cursor-pointer';
+        const badgeClass = isActive 
+            ? 'text-[10px] font-extrabold px-1.5 py-0.2 rounded-full bg-white/25 text-white'
+            : 'text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-pink-50 text-[#F25996] border border-pink-100';
+
+        tabsHtml += `
+            <button type="button" onclick="setActiveConfigSet(${setNum})" class="${btnClass}">
+                <span>🧵 Roll #${setNum}</span>
+                <span class="${badgeClass}">${sizeCount} sizes</span>
+            </button>
+        `;
+    });
+
+    const isAllActive = activeConfigSet === 'all';
+    const allBtnClass = isAllActive
+        ? 'px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1 shadow-xs bg-gray-900 text-white border-2 border-gray-900 cursor-pointer ml-auto shrink-0'
+        : 'px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1 border border-gray-200 text-gray-600 bg-white hover:bg-gray-50 cursor-pointer ml-auto shrink-0';
+
+    tabsHtml += `
+        <button type="button" onclick="setActiveConfigSet('all')" class="${allBtnClass}">
+            <span>⚡ All Rolls</span>
+        </button>
+    `;
+
+    container.innerHTML = tabsHtml;
+}
+
+function setActiveConfigSet(setKey) {
+    activeConfigSet = setKey;
+    applyVariantSelectionFlow();
+}
+
+// Render dynamic Set Containers under Section 2
+function renderFabricSetContainers() {
+    const container = document.getElementById('fabricSetsContainer');
+    if (!container) return;
+
+    const mult = getFabricQuantity();
+    const placeholder = document.getElementById('emptyVariantsPlaceholder');
+
+    // Check if ANY set has sizes selected
+    const totalSetSizesCount = fabricSetsData.reduce((acc, st) => acc + (st.selected_sizes || []).length, 0);
+
+    if (totalSetSizesCount === 0) {
+        if (placeholder) placeholder.classList.remove('hidden');
+        container.innerHTML = '';
+        return;
+    }
+
+    if (placeholder) placeholder.classList.add('hidden');
+
+    let html = '';
+
+    fabricSetsData.forEach((st, sIdx) => {
+        const setIdx = sIdx + 1;
+        const setSizes = st.selected_sizes || [];
+        let setTotalPcs = 0;
+        if (st.sizes) {
+            setSizes.forEach(sz => {
+                setTotalPcs += (parseInt(st.sizes[sz]) || 0);
+            });
+        }
+
+        // Generate label options
+        let labelOptionsHtml = '';
+        if (CUSTOMIZATION_LABELS && CUSTOMIZATION_LABELS.length > 0) {
+            let matched = false;
+            CUSTOMIZATION_LABELS.forEach((lbl, lIdx) => {
+                const isSel = (!matched && (lbl.id == st.label_id || lbl.display_label === st.label_name || lbl.name === st.label_name || (!st.label_id && lIdx === (setIdx - 1) % CUSTOMIZATION_LABELS.length)));
+                if (isSel) {
+                    matched = true;
+                    st.label_id = lbl.id;
+                    st.label_name = lbl.display_label || lbl.name;
+                }
+                const txt = lbl.display_label || lbl.name;
+                labelOptionsHtml += `<option value="${lbl.id}" ${isSel ? 'selected' : ''}>${txt}</option>`;
+            });
+        } else {
+            labelOptionsHtml = `<option value="">Standard Custom Style</option>`;
+        }
+
+        const isMet = setTotalPcs >= MIN_PIECES;
+        const badgeClass = isMet 
+            ? 'text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap shadow-2xs'
+            : 'text-xs font-bold px-2.5 py-1 rounded-xl bg-pink-50 text-[#F25996] border border-pink-200 whitespace-nowrap shadow-2xs';
+        const badgeText = isMet 
+            ? `✅ ${setTotalPcs} Pcs` 
+            : `${setTotalPcs} / ${MIN_PIECES} Pcs`;
+
+        // Generate size pills for this set container
+        let sizePillsHtml = '';
+        SIZES_CONFIG.forEach(sz => {
+            const isSizeInSet = setSizes.includes(sz.size_name);
+            if (isSizeInSet) {
+                sizePillsHtml += `
+                    <button type="button" onclick="toggleSetSize(${setIdx}, '${sz.size_name}')" class="px-2.5 py-1 rounded-lg text-[11px] font-black bg-[#F25996] text-white border border-[#F25996] hover:bg-[#d8407d] transition-all flex items-center gap-1 shadow-2xs cursor-pointer" title="Remove ${sz.size_name} from Roll #${setIdx}">
+                        <span>${sz.size_name}</span>
+                        <span class="text-[9px]">✓</span>
+                    </button>
+                `;
+            } else {
+                sizePillsHtml += `
+                    <button type="button" onclick="toggleSetSize(${setIdx}, '${sz.size_name}')" class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white text-gray-600 border border-gray-200 hover:border-pink-300 hover:text-[#F25996] hover:bg-pink-50/50 transition-all flex items-center gap-1 cursor-pointer" title="Add ${sz.size_name} to Roll #${setIdx}">
+                        <span>${sz.size_name}</span>
+                        <span class="text-[9px] text-gray-400 font-bold">+</span>
+                    </button>
+                `;
+            }
+        });
+
+        html += `
+        <div class="fabric-set-card bg-white rounded-2xl border-2 border-pink-100 shadow-xs p-3.5 sm:p-4 mb-3.5 transition-all hover:border-[#F25996]/40" id="set_card_${setIdx}">
+            <!-- Header of Set Container -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-pink-100/80 mb-2">
+                <div class="flex items-center gap-2.5">
+                    <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#F25996] to-[#db2777] text-white font-black text-xs flex items-center justify-center shadow-xs">#${setIdx}</span>
+                    <div>
+                        <h4 class="font-extrabold text-sm text-gray-900 flex items-center gap-2">
+                            <span>Roll / Set #${setIdx}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-50 text-[#F25996] border border-pink-100">${setSizes.length} variant(s)</span>
+                        </h4>
+                        <p class="text-[11px] text-gray-500">Configure label & piece allocation for this roll</p>
+                    </div>
+                </div>
+
+                <!-- Label Selector & Set Piece Badge -->
+                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <label class="text-xs font-bold text-gray-700 flex items-center gap-1 shrink-0">
+                        <span>🏷️ Style / Label:</span>
+                    </label>
+                    <select class="set-label-select text-xs font-bold bg-white border-2 border-pink-200 text-gray-800 rounded-xl px-3 py-1.5 focus:outline-none focus:border-[#F25996] focus:ring-2 focus:ring-pink-200 cursor-pointer shadow-xs max-w-[260px] truncate" onchange="onSetLabelChange(${setIdx}, this)">
+                        ${labelOptionsHtml}
+                    </select>
+                    <span class="${badgeClass}" id="set_pieces_badge_${setIdx}">
+                        ${badgeText}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Per-Set Size Variant Selector Bar -->
+            <div class="flex items-center justify-between gap-2 flex-wrap bg-pink-50/40 p-2.5 rounded-xl border border-pink-100/80 mb-2.5">
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-[11px] font-bold text-gray-700 mr-1 flex items-center gap-1">
+                        <span>Sizes in Roll #${setIdx}:</span>
+                    </span>
+                    ${sizePillsHtml}
+                </div>
+                <button type="button" onclick="setActiveConfigSet(${setIdx})" class="text-[11px] font-bold text-[#F25996] hover:underline cursor-pointer ml-auto">
+                    Configure above ↑
+                </button>
+            </div>
+
+            <!-- Variant Steppers for this Set -->
+            <div class="divide-y divide-gray-100" id="set_variants_list_${setIdx}">
+        `;
+
+        if (setSizes.length === 0) {
+            html += `
+                <div class="p-4 text-center text-xs text-gray-400 font-medium">
+                    No size variants selected for Roll #${setIdx}. Click any size pill above to add sizes to this roll.
+                </div>
+            `;
+        }
+
+        // Generate rows ONLY for sizes selected in this set!
+        setSizes.forEach(sizeName => {
+            const sz = SIZES_CONFIG.find(s => s.size_name === sizeName) || { size_name: sizeName, fabric_consumption: 1.0 };
+            const limits = getSizeLimits(sizeName, 1);
+            const qty = (st.sizes && st.sizes[sizeName] !== undefined && st.sizes[sizeName] > 0) ? parseInt(st.sizes[sizeName]) : limits.baseMin;
+            if (st.sizes) st.sizes[sizeName] = qty;
+            const fabricPricePerMeter = FABRIC_PRICE_PER_UNIT;
+            const consumptionRate = parseFloat(sz.fabric_consumption) || 1.0;
+            const pricePerPiece = Math.round(fabricPricePerMeter * consumptionRate * 100) / 100;
+            const subtotal = Math.round(pricePerPiece * qty * 100) / 100;
+
+            html += `
+                <div class="size-row p-3 bg-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-pink-50/20 transition-colors" id="row_set_${setIdx}_${sizeName}">
+                    <!-- Size Info -->
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-pink-100 text-[#F25996] font-black text-xs flex items-center justify-center border border-pink-200 shrink-0">
+                            ${sizeName}
+                        </div>
+                        <div>
+                            <div class="font-bold text-xs sm:text-sm text-gray-900 flex items-center gap-2 flex-wrap">
+                                <span>Size ${sizeName}</span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-50 text-[#db2777] border border-pink-200">
+                                    Required: ${limits.baseMin} pcs (Max: ${limits.baseMax} pcs)
+                                </span>
+                            </div>
+                            <div class="text-[11px] text-gray-500 mt-0.5">
+                                Rate: <strong class="text-green-700">₹${pricePerPiece.toFixed(2)}/pc</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stepper & Subtotal -->
+                    <div class="flex items-center gap-3 self-end sm:self-auto">
+                        <div class="inline-flex items-center border-2 border-[#F25996] rounded-full bg-white px-1.5 py-0.5 shadow-xs">
+                            <button type="button" onclick="adjustSetQty(${setIdx}, '${sizeName}', -1)" class="w-6 h-6 rounded-full flex items-center justify-center font-black text-base text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
+                                -
+                            </button>
+                            <div class="h-3.5 w-px bg-pink-200 mx-1"></div>
+                            <input type="number" 
+                                   id="qty_set_${setIdx}_${sizeName}" 
+                                   data-set="${setIdx}" 
+                                   data-size="${sizeName}" 
+                                   value="${qty}" 
+                                   min="0" 
+                                   max="${limits.baseMax}" 
+                                   oninput="onSetQtyInput(${setIdx}, '${sizeName}', this)" 
+                                   class="set-qty-input w-10 h-6 text-center font-black text-xs sm:text-sm text-[#F25996] bg-transparent focus:outline-none">
+                            <div class="h-3.5 w-px bg-pink-200 mx-1"></div>
+                            <button type="button" onclick="adjustSetQty(${setIdx}, '${sizeName}', 1)" class="w-6 h-6 rounded-full flex items-center justify-center font-black text-base text-[#F25996] hover:bg-pink-50 transition-colors select-none cursor-pointer">
+                                +
+                            </button>
+                        </div>
+
+                        <!-- Subtotal & Remove/Trash Action -->
+                        <div class="flex items-center gap-2">
+                            <div class="text-right min-w-[65px]">
+                                <span class="text-[9px] font-bold uppercase tracking-wider text-gray-400 block">Subtotal</span>
+                                <span class="text-xs font-bold text-gray-800" id="sub_set_${setIdx}_${sizeName}">
+                                    ${qty} Pcs
+                                </span>
+                                <span class="text-[10px] font-bold text-green-700 block" id="price_sub_set_${setIdx}_${sizeName}">
+                                    ₹${subtotal.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                </span>
+                            </div>
+                            <button type="button" onclick="removeSetSize(${setIdx}, '${sizeName}')" class="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer" title="Remove ${sizeName} from Roll #${setIdx}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `
+            </div>
+        </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function onSetLabelChange(setIdx, sel) {
+    const labelId = sel.value;
+    const labelTxt = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text : '';
+    if (fabricSetsData[setIdx - 1]) {
+        fabricSetsData[setIdx - 1].label_id = labelId;
+        fabricSetsData[setIdx - 1].label_name = labelTxt;
+    }
+    triggerRecalc();
+}
+
+function adjustSetQty(setIndex, sizeName, delta) {
+    if (!fabricSetsData[setIndex - 1]) return;
+    const setData = fabricSetsData[setIndex - 1];
+    if (!setData.sizes) setData.sizes = {};
+
+    const limits = getSizeLimits(sizeName, 1);
+    let curVal = parseInt(setData.sizes[sizeName]) || 0;
+    let newVal = curVal + delta;
+    if (newVal < 0) newVal = 0;
+    if (newVal > limits.baseMax) {
+        newVal = limits.baseMax;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'info',
+                title: 'Max Limit Reached',
+                text: `Maximum allowed pieces for size ${sizeName} in this set is ${limits.baseMax} pcs.`,
+                confirmButtonColor: '#F25996',
+                timer: 2000
+            });
+        }
+    }
+
+    setData.sizes[sizeName] = newVal;
+
+    const input = document.getElementById(`qty_set_${setIndex}_${sizeName}`);
+    if (input) input.value = newVal;
+
+    const sub = document.getElementById(`sub_set_${setIndex}_${sizeName}`);
+    if (sub) sub.textContent = `${newVal} Pcs`;
+
+    const sObj = SIZES_CONFIG.find(s => s.size_name === sizeName);
+    const rate = sObj ? parseFloat(sObj.fabric_consumption) || 1.0 : 1.0;
+    const pricePerPc = FABRIC_PRICE_PER_UNIT * rate;
+    const priceSub = document.getElementById(`price_sub_set_${setIndex}_${sizeName}`);
+    if (priceSub) priceSub.textContent = `₹${(pricePerPc * newVal).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+    updateSetBadge(setIndex);
+    triggerRecalc();
+}
+
+function onSetQtyInput(setIndex, sizeName, inp) {
+    if (!fabricSetsData[setIndex - 1]) return;
+    const setData = fabricSetsData[setIndex - 1];
+    if (!setData.sizes) setData.sizes = {};
+
+    const limits = getSizeLimits(sizeName, 1);
+    let val = parseInt(inp.value) || 0;
+    if (val < 0) val = 0;
+    if (val > limits.baseMax) {
+        val = limits.baseMax;
+        inp.value = val;
+    }
+
+    setData.sizes[sizeName] = val;
+
+    const sub = document.getElementById(`sub_set_${setIndex}_${sizeName}`);
+    if (sub) sub.textContent = `${val} Pcs`;
+
+    const sObj = SIZES_CONFIG.find(s => s.size_name === sizeName);
+    const rate = sObj ? parseFloat(sObj.fabric_consumption) || 1.0 : 1.0;
+    const pricePerPc = FABRIC_PRICE_PER_UNIT * rate;
+    const priceSub = document.getElementById(`price_sub_set_${setIndex}_${sizeName}`);
+    if (priceSub) priceSub.textContent = `₹${(pricePerPc * val).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+    updateSetBadge(setIndex);
+    triggerRecalc();
+}
+
+function updateSetBadge(setIndex) {
+    if (!fabricSetsData[setIndex - 1]) return;
+    const setData = fabricSetsData[setIndex - 1];
+    const setSizes = setData.selected_sizes || [];
+    let setTotalPcs = 0;
+    if (setData.sizes) {
+        setSizes.forEach(sz => {
+            setTotalPcs += (parseInt(setData.sizes[sz]) || 0);
+        });
+    }
+
+    const badge = document.getElementById(`set_pieces_badge_${setIndex}`);
+    if (badge) {
+        const isMet = setTotalPcs >= MIN_PIECES;
+        badge.className = isMet 
+            ? 'text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap shadow-2xs'
+            : 'text-xs font-bold px-2.5 py-1 rounded-xl bg-pink-50 text-[#F25996] border border-pink-200 whitespace-nowrap shadow-2xs';
+        badge.textContent = isMet ? `✅ ${setTotalPcs} Pcs` : `${setTotalPcs} / ${MIN_PIECES} Pcs`;
+    }
+}
+
+// Toggle a size variant directly in a specific set container
+function toggleSetSize(setIdx, sizeName) {
+    const targetSet = fabricSetsData[setIdx - 1];
+    if (!targetSet) return;
+    if (!targetSet.selected_sizes) targetSet.selected_sizes = [];
+    if (!targetSet.sizes) targetSet.sizes = {};
+
+    const limits = getSizeLimits(sizeName, 1);
+    const isSel = targetSet.selected_sizes.includes(sizeName);
+    if (isSel) {
+        targetSet.selected_sizes = targetSet.selected_sizes.filter(s => s !== sizeName);
+        targetSet.sizes[sizeName] = 0;
+    } else {
+        targetSet.selected_sizes.push(sizeName);
+        if (!targetSet.sizes[sizeName] || targetSet.sizes[sizeName] === 0) {
+            targetSet.sizes[sizeName] = limits.baseMin;
+        }
+    }
+
+    activeConfigSet = setIdx;
+    applyVariantSelectionFlow();
+}
+
+// Remove a size variant from a specific set container
+function removeSetSize(setIdx, sizeName) {
+    const targetSet = fabricSetsData[setIdx - 1];
+    if (!targetSet) return;
+    if (!targetSet.selected_sizes) targetSet.selected_sizes = [];
+    if (!targetSet.sizes) targetSet.sizes = {};
+
+    targetSet.selected_sizes = targetSet.selected_sizes.filter(s => s !== sizeName);
+    targetSet.sizes[sizeName] = 0;
+
+    applyVariantSelectionFlow();
+}
+
 function onFabricMultiplierChange(inp) {
     let mult = parseInt(inp.value) || 1;
+    const maxStock = Math.max(1, Math.floor(FABRIC_STOCK));
     if (mult < 1) {
         mult = 1;
         inp.value = 1;
+    }
+    if (mult > maxStock) {
+        mult = maxStock;
+        inp.value = maxStock;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Stock Limit Reached',
+                text: `Quantity cannot exceed available stock (${maxStock} Qty).`,
+                confirmButtonColor: '#F25996'
+            });
+        }
     }
 
     const topInp = document.getElementById('fabric_multiplier_top');
@@ -861,114 +1501,180 @@ function onFabricMultiplierChange(inp) {
     const maxBadge = document.getElementById('fabricMaxPcs');
     if (maxBadge) maxBadge.textContent = `${reqMaxPcs} Pcs`;
 
-    // Update button & row labels and clamp input values
-    SIZES_CONFIG.forEach(sz => {
-        const sizeName = sz.size_name;
-        const limits = getSizeLimits(sizeName, mult);
+    // Also update tracker badges (show per-roll min/max, not total)
+    const summaryMin = document.getElementById('summaryMinPcsDisplay');
+    if (summaryMin) summaryMin.textContent = `${MIN_PIECES} Pcs`;
+    const summaryMax = document.getElementById('summaryMaxPcsDisplay');
+    if (summaryMax) summaryMax.textContent = `${MAX_PIECES} Pcs`;
 
-        const btnRange = document.getElementById('btn_range_label_' + sizeName);
-        if (btnRange) btnRange.textContent = `${limits.min} – ${limits.max} pcs`;
+    // Sync fabric sets to match new mult
+    syncFabricSets(mult);
 
-        const rangeBadge = document.getElementById('range_label_' + sizeName);
-        if (rangeBadge) rangeBadge.textContent = `Required: ${limits.min} pcs (Max: ${limits.max} pcs)`;
-
-        const input = document.getElementById('qty_' + sizeName);
-        if (input) {
-            input.setAttribute('data-min', limits.min);
-            input.setAttribute('data-max', limits.max);
-            input.min = limits.min;
-            input.max = limits.max;
-            if (selectedSizeNames.includes(sizeName)) {
-                let val = parseInt(input.value) || 0;
-                if (val < limits.min) input.value = limits.min;
-                else if (val > limits.max) input.value = limits.max;
-            } else {
-                input.value = 0;
-            }
-        }
-    });
-
-    // Reapply flow with scaled multiplier
+    // Apply variant flow and re-render set containers
     applyVariantSelectionFlow();
 }
 
 function toggleSizeVariant(sizeName) {
-    const idx = selectedSizeNames.indexOf(sizeName);
-    const mult = getFabricQuantity();
-    const overallMax = MAX_PIECES * mult;
-    const limits = getSizeLimits(sizeName, mult);
-    const input = document.getElementById('qty_' + sizeName);
+    const limits = getSizeLimits(sizeName, 1);
 
-    if (idx >= 0) {
-        selectedSizeNames.splice(idx, 1);
-        if (input) input.value = 0;
+    if (activeConfigSet === 'all') {
+        // Toggle across all sets
+        const anyHas = fabricSetsData.some(st => (st.selected_sizes || []).includes(sizeName));
+        fabricSetsData.forEach(st => {
+            if (!st.selected_sizes) st.selected_sizes = [];
+            if (!st.sizes) st.sizes = {};
+            if (anyHas) {
+                st.selected_sizes = st.selected_sizes.filter(s => s !== sizeName);
+                st.sizes[sizeName] = 0;
+            } else {
+                if (!st.selected_sizes.includes(sizeName)) {
+                    st.selected_sizes.push(sizeName);
+                }
+                if (!st.sizes[sizeName] || st.sizes[sizeName] === 0) {
+                    st.sizes[sizeName] = limits.baseMin;
+                }
+            }
+        });
     } else {
-        selectedSizeNames.push(sizeName);
-        if (input) {
-            let otherPieces = getTotalSelectedPieces(sizeName);
-            let remainingOverall = Math.max(0, overallMax - otherPieces);
-            let initialVal = Math.min(limits.min, remainingOverall);
-            input.value = initialVal;
+        const setIdx = parseInt(activeConfigSet) || 1;
+        const targetSet = fabricSetsData[setIdx - 1];
+        if (targetSet) {
+            if (!targetSet.selected_sizes) targetSet.selected_sizes = [];
+            if (!targetSet.sizes) targetSet.sizes = {};
+
+            const isSel = targetSet.selected_sizes.includes(sizeName);
+            if (isSel) {
+                targetSet.selected_sizes = targetSet.selected_sizes.filter(s => s !== sizeName);
+                targetSet.sizes[sizeName] = 0;
+            } else {
+                targetSet.selected_sizes.push(sizeName);
+                if (!targetSet.sizes[sizeName] || targetSet.sizes[sizeName] === 0) {
+                    targetSet.sizes[sizeName] = limits.baseMin;
+                }
+            }
         }
     }
-    applyVariantSelectionFlow();
-}
 
-function removeSizeVariant(sizeName) {
-    const idx = selectedSizeNames.indexOf(sizeName);
-    if (idx >= 0) {
-        selectedSizeNames.splice(idx, 1);
-    }
-    const input = document.getElementById('qty_' + sizeName);
-    if (input) {
-        input.value = 0;
-    }
     applyVariantSelectionFlow();
 }
 
 function selectAllVariants() {
-    selectedSizeNames = SIZES_CONFIG.map(s => s.size_name);
     const mult = getFabricQuantity();
-    const overallMax = MAX_PIECES * mult;
-    let accumulated = 0;
+    syncFabricSets(mult);
 
-    SIZES_CONFIG.forEach(sz => {
-        const limits = getSizeLimits(sz.size_name, mult);
-        const input = document.getElementById('qty_' + sz.size_name);
-        if (input) {
-            let remaining = Math.max(0, overallMax - accumulated);
-            let val = Math.min(limits.min, remaining);
-            input.value = val;
-            accumulated += val;
+    if (activeConfigSet === 'all') {
+        fabricSetsData.forEach(st => {
+            st.selected_sizes = SIZES_CONFIG.map(s => s.size_name);
+            if (!st.sizes) st.sizes = {};
+            SIZES_CONFIG.forEach(sz => {
+                const limits = getSizeLimits(sz.size_name, 1);
+                if (!st.sizes[sz.size_name] || st.sizes[sz.size_name] === 0) {
+                    st.sizes[sz.size_name] = limits.baseMin;
+                }
+            });
+        });
+    } else {
+        const setIdx = parseInt(activeConfigSet) || 1;
+        const targetSet = fabricSetsData[setIdx - 1];
+        if (targetSet) {
+            targetSet.selected_sizes = SIZES_CONFIG.map(s => s.size_name);
+            if (!targetSet.sizes) targetSet.sizes = {};
+            SIZES_CONFIG.forEach(sz => {
+                const limits = getSizeLimits(sz.size_name, 1);
+                if (!targetSet.sizes[sz.size_name] || targetSet.sizes[sz.size_name] === 0) {
+                    targetSet.sizes[sz.size_name] = limits.baseMin;
+                }
+            });
         }
-    });
+    }
+
     applyVariantSelectionFlow();
 }
 
 function clearAllVariants() {
-    selectedSizeNames = [];
-    SIZES_CONFIG.forEach(sz => {
-        const input = document.getElementById('qty_' + sz.size_name);
-        if (input) input.value = 0;
-    });
+    if (activeConfigSet === 'all') {
+        fabricSetsData.forEach(st => {
+            st.selected_sizes = [];
+            if (st.sizes) {
+                Object.keys(st.sizes).forEach(sz => { st.sizes[sz] = 0; });
+            }
+        });
+    } else {
+        const setIdx = parseInt(activeConfigSet) || 1;
+        const targetSet = fabricSetsData[setIdx - 1];
+        if (targetSet) {
+            targetSet.selected_sizes = [];
+            if (targetSet.sizes) {
+                Object.keys(targetSet.sizes).forEach(sz => { targetSet.sizes[sz] = 0; });
+            }
+        }
+    }
+
     applyVariantSelectionFlow();
 }
 
 function applyVariantSelectionFlow() {
     const mult = getFabricQuantity();
 
-    // Update UI elements for each configured size independently
+    renderRollTabs();
+
+    // Determine which sizes are active for the currently selected config tab in Section 1
+    let activeSizesForTab = [];
+    if (activeConfigSet === 'all') {
+        fabricSetsData.forEach(st => {
+            (st.selected_sizes || []).forEach(sz => {
+                if (!activeSizesForTab.includes(sz)) activeSizesForTab.push(sz);
+            });
+        });
+    } else {
+        const setIdx = parseInt(activeConfigSet) || 1;
+        const targetSet = fabricSetsData[setIdx - 1];
+        activeSizesForTab = targetSet ? (targetSet.selected_sizes || []) : [];
+    }
+
+    // Update Section 1 header pill
+    const cfgLabel = document.getElementById('currentConfigSetLabel');
+    if (cfgLabel) {
+        if (mult === 1) {
+            cfgLabel.textContent = 'Roll #1 Variants';
+        } else if (activeConfigSet === 'all') {
+            cfgLabel.textContent = 'Configuring All Rolls';
+        } else {
+            cfgLabel.textContent = `Configuring Roll #${activeConfigSet}`;
+        }
+    }
+
+    // Update Section 1 button visual states
     SIZES_CONFIG.forEach(sz => {
         const sizeName = sz.size_name;
         const btn = document.getElementById('btn_size_' + sizeName);
-        const row = document.getElementById('row_size_' + sizeName);
-        const input = document.getElementById('qty_' + sizeName);
-        const rangeBadge = document.getElementById('range_label_' + sizeName);
-        const btnRange = document.getElementById('btn_range_label_' + sizeName);
-        const isSelected = selectedSizeNames.includes(sizeName);
-        const limits = getSizeLimits(sizeName, mult);
+        const isSelected = activeSizesForTab.includes(sizeName);
+        const limits = getSizeLimits(sizeName, 1);
 
-        // Update button visual state
+        // Piece count for this size in current tab
+        let sizePiecesInTab = 0;
+        if (activeConfigSet === 'all') {
+            fabricSetsData.forEach(st => {
+                if ((st.selected_sizes || []).includes(sizeName)) {
+                    sizePiecesInTab += (parseInt(st.sizes ? st.sizes[sizeName] : 0) || 0);
+                }
+            });
+        } else {
+            const setIdx = parseInt(activeConfigSet) || 1;
+            const targetSet = fabricSetsData[setIdx - 1];
+            if (targetSet && (targetSet.selected_sizes || []).includes(sizeName)) {
+                sizePiecesInTab = parseInt(targetSet.sizes ? targetSet.sizes[sizeName] : 0) || 0;
+            }
+        }
+
+        const countBadge = document.getElementById('btn_count_badge_' + sizeName);
+        if (countBadge) {
+            countBadge.textContent = sizePiecesInTab;
+            countBadge.className = isSelected 
+                ? 'text-xs font-black text-[#F25996]' 
+                : 'text-xs font-bold text-gray-300';
+        }
+
         if (btn) {
             const checkIcon = btn.querySelector('.check-icon');
             if (isSelected) {
@@ -988,170 +1694,64 @@ function applyVariantSelectionFlow() {
             }
         }
 
-        // Show/hide row in the stepper list
-        if (row) {
-            if (isSelected) {
-                row.classList.remove('hidden');
-            } else {
-                row.classList.add('hidden');
-            }
-        }
-
-        // Update bounds and values independently for this size
-        if (input) {
-            input.setAttribute('data-min', limits.min);
-            input.setAttribute('data-max', limits.max);
-            input.min = limits.min;
-            input.max = limits.max;
-
-            if (isSelected) {
-                let val = parseInt(input.value) || 0;
-                if (val < limits.min) val = limits.min;
-                if (val > limits.max) val = limits.max;
-                input.value = val;
-            } else {
-                input.value = 0;
-            }
-        }
-
-        if (rangeBadge) {
-            rangeBadge.textContent = `Required: ${limits.min} pcs (Max: ${limits.max} pcs)`;
-        }
+        const btnRange = document.getElementById('btn_range_label_' + sizeName);
         if (btnRange) {
-            btnRange.textContent = `${limits.min} – ${limits.max} pcs`;
-        }
-
-        // Update top size pill button
-        const topPill = document.getElementById('top_size_pill_' + sizeName);
-        if (topPill) {
-            if (isSelected) {
-                topPill.className = 'top-size-pill min-w-[44px] h-10 px-3.5 rounded-xl border-2 font-bold text-sm transition-all cursor-pointer flex items-center justify-center border-[#F25996] bg-pink-50 text-[#F25996] shadow-xs ring-2 ring-[#F25996]/20';
-            } else {
-                topPill.className = 'top-size-pill min-w-[44px] h-10 px-3.5 rounded-xl border-2 font-bold text-sm transition-all cursor-pointer flex items-center justify-center border-gray-200 bg-white text-gray-700 hover:border-[#F25996]';
-            }
+            btnRange.textContent = `${limits.baseMin} – ${limits.baseMax} pcs`;
         }
     });
 
-    // Empty placeholder toggle
-    const placeholder = document.getElementById('emptyVariantsPlaceholder');
-    if (placeholder) {
-        if (selectedSizeNames.length === 0) {
-            placeholder.classList.remove('hidden');
-        } else {
-            placeholder.classList.add('hidden');
-        }
-    }
-
-    // Update active notice banner
     const notice = document.getElementById('activeVariantNotice');
     if (notice) {
-        if (selectedSizeNames.length > 0) {
-            notice.textContent = `• ${selectedSizeNames.length} size(s) selected with independent allowed limits (${mult}x Sets)`;
+        const totalDistinctActive = new Set();
+        fabricSetsData.forEach(st => {
+            (st.selected_sizes || []).forEach(s => totalDistinctActive.add(s));
+        });
+        if (totalDistinctActive.size > 0) {
+            if (mult > 1) {
+                const breakdown = fabricSetsData.map((st, i) => `#${i + 1}: ${(st.selected_sizes || []).length} sizes`).join(', ');
+                notice.textContent = `• Independent sizes per roll (${breakdown})`;
+            } else {
+                notice.textContent = `• ${totalDistinctActive.size} size variant(s) selected`;
+            }
         } else {
             notice.textContent = '• Please click one or more size buttons above to select variants';
         }
     }
 
+    renderFabricSetContainers();
     triggerRecalc();
-}
 
-function getTotalSelectedPieces(excludeSizeName = null) {
-    const inputs = document.querySelectorAll('.size-qty-input');
-    let total = 0;
-    inputs.forEach(input => {
-        const sz = input.getAttribute('data-size');
-        if (sz !== excludeSizeName && selectedSizeNames.includes(sz)) {
-            total += parseInt(input.value) || 0;
-        }
-    });
-    return total;
-}
-
-function adjustQty(sizeName, delta) {
-    const input = document.getElementById('qty_' + sizeName);
-    if (!input) return;
-    const mult = getFabricQuantity();
-    const overallMax = MAX_PIECES * mult;
-    const limits = getSizeLimits(sizeName, mult);
-    const min = limits.min;
-    const sizeMax = limits.max;
-
-    let currentVal = parseInt(input.value) || 0;
-    let otherPieces = getTotalSelectedPieces(sizeName);
-    let remainingOverall = Math.max(0, overallMax - otherPieces);
-    let effectiveMaxForThisSize = Math.min(sizeMax, remainingOverall);
-
-    if (delta > 0) {
-        if (currentVal >= effectiveMaxForThisSize) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'info',
-                    title: 'Max Limit Reached',
-                    text: currentVal >= sizeMax 
-                        ? `Maximum allowed pieces for size ${sizeName} is ${sizeMax} pcs.`
-                        : `Maximum total pieces allowed for ${mult} Set(s) is ${overallMax} pcs.`,
-                    confirmButtonColor: '#F25996',
-                    timer: 2500
-                });
+    // Update SKU dynamically based on selected variant
+    const skuDisplay = document.getElementById('fabricSkuDisplay');
+    if (skuDisplay) {
+        let currentSku = <?= json_encode(!empty($customization['fabric_sku']) ? $customization['fabric_sku'] : '') ?>;
+        const allSelectedSizes = fabricSetsData.flatMap(st => st.selected_sizes || []);
+        if (allSelectedSizes.length > 0) {
+            const lastSelected = allSelectedSizes[allSelectedSizes.length - 1];
+            const szObj = SIZES_CONFIG.find(s => s.size_name === lastSelected);
+            if (szObj && szObj.variant_sku) {
+                currentSku = szObj.variant_sku;
             }
-            return;
         }
-        input.value = Math.min(effectiveMaxForThisSize, currentVal + delta);
-    } else {
-        let val = currentVal + delta;
-        if (val < min) val = min;
-        input.value = val;
-    }
-    triggerRecalc();
-}
-
-function validateAndRecalc(input) {
-    const sizeName = input.getAttribute('data-size');
-    const mult = getFabricQuantity();
-    const overallMax = MAX_PIECES * mult;
-    const limits = getSizeLimits(sizeName, mult);
-    const min = limits.min;
-    const sizeMax = limits.max;
-
-    let val = parseInt(input.value);
-    if (isNaN(val) || val < min) {
-        val = min;
-        input.value = min;
-    }
-
-    let otherPieces = getTotalSelectedPieces(sizeName);
-    let remainingOverall = Math.max(0, overallMax - otherPieces);
-    let effectiveMaxForThisSize = Math.min(sizeMax, remainingOverall);
-
-    if (val > effectiveMaxForThisSize) {
-        val = effectiveMaxForThisSize;
-        input.value = effectiveMaxForThisSize;
-        if (typeof Swal !== 'undefined') {
-            Swal.fire({
-                icon: 'info',
-                title: 'Max Limit Reached',
-                text: val >= sizeMax 
-                    ? `Maximum allowed pieces for size ${sizeName} is ${sizeMax} pcs.`
-                    : `Maximum total pieces allowed for ${mult} Set(s) is ${overallMax} pcs.`,
-                confirmButtonColor: '#F25996',
-                timer: 2500
-            });
+        if (!currentSku && SIZES_CONFIG.length > 0 && SIZES_CONFIG[0].variant_sku) {
+            currentSku = SIZES_CONFIG[0].variant_sku;
         }
+        skuDisplay.textContent = currentSku || 'N/A';
     }
-    triggerRecalc();
 }
 
 function getSelectedSizes() {
-    const inputs = document.querySelectorAll('.size-qty-input');
-    const sizes = {};
-    inputs.forEach(input => {
-        const sz = input.getAttribute('data-size');
-        const qty = parseInt(input.value) || 0;
-        if (qty > 0 && selectedSizeNames.includes(sz)) {
-            sizes[sz] = qty;
-        }
+    const totalSizes = {};
+    fabricSetsData.forEach(st => {
+        const setSizes = st.selected_sizes || [];
+        setSizes.forEach(sz => {
+            const q = parseInt(st.sizes ? st.sizes[sz] : 0) || 0;
+            if (q > 0) {
+                totalSizes[sz] = (totalSizes[sz] || 0) + q;
+            }
+        });
     });
-    return sizes;
+    return totalSizes;
 }
 
 function onAddressSelectChange(sel) {
@@ -1164,60 +1764,52 @@ function onAddressSelectChange(sel) {
     }
 }
 
-function applyPreset(minQty) {
-    const inputs = document.querySelectorAll('.size-qty-input');
-    if (inputs.length === 0) return;
-    
-    const mult = getFabricQuantity();
-    const effectiveMin = (minQty !== undefined ? minQty : MIN_PIECES) * mult;
-    const perSize = Math.max(1, Math.floor(effectiveMin / inputs.length));
-    
-    inputs.forEach((inp) => {
-        const max = parseInt(inp.getAttribute('data-max')) || 9999;
-        inp.value = Math.min(max, perSize);
-    });
-    triggerRecalc();
-}
-
-function resetAllQty() {
-    document.querySelectorAll('.size-qty-input').forEach(inp => inp.value = 0);
-    triggerRecalc();
-}
-
 function triggerRecalc() {
-    const inputs = document.querySelectorAll('.size-qty-input');
-    const sizes = {};
-    const fabricQuantity = getFabricQuantity();
-    
-    inputs.forEach(input => {
-        const sz = input.getAttribute('data-size');
-        const rate = parseFloat(input.getAttribute('data-rate')) || 0;
-        const qty = parseInt(input.value) || 0;
-        sizes[sz] = qty;
-        
-        // Update pieces count
-        const subElem = document.getElementById('sub_' + sz);
-        if (subElem) {
-            subElem.textContent = qty > 0 ? `${qty} Pcs` : '0 Pcs';
-        }
-        // Update ₹ price subtotal per size
-        const pricePerPc = parseFloat(input.getAttribute('data-price-per-pc')) || (rate * FABRIC_PRICE_PER_UNIT);
-        const priceSub = document.getElementById('price_sub_' + sz);
-        if (priceSub) {
-            const total = pricePerPc * qty;
-            priceSub.textContent = total > 0 ? `₹${total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2})}` : '₹0.00';
+    const mult = getFabricQuantity();
+    const sizes = getSelectedSizes();
+
+    // Update Section 1 count badges
+    SIZES_CONFIG.forEach(sz => {
+        const countBadge = document.getElementById('btn_count_badge_' + sz.size_name);
+        if (countBadge) {
+            countBadge.textContent = sizes[sz.size_name] || 0;
         }
     });
 
-    // Call calculation API
+    // Update set badges
+    fabricSetsData.forEach((st, idx) => {
+        updateSetBadge(idx + 1);
+    });
+
+    // Build cleaned sets data containing only active sizes for accurate server validation
+    const cleanedSets = fabricSetsData.map(st => {
+        const cleanSizes = {};
+        const setSizes = st.selected_sizes || [];
+        if (st.sizes) {
+            setSizes.forEach(sz => {
+                const q = parseInt(st.sizes[sz]) || 0;
+                if (q > 0) cleanSizes[sz] = q;
+            });
+        }
+        return {
+            set_id: st.set_id,
+            label_id: st.label_id || '',
+            label_name: st.label_name || '',
+            selected_sizes: [...setSizes],
+            sizes: cleanSizes
+        };
+    });
+
+    // Call calculation API with sets
     fetch(`${BASE_URL}/fabrics/customization/calculate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             fabric_id: FABRIC_ID,
             customization_id: CUSTOMIZATION_ID,
-            fabric_quantity: fabricQuantity,
+            fabric_quantity: mult,
             sizes: sizes,
+            sets: cleanedSets,
             packaging_option: selectedPackagingOption,
             without_cover: (selectedPackagingOption === 'without_cover')
         })
@@ -1239,15 +1831,29 @@ function renderCalculation(c, p, delivery) {
     const effectiveMax = c.maximum_pieces || (MAX_PIECES * getFabricQuantity());
     const totalPieces = c.total_pieces || 0;
 
-    // Piece Tracker Text & Progress
-    document.getElementById('summaryTotalPieces').textContent = `${totalPieces} / ${effectiveMin}–${effectiveMax} Pcs`;
+    // Piece Tracker Text & Progress (Matches Image 3)
+    const summaryTotal = document.getElementById('summaryTotalPieces');
+    if (summaryTotal) {
+        summaryTotal.textContent = `${totalPieces} / ${effectiveMin}–${effectiveMax} Pcs`;
+    }
     
     const constraintText = document.getElementById('pieceConstraintText');
     if (constraintText) {
         constraintText.innerHTML = `
-            <span>Min to Enable Payment: <strong class="text-gray-900">${effectiveMin} Pcs</strong></span>
-            <span>Max Allowed: <strong class="text-gray-900">${effectiveMax} Pcs</strong></span>
+            <span>Min to Enable Payment: <strong class="text-gray-900 font-bold" id="summaryMinPcsDisplay">${effectiveMin} Pcs</strong></span>
+            <span>Max Allowed: <strong class="text-gray-900 font-bold" id="summaryMaxPcsDisplay">${effectiveMax} Pcs</strong></span>
         `;
+    }
+
+    const progressBar = document.getElementById('pieceProgressBar');
+    if (progressBar) {
+        let pct = effectiveMax > 0 ? Math.min(100, Math.round((totalPieces / effectiveMax) * 100)) : 0;
+        progressBar.style.width = pct + '%';
+        if (totalPieces < effectiveMin) {
+            progressBar.className = 'h-full bg-amber-400 transition-all duration-300';
+        } else {
+            progressBar.className = 'h-full bg-[#F25996] transition-all duration-300';
+        }
     }
 
     document.getElementById('summaryBaseConsumption').textContent = `${c.base_consumption} ${c.unit}`;
@@ -1269,11 +1875,17 @@ function renderCalculation(c, p, delivery) {
     // Without Cover Discount row toggle in bill
     const pkgRow = document.getElementById('packagingDiscountRow');
     const pkgDiscElem = document.getElementById('summaryCoverDiscount');
+    const pkgDiscPct = document.getElementById('summaryCoverDiscountPct');
     if (pkgRow && pkgDiscElem) {
         if (p.without_cover && p.without_cover_discount > 0) {
             pkgRow.classList.remove('hidden');
+            pkgRow.classList.add('flex');
             pkgDiscElem.textContent = `-₹${p.without_cover_discount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            if (pkgDiscPct && p.discount_percentage > 0) {
+                pkgDiscPct.textContent = `(-${p.discount_percentage}%)`;
+            }
         } else {
+            pkgRow.classList.remove('flex');
             pkgRow.classList.add('hidden');
         }
     }
@@ -1458,14 +2070,33 @@ function checkLoginOrPrompt() {
 function getPayload() {
     const sizes = getSelectedSizes();
     const fabricQuantity = getFabricQuantity();
-    const address = document.getElementById('shippingAddressInput').value.trim();
-    const notes = document.getElementById('orderNotesInput').value.trim();
+    const address = document.getElementById('shippingAddressInput') ? document.getElementById('shippingAddressInput').value.trim() : '';
+    const notes = document.getElementById('orderNotesInput') ? document.getElementById('orderNotesInput').value.trim() : '';
+
+    const cleanSets = fabricSetsData.map(st => {
+        const cleanSizes = {};
+        const setSizes = st.selected_sizes || [];
+        if (st.sizes) {
+            setSizes.forEach(sz => {
+                const q = parseInt(st.sizes[sz]) || 0;
+                if (q > 0) cleanSizes[sz] = q;
+            });
+        }
+        return {
+            set_id: st.set_id,
+            label_id: st.label_id || '',
+            label_name: st.label_name || '',
+            selected_sizes: [...setSizes],
+            sizes: cleanSizes
+        };
+    });
 
     return {
         fabric_id: FABRIC_ID,
         customization_id: CUSTOMIZATION_ID,
         fabric_quantity: fabricQuantity,
         sizes: sizes,
+        sets: cleanSets,
         shipping_address: address,
         notes: notes,
         packaging_option: selectedPackagingOption,
@@ -1496,10 +2127,26 @@ function proceedToCheckout() {
         return;
     }
 
+    // Check if any individual set is completely empty
+    const emptySet = fabricSetsData.find(st => {
+        const setSizes = st.selected_sizes || [];
+        const setPcs = setSizes.reduce((a, sz) => a + (parseInt(st.sizes ? st.sizes[sz] : 0) || 0), 0);
+        return setPcs === 0;
+    });
+    if (emptySet) {
+        Swal.fire({
+            title: `Set #${emptySet.set_id} is Empty`,
+            text: `Please allocate pieces for Fabric Set #${emptySet.set_id} before proceeding to checkout.`,
+            icon: 'warning',
+            confirmButtonColor: '#F25996'
+        });
+        return;
+    }
+
     if (totalPcs < effectiveMin) {
         Swal.fire({
             title: 'Minimum Pieces Required',
-            text: `Please select at least ${effectiveMin} total pieces to continue (currently ${totalPcs} pcs).`,
+            text: `Please select at least ${effectiveMin} total pieces to continue (currently ${totalPcs} pcs across ${mult} set(s)).`,
             icon: 'warning',
             confirmButtonColor: '#F25996'
         });
@@ -1526,6 +2173,25 @@ function proceedToCheckout() {
         return;
     }
 
+    // Clean sets for checkout submission
+    const cleanSets = fabricSetsData.map(st => {
+        const cleanSizes = {};
+        const setSizes = st.selected_sizes || [];
+        if (st.sizes) {
+            setSizes.forEach(sz => {
+                const q = parseInt(st.sizes[sz]) || 0;
+                if (q > 0) cleanSizes[sz] = q;
+            });
+        }
+        return {
+            set_id: st.set_id,
+            label_id: st.label_id || '',
+            label_name: st.label_name || '',
+            selected_sizes: [...setSizes],
+            sizes: cleanSizes
+        };
+    });
+
     // Submit via dynamic POST form to checkout page
     const form = document.createElement('form');
     form.method = 'POST';
@@ -1545,8 +2211,22 @@ function proceedToCheckout() {
     addField('packaging_option', selectedPackagingOption);
     addField('without_cover', selectedPackagingOption === 'without_cover' ? '1' : '0');
 
+    // Pass aggregated sizes
     Object.keys(sizes).forEach(sz => {
         addField(`sizes[${sz}]`, sizes[sz]);
+    });
+
+    // Pass detailed sets array & sets JSON
+    addField('sets_json', JSON.stringify(cleanSets));
+    cleanSets.forEach((st, sIdx) => {
+        addField(`sets[${sIdx}][set_id]`, st.set_id);
+        addField(`sets[${sIdx}][label_id]`, st.label_id || '');
+        addField(`sets[${sIdx}][label_name]`, st.label_name || '');
+        if (st.sizes) {
+            Object.keys(st.sizes).forEach(sz => {
+                addField(`sets[${sIdx}][sizes][${sz}]`, st.sizes[sz]);
+            });
+        }
     });
 
     document.body.appendChild(form);
@@ -1788,8 +2468,58 @@ function initCustomPinkSelects() {
 
 // Initial calculation & dropdown initialization on load
 document.addEventListener('DOMContentLoaded', () => {
-    clearAllVariants();
     initCustomPinkSelects();
+
+    const mult = parseInt(SAVED_QTY) || 1;
+    const topInp = document.getElementById('fabric_multiplier_top');
+    const bottomInp = document.getElementById('fabric_multiplier');
+    if (topInp) topInp.value = mult;
+    if (bottomInp) bottomInp.value = mult;
+
+    const badge = document.getElementById('fabricQtyBadge');
+    if (badge) {
+        badge.textContent = mult === 1 ? '1 Set (1x)' : `${mult} Sets (${mult}x)`;
+    }
+
+    if (SAVED_PKG) {
+        selectPackagingOption(SAVED_PKG);
+    }
+
+    const hasSavedSets = SAVED_SETS && Array.isArray(SAVED_SETS) && SAVED_SETS.length > 0;
+    const hasSavedSizes = SAVED_SIZES && typeof SAVED_SIZES === 'object' && Object.keys(SAVED_SIZES).some(k => parseInt(SAVED_SIZES[k]) > 0);
+
+    if (hasSavedSets) {
+        fabricSetsData = JSON.parse(JSON.stringify(SAVED_SETS));
+        syncFabricSets(mult);
+        fabricSetsData.forEach(s => {
+            if (!s.selected_sizes || !Array.isArray(s.selected_sizes) || s.selected_sizes.length === 0) {
+                s.selected_sizes = [];
+                if (s.sizes) {
+                    Object.keys(s.sizes).forEach(sz => {
+                        if (parseInt(s.sizes[sz]) > 0 && !s.selected_sizes.includes(sz)) {
+                            s.selected_sizes.push(sz);
+                        }
+                    });
+                }
+                if (s.selected_sizes.length === 0) {
+                    s.selected_sizes = SIZES_CONFIG.map(sc => sc.size_name);
+                }
+            }
+        });
+        applyVariantSelectionFlow();
+    } else if (hasSavedSizes) {
+        const activeSizes = Object.keys(SAVED_SIZES).filter(k => parseInt(SAVED_SIZES[k]) > 0);
+        const initSizes = activeSizes.length > 0 ? activeSizes : SIZES_CONFIG.map(s => s.size_name);
+        syncFabricSets(mult);
+        if (fabricSetsData[0]) {
+            fabricSetsData[0].sizes = Object.assign({}, SAVED_SIZES);
+            fabricSetsData[0].selected_sizes = [...initSizes];
+        }
+        applyVariantSelectionFlow();
+    } else {
+        // Automatically create and select variant containers based on current quantity
+        selectAllVariants();
+    }
 });
 </script>
 

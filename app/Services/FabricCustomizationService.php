@@ -16,7 +16,7 @@ class FabricCustomizationService
     public function calculateConsumption(array $customization, array $sizeQuantities, ?float $availableStock = null, int $fabricQuantity = 1, array $sets = [])
     {
         $fabricQuantity = max(1, $fabricQuantity);
-        $baseMin = (int)($customization['minimum_pieces'] ?? 1);
+        $baseMin = !empty($customization['required_pieces']) ? (int)$customization['required_pieces'] : (int)($customization['minimum_pieces'] ?? 1);
         $baseMax = !empty($customization['maximum_pieces']) ? (int)$customization['maximum_pieces'] : ($baseMin * 20);
         $perSetMin = $baseMin;
         $perSetMax = $baseMax;
@@ -72,7 +72,8 @@ class FabricCustomizationService
 
             // Validate individual size min & max limits
             $limits = $sizeLimits[$sizeName] ?? ['base_min' => 1, 'base_max' => 9999];
-            $effectiveSizeMin = $limits['base_min'];
+            $effectiveSizeMin = min($limits['base_min'], $baseMin);
+            if ($effectiveSizeMin < 1) $effectiveSizeMin = 1;
             $effectiveSizeMax = $limits['base_max'] * $fabricQuantity;
 
             if ($qty < $effectiveSizeMin) {
@@ -178,8 +179,11 @@ class FabricCustomizationService
         $fabricCost = round($effectivePricePerUnit * $requiredFabric, 2);
         $stitchingCost = round($stitchingPerPiece * $totalPieces, 2);
         $subtotal = $fabricCost + $stitchingCost;
-        $gstAmount = round($subtotal * ($gstRate / 100.0), 2);
-        $total = $subtotal + $gstAmount;
+
+        // GST is inclusive in the price (customer pays only the subtotal/fabric cost, GST is not added extra)
+        // GST component = subtotal - (subtotal / (1 + gstRate/100))
+        $gstAmount = ($gstRate > 0) ? round($subtotal - ($subtotal / (1.0 + ($gstRate / 100.0))), 2) : 0.00;
+        $total = $subtotal;
         $totalSaved = max(0, round($originalFabricCost - $fabricCost, 2));
 
         return [

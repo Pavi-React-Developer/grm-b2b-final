@@ -11,6 +11,10 @@ document.addEventListener('change', async function(e) {
         const input = e.target;
         if (!input.files || input.files.length === 0) return;
 
+        // Skip entirely if no image files are selected (e.g. video uploads)
+        const hasImages = Array.from(input.files).some(f => f.type.startsWith('image/'));
+        if (!hasImages) return;
+
         // Skip if browser-image-compression is not loaded yet
         if (typeof imageCompression === 'undefined') {
             console.warn('browser-image-compression not loaded yet');

@@ -21,7 +21,11 @@ class FabricCustomization
     {
         $sql = "SELECT fc.*, 
                        p.name as fabric_name, 
-                       p.base_sku as fabric_sku, 
+                       COALESCE(
+                           NULLIF(TRIM(p.base_sku), ''), 
+                           (SELECT pv.sku FROM product_variants pv WHERE pv.product_id = p.id AND pv.sku IS NOT NULL AND TRIM(pv.sku) != '' ORDER BY pv.id ASC LIMIT 1),
+                           CONCAT('FAB-', p.id)
+                       ) as fabric_sku, 
                        COALESCE(
                            (SELECT MIN(CASE WHEN pv.discount_price > 0 THEN pv.discount_price ELSE pv.base_price END) FROM product_variants pv WHERE pv.product_id = p.id),
                            p.wholesale_price
@@ -88,7 +92,11 @@ class FabricCustomization
         $stmt = $this->db->prepare("
             SELECT fc.*, 
                    p.name as fabric_name, 
-                   p.base_sku as fabric_sku, 
+                   COALESCE(
+                       NULLIF(TRIM(p.base_sku), ''), 
+                       (SELECT pv.sku FROM product_variants pv WHERE pv.product_id = p.id AND pv.sku IS NOT NULL AND TRIM(pv.sku) != '' ORDER BY pv.id ASC LIMIT 1),
+                       CONCAT('FAB-', p.id)
+                   ) as fabric_sku, 
                    COALESCE(
                        (SELECT MIN(CASE WHEN pv.discount_price > 0 THEN pv.discount_price ELSE pv.base_price END) FROM product_variants pv WHERE pv.product_id = p.id),
                        p.wholesale_price
@@ -136,7 +144,11 @@ class FabricCustomization
         $stmt = $this->db->prepare("
             SELECT fc.*, 
                    p.name as fabric_name, 
-                   p.base_sku as fabric_sku, 
+                   COALESCE(
+                       NULLIF(TRIM(p.base_sku), ''), 
+                       (SELECT pv.sku FROM product_variants pv WHERE pv.product_id = p.id AND pv.sku IS NOT NULL AND TRIM(pv.sku) != '' ORDER BY pv.id ASC LIMIT 1),
+                       CONCAT('FAB-', p.id)
+                   ) as fabric_sku, 
                    (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
                    COALESCE(
                        (SELECT MIN(CASE WHEN pv.discount_price > 0 THEN pv.discount_price ELSE pv.base_price END) FROM product_variants pv WHERE pv.product_id = p.id),
@@ -205,7 +217,11 @@ class FabricCustomization
         $sql = "SELECT fc.*, 
                        p.id as product_id,
                        p.name as fabric_name, 
-                       p.base_sku as fabric_sku, 
+                       COALESCE(
+                           NULLIF(TRIM(p.base_sku), ''), 
+                           (SELECT pv.sku FROM product_variants pv WHERE pv.product_id = p.id AND pv.sku IS NOT NULL AND TRIM(pv.sku) != '' ORDER BY pv.id ASC LIMIT 1),
+                           CONCAT('FAB-', p.id)
+                       ) as fabric_sku, 
                        p.slug as fabric_slug, 
                        COALESCE(
                            (SELECT MIN(CASE WHEN pv.discount_price > 0 THEN pv.discount_price ELSE pv.base_price END) FROM product_variants pv WHERE pv.product_id = p.id),
@@ -232,7 +248,7 @@ class FabricCustomization
                   AND fc.customization_enabled = 1 
                   AND p.status = 'active'
                   AND p.is_customizable = 1
-                  AND p.stock_quantity > 0";
+                  AND COALESCE(p.stock_quantity, 0) >= 0";
 
         $params = [];
 
@@ -343,11 +359,15 @@ class FabricCustomization
      */
     public function getSizesByCustomizationId($customizationId, $onlyEnabled = true)
     {
-        $sql = "SELECT * FROM fabric_customization_sizes WHERE customization_id = ?";
+        $sql = "SELECT fcs.*, pv.sku as variant_sku 
+                FROM fabric_customization_sizes fcs
+                LEFT JOIN fabric_customizations fc ON fcs.customization_id = fc.id
+                LEFT JOIN product_variants pv ON pv.product_id = fc.fabric_id AND (pv.name = fcs.size_name OR pv.id = fcs.size_id)
+                WHERE fcs.customization_id = ?";
         if ($onlyEnabled) {
-            $sql .= " AND enabled = 1";
+            $sql .= " AND fcs.enabled = 1";
         }
-        $sql .= " ORDER BY sort_order ASC, id ASC";
+        $sql .= " ORDER BY fcs.sort_order ASC, fcs.id ASC";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([(int)$customizationId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -366,34 +386,21 @@ class FabricCustomization
             ORDER BY cl.group_name ASC, cl.sort_order ASC, cl.id ASC
         ");
         $stmt->execute([(int)$customizationId]);
-        $sizes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $labels = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Fallback to product_variants of the associated fabric product (created in Fabric Added Module)
-        if (empty($sizes)) {
-            $stmtFabric = $this->db->prepare("SELECT fabric_id, unit FROM fabric_customizations WHERE id = ?");
-            $stmtFabric->execute([(int)$customizationId]);
-            $ruleRow = $stmtFabric->fetch(PDO::FETCH_ASSOC);
-
-            if (!empty($ruleRow['fabric_id'])) {
-                $stmtPv = $this->db->prepare("
-                    SELECT id as size_id, name as size_name, 
-                           COALESCE(fabric_consumption, 1.00) as fabric_consumption, 
-                           COALESCE(base_quantity, 2) as base_quantity, 
-                           COALESCE(max_quantity, 4) as max_quantity, 
-                           ? as unit, 1 as enabled, id as sort_order
-                    FROM product_variants
-                    WHERE product_id = ? AND status = 'active'
-                    ORDER BY id ASC
-                ");
-                $stmtPv->execute([$ruleRow['unit'] ?? 'Meter', (int)$ruleRow['fabric_id']]);
-                $pvSizes = $stmtPv->fetchAll(PDO::FETCH_ASSOC);
-                if (!empty($pvSizes)) {
-                    return $pvSizes;
-                }
+        // Fallback: If no specific labels assigned to this rule, return all active customization_labels
+        if (empty($labels)) {
+            $stmtAll = $this->db->query("
+                SELECT * FROM customization_labels 
+                WHERE status = 'active' 
+                ORDER BY group_name ASC, sort_order ASC, id ASC
+            ");
+            if ($stmtAll) {
+                $labels = $stmtAll->fetchAll(PDO::FETCH_ASSOC);
             }
         }
 
-        return $sizes;
+        return $labels;
     }
 
     /**
@@ -455,6 +462,8 @@ class FabricCustomization
             $sql .= " AND (p.id NOT IN (SELECT fabric_id FROM fabric_customizations WHERE id != ?) OR p.id = (SELECT fabric_id FROM fabric_customizations WHERE id = ?))";
             $params[] = (int)$excludeCustomizationId;
             $params[] = (int)$excludeCustomizationId;
+        } else {
+            $sql .= " AND p.id NOT IN (SELECT fabric_id FROM fabric_customizations)";
         }
 
         $stmt = $this->db->prepare($sql);
@@ -474,10 +483,12 @@ class FabricCustomization
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO fabric_customizations 
-                (fabric_id, program_name, garment_type, category_id, sub_category_id, feeding_type, minimum_pieces, maximum_pieces, wastage_percentage, without_cover_discount_percentage, delivery_days, delivery_base_pieces, unit, customization_enabled, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                (fabric_id, program_name, garment_type, category_id, sub_category_id, feeding_type, minimum_pieces, required_pieces, maximum_pieces, wastage_percentage, without_cover_discount_percentage, delivery_days, delivery_base_pieces, unit, customization_enabled, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             
+            $reqPieces = isset($data['required_pieces']) && (int)$data['required_pieces'] > 0 ? (int)$data['required_pieces'] : ($data['minimum_pieces'] ?? 10);
+
             $stmt->execute([
                 $data['fabric_id'],
                 $data['program_name'],
@@ -485,7 +496,8 @@ class FabricCustomization
                 $data['category_id'] ?? null,
                 $data['sub_category_id'] ?? null,
                 $data['feeding_type'] ?? 'Non-Feeding',
-                $data['minimum_pieces'] ?? 10,
+                $reqPieces,
+                $reqPieces,
                 $data['maximum_pieces'] ?? 100,
                 $data['wastage_percentage'] ?? 0.00,
                 $data['without_cover_discount_percentage'] ?? 0.00,
@@ -558,8 +570,7 @@ class FabricCustomization
                 $this->db->commit();
             }
             if (class_exists('\Core\Cache')) {
-                \Core\Cache::delete('fabric_customization_fid_' . (int)($data['fabric_id'] ?? 0));
-                \Core\Cache::delete('customizable_fabrics_default_v2');
+                \Core\Cache::clear();
             }
             return $customizationId;
         } catch (\Exception $e) {
@@ -589,6 +600,7 @@ class FabricCustomization
                     sub_category_id = ?, 
                     feeding_type = ?, 
                     minimum_pieces = ?, 
+                    required_pieces = ?,
                     maximum_pieces = ?, 
                     wastage_percentage = ?, 
                     without_cover_discount_percentage = ?,
@@ -600,6 +612,8 @@ class FabricCustomization
                 WHERE id = ?
             ");
 
+            $reqPieces = isset($data['required_pieces']) && (int)$data['required_pieces'] > 0 ? (int)$data['required_pieces'] : ($data['minimum_pieces'] ?? 10);
+
             $stmt->execute([
                 $data['fabric_id'],
                 $data['program_name'],
@@ -607,7 +621,8 @@ class FabricCustomization
                 $data['category_id'] ?? null,
                 $data['sub_category_id'] ?? null,
                 $data['feeding_type'] ?? 'Non-Feeding',
-                $data['minimum_pieces'] ?? 10,
+                $reqPieces,
+                $reqPieces,
                 $data['maximum_pieces'] ?? 100,
                 $data['wastage_percentage'] ?? 0.00,
                 $data['without_cover_discount_percentage'] ?? 0.00,
@@ -653,16 +668,16 @@ class FabricCustomization
                 }
             }
 
-            // Sync labels
-            $this->syncCustomizationLabels((int)$id, $labelIds);
+            // Sync labels if explicitly provided
+            if (!empty($labelIds)) {
+                $this->syncCustomizationLabels((int)$id, $labelIds);
+            }
 
             if (!$inTx) {
                 $this->db->commit();
             }
             if (class_exists('\Core\Cache')) {
-                \Core\Cache::delete('fabric_customization_fid_' . (int)($data['fabric_id'] ?? 0));
-                \Core\Cache::delete('fabric_customization_fid_' . (int)$id);
-                \Core\Cache::delete('customizable_fabrics_default_v2');
+                \Core\Cache::clear();
             }
             return true;
         } catch (\Exception $e) {

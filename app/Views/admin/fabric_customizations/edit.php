@@ -25,25 +25,43 @@
         <div class="bg-white p-6 rounded-2xl border border-gray-100 shadow-xs space-y-5">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
 
+                <!-- Selected Fabric Display -->
+                <div class="sm:col-span-2 bg-gradient-to-r from-amber-50/60 to-orange-50/40 p-4 rounded-xl border border-amber-200 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-amber-700 block mb-0.5">Customizable Fabric Product</span>
+                        <h3 class="font-extrabold text-sm text-gray-900">
+                            🧵 <?= htmlspecialchars($rule['fabric_name'] ?? ('Fabric #' . $rule['fabric_id'])) ?>
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-0.5">
+                            Product ID: <strong><?= $rule['fabric_id'] ?></strong> | SKU: <strong><?= htmlspecialchars($rule['fabric_sku'] ?? 'N/A') ?></strong> | Stock: <strong><?= (int)($rule['fabric_stock'] ?? 0) ?> Qty</strong>
+                        </p>
+                    </div>
+                    <span class="text-xs px-2.5 py-1 rounded-full font-bold bg-white text-amber-800 border border-amber-200 shadow-2xs">
+                        Rule #<?= $rule['id'] ?>
+                    </span>
+                </div>
+
                 <!-- Required Pieces to Enable Payment (Min & Max Limits) -->
                 <div class="sm:col-span-2 bg-gradient-to-r from-amber-50/50 via-white to-amber-50/30 p-4 rounded-xl border border-amber-200/80">
                     <div class="flex items-center justify-between mb-2">
                         <label class="block text-xs font-bold text-gray-800 uppercase tracking-wider flex items-center gap-1.5">
-                            <span>Required Order Pieces (Min / Max Limits)</span>
+                            <span>Required Order Pieces (For 1 Fabric Qty / Set)</span>
                             <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold border border-amber-200">Dynamic Scaling</span>
                         </label>
                     </div>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-[11px] font-bold text-gray-700 mb-1">
-                                Minimum Required Pieces <span class="text-red-500">*</span>
+                                Required Pieces (for 1 Fabric Qty) <span class="text-red-500">*</span>
                             </label>
                             <div class="relative">
-                                <input type="number" name="minimum_pieces" value="<?= isset($rule['minimum_pieces']) ? (int)$rule['minimum_pieces'] : 10 ?>" min="1" required placeholder="e.g. 10" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14">
-                                <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs (Min)</span>
+                                <?php $currentReq = isset($rule['required_pieces']) && (int)$rule['required_pieces'] > 0 ? (int)$rule['required_pieces'] : (isset($rule['minimum_pieces']) ? (int)$rule['minimum_pieces'] : 35); ?>
+                                <input type="number" name="required_pieces" id="required_pieces" value="<?= $currentReq ?>" min="1" required placeholder="e.g. 35" class="w-full px-4 py-2.5 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold text-gray-900 pr-14" oninput="document.getElementById('minimum_pieces').value = this.value">
+                                <input type="hidden" name="minimum_pieces" id="minimum_pieces" value="<?= $currentReq ?>">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-gray-400 font-semibold">Pcs (Req)</span>
                             </div>
                             <p class="text-[10px] text-gray-500 mt-1">
-                                Base pieces required before checkout is unlocked (scales with Sets).
+                                Required pieces for 1 fabric quantity (e.g. 35 pcs). Scales dynamically per set (e.g. 100 sets = 3500 pcs).
                             </p>
                         </div>
                         <div>

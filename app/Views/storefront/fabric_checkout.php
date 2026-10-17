@@ -80,7 +80,7 @@
                                     <?= htmlspecialchars($customization['fabric_name']) ?>
                                 </h2>
                                 <div class="flex items-center gap-3 text-xs text-gray-500 mt-1 flex-wrap">
-                                    <span>SKU: <strong class="text-gray-700"><?= htmlspecialchars($customization['fabric_sku'] ?? 'N/A') ?></strong></span>
+                                    <span>SKU: <strong class="text-gray-700 font-mono"><?= htmlspecialchars(!empty($customization['fabric_sku']) ? $customization['fabric_sku'] : ($customization['sizes'][0]['variant_sku'] ?? 'N/A')) ?></strong></span>
                                     <span>•</span>
                                     <span>Fabric Sets: <strong class="text-[#F25996]"><?= (int)$fabricQuantity ?> Set(s)</strong></span>
                                 </div>
@@ -118,6 +118,50 @@
                         </span>
                         <?php endif; ?>
                     </div>
+
+                    <?php if (!empty($sets)): ?>
+                    <!-- Fabric Sets & Style Allocation Breakdown -->
+                    <div class="mb-5 space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold uppercase tracking-wider text-gray-700 flex items-center gap-1.5">
+                                <span>Fabric Sets &amp; Style Allocation</span>
+                                <span class="text-[10px] px-2 py-0.5 rounded-md bg-pink-100 text-[#F25996] font-bold"><?= count($sets) ?> Set(s)</span>
+                            </h3>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <?php foreach ($sets as $sIdx => $sData): 
+                                $sNum = $sData['set_id'] ?? ($sIdx + 1);
+                                $lblTxt = $sData['label_name'] ?? 'Custom Style';
+                                $sPcs = isset($sData['total_pieces']) ? (int)$sData['total_pieces'] : array_sum($sData['sizes'] ?? []);
+                            ?>
+                            <div class="p-3.5 rounded-2xl bg-white border border-pink-100/90 shadow-xs space-y-2">
+                                <div class="flex items-center justify-between pb-2 border-b border-gray-100">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-6 h-6 rounded-md bg-[#F25996] text-white font-black text-xs flex items-center justify-center">#<?= $sNum ?></span>
+                                        <strong class="text-xs font-bold text-gray-900">Set #<?= $sNum ?></strong>
+                                    </div>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-50 text-[#F25996] border border-pink-200">
+                                        <?= $sPcs ?> Pcs
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-1.5 text-xs text-gray-700">
+                                    <span class="text-gray-400 font-medium">🏷️ Label / Style:</span>
+                                    <span class="font-bold text-gray-900"><?= htmlspecialchars($lblTxt) ?></span>
+                                </div>
+                                <div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+                                    <?php if (!empty($sData['sizes'])): ?>
+                                        <?php foreach ($sData['sizes'] as $szKey => $szCnt): if ($szCnt <= 0) continue; ?>
+                                            <span class="text-[11px] px-2 py-0.5 bg-gray-50 border border-gray-200 rounded-md font-semibold text-gray-700">
+                                                <?= htmlspecialchars($szKey) ?>: <strong class="text-gray-900"><?= $szCnt ?></strong>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                    <?php endif; ?>
 
                     <!-- Sizing Breakdown Table -->
                     <div>
@@ -265,7 +309,7 @@
                         <?php endif; ?>
 
                         <div class="flex items-center justify-between text-gray-600">
-                            <span>Applicable GST (5%):</span>
+                            <span>Included GST (<?= (float)($pricing['gst_rate'] ?? 5) ?>%):</span>
                             <span class="font-bold text-gray-900">₹<?= number_format((float)($pricing['gst_amount'] ?? 0), 2) ?></span>
                         </div>
 
@@ -334,6 +378,7 @@
 const CHECKOUT_FABRIC_ID = <?= (int)$customization['fabric_id'] ?>;
 const CHECKOUT_CUSTOMIZATION_ID = <?= (int)$customization['id'] ?>;
 const CHECKOUT_SIZES = <?= json_encode($sizes) ?>;
+const CHECKOUT_SETS = <?= json_encode($sets ?? []) ?>;
 const CHECKOUT_FABRIC_QTY = <?= (int)$fabricQuantity ?>;
 const CHECKOUT_PACKAGING_OPT = <?= json_encode($packagingOption) ?>;
 const BASE_URL = <?= json_encode(BASE_URL) ?>;
@@ -349,6 +394,7 @@ function getCheckoutPayload() {
         customization_id: CHECKOUT_CUSTOMIZATION_ID,
         fabric_quantity: CHECKOUT_FABRIC_QTY,
         sizes: CHECKOUT_SIZES,
+        sets: CHECKOUT_SETS,
         shipping_address: address,
         notes: notes,
         packaging_option: CHECKOUT_PACKAGING_OPT,

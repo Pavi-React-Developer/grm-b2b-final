@@ -268,19 +268,22 @@
                         <?php elseif ($secKey === 'addresses'): ?>
                         <!-- Section: Addresses (From & To Cards, Bigger Fonts) -->
                         <div class="grid grid-cols-2 gap-2.5 my-2">
-                            <!-- SHIP FROM Card (Small font size) -->
-                            <div class="border border-gray-400 rounded-xl overflow-hidden bg-white shadow-none">
-                                <div class="bg-gray-100 px-2.5 py-1 border-b border-gray-400 flex items-center gap-1.5">
-                                    <span class="w-3.5 h-3.5 rounded-md bg-black text-white flex items-center justify-center shrink-0">
-                                        <svg class="w-2 h-2" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
+                            <!-- SHIP FROM Card (Styled to match SHIP TO) -->
+                            <div class="border-2 border-black rounded-xl overflow-hidden bg-white shadow-none">
+                                <div class="bg-gray-100 px-3 py-1.5 border-b-2 border-black flex items-center gap-1.5">
+                                    <span class="w-4 h-4 rounded-md bg-black text-white flex items-center justify-center shrink-0">
+                                        <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path></svg>
                                     </span>
-                                    <span class="text-[8px] font-black uppercase text-black tracking-wider">SHIP FROM</span>
+                                    <span class="text-[10px] font-black uppercase text-black tracking-wider">SHIP FROM</span>
                                 </div>
-                                <div class="p-2 flex flex-col gap-0.5">
-                                    <div class="font-black text-[10px] text-black leading-tight"><?= htmlspecialchars($config['company_name']) ?></div>
+                                <div class="p-2.5 flex flex-col gap-0.5">
+                                    <div class="font-black text-[11px] text-black leading-tight tracking-tight"><?= htmlspecialchars($config['company_name']) ?></div>
                                     <div class="text-[8px] text-black font-medium leading-tight"><?= nl2br(htmlspecialchars($config['address'])) ?></div>
                                     <?php if (!empty($config['phone'])): ?>
-                                        <div class="text-[8.5px] text-black font-bold mt-1">Ph: <?= htmlspecialchars($config['phone']) ?></div>
+                                        <div class="text-[8px] text-black font-bold mt-0.5">Ph: <?= htmlspecialchars($config['phone']) ?></div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($config['email'])): ?>
+                                        <div class="text-[8px] text-black font-bold">Email: <?= htmlspecialchars($config['email']) ?></div>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -310,11 +313,8 @@
                             <div class="w-4 h-4 rounded-full bg-black text-white flex items-center justify-center font-bold text-[9px] shrink-0 mt-0.5">
                                 i
                             </div>
-                            <div>
-                                <div class="text-[9.5px] font-black text-black leading-tight">Declaration:</div>
-                                <div class="text-[8px] text-black font-medium leading-tight mt-0.5">
-                                    <?= htmlspecialchars($config['notes']) ?>
-                                </div>
+                            <div class="text-[8.5px] text-black font-medium leading-tight">
+                                <?= htmlspecialchars($config['notes']) ?>
                             </div>
                         </div>
                         <?php endif; ?>
@@ -513,8 +513,7 @@
 
             // Footer Declaration
             tspl += `BOX 30,550,770,625,1\r\n`;
-            tspl += `TEXT 45,560,"2",0,1,1,"Declaration:"\r\n`;
-            tspl += `TEXT 45,585,"2",0,1,1,"${notes.substring(0, 75)}"\r\n`;
+            tspl += `TEXT 45,570,"2",0,1,1,"${notes.substring(0, 75)}"\r\n`;
 
             tspl += `PRINT 1,1\r\n`;
             return new TextEncoder().encode(tspl);

@@ -10,79 +10,76 @@
 ?>
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumbs -->
+    <div class="text-sm font-medium text-gray-400 font-serif tracking-wide mb-2">
+        Dashboard <span class="mx-1 text-gray-300">›</span> Customization Management <span class="mx-1 text-gray-300">›</span> <span class="text-[#F25996]">Customized Garment Orders & Requests</span>
+    </div>
+
     <!-- Header -->
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-            <div class="flex items-center gap-2 mb-1">
-                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 uppercase tracking-wider">
-                    ✨ Customization Studio
-                </span>
-                <span class="text-xs text-gray-500 font-medium">B2B Wholesale Module</span>
-            </div>
-            <h1 class="text-2xl md:text-3xl font-black text-gray-900 tracking-tight">Customized Garment Orders & Requests</h1>
+            <h1 class="text-3xl sm:text-4xl font-display font-extrabold text-gray-900 tracking-tight">Customized Garment Orders & Requests</h1>
             <p class="text-sm text-gray-500 mt-1">Manage wholesale fabric customization configurations, stitching orders, and quote requests.</p>
         </div>
         <div class="flex items-center flex-wrap gap-2.5">
-            <span id="selectedCustomOrdersCountBadge" class="hidden text-xs bg-pink-100 text-[#F25996] font-bold px-3 py-1.5 rounded-xl">0 selected</span>
-            <button type="button" onclick="openBulkCustomPackingSlips(false)" class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#fdf2f7] border border-[#FDBFDD] text-[#F25996] hover:bg-[#fce7f1] text-sm font-bold rounded-xl shadow-xs transition-colors" title="Print 100mm x 100mm Packing Slips">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <span id="selectedCustomOrdersCountBadge" class="hidden text-xs bg-pink-50 text-[#F25996] border border-pink-200 font-bold px-3.5 py-1.5 rounded-full">0 selected</span>
+            <button type="button" onclick="openBulkCustomPackingSlips(false)" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold rounded-full shadow-xs uppercase tracking-wider transition-colors" title="Print 100mm x 100mm Packing Slips">
+                <svg class="w-4 h-4 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 <span>Packing Slip</span>
             </button>
-            <button type="button" onclick="openBulkCustomPackingSlips(true)" class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#F25996] hover:bg-[#e04481] text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all" title="Instant Print 100mm Slips">
+            <button type="button" onclick="openBulkCustomPackingSlips(true)" class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F25996] hover:bg-[#d8407d] text-white text-xs font-bold rounded-full shadow-md uppercase tracking-widest transition-all" title="Instant Print 100mm Slips">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                 <span>Print</span>
             </button>
-            <a href="<?= BASE_URL ?>/admin/orders/packing-slip-config" class="w-10 h-10 rounded-xl bg-white border border-gray-200 text-gray-600 hover:text-gray-900 flex items-center justify-center transition-colors shadow-xs shrink-0" title="Packing Slip Configuration & Section Ordering">
+            <a href="<?= BASE_URL ?>/admin/orders/packing-slip-config" class="w-10 h-10 rounded-full bg-white border border-gray-200 text-gray-600 hover:text-[#F25996] flex items-center justify-center transition-colors shadow-xs shrink-0" title="Packing Slip Configuration & Section Ordering">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
             </a>
-            <a href="<?= BASE_URL ?>/admin/catalog/products?module=customize" class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-sm font-bold rounded-xl shadow-xs transition-colors">
-                <svg class="w-4 h-4 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+            <a href="<?= BASE_URL ?>/admin/catalog/products?module=customize" class="inline-flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 text-xs font-bold rounded-full shadow-xs uppercase tracking-wider transition-colors">
+                <svg class="w-4 h-4 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 <span>Customizable Fabrics</span>
             </a>
-            <a href="<?= BASE_URL ?>/admin/catalog/products/create?module=customize" class="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white text-sm font-bold rounded-xl shadow-sm hover:shadow transition-all">
+            <a href="<?= BASE_URL ?>/admin/catalog/products/create?module=customize" class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F25996] hover:bg-[#d8407d] text-white text-xs font-bold rounded-full shadow-md uppercase tracking-widest transition-all">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 <span>+ Add Customizable Fabric</span>
             </a>
         </div>
     </div>
 
-    <!-- Status Filter Tabs -->
-    <div class="bg-white rounded-2xl p-2 border border-gray-200/80 shadow-xs mb-6 overflow-x-auto">
-        <div class="flex gap-2 min-w-max">
-            <?php
-            $tabs = [
-                'all' => ['label' => 'All Custom Orders', 'count' => $statusCounts['all'] ?? 0],
-                'request_pending' => ['label' => 'Quote Requests', 'count' => $statusCounts['request_pending'] ?? 0, 'color' => 'amber'],
-                'paid' => ['label' => 'Razorpay Paid', 'count' => $statusCounts['paid'] ?? 0, 'color' => 'emerald'],
-                'placed' => ['label' => 'Placed', 'count' => $statusCounts['placed'] ?? 0],
-                'packed' => ['label' => 'Packed', 'count' => $statusCounts['packed'] ?? 0],
-                'shipped' => ['label' => 'Shipped', 'count' => $statusCounts['shipped'] ?? 0],
-                'out_for_delivery' => ['label' => 'Out for Delivery', 'count' => $statusCounts['out_for_delivery'] ?? 0, 'color' => 'indigo'],
-                'delivered' => ['label' => 'Delivered', 'count' => $statusCounts['delivered'] ?? 0, 'color' => 'green'],
-                'cancelled' => ['label' => 'Cancelled', 'count' => $statusCounts['cancelled'] ?? 0, 'color' => 'rose'],
-            ];
-            ?>
-            <?php foreach ($tabs as $key => $tab): ?>
-                <?php $isActive = $currentStatus === $key; ?>
-                <a href="<?= BASE_URL ?>/admin/customize/orders?status=<?= $key ?>" class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 <?= $isActive ? 'bg-slate-900 text-white shadow-xs' : 'text-gray-600 hover:bg-gray-100/70 hover:text-gray-900' ?>">
-                    <span><?= htmlspecialchars($tab['label']) ?></span>
-                    <span class="px-2 py-0.5 rounded-full text-[10px] font-black <?= $isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-700' ?>">
-                        <?= $tab['count'] ?>
-                    </span>
-                </a>
-            <?php endforeach; ?>
-        </div>
+    <!-- Status Filter Tabs (Image 5 style) -->
+    <div class="flex items-center space-x-2 overflow-x-auto mb-6 bg-white/70 backdrop-blur p-1.5 rounded-full border border-gray-100 shadow-sm w-fit max-w-full">
+        <?php
+        $tabs = [
+            'all' => ['label' => 'All Custom Orders', 'count' => $statusCounts['all'] ?? 0],
+            'request_pending' => ['label' => 'Quote Requests', 'count' => $statusCounts['request_pending'] ?? 0],
+            'paid' => ['label' => 'Razorpay Paid', 'count' => $statusCounts['paid'] ?? 0],
+            'placed' => ['label' => 'Placed', 'count' => $statusCounts['placed'] ?? 0],
+            'packed' => ['label' => 'Packed', 'count' => $statusCounts['packed'] ?? 0],
+            'shipped' => ['label' => 'Shipped', 'count' => $statusCounts['shipped'] ?? 0],
+            'out_for_delivery' => ['label' => 'Out for Delivery', 'count' => $statusCounts['out_for_delivery'] ?? 0],
+            'delivered' => ['label' => 'Delivered', 'count' => $statusCounts['delivered'] ?? 0],
+            'cancelled' => ['label' => 'Cancelled', 'count' => $statusCounts['cancelled'] ?? 0],
+        ];
+        ?>
+        <?php foreach ($tabs as $key => $tab): ?>
+            <?php $isActive = $currentStatus === $key; ?>
+            <a href="<?= BASE_URL ?>/admin/customize/orders?status=<?= $key ?>" class="px-4 py-2 rounded-full text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap <?= $isActive ? 'bg-[#F25996] text-white shadow-sm shadow-[#F25996]/30' : 'text-gray-600 hover:bg-gray-100' ?>">
+                <span><?= htmlspecialchars($tab['label']) ?></span>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black <?= $isActive ? 'bg-white text-[#F25996]' : 'bg-pink-50 text-[#F25996] border border-pink-100' ?>">
+                    <?= $tab['count'] ?>
+                </span>
+            </a>
+        <?php endforeach; ?>
     </div>
 
     <!-- Orders Feed -->
     <?php if (empty($orders)): ?>
-        <div class="bg-white rounded-3xl p-16 text-center border border-gray-200 shadow-sm">
-            <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-4 border border-amber-100 shadow-xs">
+        <div class="bg-white rounded-3xl p-16 text-center border border-gray-100 shadow-sm">
+            <div class="w-16 h-16 rounded-2xl bg-pink-50 text-[#F25996] flex items-center justify-center mx-auto mb-4 border border-pink-100 shadow-xs">
                 <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242L11.758 4.758a3 3 0 114.242 4.242L12 12z"/></svg>
             </div>
             <h3 class="text-lg font-bold text-gray-900 mb-1">No Custom Orders Found</h3>
             <p class="text-sm text-gray-500 max-w-md mx-auto mb-6">There are no customized garment orders or requests matching the selected filter status.</p>
-            <a href="<?= BASE_URL ?>/admin/customize/orders" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gray-900 text-white text-xs font-bold rounded-xl hover:bg-gray-800 transition-colors">
+            <a href="<?= BASE_URL ?>/admin/customize/orders" class="inline-flex items-center gap-2 px-6 py-2.5 bg-[#F25996] hover:bg-[#d8407d] text-white text-xs font-bold rounded-full uppercase tracking-wider transition-colors shadow-sm">
                 View All Custom Orders
             </a>
         </div>

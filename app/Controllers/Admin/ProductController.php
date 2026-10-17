@@ -190,21 +190,6 @@ class ProductController extends Controller
         $module = $_GET['module'] ?? '';
         $isCustomize = ($module === 'customize');
 
-        if (!$isCustomize && !empty($product['id'])) {
-            if (!empty($product['is_customizable'])) {
-                $isCustomize = true;
-                $module = 'customize';
-            } else {
-                $db = \Core\Database::getInstance();
-                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
-                $stmt->execute([(int)$product['id']]);
-                if ($stmt->fetch()) {
-                    $isCustomize = true;
-                    $module = 'customize';
-                }
-            }
-        }
-
         $this->requirePermission($isCustomize ? 'customize_products' : 'products', 'edit');
 
         if (!$product) {
@@ -456,7 +441,7 @@ class ProductController extends Controller
             $productModel->syncAttributes($productId, $parsedAttributes);
             
             // Process Variants
-            $variantModel = new \App\Models\ProductVariant();
+            $variantModel = new ProductVariant();
             $postedVariants = !empty($_POST['variants']) ? $_POST['variants'] : (!empty($_POST['new_variants']) ? $_POST['new_variants'] : []);
             
             // Purge any orphan/stale variants for this productId before inserting
@@ -517,63 +502,22 @@ class ProductController extends Controller
                 }
             }
 
-            // Handle Fabric Customization Rules & Labels when module is customize or rules provided
-            if ($isCustomize || !empty($_POST['minimum_pieces']) || !empty($_POST['customization_labels'])) {
+            // Handle Fabric Customization Rules, Labels & Sizes when module is customize
+            if ($isCustomize) {
                 $minPieces = isset($_POST['minimum_pieces']) ? max(1, (int)$_POST['minimum_pieces']) : 10;
                 $maxPieces = isset($_POST['maximum_pieces']) ? max(1, (int)$_POST['maximum_pieces']) : 100;
                 $coverDiscount = isset($_POST['without_cover_discount_percentage']) ? (float)$_POST['without_cover_discount_percentage'] : 0.00;
                 $deliveryDays = isset($_POST['delivery_days']) ? max(1, (int)$_POST['delivery_days']) : 7;
                 $deliveryBasePieces = isset($_POST['delivery_base_pieces']) ? max(1, (int)$_POST['delivery_base_pieces']) : 100;
-                $ruleStatus = $_POST['rule_status'] ?? 'active';
+                $ruleStatus = $_POST['rule_status'] ?? ($_POST['customization_status'] ?? 'active');
 
-                $stmtRule = $db->prepare("
-                    INSERT INTO fabric_customizations (fabric_id, program_name, garment_type, category_id, sub_category_id, minimum_pieces, maximum_pieces, without_cover_discount_percentage, delivery_days, delivery_base_pieces, status)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ON DUPLICATE KEY UPDATE 
-                        program_name = VALUES(program_name),
-                        category_id = VALUES(category_id),
-                        sub_category_id = VALUES(sub_category_id),
-                        minimum_pieces = VALUES(minimum_pieces),
-                        maximum_pieces = VALUES(maximum_pieces),
-                        without_cover_discount_percentage = VALUES(without_cover_discount_percentage),
-                        delivery_days = VALUES(delivery_days),
-                        delivery_base_pieces = VALUES(delivery_base_pieces),
-                        status = VALUES(status)
-                ");
-                $stmtRule->execute([
-                    $productId,
-                    $data['name'] . ' Rule',
-                    'Custom Garment',
-                    $data['category_id'],
-                    $data['sub_category_id'],
-                    $minPieces,
-                    $maxPieces,
-                    $coverDiscount,
-                    $deliveryDays,
-                    $deliveryBasePieces,
-                    $ruleStatus
-                ]);
-
-                $ruleId = (int)$db->lastInsertId();
-                if (!$ruleId) {
-                    $stmtF = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ?");
-                    $stmtF->execute([$productId]);
-                    $ruleId = (int)$stmtF->fetchColumn();
+                // Collect label IDs from both potential input names
+                $labelIds = [];
+                if (!empty($_POST['customization_labels']) && is_array($_POST['customization_labels'])) {
+                    $labelIds = array_map('intval', $_POST['customization_labels']);
+                } elseif (!empty($_POST['label_ids']) && is_array($_POST['label_ids'])) {
+                    $labelIds = array_map('intval', $_POST['label_ids']);
                 }
-
-                if ($ruleId) {
-                    $labelIds = isset($_POST['customization_labels']) && is_array($_POST['customization_labels']) ? $_POST['customization_labels'] : [];
-                    (new \App\Models\CustomizationLabel())->syncCustomizationLabels($ruleId, $labelIds);
-                }
-            }
-
-            // Sync customization labels and rule if customizable
-            if ($isCustomize) {
-                $labelIds = !empty($_POST['label_ids']) && is_array($_POST['label_ids']) ? array_map('intval', $_POST['label_ids']) : [];
-                $fcModel = new \App\Models\FabricCustomization();
-                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
-                $stmt->execute([$productId]);
-                $existingFc = $stmt->fetch();
 
                 // Build variant sizes from posted fabric_sizes or fallback to posted variants
                 $variantSizes = [];
@@ -598,9 +542,9 @@ class ProductController extends Controller
                         if ($vName !== '') {
                             $variantSizes[] = [
                                 'size_name' => $vName,
-                                'fabric_consumption' => 1.00,
-                                'base_quantity' => 2,
-                                'max_quantity' => 4,
+                                'fabric_consumption' => !empty($vData['fabric_consumption']) ? (float)$vData['fabric_consumption'] : 1.00,
+                                'base_quantity' => isset($vData['base_quantity']) && $vData['base_quantity'] !== '' ? max(1, (int)$vData['base_quantity']) : 2,
+                                'max_quantity' => isset($vData['max_quantity']) && $vData['max_quantity'] !== '' ? max(1, (int)$vData['max_quantity']) : 4,
                                 'enabled' => 1,
                                 'sort_order' => $sort++
                             ];
@@ -618,25 +562,39 @@ class ProductController extends Controller
                     ];
                 }
 
+                $fcModel = new \App\Models\FabricCustomization();
+                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+                $stmt->execute([$productId]);
+                $existingFc = $stmt->fetch();
+
                 $fcData = [
                     'fabric_id' => $productId,
-                    'program_name' => $data['name'] . ' Customization',
+                    'program_name' => $data['name'] . ' Rule',
                     'garment_type' => 'Custom Garment',
                     'category_id' => $data['category_id'],
                     'sub_category_id' => $data['sub_category_id'] ?? null,
                     'feeding_type' => 'Maternity / Non-Feeding',
-                    'minimum_pieces' => !empty($_POST['minimum_pieces']) ? max(1, (int)$_POST['minimum_pieces']) : 10,
-                    'maximum_pieces' => 100,
+                    'minimum_pieces' => $minPieces,
+                    'required_pieces' => $minPieces,
+                    'maximum_pieces' => $maxPieces,
+                    'without_cover_discount_percentage' => $coverDiscount,
+                    'delivery_days' => $deliveryDays,
+                    'delivery_base_pieces' => $deliveryBasePieces,
                     'wastage_percentage' => 0.00,
                     'unit' => 'Quantity',
                     'customization_enabled' => 1,
-                    'status' => !empty($_POST['customization_status']) ? $_POST['customization_status'] : 'active'
+                    'status' => $ruleStatus
                 ];
 
                 if ($existingFc) {
                     $fcModel->update($existingFc['id'], $fcData, $variantSizes, $labelIds);
+                    $ruleId = (int)$existingFc['id'];
                 } else {
-                    $fcModel->create($fcData, $variantSizes, $labelIds);
+                    $ruleId = $fcModel->create($fcData, $variantSizes, $labelIds);
+                }
+
+                if ($ruleId && !empty($labelIds)) {
+                    (new \App\Models\CustomizationLabel())->syncCustomizationLabels($ruleId, $labelIds);
                 }
             }
 
@@ -974,82 +932,22 @@ class ProductController extends Controller
                         $sort++;
                     }
                 }
-            }
-
-            // Handle Fabric Customization Rules & Labels update when module is customize or rules provided
-            if ($isCustomize || !empty($_POST['minimum_pieces']) || !empty($_POST['customization_labels'])) {
+                     // Handle Fabric Customization Rules, Labels & Sizes update when module is customize
+            if ($isCustomize) {
                 $minPieces = isset($_POST['minimum_pieces']) ? max(1, (int)$_POST['minimum_pieces']) : 10;
                 $maxPieces = isset($_POST['maximum_pieces']) ? max(1, (int)$_POST['maximum_pieces']) : 100;
                 $coverDiscount = isset($_POST['without_cover_discount_percentage']) ? (float)$_POST['without_cover_discount_percentage'] : 0.00;
                 $deliveryDays = isset($_POST['delivery_days']) ? max(1, (int)$_POST['delivery_days']) : 7;
                 $deliveryBasePieces = isset($_POST['delivery_base_pieces']) ? max(1, (int)$_POST['delivery_base_pieces']) : 100;
-                $ruleStatus = $_POST['rule_status'] ?? 'active';
+                $ruleStatus = $_POST['rule_status'] ?? ($_POST['customization_status'] ?? 'active');
 
-                $stmtCheck = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
-                $stmtCheck->execute([$id]);
-                $existingRuleId = $stmtCheck->fetchColumn();
-
-                if ($existingRuleId) {
-                    $stmtRule = $db->prepare("
-                        UPDATE fabric_customizations 
-                        SET program_name = ?,
-                            category_id = ?,
-                            sub_category_id = ?,
-                            minimum_pieces = ?,
-                            maximum_pieces = ?,
-                            without_cover_discount_percentage = ?,
-                            delivery_days = ?,
-                            delivery_base_pieces = ?,
-                            status = ?
-                        WHERE id = ?
-                    ");
-                    $stmtRule->execute([
-                        $data['name'] . ' Rule',
-                        $data['category_id'],
-                        $data['sub_category_id'],
-                        $minPieces,
-                        $maxPieces,
-                        $coverDiscount,
-                        $deliveryDays,
-                        $deliveryBasePieces,
-                        $ruleStatus,
-                        $existingRuleId
-                    ]);
-                    $ruleId = (int)$existingRuleId;
-                } else {
-                    $stmtRule = $db->prepare("
-                        INSERT INTO fabric_customizations (fabric_id, program_name, garment_type, category_id, sub_category_id, minimum_pieces, maximum_pieces, without_cover_discount_percentage, delivery_days, delivery_base_pieces, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                    ");
-                    $stmtRule->execute([
-                        $id,
-                        $data['name'] . ' Rule',
-                        'Custom Garment',
-                        $data['category_id'],
-                        $data['sub_category_id'],
-                        $minPieces,
-                        $maxPieces,
-                        $coverDiscount,
-                        $deliveryDays,
-                        $deliveryBasePieces,
-                        $ruleStatus
-                    ]);
-                    $ruleId = (int)$db->lastInsertId();
+                // Collect label IDs from both potential input names
+                $labelIds = [];
+                if (!empty($_POST['customization_labels']) && is_array($_POST['customization_labels'])) {
+                    $labelIds = array_map('intval', $_POST['customization_labels']);
+                } elseif (!empty($_POST['label_ids']) && is_array($_POST['label_ids'])) {
+                    $labelIds = array_map('intval', $_POST['label_ids']);
                 }
-
-                if ($ruleId) {
-                    $labelIds = isset($_POST['customization_labels']) && is_array($_POST['customization_labels']) ? $_POST['customization_labels'] : [];
-                    (new \App\Models\CustomizationLabel())->syncCustomizationLabels($ruleId, $labelIds);
-                }
-            }
-
-            // Sync customization labels and rule if customizable
-            if ($isCustomize) {
-                $labelIds = !empty($_POST['label_ids']) && is_array($_POST['label_ids']) ? array_map('intval', $_POST['label_ids']) : [];
-                $fcModel = new \App\Models\FabricCustomization();
-                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
-                $stmt->execute([$id]);
-                $existingFc = $stmt->fetch();
 
                 // Collect all posted variants (existing + new)
                 $allVariants = array_merge(
@@ -1079,9 +977,9 @@ class ProductController extends Controller
                         if ($vName !== '') {
                             $variantSizes[] = [
                                 'size_name' => $vName,
-                                'fabric_consumption' => 1.00,
-                                'base_quantity' => 2,
-                                'max_quantity' => 4,
+                                'fabric_consumption' => !empty($vData['fabric_consumption']) ? (float)$vData['fabric_consumption'] : 1.00,
+                                'base_quantity' => isset($vData['base_quantity']) && $vData['base_quantity'] !== '' ? max(1, (int)$vData['base_quantity']) : 2,
+                                'max_quantity' => isset($vData['max_quantity']) && $vData['max_quantity'] !== '' ? max(1, (int)$vData['max_quantity']) : 4,
                                 'enabled' => 1,
                                 'sort_order' => $sort++
                             ];
@@ -1099,27 +997,41 @@ class ProductController extends Controller
                     ];
                 }
 
+                $fcModel = new \App\Models\FabricCustomization();
+                $stmt = $db->prepare("SELECT id FROM fabric_customizations WHERE fabric_id = ? LIMIT 1");
+                $stmt->execute([$id]);
+                $existingFc = $stmt->fetch();
+
                 $fcData = [
                     'fabric_id' => $id,
-                    'program_name' => $data['name'] . ' Customization',
+                    'program_name' => $data['name'] . ' Rule',
                     'garment_type' => 'Custom Garment',
                     'category_id' => $data['category_id'],
                     'sub_category_id' => $data['sub_category_id'] ?? null,
                     'feeding_type' => 'Maternity / Non-Feeding',
-                    'minimum_pieces' => !empty($_POST['minimum_pieces']) ? max(1, (int)$_POST['minimum_pieces']) : 10,
-                    'maximum_pieces' => 100,
+                    'minimum_pieces' => $minPieces,
+                    'required_pieces' => $minPieces,
+                    'maximum_pieces' => $maxPieces,
+                    'without_cover_discount_percentage' => $coverDiscount,
+                    'delivery_days' => $deliveryDays,
+                    'delivery_base_pieces' => $deliveryBasePieces,
                     'wastage_percentage' => 0.00,
                     'unit' => 'Quantity',
                     'customization_enabled' => 1,
-                    'status' => !empty($_POST['customization_status']) ? $_POST['customization_status'] : 'active'
+                    'status' => $ruleStatus
                 ];
 
                 if ($existingFc) {
                     $fcModel->update($existingFc['id'], $fcData, $variantSizes, $labelIds);
+                    $ruleId = (int)$existingFc['id'];
                 } else {
-                    $fcModel->create($fcData, $variantSizes, $labelIds);
+                    $ruleId = $fcModel->create($fcData, $variantSizes, $labelIds);
                 }
-            }
+
+                if ($ruleId && !empty($labelIds)) {
+                    (new \App\Models\CustomizationLabel())->syncCustomizationLabels($ruleId, $labelIds);
+                }
+            }       }
 
             $db->commit();
             \Core\Cache::delete('catalog_active');

@@ -267,6 +267,10 @@
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
                                         <?= (int)$f['fabric_stock'] ?> Qty
                                     </span>
+                                <?php else: ?>
+                                    <span class="px-1.5 sm:px-2.5 py-0.5 bg-amber-600/95 backdrop-blur-xs text-white font-bold text-[8px] sm:text-[10px] tracking-wide rounded-full shadow-sm flex items-center gap-1">
+                                        Out of Stock
+                                    </span>
                                 <?php endif; ?>
 
                                 <button type="button" 
