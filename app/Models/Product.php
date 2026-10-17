@@ -12,12 +12,21 @@ class Product extends Model
                    sc_chart.title AS size_chart_title,
                    vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name, vp.unique_vendor_id,
                    u_v.name AS vendor_name,
-                   COALESCE(
-                       (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
-                       GREATEST(p.stock_quantity, 0)
-                   ) AS stock_quantity,
-                   (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS current_stock_quantity,
-                   (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS total_stock_quantity,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE COALESCE(
+                           (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
+                           GREATEST(p.stock_quantity, 0)
+                       )
+                   END AS stock_quantity,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id)
+                   END AS current_stock_quantity,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id)
+                   END AS total_stock_quantity,
                    (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS primary_image,
                    (SELECT GROUP_CONCAT(DISTINCT CONCAT(av.value, ':', av.color_code) SEPARATOR '||') 
                     FROM product_variant_attributes pva 
@@ -178,12 +187,21 @@ class Product extends Model
                    sc_chart.title AS size_chart_title,
                    vp.store_name as vendor_store_name, vp.unique_vendor_id,
                    u_rev.name as reviewer_name,
-                   COALESCE(
-                       (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
-                       GREATEST(p.stock_quantity, 0)
-                   ) as stock_quantity,
-                   (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) as current_stock_quantity,
-                   (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) as total_stock_quantity,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE COALESCE(
+                           (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
+                           GREATEST(p.stock_quantity, 0)
+                       )
+                   END as stock_quantity,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id)
+                   END as current_stock_quantity,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id)
+                   END as total_stock_quantity,
                    (SELECT MIN(base_price) FROM product_variants WHERE product_id = p.id) as base_price,
                    (SELECT MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) FROM product_variants WHERE product_id = p.id) as discount_price,
                    (SELECT MIN(CASE WHEN max_amount > 0 THEN max_amount ELSE NULL END) FROM product_variants WHERE product_id = p.id) as max_amount,
@@ -319,12 +337,21 @@ class Product extends Model
                    sc_chart.title AS size_chart_title,
                    vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name, vp.unique_vendor_id,
                    u_v.name AS vendor_name,
-                   COALESCE(
-                       (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
-                       GREATEST(p.stock_quantity, 0)
-                    ) AS stock_quantity,
-                   (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS current_stock_quantity,
-                   (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS total_stock_quantity
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE COALESCE(
+                           (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
+                           GREATEST(p.stock_quantity, 0)
+                       )
+                   END AS stock_quantity,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id)
+                   END AS current_stock_quantity,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id)
+                   END AS total_stock_quantity
             FROM products p 
             LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
@@ -343,12 +370,21 @@ class Product extends Model
                    sc_chart.title AS size_chart_title,
                    vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name, vp.unique_vendor_id,
                    u_v.name AS vendor_name,
-                   COALESCE(
-                       (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
-                       GREATEST(p.stock_quantity, 0)
-                    ) AS stock_quantity,
-                   (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS current_stock_quantity,
-                   (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id) AS total_stock_quantity
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE COALESCE(
+                           (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id),
+                           GREATEST(p.stock_quantity, 0)
+                       )
+                   END AS stock_quantity,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE (SELECT SUM(GREATEST(pv_stock.current_stock, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id)
+                   END AS current_stock_quantity,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE (SELECT SUM(GREATEST(pv_stock.inventory, 0)) FROM product_variants pv_stock WHERE pv_stock.product_id = p.id)
+                   END AS total_stock_quantity
             FROM products p 
             LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN size_charts sc_chart ON p.size_chart_id = sc_chart.id
@@ -664,12 +700,21 @@ class Product extends Model
         $sql = "
             SELECT 
                 COUNT(DISTINCT p.id) as total_products,
-                SUM(GREATEST(pv.inventory, 0)) as total_stock,
-                SUM(GREATEST(pv.current_stock, 0)) as current_stock,
-                SUM(CASE WHEN GREATEST(pv.current_stock, 0) <= COALESCE(pv.low_stock_alert, 5) AND GREATEST(pv.current_stock, 0) > 0 THEN 1 ELSE 0 END) as low_stock_count,
-                SUM(CASE WHEN GREATEST(pv.current_stock, 0) <= 0 THEN 1 ELSE 0 END) as out_of_stock_count
+                SUM(inv.prod_total_stock) as total_stock,
+                SUM(inv.prod_current_stock) as current_stock,
+                SUM(CASE WHEN inv.prod_current_stock <= inv.prod_low_alert AND inv.prod_current_stock > 0 THEN 1 ELSE 0 END) as low_stock_count,
+                SUM(CASE WHEN inv.prod_current_stock <= 0 THEN 1 ELSE 0 END) as out_of_stock_count
             FROM products p
-            JOIN product_variants pv ON p.id = pv.product_id
+            JOIN (
+                SELECT 
+                    p2.id as product_id,
+                    CASE WHEN p2.is_customizable = 1 THEN GREATEST(p2.stock_quantity, 0) ELSE SUM(GREATEST(pv.inventory, 0)) END as prod_total_stock,
+                    CASE WHEN p2.is_customizable = 1 THEN GREATEST(p2.stock_quantity, 0) ELSE SUM(GREATEST(pv.current_stock, 0)) END as prod_current_stock,
+                    MIN(COALESCE(pv.low_stock_alert, 5)) as prod_low_alert
+                FROM products p2
+                JOIN product_variants pv ON p2.id = pv.product_id
+                GROUP BY p2.id, p2.is_customizable, p2.stock_quantity
+            ) inv ON p.id = inv.product_id
             WHERE p.status != 'archived'
         ";
         
@@ -726,9 +771,9 @@ class Product extends Model
                 vp.unique_vendor_id,
                 c.name as category_name,
                 COUNT(pv.id) as variant_count,
-                SUM(GREATEST(pv.inventory, 0)) as total_stock,
-                SUM(GREATEST(pv.reserve_stock, 0)) as reserve_stock,
-                GREATEST(SUM(GREATEST(pv.current_stock, 0)), 0) as current_stock,
+                CASE WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0) ELSE SUM(GREATEST(pv.inventory, 0)) END as total_stock,
+                CASE WHEN p.is_customizable = 1 THEN 0 ELSE SUM(GREATEST(pv.reserve_stock, 0)) END as reserve_stock,
+                CASE WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0) ELSE GREATEST(SUM(GREATEST(pv.current_stock, 0)), 0) END as current_stock,
                 MIN(COALESCE(pv.low_stock_alert, 5)) as low_stock_alert,
                 MIN(pv.sku) as sku,
                 (SELECT image_path FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as image_path
@@ -745,7 +790,7 @@ class Product extends Model
             $params['vendor_id'] = $vendorId;
         }
 
-        $sql .= " GROUP BY p.id, p.name, p.vendor_id, vp.store_name, vp.unique_vendor_id, c.name ORDER BY p.name ASC";
+        $sql .= " GROUP BY p.id, p.name, p.vendor_id, vp.store_name, vp.unique_vendor_id, c.name, p.is_customizable, p.stock_quantity ORDER BY p.name ASC";
         
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
@@ -781,10 +826,12 @@ class Product extends Model
      */
     public function updateVariantStock($variantId, $newTotalStock, $newCurrentStock = null)
     {
-        // 1. Get old inventory and current_stock
-        $stmt = $this->db->prepare("SELECT inventory, current_stock FROM product_variants WHERE id = :id");
+        // 1. Get old inventory, current_stock, and customization status
+        $stmt = $this->db->prepare("SELECT pv.product_id, pv.inventory, pv.current_stock, p.is_customizable FROM product_variants pv JOIN products p ON pv.product_id = p.id WHERE pv.id = :id");
         $stmt->execute(['id' => $variantId]);
         $row = $stmt->fetch();
+        $productId = (int)($row['product_id'] ?? 0);
+        $isCustomizable = (int)($row['is_customizable'] ?? 0);
         $oldTotal = (int)($row['inventory'] ?? 0);
         $oldCurrent = (int)($row['current_stock'] ?? 0);
 
@@ -801,11 +848,22 @@ class Product extends Model
         // 3. Update both inventory (history) and current_stock (live)
         $sql = "UPDATE product_variants SET inventory = :inventory, current_stock = :current_stock WHERE id = :id";
         $stmt = $this->db->prepare($sql);
-        return $stmt->execute([
+        $res = $stmt->execute([
             'inventory'     => $newTotalStock,
             'current_stock' => $finalCurrentStock,
             'id'            => $variantId
         ]);
+
+        if ($isCustomizable && $productId > 0) {
+            // Keep product stock_quantity and all sibling variants synchronized for raw fabric stock
+            $stmtSyncProd = $this->db->prepare("UPDATE products SET stock_quantity = :stock WHERE id = :id");
+            $stmtSyncProd->execute(['stock' => $finalCurrentStock, 'id' => $productId]);
+
+            $stmtSyncVars = $this->db->prepare("UPDATE product_variants SET inventory = :inv, current_stock = :curr WHERE product_id = :pid");
+            $stmtSyncVars->execute(['inv' => $newTotalStock, 'curr' => $finalCurrentStock, 'pid' => $productId]);
+        }
+
+        return $res;
     }
     /**
      * Get product details for the inventory view page
@@ -814,9 +872,9 @@ class Product extends Model
     {
         $sql = "
             SELECT p.*, c.name as category_name, c.moq as category_moq,
-                   (SELECT SUM(inventory) FROM product_variants WHERE product_id = p.id) as total_stock_quantity,
-                   (SELECT SUM(current_stock) FROM product_variants WHERE product_id = p.id) as current_stock_quantity,
-                   (SELECT SUM(current_stock) FROM product_variants WHERE product_id = p.id) as stock_quantity,
+                   CASE WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0) ELSE (SELECT SUM(inventory) FROM product_variants WHERE product_id = p.id) END as total_stock_quantity,
+                   CASE WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0) ELSE (SELECT SUM(current_stock) FROM product_variants WHERE product_id = p.id) END as current_stock_quantity,
+                   CASE WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0) ELSE (SELECT SUM(current_stock) FROM product_variants WHERE product_id = p.id) END as stock_quantity,
                    (SELECT MIN(base_price) FROM product_variants WHERE product_id = p.id) as variant_base_price,
                    (SELECT MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) FROM product_variants WHERE product_id = p.id) as variant_discount_price,
                    (SELECT image_path FROM product_images WHERE product_id = p.id ORDER BY is_primary DESC LIMIT 1) as image_path
@@ -960,10 +1018,13 @@ class Product extends Model
                 p.base_sku,
                 p.wholesale_price,
                 p.retail_price,
-                COALESCE(
-                    (SELECT SUM(GREATEST(pv.current_stock, 0)) FROM product_variants pv WHERE pv.product_id = p.id),
-                    GREATEST(p.stock_quantity, 0)
-                ) AS stock_quantity,
+                CASE 
+                    WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                    ELSE COALESCE(
+                        (SELECT SUM(GREATEST(pv.current_stock, 0)) FROM product_variants pv WHERE pv.product_id = p.id),
+                        GREATEST(p.stock_quantity, 0)
+                    )
+                END AS stock_quantity,
                 p.status,
                 p.approval_status,
                 p.created_at,

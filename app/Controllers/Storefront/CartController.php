@@ -247,7 +247,10 @@ class CartController extends Controller
                 $db = Database::getInstance();
                 $stmt = $db->prepare("
                     SELECT ci.quantity, 
-                           COALESCE(pv.current_stock, (SELECT SUM(current_stock) FROM product_variants WHERE product_id = ci.product_id), p.stock_quantity, 0) as available_stock
+                           CASE 
+                               WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                               ELSE COALESCE(pv.current_stock, (SELECT SUM(current_stock) FROM product_variants WHERE product_id = ci.product_id), p.stock_quantity, 0)
+                           END as available_stock
                     FROM cart_items ci
                     JOIN products p ON ci.product_id = p.id
                     LEFT JOIN product_variants pv ON ci.variant_id = pv.id
@@ -505,7 +508,10 @@ class CartController extends Controller
                 $db = Database::getInstance();
                 $stmt = $db->prepare("
                     SELECT ci.quantity, 
-                           COALESCE(pv.current_stock, (SELECT SUM(current_stock) FROM product_variants WHERE product_id = ci.product_id), p.stock_quantity, 0) as available_stock
+                           CASE 
+                               WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                               ELSE COALESCE(pv.current_stock, (SELECT SUM(current_stock) FROM product_variants WHERE product_id = ci.product_id), p.stock_quantity, 0)
+                           END as available_stock
                     FROM cart_items ci
                     JOIN products p ON ci.product_id = p.id
                     LEFT JOIN product_variants pv ON ci.variant_id = pv.id

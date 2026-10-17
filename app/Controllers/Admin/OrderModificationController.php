@@ -500,10 +500,13 @@ class OrderModificationController extends Controller
                        ) as image_path,
                        COALESCE(p.moq_override, c.moq, 10) as moq,
                        GREATEST(pv.current_stock, 0) as variant_stock,
-                       COALESCE(
-                           (SELECT SUM(GREATEST(pv2.current_stock, 0)) FROM product_variants pv2 WHERE pv2.product_id = p.id),
-                           GREATEST(p.stock_quantity, 0)
-                       ) as product_stock
+                       CASE 
+                           WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                           ELSE COALESCE(
+                               (SELECT SUM(GREATEST(pv2.current_stock, 0)) FROM product_variants pv2 WHERE pv2.product_id = p.id),
+                               GREATEST(p.stock_quantity, 0)
+                           )
+                       END as product_stock
                 FROM products p
                 LEFT JOIN product_variants pv ON p.id = pv.product_id
                 LEFT JOIN categories c ON p.category_id = c.id

@@ -20,7 +20,10 @@ class Wishlist
                    c.name as category_name, c.moq as category_moq,
                    c.sgst as category_sgst, c.cgst as category_cgst,
                    COALESCE(vp.store_name, vp.company_name, u.name) as vendor_brand_name,
-                   (SELECT COALESCE(SUM(current_stock), 0) FROM product_variants WHERE product_id = p.id) as total_variant_stock,
+                   CASE 
+                       WHEN p.is_customizable = 1 THEN GREATEST(p.stock_quantity, 0)
+                       ELSE (SELECT COALESCE(SUM(current_stock), 0) FROM product_variants WHERE product_id = p.id)
+                   END as total_variant_stock,
                    (SELECT GROUP_CONCAT(DISTINCT CONCAT(av.value, ':', av.color_code) SEPARATOR '||') 
                     FROM product_variant_attributes pva 
                     JOIN attribute_values av ON pva.attribute_value_id = av.id 

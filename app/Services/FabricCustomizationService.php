@@ -18,13 +18,29 @@ class FabricCustomizationService
         $fabricQuantity = max(1, $fabricQuantity);
         $baseMin = !empty($customization['required_pieces']) ? (int)$customization['required_pieces'] : (int)($customization['minimum_pieces'] ?? 1);
         $baseMax = !empty($customization['maximum_pieces']) ? (int)$customization['maximum_pieces'] : ($baseMin * 20);
-        $perSetMin = $baseMin;
-        $perSetMax = $baseMax;
-        $minPieces = $baseMin * $fabricQuantity;
-        $maxPieces = $baseMax * $fabricQuantity;
         $wastagePct = (float)($customization['wastage_percentage'] ?? 0.00);
         $unit = $customization['unit'] ?? 'Meter';
         $stock = $availableStock !== null ? (float)$availableStock : (float)($customization['fabric_stock'] ?? 0);
+
+        // Calculate preliminary total pieces from input size quantities to determine auto-scaling
+        $preliminaryTotalPieces = 0;
+        foreach ($sizeQuantities as $q) {
+            $q = (int)$q;
+            if ($q > 0) $preliminaryTotalPieces += $q;
+        }
+
+        // Auto-scale fabric quantity / sets multiplier if pieces exceed baseMax * fabricQuantity
+        if ($baseMax > 0 && $preliminaryTotalPieces > 0) {
+            $neededQuantity = (int)ceil($preliminaryTotalPieces / $baseMax);
+            if ($neededQuantity > $fabricQuantity) {
+                $fabricQuantity = $neededQuantity;
+            }
+        }
+
+        $minPieces = $baseMin; // Base minimum to enable payment
+        $maxPieces = $baseMax * $fabricQuantity;
+        $perSetMin = $baseMin;
+        $perSetMax = $maxPieces;
 
         // Map configured sizes and limits
         $configuredSizes = [];
@@ -110,12 +126,9 @@ class FabricCustomizationService
                 } elseif (isset($setData['total_pieces'])) {
                     $setPcs = (int)$setData['total_pieces'];
                 }
-                if ($setPcs < $perSetMin) {
-                    $needed = $perSetMin - $setPcs;
-                    $errors[] = "Fabric Set #{$setNum}: Selected {$setPcs} pcs, which is below the required {$perSetMin} pieces (Please add {$needed} more pcs).";
-                } elseif ($setPcs > $perSetMax) {
-                    $excess = $setPcs - $perSetMax;
-                    $errors[] = "Fabric Set #{$setNum}: Selected {$setPcs} pcs, which exceeds the allowed {$perSetMax} pieces ({$excess} pcs in excess).";
+                if ($setPcs > $maxPieces) {
+                    $excess = $setPcs - $maxPieces;
+                    $errors[] = "Fabric Set #{$setNum}: Selected {$setPcs} pcs, which exceeds the allowed {$maxPieces} pieces ({$excess} pcs in excess).";
                 }
             }
         }
@@ -128,13 +141,13 @@ class FabricCustomizationService
         $isStockSufficient = ($stock >= $fabricQuantity);
 
         if ($totalPieces === 0) {
-            $errors[] = "Please select size variants. A minimum of {$minPieces} pieces ({$perSetMin} pcs per fabric set) is required to enable payment.";
+            $errors[] = "Please select size variants. A minimum of {$minPieces} pieces is required to enable payment.";
         } elseif (!$isMinMet) {
             $remaining = $minPieces - $totalPieces;
-            $errors[] = "Minimum {$minPieces} pieces required to enable payment ({$perSetMin} pcs per fabric set). You currently have {$totalPieces} pieces (Please select {$remaining} more pcs).";
+            $errors[] = "Minimum {$minPieces} pieces required to enable payment. You currently have {$totalPieces} pieces (Please select {$remaining} more pcs).";
         } elseif ($totalPieces > $maxPieces) {
             $excess = $totalPieces - $maxPieces;
-            $errors[] = "Maximum {$maxPieces} pieces allowed for {$fabricQuantity} Set(s) ({$perSetMax} pcs per fabric set). You currently have {$totalPieces} pieces ({$excess} pcs in excess). Please reduce variant quantities.";
+            $errors[] = "Maximum {$maxPieces} pieces allowed for {$fabricQuantity} Set(s). You currently have {$totalPieces} pieces ({$excess} pcs in excess). Please reduce variant quantities.";
         }
         if (!$isStockSufficient) {
             $shortage = (int)($fabricQuantity - $stock);

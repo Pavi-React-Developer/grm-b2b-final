@@ -422,6 +422,7 @@
                         <!-- Hidden elements to preserve ID bindings for JS calculations -->
                         <span id="summaryBaseConsumption" class="hidden">0.00</span>
                         <span id="summaryWastageAmount" class="hidden">+0.00</span>
+                        <span id="summaryGstAmount" class="hidden">₹0.00</span>
                         <!-- Without Cover Discount Row -->
                         <div id="packagingDiscountRow" class="hidden items-center justify-between text-xs bg-emerald-50 text-emerald-800 px-2.5 py-1.5 rounded-xl border border-emerald-200">
                             <span class="flex items-center gap-1 font-bold">
@@ -1267,7 +1268,7 @@ function renderFabricSetContainers() {
                             <div class="font-bold text-xs sm:text-sm text-gray-900 flex items-center gap-2 flex-wrap">
                                 <span>Size ${sizeName}</span>
                                 <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-pink-50 text-[#db2777] border border-pink-200">
-                                    Required: ${limits.baseMin} pcs (Max: ${limits.baseMax} pcs)
+                                    Required: ${limits.baseMin} pcs (Max: ${limits.baseMax * Math.max(1, getFabricQuantity())} pcs)
                                 </span>
                             </div>
                             <div class="text-[11px] text-gray-500 mt-0.5">
@@ -1289,7 +1290,7 @@ function renderFabricSetContainers() {
                                    data-size="${sizeName}" 
                                    value="${qty}" 
                                    min="0" 
-                                   max="${limits.baseMax}" 
+                                   max="${limits.baseMax * Math.max(1, Math.floor(FABRIC_STOCK))}" 
                                    oninput="onSetQtyInput(${setIdx}, '${sizeName}', this)" 
                                    class="set-qty-input w-10 h-6 text-center font-black text-xs sm:text-sm text-[#F25996] bg-transparent focus:outline-none">
                             <div class="h-3.5 w-px bg-pink-200 mx-1"></div>
@@ -1337,32 +1338,78 @@ function onSetLabelChange(setIdx, sel) {
     triggerRecalc();
 }
 
+function updateFabricMultiplierDisplay(mult) {
+    const topInp = document.getElementById('fabric_multiplier_top');
+    if (topInp) topInp.value = mult;
+    const bottomInp = document.getElementById('fabric_multiplier');
+    if (bottomInp) bottomInp.value = mult;
+
+    const badge = document.getElementById('fabricQtyBadge');
+    if (badge) {
+        badge.textContent = mult === 1 ? '1 Set (1x)' : `${mult} Sets (${mult}x)`;
+    }
+
+    const reqMinPcs = MIN_PIECES;
+    const reqMaxPcs = MAX_PIECES * mult;
+    const reqBadge = document.getElementById('fabricRequiredPcs');
+    if (reqBadge) reqBadge.textContent = `${reqMinPcs} Pcs`;
+    const maxBadge = document.getElementById('fabricMaxPcs');
+    if (maxBadge) maxBadge.textContent = `${reqMaxPcs} Pcs`;
+}
+
 function adjustSetQty(setIndex, sizeName, delta) {
     if (!fabricSetsData[setIndex - 1]) return;
     const setData = fabricSetsData[setIndex - 1];
     if (!setData.sizes) setData.sizes = {};
 
-    const limits = getSizeLimits(sizeName, 1);
     let curVal = parseInt(setData.sizes[sizeName]) || 0;
     let newVal = curVal + delta;
     if (newVal < 0) newVal = 0;
-    if (newVal > limits.baseMax) {
-        newVal = limits.baseMax;
+
+    const maxStock = Math.max(1, Math.floor(FABRIC_STOCK));
+    const absoluteMaxPieces = maxStock * MAX_PIECES;
+
+    // Calculate projected total across all sets
+    let projectedTotal = 0;
+    fabricSetsData.forEach((st, sIdx) => {
+        const sSizes = st.selected_sizes || [];
+        sSizes.forEach(s => {
+            let q = parseInt(st.sizes ? st.sizes[s] : 0) || 0;
+            if (sIdx === setIndex - 1 && s === sizeName) {
+                q = newVal;
+            }
+            projectedTotal += q;
+        });
+    });
+
+    if (projectedTotal > absoluteMaxPieces) {
         if (typeof Swal !== 'undefined') {
             Swal.fire({
-                icon: 'info',
-                title: 'Max Limit Reached',
-                text: `Maximum allowed pieces for size ${sizeName} in this set is ${limits.baseMax} pcs.`,
-                confirmButtonColor: '#F25996',
-                timer: 2000
+                icon: 'warning',
+                title: 'Fabric Stock Limit Reached',
+                text: `Available fabric stock (${FABRIC_STOCK} ${UNIT}) allows a maximum of ${absoluteMaxPieces} pieces.`,
+                confirmButtonColor: '#F25996'
             });
         }
+        return;
+    }
+
+    // Auto-scale Fabric Multiplier / Sets if projectedTotal exceeds current capacity
+    let currentMult = getFabricQuantity();
+    let neededMult = Math.max(1, Math.ceil(projectedTotal / MAX_PIECES));
+    if (neededMult > maxStock) neededMult = maxStock;
+
+    if (neededMult > currentMult) {
+        updateFabricMultiplierDisplay(neededMult);
     }
 
     setData.sizes[sizeName] = newVal;
 
     const input = document.getElementById(`qty_set_${setIndex}_${sizeName}`);
-    if (input) input.value = newVal;
+    if (input) {
+        input.value = newVal;
+        input.max = absoluteMaxPieces;
+    }
 
     const sub = document.getElementById(`sub_set_${setIndex}_${sizeName}`);
     if (sub) sub.textContent = `${newVal} Pcs`;
@@ -1382,12 +1429,45 @@ function onSetQtyInput(setIndex, sizeName, inp) {
     const setData = fabricSetsData[setIndex - 1];
     if (!setData.sizes) setData.sizes = {};
 
-    const limits = getSizeLimits(sizeName, 1);
     let val = parseInt(inp.value) || 0;
     if (val < 0) val = 0;
-    if (val > limits.baseMax) {
-        val = limits.baseMax;
+
+    const maxStock = Math.max(1, Math.floor(FABRIC_STOCK));
+    const absoluteMaxPieces = maxStock * MAX_PIECES;
+
+    // Calculate projected total across all sets
+    let projectedTotal = 0;
+    fabricSetsData.forEach((st, sIdx) => {
+        const sSizes = st.selected_sizes || [];
+        sSizes.forEach(s => {
+            let q = parseInt(st.sizes ? st.sizes[s] : 0) || 0;
+            if (sIdx === setIndex - 1 && s === sizeName) {
+                q = val;
+            }
+            projectedTotal += q;
+        });
+    });
+
+    if (projectedTotal > absoluteMaxPieces) {
+        val = Math.max(0, val - (projectedTotal - absoluteMaxPieces));
         inp.value = val;
+        projectedTotal = absoluteMaxPieces;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Fabric Stock Limit Reached',
+                text: `Available fabric stock (${FABRIC_STOCK} ${UNIT}) allows a maximum of ${absoluteMaxPieces} pieces.`,
+                confirmButtonColor: '#F25996'
+            });
+        }
+    }
+
+    let currentMult = getFabricQuantity();
+    let neededMult = Math.max(1, Math.ceil(projectedTotal / MAX_PIECES));
+    if (neededMult > maxStock) neededMult = maxStock;
+
+    if (neededMult > currentMult) {
+        updateFabricMultiplierDisplay(neededMult);
     }
 
     setData.sizes[sizeName] = val;
@@ -1649,7 +1729,7 @@ function applyVariantSelectionFlow() {
         const sizeName = sz.size_name;
         const btn = document.getElementById('btn_size_' + sizeName);
         const isSelected = activeSizesForTab.includes(sizeName);
-        const limits = getSizeLimits(sizeName, 1);
+        const limits = getSizeLimits(sizeName, mult);
 
         // Piece count for this size in current tab
         let sizePiecesInTab = 0;
@@ -1696,7 +1776,7 @@ function applyVariantSelectionFlow() {
 
         const btnRange = document.getElementById('btn_range_label_' + sizeName);
         if (btnRange) {
-            btnRange.textContent = `${limits.baseMin} – ${limits.baseMax} pcs`;
+            btnRange.textContent = `${limits.baseMin} – ${limits.max} pcs`;
         }
     });
 
@@ -1827,7 +1907,10 @@ function triggerRecalc() {
 }
 
 function renderCalculation(c, p, delivery) {
-    const effectiveMin = c.minimum_pieces || (MIN_PIECES * getFabricQuantity());
+    if (c.fabric_quantity && c.fabric_quantity !== getFabricQuantity()) {
+        updateFabricMultiplierDisplay(c.fabric_quantity);
+    }
+    const effectiveMin = c.minimum_pieces || MIN_PIECES;
     const effectiveMax = c.maximum_pieces || (MAX_PIECES * getFabricQuantity());
     const totalPieces = c.total_pieces || 0;
 
@@ -1914,11 +1997,18 @@ function renderCalculation(c, p, delivery) {
         }
     }
 
-    document.getElementById('summaryGstAmount').textContent = `₹${p.gst_amount.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
-    document.getElementById('summaryGrandTotal').textContent = `₹${p.total.toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+    const gstElem = document.getElementById('summaryGstAmount');
+    if (gstElem && p && p.gst_amount !== undefined) {
+        gstElem.textContent = `₹${Number(p.gst_amount).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+    }
+    const grandElem = document.getElementById('summaryGrandTotal');
+    if (grandElem && p && p.total !== undefined) {
+        grandElem.textContent = `₹${Number(p.total).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+    }
 
     const isOverStock = (getFabricQuantity() > FABRIC_STOCK) || !c.is_stock_sufficient;
-    const reqFabricContainer = document.getElementById('summaryRequiredFabric').parentElement;
+    const reqFabricElem = document.getElementById('summaryRequiredFabric');
+    const reqFabricContainer = reqFabricElem ? reqFabricElem.parentElement : null;
     const statusBadge = document.getElementById('liveStatusBadge');
     const btnPay = document.getElementById('btnPayRazorpay');
     const btnProceed = document.getElementById('btnProceedCheckout');
@@ -2111,10 +2201,7 @@ function proceedToCheckout() {
     if (!checkLoginOrPrompt()) return;
 
     const sizes = getSelectedSizes();
-    const fabricQuantity = getFabricQuantity();
-    const mult = fabricQuantity;
-    const effectiveMin = MIN_PIECES * mult;
-    const effectiveMax = MAX_PIECES * mult;
+    let fabricQuantity = getFabricQuantity();
     const totalPcs = Object.values(sizes).reduce((a, b) => a + b, 0);
 
     if (totalPcs === 0) {
@@ -2127,26 +2214,39 @@ function proceedToCheckout() {
         return;
     }
 
-    // Check if any individual set is completely empty
-    const emptySet = fabricSetsData.find(st => {
-        const setSizes = st.selected_sizes || [];
-        const setPcs = setSizes.reduce((a, sz) => a + (parseInt(st.sizes ? st.sizes[sz] : 0) || 0), 0);
-        return setPcs === 0;
-    });
-    if (emptySet) {
-        Swal.fire({
-            title: `Set #${emptySet.set_id} is Empty`,
-            text: `Please allocate pieces for Fabric Set #${emptySet.set_id} before proceeding to checkout.`,
-            icon: 'warning',
-            confirmButtonColor: '#F25996'
+    // Auto-scale fabric quantity if total pieces exceeds baseMax * fabricQuantity
+    if (MAX_PIECES > 0 && totalPcs > 0) {
+        const needed = Math.ceil(totalPcs / MAX_PIECES);
+        if (needed > fabricQuantity) {
+            fabricQuantity = needed;
+        }
+    }
+    const mult = fabricQuantity;
+    const effectiveMin = MIN_PIECES;
+    const effectiveMax = MAX_PIECES * mult;
+
+    // Check if any individual set is completely empty (only if multiple sets were added)
+    if (fabricSetsData.length > 1) {
+        const emptySet = fabricSetsData.find(st => {
+            const setSizes = st.selected_sizes || [];
+            const setPcs = setSizes.reduce((a, sz) => a + (parseInt(st.sizes ? st.sizes[sz] : 0) || 0), 0);
+            return setPcs === 0;
         });
-        return;
+        if (emptySet) {
+            Swal.fire({
+                title: `Set #${emptySet.set_id} is Empty`,
+                text: `Please allocate pieces for Fabric Set #${emptySet.set_id} before proceeding to checkout.`,
+                icon: 'warning',
+                confirmButtonColor: '#F25996'
+            });
+            return;
+        }
     }
 
     if (totalPcs < effectiveMin) {
         Swal.fire({
             title: 'Minimum Pieces Required',
-            text: `Please select at least ${effectiveMin} total pieces to continue (currently ${totalPcs} pcs across ${mult} set(s)).`,
+            text: `Please select at least ${effectiveMin} total pieces to continue (currently ${totalPcs} pcs).`,
             icon: 'warning',
             confirmButtonColor: '#F25996'
         });

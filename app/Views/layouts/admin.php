@@ -1239,6 +1239,12 @@ if ($currentUserRole === 'super_admin') {
                     <a href="<?= BASE_URL ?>/admin/cms/projects" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/cms/projects') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
                         <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">Our Project</span>
                     </a>
+                    <a href="<?= BASE_URL ?>/admin/cms/reels" class="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors min-w-max <?= strpos($currentUri, '/admin/cms/reels') === 0 ? 'bg-brand-50 text-brand-700' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900' ?>">
+                        <span class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap flex items-center gap-1.5">
+                            <span>Reels Container</span>
+                            <span class="px-1.5 py-0.2 text-[9px] font-black uppercase tracking-wider bg-rose-100 text-rose-600 rounded">New</span>
+                        </span>
+                    </a>
                 </div>
             </div>
             <?php endif; ?>

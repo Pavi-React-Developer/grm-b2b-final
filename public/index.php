@@ -521,6 +521,15 @@ $router->get('/admin/cms/categories-grid/edit', 'App\Controllers\Admin\Categorie
 $router->post('/admin/cms/categories-grid/update', 'App\Controllers\Admin\CategoriesGridController@update');
 $router->post('/admin/cms/categories-grid/delete', 'App\Controllers\Admin\CategoriesGridController@delete');
 
+// CMS Reels Container
+$router->get('/admin/cms/reels', 'App\Controllers\Admin\ReelsController@index');
+$router->get('/admin/cms/reels/create', 'App\Controllers\Admin\ReelsController@create');
+$router->post('/admin/cms/reels/store', 'App\Controllers\Admin\ReelsController@store');
+$router->get('/admin/cms/reels/edit', 'App\Controllers\Admin\ReelsController@edit');
+$router->post('/admin/cms/reels/update', 'App\Controllers\Admin\ReelsController@update');
+$router->post('/admin/cms/reels/delete', 'App\Controllers\Admin\ReelsController@delete');
+$router->post('/admin/cms/reels/toggle-status', 'App\Controllers\Admin\ReelsController@toggleStatus');
+
 $router->get('/admin/media', 'App\Controllers\Admin\MediaController@index');
 $router->get('/admin/media/ajax-get', 'App\Controllers\Admin\MediaController@ajaxGet');
 

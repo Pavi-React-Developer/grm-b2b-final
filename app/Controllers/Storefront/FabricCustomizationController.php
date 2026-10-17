@@ -246,6 +246,9 @@ class FabricCustomizationController extends Controller
             $fabricQuantity,
             $sets
         );
+        $fabricQuantity = (int)($consumption['fabric_quantity'] ?? $fabricQuantity);
+        Session::set('custom_checkout_qty_' . $customization['id'], $fabricQuantity);
+        Session::set('custom_checkout_qty_f_' . $customization['fabric_id'], $fabricQuantity);
 
         $pricing = $this->service->calculatePricing(
             (float)$customization['fabric_price'],
@@ -294,11 +297,6 @@ class FabricCustomizationController extends Controller
     public function calculateAjax()
     {
         header('Content-Type: application/json');
-
-        if (!Session::get('user_id')) {
-            echo json_encode(['success' => false, 'error' => 'Authentication required to view customization pricing.']);
-            exit;
-        }
         
         $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
         $fabricId = (int)($input['fabric_id'] ?? 0);
@@ -404,6 +402,7 @@ class FabricCustomizationController extends Controller
             echo json_encode(['success' => false, 'message' => implode(' ', $calc['errors'])]);
             exit;
         }
+        $fabricQuantity = (int)($calc['fabric_quantity'] ?? $fabricQuantity);
 
         $pricing = $this->service->calculatePricing(
             (float)$customization['fabric_price'],
@@ -508,6 +507,19 @@ class FabricCustomizationController extends Controller
             ");
             $stockStmt->execute([(int)$calc['required_fabric'], $customization['fabric_id']]);
 
+            // Sync variant stock to remaining fabric quantity
+            $syncVarStmt = $db->prepare("
+                UPDATE product_variants 
+                SET current_stock = (SELECT stock_quantity FROM products WHERE id = :p1),
+                    inventory = (SELECT stock_quantity FROM products WHERE id = :p2)
+                WHERE product_id = :p3
+            ");
+            $syncVarStmt->execute([
+                'p1' => $customization['fabric_id'],
+                'p2' => $customization['fabric_id'],
+                'p3' => $customization['fabric_id']
+            ]);
+
             $db->commit();
 
             echo json_encode([
@@ -573,6 +585,7 @@ class FabricCustomizationController extends Controller
             echo json_encode(['success' => false, 'message' => implode(' ', $calc['errors'])]);
             exit;
         }
+        $fabricQuantity = (int)($calc['fabric_quantity'] ?? $fabricQuantity);
 
         $pricing = $this->service->calculatePricing(
             (float)$customization['fabric_price'],
@@ -803,6 +816,19 @@ class FabricCustomizationController extends Controller
                 WHERE id = ?
             ");
             $stockStmt->execute([(int)$calc['required_fabric'], $customization['fabric_id']]);
+
+            // Sync variant stock to remaining fabric quantity
+            $syncVarStmt = $db->prepare("
+                UPDATE product_variants 
+                SET current_stock = (SELECT stock_quantity FROM products WHERE id = :p1),
+                    inventory = (SELECT stock_quantity FROM products WHERE id = :p2)
+                WHERE product_id = :p3
+            ");
+            $syncVarStmt->execute([
+                'p1' => $customization['fabric_id'],
+                'p2' => $customization['fabric_id'],
+                'p3' => $customization['fabric_id']
+            ]);
 
             $db->commit();
 

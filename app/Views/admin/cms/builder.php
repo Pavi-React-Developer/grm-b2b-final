@@ -82,6 +82,7 @@ if (!empty($inactiveComponents)) {
                             $isFooter = $cmp['section_type'] === 'footer';
                             $isAboutUs = $cmp['section_type'] === 'about_us';
                             $isReviews = $cmp['section_type'] === 'reviews';
+                            $isReelsContainer = $cmp['section_type'] === 'reels_container';
 
                             if ($isHeroBanner) {
                                 $label = !empty($cmp['content']['title']) ? $cmp['content']['title'] : 'Untitled Banner';
@@ -89,6 +90,9 @@ if (!empty($inactiveComponents)) {
                             } elseif ($isMainBanner) {
                                 $label = !empty($cmp['content']['title']) ? $cmp['content']['title'] : 'Untitled Main Banner';
                                 $sublabel = 'Main Banner';
+                            } elseif ($isReelsContainer) {
+                                $label = !empty($cmp['content']['title']) ? $cmp['content']['title'] : 'Untitled Reels Container';
+                                $sublabel = 'Reels Container';
                             } elseif ($isProductCarousel) {
                                 $label = !empty($cmp['content']['title']) ? $cmp['content']['title'] : 'Untitled Product Carousel';
                                 $sublabel = 'Product Carousel';
@@ -137,9 +141,12 @@ if (!empty($inactiveComponents)) {
                                             elseif ($isTopBar) $iconColor = 'text-emerald-600';
                                             elseif ($isFooter) $iconColor = 'text-gray-700';
                                             elseif ($isAboutUs) $iconColor = 'text-green-600';
+                                            elseif ($isReelsContainer) $iconColor = 'text-[#F25996]';
                                         ?>
                                         <div class="<?= $iconColor ?> flex-shrink-0">
-                                            <?php if($isHeroBanner): ?>
+                                            <?php if($isReelsContainer): ?>
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                                            <?php elseif($isHeroBanner): ?>
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                             <?php elseif($isMainBanner): ?>
                                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
@@ -209,6 +216,10 @@ if (!empty($inactiveComponents)) {
                                         </a>
                                     <?php elseif ($isAboutUs): ?>
                                         <a href="<?= BASE_URL ?>/admin/cms/about-us/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit About Us">
+                                            <i class="bi bi-pencil-square text-base"></i>
+                                        </a>
+                                    <?php elseif ($isReelsContainer): ?>
+                                        <a href="<?= BASE_URL ?>/admin/cms/reels/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit Reels Container">
                                             <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php endif; ?>

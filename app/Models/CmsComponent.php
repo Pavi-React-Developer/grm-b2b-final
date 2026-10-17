@@ -33,6 +33,13 @@ class CmsComponent extends Model
         return $stmt->fetchAll();
     }
     
+    public function getAllReelsContainers()
+    {
+        $stmt = $this->db->prepare("SELECT * FROM cms_components WHERE section_type = 'reels_container' ORDER BY updated_at DESC");
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+    
     public function getById($id)
     {
         $stmt = $this->db->prepare("SELECT * FROM cms_components WHERE id = ?");
