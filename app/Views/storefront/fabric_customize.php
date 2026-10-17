@@ -976,7 +976,8 @@ function adjustFabricMultiplier(delta) {
     const inp = document.getElementById('fabric_multiplier');
     if (!inp) return;
     const maxStock = Math.max(1, Math.floor(FABRIC_STOCK));
-    let val = (parseInt(inp.value) || 1) + delta;
+    let curVal = parseInt(inp.value) || 1;
+    let val = curVal + delta;
     if (val < 1) val = 1;
     if (val > maxStock) {
         val = maxStock;
@@ -989,6 +990,25 @@ function adjustFabricMultiplier(delta) {
             });
         }
     }
+
+    // If reducing fabric quantity, verify that selected pieces do not exceed the new capacity
+    if (delta < 0) {
+        const sizes = getSelectedSizes();
+        const currentTotalPieces = Object.values(sizes).reduce((a, b) => a + b, 0);
+        const targetMax = val * MAX_PIECES;
+        if (currentTotalPieces > targetMax) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Cannot Reduce Fabric Quantity',
+                    text: `You currently have ${currentTotalPieces} pieces selected. Maximum allowed for ${val} Fabric Quantity is ${targetMax} pieces. Please reduce variant quantities first.`,
+                    confirmButtonColor: '#F25996'
+                });
+            }
+            return;
+        }
+    }
+
     inp.value = val;
     onFabricMultiplierChange(inp);
 }
@@ -1366,8 +1386,8 @@ function adjustSetQty(setIndex, sizeName, delta) {
     let newVal = curVal + delta;
     if (newVal < 0) newVal = 0;
 
-    const maxStock = Math.max(1, Math.floor(FABRIC_STOCK));
-    const absoluteMaxPieces = maxStock * MAX_PIECES;
+    const currentMult = getFabricQuantity();
+    const currentMaxPieces = currentMult * MAX_PIECES;
 
     // Calculate projected total across all sets
     let projectedTotal = 0;
@@ -1382,25 +1402,16 @@ function adjustSetQty(setIndex, sizeName, delta) {
         });
     });
 
-    if (projectedTotal > absoluteMaxPieces) {
+    if (delta > 0 && projectedTotal > currentMaxPieces) {
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'warning',
-                title: 'Fabric Stock Limit Reached',
-                text: `Available fabric stock (${FABRIC_STOCK} ${UNIT}) allows a maximum of ${absoluteMaxPieces} pieces.`,
+                title: 'Maximum Pieces Limit Reached',
+                text: `Maximum ${currentMaxPieces} pieces allowed for Fabric Quantity ${currentMult}. To add more pieces, please increase the Fabric Quantity first.`,
                 confirmButtonColor: '#F25996'
             });
         }
         return;
-    }
-
-    // Auto-scale Fabric Multiplier / Sets if projectedTotal exceeds current capacity
-    let currentMult = getFabricQuantity();
-    let neededMult = Math.max(1, Math.ceil(projectedTotal / MAX_PIECES));
-    if (neededMult > maxStock) neededMult = maxStock;
-
-    if (neededMult > currentMult) {
-        updateFabricMultiplierDisplay(neededMult);
     }
 
     setData.sizes[sizeName] = newVal;
@@ -1408,7 +1419,7 @@ function adjustSetQty(setIndex, sizeName, delta) {
     const input = document.getElementById(`qty_set_${setIndex}_${sizeName}`);
     if (input) {
         input.value = newVal;
-        input.max = absoluteMaxPieces;
+        input.max = currentMaxPieces;
     }
 
     const sub = document.getElementById(`sub_set_${setIndex}_${sizeName}`);
@@ -1432,8 +1443,8 @@ function onSetQtyInput(setIndex, sizeName, inp) {
     let val = parseInt(inp.value) || 0;
     if (val < 0) val = 0;
 
-    const maxStock = Math.max(1, Math.floor(FABRIC_STOCK));
-    const absoluteMaxPieces = maxStock * MAX_PIECES;
+    const currentMult = getFabricQuantity();
+    const currentMaxPieces = currentMult * MAX_PIECES;
 
     // Calculate projected total across all sets
     let projectedTotal = 0;
@@ -1448,26 +1459,18 @@ function onSetQtyInput(setIndex, sizeName, inp) {
         });
     });
 
-    if (projectedTotal > absoluteMaxPieces) {
-        val = Math.max(0, val - (projectedTotal - absoluteMaxPieces));
+    if (projectedTotal > currentMaxPieces) {
+        val = Math.max(0, val - (projectedTotal - currentMaxPieces));
         inp.value = val;
-        projectedTotal = absoluteMaxPieces;
+        projectedTotal = currentMaxPieces;
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'warning',
-                title: 'Fabric Stock Limit Reached',
-                text: `Available fabric stock (${FABRIC_STOCK} ${UNIT}) allows a maximum of ${absoluteMaxPieces} pieces.`,
+                title: 'Maximum Pieces Limit Reached',
+                text: `Maximum ${currentMaxPieces} pieces allowed for Fabric Quantity ${currentMult}. To add more pieces, please increase the Fabric Quantity first.`,
                 confirmButtonColor: '#F25996'
             });
         }
-    }
-
-    let currentMult = getFabricQuantity();
-    let neededMult = Math.max(1, Math.ceil(projectedTotal / MAX_PIECES));
-    if (neededMult > maxStock) neededMult = maxStock;
-
-    if (neededMult > currentMult) {
-        updateFabricMultiplierDisplay(neededMult);
     }
 
     setData.sizes[sizeName] = val;
@@ -1519,6 +1522,20 @@ function toggleSetSize(setIdx, sizeName) {
         targetSet.selected_sizes = targetSet.selected_sizes.filter(s => s !== sizeName);
         targetSet.sizes[sizeName] = 0;
     } else {
+        const currentMult = getFabricQuantity();
+        const currentMaxPieces = currentMult * MAX_PIECES;
+        const currentTotal = Object.values(getSelectedSizes()).reduce((a, b) => a + b, 0);
+        if (currentTotal + limits.baseMin > currentMaxPieces) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Maximum Pieces Limit Reached',
+                    text: `Adding this variant requires ${limits.baseMin} pcs, but maximum allowed for Fabric Quantity ${currentMult} is ${currentMaxPieces} pcs (currently ${currentTotal} pcs). Please increase the Fabric Quantity first.`,
+                    confirmButtonColor: '#F25996'
+                });
+            }
+            return;
+        }
         targetSet.selected_sizes.push(sizeName);
         if (!targetSet.sizes[sizeName] || targetSet.sizes[sizeName] === 0) {
             targetSet.sizes[sizeName] = limits.baseMin;
@@ -1562,6 +1579,24 @@ function onFabricMultiplierChange(inp) {
         }
     }
 
+    // Check if current selected pieces exceed the new mult limit
+    const sizes = getSelectedSizes();
+    const currentTotalPieces = Object.values(sizes).reduce((a, b) => a + b, 0);
+    const targetMax = mult * MAX_PIECES;
+    if (currentTotalPieces > targetMax) {
+        const minMultNeeded = Math.ceil(currentTotalPieces / MAX_PIECES);
+        mult = Math.min(minMultNeeded, maxStock);
+        inp.value = mult;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Cannot Reduce Fabric Quantity',
+                text: `You currently have ${currentTotalPieces} pieces selected. Fabric Quantity must be at least ${mult} to accommodate these pieces. Please reduce variant quantities first.`,
+                confirmButtonColor: '#F25996'
+            });
+        }
+    }
+
     const topInp = document.getElementById('fabric_multiplier_top');
     if (topInp && topInp !== inp) topInp.value = mult;
     const bottomInp = document.getElementById('fabric_multiplier');
@@ -1574,18 +1609,18 @@ function onFabricMultiplierChange(inp) {
     }
 
     // Update required pieces Min & Max labels dynamically
-    const reqMinPcs = MIN_PIECES * mult;
+    const reqMinPcs = MIN_PIECES;
     const reqMaxPcs = MAX_PIECES * mult;
     const reqBadge = document.getElementById('fabricRequiredPcs');
     if (reqBadge) reqBadge.textContent = `${reqMinPcs} Pcs`;
     const maxBadge = document.getElementById('fabricMaxPcs');
     if (maxBadge) maxBadge.textContent = `${reqMaxPcs} Pcs`;
 
-    // Also update tracker badges (show per-roll min/max, not total)
+    // Also update tracker badges (Min: MIN_PIECES, Max: MAX_PIECES * mult)
     const summaryMin = document.getElementById('summaryMinPcsDisplay');
     if (summaryMin) summaryMin.textContent = `${MIN_PIECES} Pcs`;
     const summaryMax = document.getElementById('summaryMaxPcsDisplay');
-    if (summaryMax) summaryMax.textContent = `${MAX_PIECES} Pcs`;
+    if (summaryMax) summaryMax.textContent = `${reqMaxPcs} Pcs`;
 
     // Sync fabric sets to match new mult
     syncFabricSets(mult);
@@ -1596,10 +1631,28 @@ function onFabricMultiplierChange(inp) {
 
 function toggleSizeVariant(sizeName) {
     const limits = getSizeLimits(sizeName, 1);
+    const currentMult = getFabricQuantity();
+    const currentMaxPieces = currentMult * MAX_PIECES;
 
     if (activeConfigSet === 'all') {
         // Toggle across all sets
         const anyHas = fabricSetsData.some(st => (st.selected_sizes || []).includes(sizeName));
+        if (!anyHas) {
+            // Adding size to sets: check capacity
+            const currentTotal = Object.values(getSelectedSizes()).reduce((a, b) => a + b, 0);
+            const neededToAdd = fabricSetsData.length * limits.baseMin;
+            if (currentTotal + neededToAdd > currentMaxPieces) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Maximum Pieces Limit Reached',
+                        text: `Adding this variant requires ${neededToAdd} pcs, but maximum allowed for Fabric Quantity ${currentMult} is ${currentMaxPieces} pcs (currently ${currentTotal} pcs). Please increase the Fabric Quantity first.`,
+                        confirmButtonColor: '#F25996'
+                    });
+                }
+                return;
+            }
+        }
         fabricSetsData.forEach(st => {
             if (!st.selected_sizes) st.selected_sizes = [];
             if (!st.sizes) st.sizes = {};
@@ -1627,6 +1680,18 @@ function toggleSizeVariant(sizeName) {
                 targetSet.selected_sizes = targetSet.selected_sizes.filter(s => s !== sizeName);
                 targetSet.sizes[sizeName] = 0;
             } else {
+                const currentTotal = Object.values(getSelectedSizes()).reduce((a, b) => a + b, 0);
+                if (currentTotal + limits.baseMin > currentMaxPieces) {
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Maximum Pieces Limit Reached',
+                            text: `Adding this variant requires ${limits.baseMin} pcs, but maximum allowed for Fabric Quantity ${currentMult} is ${currentMaxPieces} pcs (currently ${currentTotal} pcs). Please increase the Fabric Quantity first.`,
+                            confirmButtonColor: '#F25996'
+                        });
+                    }
+                    return;
+                }
                 targetSet.selected_sizes.push(sizeName);
                 if (!targetSet.sizes[sizeName] || targetSet.sizes[sizeName] === 0) {
                     targetSet.sizes[sizeName] = limits.baseMin;
@@ -1641,15 +1706,19 @@ function toggleSizeVariant(sizeName) {
 function selectAllVariants() {
     const mult = getFabricQuantity();
     syncFabricSets(mult);
+    const maxPiecesAllowed = MAX_PIECES * mult;
 
     if (activeConfigSet === 'all') {
+        let runningTotal = 0;
         fabricSetsData.forEach(st => {
-            st.selected_sizes = SIZES_CONFIG.map(s => s.size_name);
+            st.selected_sizes = [];
             if (!st.sizes) st.sizes = {};
             SIZES_CONFIG.forEach(sz => {
                 const limits = getSizeLimits(sz.size_name, 1);
-                if (!st.sizes[sz.size_name] || st.sizes[sz.size_name] === 0) {
+                if (runningTotal + limits.baseMin <= maxPiecesAllowed) {
+                    st.selected_sizes.push(sz.size_name);
                     st.sizes[sz.size_name] = limits.baseMin;
+                    runningTotal += limits.baseMin;
                 }
             });
         });
@@ -1657,12 +1726,23 @@ function selectAllVariants() {
         const setIdx = parseInt(activeConfigSet) || 1;
         const targetSet = fabricSetsData[setIdx - 1];
         if (targetSet) {
-            targetSet.selected_sizes = SIZES_CONFIG.map(s => s.size_name);
+            let otherSetsTotal = 0;
+            fabricSetsData.forEach((st, sIdx) => {
+                if (sIdx !== setIdx - 1) {
+                    (st.selected_sizes || []).forEach(sz => {
+                        otherSetsTotal += (parseInt(st.sizes ? st.sizes[sz] : 0) || 0);
+                    });
+                }
+            });
+            let runningTotal = otherSetsTotal;
+            targetSet.selected_sizes = [];
             if (!targetSet.sizes) targetSet.sizes = {};
             SIZES_CONFIG.forEach(sz => {
                 const limits = getSizeLimits(sz.size_name, 1);
-                if (!targetSet.sizes[sz.size_name] || targetSet.sizes[sz.size_name] === 0) {
+                if (runningTotal + limits.baseMin <= maxPiecesAllowed) {
+                    targetSet.selected_sizes.push(sz.size_name);
                     targetSet.sizes[sz.size_name] = limits.baseMin;
+                    runningTotal += limits.baseMin;
                 }
             });
         }
@@ -1907,9 +1987,6 @@ function triggerRecalc() {
 }
 
 function renderCalculation(c, p, delivery) {
-    if (c.fabric_quantity && c.fabric_quantity !== getFabricQuantity()) {
-        updateFabricMultiplierDisplay(c.fabric_quantity);
-    }
     const effectiveMin = c.minimum_pieces || MIN_PIECES;
     const effectiveMax = c.maximum_pieces || (MAX_PIECES * getFabricQuantity());
     const totalPieces = c.total_pieces || 0;
@@ -2214,13 +2291,6 @@ function proceedToCheckout() {
         return;
     }
 
-    // Auto-scale fabric quantity if total pieces exceeds baseMax * fabricQuantity
-    if (MAX_PIECES > 0 && totalPcs > 0) {
-        const needed = Math.ceil(totalPcs / MAX_PIECES);
-        if (needed > fabricQuantity) {
-            fabricQuantity = needed;
-        }
-    }
     const mult = fabricQuantity;
     const effectiveMin = MIN_PIECES;
     const effectiveMax = MAX_PIECES * mult;
