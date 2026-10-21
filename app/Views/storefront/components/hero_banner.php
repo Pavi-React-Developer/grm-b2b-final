@@ -125,11 +125,14 @@ if ($themeValue) {
         
         <div class="slider-track w-full h-full relative">
             <?php foreach ($mediaItems as $index => $media): 
-                $dUrl = trim((string)($media['desktop'] ?? ''));
-                $mUrl = trim((string)($media['mobile'] ?? ''));
-                if ($dUrl === '' && $mUrl !== '') $dUrl = $mUrl;
-                if ($mUrl === '' && $dUrl !== '') $mUrl = $dUrl;
-                if (!$dUrl) continue;
+                $dRaw = trim((string)($media['desktop'] ?? ''));
+                $mRaw = trim((string)($media['mobile'] ?? ''));
+                if ($dRaw === '' && $mRaw !== '') $dRaw = $mRaw;
+                if ($mRaw === '' && $dRaw !== '') $mRaw = $dRaw;
+                if (!$dRaw) continue;
+
+                $dUrl = get_image_url($dRaw, 1920, 900);
+                $mUrl = get_image_url($mRaw, 900, 900);
 
                 $overlayOpacity = isset($media['opacity']) && $media['opacity'] !== '' ? (float)$media['opacity'] : 0;
                 $overlayFrac = $overlayOpacity > 1 ? ($overlayOpacity / 100) : $overlayOpacity;
@@ -143,30 +146,31 @@ if ($themeValue) {
                     return $defaultType === 'video';
                 };
 
-                $dIsVideo = $checkIsVideo($dUrl);
-                $mIsVideo = $checkIsVideo($mUrl);
-                $isSameMedia = ($dUrl === $mUrl && $dIsVideo === $mIsVideo);
+                $dIsVideo = $checkIsVideo($dRaw);
+                $mIsVideo = $checkIsVideo($mRaw);
+                $isSameMedia = ($dRaw === $mRaw && $dIsVideo === $mIsVideo);
+                $isLcp = ($index === 0);
             ?>
                 <div class="slide absolute inset-0 w-full h-full transition-all duration-700 ease-in-out <?= $index === 0 ? 'opacity-100 z-1' : 'opacity-0 z-0' ?>" data-index="<?= $index ?>">
                     <?php if ($isSameMedia): ?>
                         <?php if ($dIsVideo): ?>
                             <video class="w-full h-full" style="<?= $fitStyle ?>" autoplay muted loop playsinline src="<?= htmlspecialchars($dUrl) ?>"></video>
                         <?php else: ?>
-                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="w-full h-full" style="<?= $fitStyle ?>">
+                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="w-full h-full" style="<?= $fitStyle ?>" loading="<?= $isLcp ? 'eager' : 'lazy' ?>" <?= $isLcp ? 'fetchpriority="high"' : '' ?> decoding="async" width="1600" height="600">
                         <?php endif; ?>
                     <?php else: ?>
                         <!-- Desktop Media (>= 768px) -->
                         <?php if ($dIsVideo): ?>
                             <video class="hidden md:block w-full h-full" style="<?= $fitStyle ?>" autoplay muted loop playsinline src="<?= htmlspecialchars($dUrl) ?>"></video>
                         <?php else: ?>
-                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="hidden md:block w-full h-full" style="<?= $fitStyle ?>">
+                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="hidden md:block w-full h-full" style="<?= $fitStyle ?>" loading="<?= $isLcp ? 'eager' : 'lazy' ?>" <?= $isLcp ? 'fetchpriority="high"' : '' ?> decoding="async" width="1600" height="600">
                         <?php endif; ?>
 
                         <!-- Mobile Media (< 768px) -->
                         <?php if ($mIsVideo): ?>
                             <video class="block md:hidden w-full h-full" style="<?= $fitStyle ?>" autoplay muted loop playsinline src="<?= htmlspecialchars($mUrl) ?>"></video>
                         <?php else: ?>
-                            <img src="<?= htmlspecialchars($mUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="block md:hidden w-full h-full" style="<?= $fitStyle ?>">
+                            <img src="<?= htmlspecialchars($mUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="block md:hidden w-full h-full" style="<?= $fitStyle ?>" loading="<?= $isLcp ? 'eager' : 'lazy' ?>" <?= $isLcp ? 'fetchpriority="high"' : '' ?> decoding="async" width="900" height="600">
                         <?php endif; ?>
                     <?php endif; ?>
 

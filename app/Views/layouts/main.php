@@ -56,14 +56,16 @@ if ($hasDynamicNavbar) {
     <link rel="alternate icon" href="<?= BASE_URL ?>/favicon.ico">
     <?php endif; ?>
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts (Optimized Weights & display=swap) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     
-    <!-- Cloudinary CDN preconnect (speeds up all product/media images) -->
+    <!-- Cloudinary & jsDelivr CDN preconnect (speeds up all images & scripts) -->
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin>
     <link rel="dns-prefetch" href="https://res.cloudinary.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 
     <!-- Global HTML Sanitization Helpers -->
     <script>
@@ -210,6 +212,10 @@ if ($hasDynamicNavbar) {
 
     <!-- SweetAlert2 (deferred so it doesn't block page render) -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
+
+    <!-- Swiper CSS & Deferred JS (Eliminates render blocking across storefront) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js" defer></script>
 </head>
 <body class="bg-gray-50 flex flex-col min-h-screen overflow-x-hidden">
 
@@ -788,8 +794,8 @@ if ($hasDynamicNavbar) {
 
 
 
-    <!-- Vanilla JS Main File -->
-    <script src="<?= BASE_URL ?>/js/app.js"></script>
+    <!-- Vanilla JS Main File (Deferred to avoid render blocking) -->
+    <script src="<?= BASE_URL ?>/js/app.js" defer></script>
 
     <!-- Cart Offcanvas Drawer -->
     <?php if (\Core\Session::get('user_id')): ?>
@@ -2282,7 +2288,7 @@ if ($hasDynamicNavbar) {
                     html += `
                         <li>
                             <a href="<?= BASE_URL ?>/product?id=${prod.id}" class="flex items-center group p-2.5 -mx-2 rounded-xl hover:bg-pink-50/50 transition-colors">
-                                <img src="${imageSrc}" alt="${prod.name}" class="w-14 h-14 object-cover rounded-lg mr-3.5 shadow-xs border border-gray-100">
+                                <img src="${imageSrc}" alt="${prod.name}" class="w-14 h-14 object-cover rounded-lg mr-3.5 shadow-xs border border-gray-100" loading="lazy" decoding="async" width="56" height="56">
                                 <div class="flex-1 min-w-0 pr-2">
                                     <h4 class="font-bold text-gray-900 text-sm sm:text-base group-hover:text-[#F25996] transition-colors truncate">${prod.name}</h4>
                                     <p class="text-gray-400 text-xs truncate">${prod.category_name || ''}</p>

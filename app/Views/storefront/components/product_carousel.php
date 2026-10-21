@@ -42,114 +42,125 @@ $carouselVendorId = $contentData['vendor_id'] ?? 'all';
 $product_ids_int = array_map('intval', (array)($product_ids ?? []));
 
 $carouselProducts = [];
-if (isset($products) && is_array($products)) {
-    if (!empty($product_ids_int)) {
-        // If specific products were checked/selected, map them in exact selected order
-        $productMap = [];
-        foreach ($products as $p) {
-            $productMap[(int)$p['id']] = $p;
-        }
+$carouselProdCacheKey = 'cms_p_carousel_' . md5(json_encode($product_ids_int) . '_' . $carouselVendorId);
+$cachedCarouselProds = (class_exists('\Core\Cache') && empty($_GET['preview'])) ? \Core\Cache::get($carouselProdCacheKey) : null;
 
-        // Fetch any missing products (such as customizable products or specific IDs)
-        $missingIds = array_diff($product_ids_int, array_keys($productMap));
-        if (!empty($missingIds)) {
+if ($cachedCarouselProds !== null) {
+    $carouselProducts = $cachedCarouselProds;
+} else {
+    if (isset($products) && is_array($products)) {
+        if (!empty($product_ids_int)) {
+            // If specific products were checked/selected, map them in exact selected order
+            $productMap = [];
+            foreach ($products as $p) {
+                $productMap[(int)$p['id']] = $p;
+            }
+
+            // Fetch any missing products (such as customizable products or specific IDs)
+            $missingIds = array_diff($product_ids_int, array_keys($productMap));
+            if (!empty($missingIds)) {
+                $db = \Core\Database::getInstance();
+                $inClause = implode(',', array_map('intval', $missingIds));
+                $stmt = $db->query("
+                    SELECT p.*, c.name AS category_name, c.moq AS category_moq, c.sgst AS category_sgst, c.cgst AS category_cgst,
+                           vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name,
+                           (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS primary_image
+                    FROM products p
+                    JOIN categories c ON p.category_id = c.id
+                    LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
+                    WHERE p.id IN ($inClause) AND p.status = 'active'
+                ");
+                if ($stmt) {
+                    $fetched = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                    foreach ($fetched as $fp) {
+                        $productMap[(int)$fp['id']] = $fp;
+                    }
+                }
+            }
+
+            foreach ($product_ids_int as $pId) {
+                if (isset($productMap[$pId])) {
+                    $carouselProducts[] = $productMap[$pId];
+                }
+            }
+        } elseif ($carouselVendorId !== 'all' && $carouselVendorId !== '') {
+            // If vendor filter was chosen, show all vendor products
+            foreach ($products as $p) {
+                $pVendorId = (int)($p['vendor_id'] ?? $p['user_id'] ?? 0);
+                if ($carouselVendorId === 'in_house' && $pVendorId === 0) {
+                    $carouselProducts[] = $p;
+                } elseif ((int)$carouselVendorId === $pVendorId) {
+                    $carouselProducts[] = $p;
+                }
+            }
+        }
+    }
+
+    // Enrich customizable products with images, sizes, and fabric_customizations info
+    $customProdIds = [];
+    foreach ($carouselProducts as $cp) {
+        if (!empty($cp['is_customizable'])) {
+            $customProdIds[] = (int)$cp['id'];
+        }
+    }
+    if (!empty($customProdIds)) {
+        try {
             $db = \Core\Database::getInstance();
-            $inClause = implode(',', array_map('intval', $missingIds));
-            $stmt = $db->query("
-                SELECT p.*, c.name AS category_name, c.moq AS category_moq, c.sgst AS category_sgst, c.cgst AS category_cgst,
-                       vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name,
-                       (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS primary_image
-                FROM products p
-                JOIN categories c ON p.category_id = c.id
-                LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
-                WHERE p.id IN ($inClause) AND p.status = 'active'
-            ");
-            if ($stmt) {
-                $fetched = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-                foreach ($fetched as $fp) {
-                    $productMap[(int)$fp['id']] = $fp;
+            $cpidList = implode(',', array_unique($customProdIds));
+            
+            $fcStmt = $db->query("SELECT fabric_id, id as customization_id, garment_type, minimum_pieces as custom_moq FROM fabric_customizations WHERE fabric_id IN ($cpidList) AND customization_enabled = 1 AND status = 'active'");
+            $fcData = [];
+            $customProgIds = [];
+            if ($fcStmt) {
+                while ($fcr = $fcStmt->fetch(\PDO::FETCH_ASSOC)) {
+                    $fcData[(int)$fcr['fabric_id']] = $fcr;
+                    $customProgIds[] = (int)$fcr['customization_id'];
                 }
             }
-        }
 
-        foreach ($product_ids_int as $pId) {
-            if (isset($productMap[$pId])) {
-                $carouselProducts[] = $productMap[$pId];
+            $cimgStmt = $db->query("SELECT product_id, image_path FROM product_images WHERE product_id IN ($cpidList) ORDER BY is_primary DESC, sort_order ASC, id ASC");
+            $customImgs = [];
+            if ($cimgStmt) {
+                while ($cir = $cimgStmt->fetch(\PDO::FETCH_ASSOC)) {
+                    $customImgs[$cir['product_id']][] = $cir['image_path'];
+                }
             }
-        }
-    } elseif ($carouselVendorId !== 'all' && $carouselVendorId !== '') {
-        // If vendor filter was chosen, show all vendor products
-        foreach ($products as $p) {
-            $pVendorId = (int)($p['vendor_id'] ?? $p['user_id'] ?? 0);
-            if ($carouselVendorId === 'in_house' && $pVendorId === 0) {
-                $carouselProducts[] = $p;
-            } elseif ((int)$carouselVendorId === $pVendorId) {
-                $carouselProducts[] = $p;
+
+            $customSizes = [];
+            if (!empty($customProgIds)) {
+                $cprogList = implode(',', array_unique($customProgIds));
+                $cszStmt = $db->query("SELECT customization_id, size_name FROM fabric_customization_sizes WHERE customization_id IN ($cprogList) AND enabled = 1 ORDER BY sort_order ASC, id ASC");
+                if ($cszStmt) {
+                    while ($csz = $cszStmt->fetch(\PDO::FETCH_ASSOC)) {
+                        $customSizes[$csz['customization_id']][] = $csz['size_name'];
+                    }
+                }
             }
+
+            foreach ($carouselProducts as &$cp) {
+                if (!empty($cp['is_customizable'])) {
+                    $pid = (int)$cp['id'];
+                    if (isset($fcData[$pid])) {
+                        $cp['garment_type'] = $fcData[$pid]['garment_type'] ?? null;
+                        $cp['custom_moq'] = $fcData[$pid]['custom_moq'] ?? null;
+                        $custProgId = (int)$fcData[$pid]['customization_id'];
+                        $cp['sizes'] = $customSizes[$custProgId] ?? ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
+                    } else {
+                        $cp['sizes'] = ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
+                    }
+                    if (isset($customImgs[$pid])) {
+                        $cp['images'] = $customImgs[$pid];
+                    }
+                }
+            }
+            unset($cp);
+        } catch (\Exception $e) {
+            // Fallback gracefully
         }
     }
-}
 
-// Enrich customizable products with images, sizes, and fabric_customizations info
-$customProdIds = [];
-foreach ($carouselProducts as $cp) {
-    if (!empty($cp['is_customizable'])) {
-        $customProdIds[] = (int)$cp['id'];
-    }
-}
-if (!empty($customProdIds)) {
-    try {
-        $db = \Core\Database::getInstance();
-        $cpidList = implode(',', array_unique($customProdIds));
-        
-        $fcStmt = $db->query("SELECT fabric_id, id as customization_id, garment_type, minimum_pieces as custom_moq FROM fabric_customizations WHERE fabric_id IN ($cpidList) AND customization_enabled = 1 AND status = 'active'");
-        $fcData = [];
-        $customProgIds = [];
-        if ($fcStmt) {
-            while ($fcr = $fcStmt->fetch(\PDO::FETCH_ASSOC)) {
-                $fcData[(int)$fcr['fabric_id']] = $fcr;
-                $customProgIds[] = (int)$fcr['customization_id'];
-            }
-        }
-
-        $cimgStmt = $db->query("SELECT product_id, image_path FROM product_images WHERE product_id IN ($cpidList) ORDER BY is_primary DESC, sort_order ASC, id ASC");
-        $customImgs = [];
-        if ($cimgStmt) {
-            while ($cir = $cimgStmt->fetch(\PDO::FETCH_ASSOC)) {
-                $customImgs[$cir['product_id']][] = $cir['image_path'];
-            }
-        }
-
-        $customSizes = [];
-        if (!empty($customProgIds)) {
-            $cprogList = implode(',', array_unique($customProgIds));
-            $cszStmt = $db->query("SELECT customization_id, size_name FROM fabric_customization_sizes WHERE customization_id IN ($cprogList) AND enabled = 1 ORDER BY sort_order ASC, id ASC");
-            if ($cszStmt) {
-                while ($csz = $cszStmt->fetch(\PDO::FETCH_ASSOC)) {
-                    $customSizes[$csz['customization_id']][] = $csz['size_name'];
-                }
-            }
-        }
-
-        foreach ($carouselProducts as &$cp) {
-            if (!empty($cp['is_customizable'])) {
-                $pid = (int)$cp['id'];
-                if (isset($fcData[$pid])) {
-                    $cp['garment_type'] = $fcData[$pid]['garment_type'] ?? null;
-                    $cp['custom_moq'] = $fcData[$pid]['custom_moq'] ?? null;
-                    $custProgId = (int)$fcData[$pid]['customization_id'];
-                    $cp['sizes'] = $customSizes[$custProgId] ?? ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
-                } else {
-                    $cp['sizes'] = ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
-                }
-                if (isset($customImgs[$pid])) {
-                    $cp['images'] = $customImgs[$pid];
-                }
-            }
-        }
-        unset($cp);
-    } catch (\Exception $e) {
-        // Fallback gracefully
+    if (class_exists('\Core\Cache') && !empty($carouselProducts) && empty($_GET['preview'])) {
+        \Core\Cache::set($carouselProdCacheKey, $carouselProducts, 3600);
     }
 }
 
@@ -525,7 +536,8 @@ $tabletWidth = 100 / max(1, $tablet_count);
                         </div>
                     <?php else: ?>
                         <?php foreach ($carouselProducts as $prod): 
-                            $img = !empty($prod['primary_image']) ? (str_starts_with($prod['primary_image'], 'http') ? $prod['primary_image'] : (BASE_URL . '/' . ltrim($prod['primary_image'], '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                            $rawImg = !empty($prod['primary_image']) ? (str_starts_with($prod['primary_image'], 'http') ? $prod['primary_image'] : (BASE_URL . '/' . ltrim($prod['primary_image'], '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                            $img = get_image_url($rawImg, 400, 500);
                             $catGst = (float)($prod['category_sgst'] ?? 0) + (float)($prod['category_cgst'] ?? 0);
                             $prodGst = $catGst > 0 ? $catGst : ((float)($prod['variant_total_gst'] ?? 0) ?: (float)($prod['total_gst'] ?? 0));
 
@@ -574,6 +586,10 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                             <img id="pc-main-img-<?= $prod['id'] ?>_<?= $id ?>" 
                                                  src="<?= htmlspecialchars($img) ?>" 
                                                  alt="<?= htmlspecialchars($prod['name']) ?>" 
+                                                 loading="lazy"
+                                                 decoding="async"
+                                                 width="300"
+                                                 height="375"
                                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
 
                                             <!-- Top Left Badges: CUSTOM & Garment Type -->
@@ -610,6 +626,10 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                             ?>
                                                 <img src="<?= htmlspecialchars($swUrl) ?>" 
                                                      alt="" 
+                                                     loading="lazy"
+                                                     decoding="async"
+                                                     width="32"
+                                                     height="32"
                                                      onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
                                                      onclick="document.getElementById('pc-main-img-<?= $prod['id'] ?>_<?= $id ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
                                                      class="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-110 transition-transform flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
@@ -715,7 +735,7 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                                 echo render_discount_starburst($discPercent, 'transition-transform duration-300 group-hover:scale-105');
                                             }
                                             ?>
-                                            <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" class="w-full h-full <?= $objectFitClass ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
+                                            <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" width="300" height="375" class="w-full h-full <?= $objectFitClass ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
                                         </a>
 
                                         <!-- Product Details -->

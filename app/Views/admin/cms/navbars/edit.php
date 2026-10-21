@@ -292,31 +292,89 @@ $menuItems = $content['menu_items'] ?? [];
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+                    <!-- AUTO-FILL FROM CATALOG (Normal Categories Only) -->
                     <div>
-                        <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">AUTO-FILL FROM CATALOG</label>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider">AUTO-FILL FROM CATALOG</label>
+                            <span class="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">Standard Only</span>
+                        </div>
                         <?php 
-                            $selectedCats = [];
-                            if (!empty($item['auto_fill_catalog'])) {
-                                $selectedCats = is_string($item['auto_fill_catalog']) ? explode(',', $item['auto_fill_catalog']) : (array)$item['auto_fill_catalog'];
+                            $selectedNormalCats = [];
+                            $rawCat = !empty($item['auto_fill_catalog']) ? (is_string($item['auto_fill_catalog']) ? explode(',', $item['auto_fill_catalog']) : (array)$item['auto_fill_catalog']) : [];
+                            $custIdsList = !empty($customizeCategories) ? array_map('strval', array_column($customizeCategories, 'id')) : [];
+                            foreach ($rawCat as $cVal) {
+                                if (!in_array((string)$cVal, $custIdsList)) {
+                                    $selectedNormalCats[] = (string)$cVal;
+                                }
                             }
-                            $displayText = empty($selectedCats) ? 'Select Categories...' : count($selectedCats) . ' Selected';
+                            $displayTextNormal = empty($selectedNormalCats) ? 'Select Normal Categories...' : count($selectedNormalCats) . ' Selected';
                         ?>
                         <div class="relative custom-multiselect">
                             <div class="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-white cursor-pointer flex justify-between items-center transition-colors hover:border-brown" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                                <span class="text-gray-700 text-sm select-text-label"><?= $displayText ?></span>
+                                <span class="text-gray-700 text-sm select-text-label"><?= $displayTextNormal ?></span>
                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                             <div class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden max-h-48 overflow-y-auto p-2 space-y-1">
-                                <?php foreach($categories as $cat): ?>
-                                    <label class="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer rounded transition-colors">
-                                        <input type="checkbox" name="menu_item_auto_fill[<?= $index ?>][]" value="<?= htmlspecialchars($cat['id']) ?>" <?= in_array($cat['id'], $selectedCats) ? 'checked' : '' ?> class="rounded border-gray-300 text-brown focus:ring-brown cat-checkbox" onchange="updateMultiSelectText(this)">
-                                        <span class="text-sm text-gray-700"><?= htmlspecialchars($cat['name']) ?></span>
-                                    </label>
-                                <?php endforeach; ?>
+                                <?php if (empty($normalCategories)): ?>
+                                    <p class="text-xs text-gray-400 p-2 italic">No normal categories available</p>
+                                <?php else: ?>
+                                    <?php foreach($normalCategories as $cat): ?>
+                                        <label class="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer rounded transition-colors">
+                                            <input type="checkbox" name="menu_item_auto_fill[<?= $index ?>][]" value="<?= htmlspecialchars($cat['id']) ?>" <?= in_array((string)$cat['id'], $selectedNormalCats) ? 'checked' : '' ?> class="rounded border-gray-300 text-brown focus:ring-brown cat-checkbox" onchange="updateMultiSelectText(this)">
+                                            <span class="text-sm text-gray-700"><?= htmlspecialchars($cat['name']) ?></span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </div>
                         </div>
+                        <p class="text-[11px] text-gray-400 mt-1">Normal catalog categories only (no customize).</p>
                     </div>
+
+                    <!-- AUTO-FILL FROM CUSTOMIZE CATALOG (Customize Categories Only) -->
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider">AUTO-FILL FROM CUSTOMIZE</label>
+                            <span class="text-[10px] font-bold text-pink-600 bg-pink-50 border border-pink-200 px-1.5 py-0.5 rounded">Customize Only</span>
+                        </div>
+                        <?php 
+                            $selectedCustomizeCats = [];
+                            $rawCust = !empty($item['auto_fill_customize']) ? (is_string($item['auto_fill_customize']) ? explode(',', $item['auto_fill_customize']) : (array)$item['auto_fill_customize']) : [];
+                            // Backward compatibility: if any customize category was previously saved in auto_fill_catalog
+                            foreach ($rawCat as $cVal) {
+                                if (in_array((string)$cVal, $custIdsList) && !in_array((string)$cVal, $selectedCustomizeCats)) {
+                                    $selectedCustomizeCats[] = (string)$cVal;
+                                }
+                            }
+                            foreach ($rawCust as $cVal) {
+                                if (!in_array((string)$cVal, $selectedCustomizeCats)) {
+                                    $selectedCustomizeCats[] = (string)$cVal;
+                                }
+                            }
+                            $displayTextCust = empty($selectedCustomizeCats) ? 'Select Customize Categories...' : count($selectedCustomizeCats) . ' Selected';
+                        ?>
+                        <div class="relative custom-multiselect">
+                            <div class="w-full border border-pink-200 rounded-lg px-4 py-2.5 bg-white cursor-pointer flex justify-between items-center transition-colors hover:border-pink-500" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                                <span class="text-gray-700 text-sm select-text-label"><?= $displayTextCust ?></span>
+                                <svg class="w-4 h-4 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </div>
+                            <div class="absolute z-10 w-full mt-1 bg-white border border-pink-100 rounded-lg shadow-lg hidden max-h-48 overflow-y-auto p-2 space-y-1">
+                                <?php if (empty($customizeCategories)): ?>
+                                    <p class="text-xs text-gray-400 p-2 italic">No customize categories available</p>
+                                <?php else: ?>
+                                    <?php foreach($customizeCategories as $cat): ?>
+                                        <label class="flex items-center gap-2 p-2 hover:bg-pink-50/50 cursor-pointer rounded transition-colors">
+                                            <input type="checkbox" name="menu_item_auto_fill_customize[<?= $index ?>][]" value="<?= htmlspecialchars($cat['id']) ?>" <?= in_array((string)$cat['id'], $selectedCustomizeCats) ? 'checked' : '' ?> class="rounded border-pink-300 text-pink-600 focus:ring-pink-500 cat-checkbox" onchange="updateMultiSelectText(this)">
+                                            <span class="text-sm text-gray-700 font-medium"><?= htmlspecialchars($cat['name']) ?></span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-pink-500/80 mt-1">Customizable categories only (no normal).</p>
+                    </div>
+
+                    <!-- TEXT COLOR (OPTIONAL) -->
                     <div>
                         <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">TEXT COLOR (OPTIONAL)</label>
                         <div class="flex items-center gap-2 border border-gray-200 rounded-lg p-1.5 focus-within:border-brown transition-colors">
@@ -486,24 +544,62 @@ $menuItems = $content['menu_items'] ?? [];
             </div>
         </div>
         
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+            <!-- AUTO-FILL FROM CATALOG (Normal Categories Only) -->
             <div>
-                <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">AUTO-FILL FROM CATALOG</label>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider">AUTO-FILL FROM CATALOG</label>
+                    <span class="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">Standard Only</span>
+                </div>
                 <div class="relative custom-multiselect">
                     <div class="w-full border border-gray-200 rounded-lg px-4 py-2.5 bg-white cursor-pointer flex justify-between items-center transition-colors hover:border-brown" onclick="this.nextElementSibling.classList.toggle('hidden')">
-                        <span class="text-gray-700 text-sm select-text-label">Select Categories...</span>
+                        <span class="text-gray-700 text-sm select-text-label">Select Normal Categories...</span>
                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </div>
                     <div class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg hidden max-h-48 overflow-y-auto p-2 space-y-1">
-                        <?php foreach($categories as $cat): ?>
-                            <label class="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer rounded transition-colors">
-                                <input type="checkbox" name="menu_item_auto_fill[__INDEX__][]" value="<?= htmlspecialchars($cat['id']) ?>" class="rounded border-gray-300 text-brown focus:ring-brown cat-checkbox" onchange="updateMultiSelectText(this)">
-                                <span class="text-sm text-gray-700"><?= htmlspecialchars($cat['name']) ?></span>
-                            </label>
-                        <?php endforeach; ?>
+                        <?php if (empty($normalCategories)): ?>
+                            <p class="text-xs text-gray-400 p-2 italic">No normal categories available</p>
+                        <?php else: ?>
+                            <?php foreach($normalCategories as $cat): ?>
+                                <label class="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer rounded transition-colors">
+                                    <input type="checkbox" name="menu_item_auto_fill[__INDEX__][]" value="<?= htmlspecialchars($cat['id']) ?>" class="rounded border-gray-300 text-brown focus:ring-brown cat-checkbox" onchange="updateMultiSelectText(this)">
+                                    <span class="text-sm text-gray-700"><?= htmlspecialchars($cat['name']) ?></span>
+                                </label>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
                     </div>
                 </div>
+                <p class="text-[11px] text-gray-400 mt-1">Normal catalog categories only (no customize).</p>
             </div>
+
+            <!-- AUTO-FILL FROM CUSTOMIZE CATALOG (Customize Categories Only) -->
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider">AUTO-FILL FROM CUSTOMIZE</label>
+                    <span class="text-[10px] font-bold text-pink-600 bg-pink-50 border border-pink-200 px-1.5 py-0.5 rounded">Customize Only</span>
+                </div>
+                <div class="relative custom-multiselect">
+                    <div class="w-full border border-pink-200 rounded-lg px-4 py-2.5 bg-white cursor-pointer flex justify-between items-center transition-colors hover:border-pink-500" onclick="this.nextElementSibling.classList.toggle('hidden')">
+                        <span class="text-gray-700 text-sm select-text-label">Select Customize Categories...</span>
+                        <svg class="w-4 h-4 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div class="absolute z-10 w-full mt-1 bg-white border border-pink-100 rounded-lg shadow-lg hidden max-h-48 overflow-y-auto p-2 space-y-1">
+                        <?php if (empty($customizeCategories)): ?>
+                            <p class="text-xs text-gray-400 p-2 italic">No customize categories available</p>
+                        <?php else: ?>
+                            <?php foreach($customizeCategories as $cat): ?>
+                                <label class="flex items-center gap-2 p-2 hover:bg-pink-50/50 cursor-pointer rounded transition-colors">
+                                    <input type="checkbox" name="menu_item_auto_fill_customize[__INDEX__][]" value="<?= htmlspecialchars($cat['id']) ?>" class="rounded border-pink-300 text-pink-600 focus:ring-pink-500 cat-checkbox" onchange="updateMultiSelectText(this)">
+                                    <span class="text-sm text-gray-700 font-medium"><?= htmlspecialchars($cat['name']) ?></span>
+                                </label>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <p class="text-[11px] text-pink-500/80 mt-1">Customizable categories only (no normal).</p>
+            </div>
+
+            <!-- TEXT COLOR (OPTIONAL) -->
             <div>
                 <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">TEXT COLOR (OPTIONAL)</label>
                 <div class="flex items-center gap-2 border border-gray-200 rounded-lg p-1.5 focus-within:border-brown transition-colors">

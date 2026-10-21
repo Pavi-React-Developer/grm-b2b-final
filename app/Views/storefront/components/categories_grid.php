@@ -43,18 +43,27 @@ $db = \Core\Database::getInstance();
 if (!empty($category_ids) && is_array($category_ids)) {
     $inClause = implode(',', array_map('intval', $category_ids));
     if (!empty($inClause)) {
-        try {
-            $catsFromDb = $db->query("SELECT id, name, slug, image_path, is_customizable FROM categories WHERE id IN ($inClause) AND status = 'active'")->fetchAll(\PDO::FETCH_ASSOC);
-            $catsById = [];
-            foreach ($catsFromDb as $cdb) {
-                $catsById[$cdb['id']] = $cdb;
-            }
-            foreach ($category_ids as $cid) {
-                if (isset($catsById[$cid])) {
-                    $gridCategories[] = $catsById[$cid];
+        $cGridCatCacheKey = 'catgrid_cats_' . md5($inClause);
+        $cachedGridCats = (empty($_GET['preview']) && class_exists('\Core\Cache')) ? \Core\Cache::get($cGridCatCacheKey) : null;
+        if ($cachedGridCats !== null) {
+            $gridCategories = $cachedGridCats;
+        } else {
+            try {
+                $catsFromDb = $db->query("SELECT id, name, slug, image_path, is_customizable FROM categories WHERE id IN ($inClause) AND status = 'active'")->fetchAll(\PDO::FETCH_ASSOC);
+                $catsById = [];
+                foreach ($catsFromDb as $cdb) {
+                    $catsById[$cdb['id']] = $cdb;
                 }
-            }
-        } catch (\Exception $e) {}
+                foreach ($category_ids as $cid) {
+                    if (isset($catsById[$cid])) {
+                        $gridCategories[] = $catsById[$cid];
+                    }
+                }
+                if (class_exists('\Core\Cache') && !empty($gridCategories) && empty($_GET['preview'])) {
+                    \Core\Cache::set($cGridCatCacheKey, $gridCategories, 3600);
+                }
+            } catch (\Exception $e) {}
+        }
     }
 }
 if (empty($gridCategories) && isset($categories) && is_array($categories)) {
@@ -474,7 +483,8 @@ if (!empty($category_ids)) {
             <div class="catgrid-sidebar" style="width:240px; min-width:240px; background:#f8fafc; border-right:1px solid #e2e8f0; flex-shrink:0; display:flex; flex-direction:column; justify-content:flex-start;">
                 <div class="catgrid-sidebar-scroll" style="display:flex; flex-direction:column; max-height:435px; overflow-y:auto; overflow-x:hidden;">
                     <?php foreach ($gridCategories as $index => $cat): 
-                        $img = !empty($cat['image_path']) ? (str_starts_with($cat['image_path'], 'http') ? $cat['image_path'] : (BASE_URL . '/' . ltrim($cat['image_path'], '/'))) : 'https://placehold.co/100?text=' . urlencode($cat['name']);
+                        $rawImg = !empty($cat['image_path']) ? (str_starts_with($cat['image_path'], 'http') ? $cat['image_path'] : (BASE_URL . '/' . ltrim($cat['image_path'], '/'))) : 'https://placehold.co/100?text=' . urlencode($cat['name']);
+                        $img = get_image_url($rawImg, 100, 100);
                         $count = $catProductCounts[$cat['id']] ?? 0;
                         $isActive = $index === 0;
                     ?>
@@ -482,7 +492,7 @@ if (!empty($category_ids)) {
                             data-target="cat_pane_<?= $id ?>_<?= $cat['id'] ?>"
                             style="display:flex; align-items:center; gap:0.85rem; padding:0.85rem 1.1rem; width:100%; height:72px; box-sizing:border-box; flex-shrink:0; text-align:left; transition:all 0.2s; border-bottom:1px solid #e2e8f0; cursor:pointer; background:none; border-left:none; border-right:none; border-top:none; <?= $isActive ? 'background-color: '.$button_bg_color.'; color: '.$button_text_color.';' : 'color:#334155;' ?>">
                         <div style="width:2.75rem; height:2.75rem; border-radius:0.5rem; overflow:hidden; flex-shrink:0; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,0.06); border:1px solid #f1f5f9;">
-                            <img src="<?= htmlspecialchars($img) ?>" style="width:100%; height:100%; object-fit:cover;" loading="lazy" decoding="async">
+                            <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($cat['name']) ?>" style="width:100%; height:100%; object-fit:cover;" loading="lazy" decoding="async" width="44" height="44">
                         </div>
                         <div style="flex:1; min-width:0;">
                             <div style="display:flex; align-items:center; gap:0.35rem; margin:0 0 0.2rem 0;">
@@ -526,7 +536,8 @@ if (!empty($category_ids)) {
                         <div id="<?= $paneId ?>_track" class="catgrid-desktop-track flex flex-row items-stretch gap-4 overflow-x-auto scroll-smooth py-1 px-1" style="scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory;">
                             <?php foreach ($gridPaneProducts as $prod): 
                                 $imgPath = $prod['main_image'] ?? '';
-                                $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=No+Image';
+                                $rawImg = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=No+Image';
+                                $img = get_image_url($rawImg, 350, 350);
                                 $catGst = (float)($prod['category_sgst'] ?? 0) + (float)($prod['category_cgst'] ?? 0);
                                 $prodGst = $catGst > 0 ? $catGst : ((float)($prod['variant_total_gst'] ?? 0) ?: (float)($prod['total_gst'] ?? 0));
                                 $basePrice = (isset($prod['base_price']) && $prod['base_price'] > 0) ? (float)$prod['base_price'] : (float)($prod['wholesale_price'] ?? 0);
@@ -568,6 +579,10 @@ if (!empty($category_ids)) {
                                         <img id="cg-main-img-<?= $prod['id'] ?>" 
                                              src="<?= htmlspecialchars($img) ?>" 
                                              alt="<?= htmlspecialchars($prod['name']) ?>" 
+                                             loading="lazy"
+                                             decoding="async"
+                                             width="250"
+                                             height="224"
                                              class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
 
                                         <!-- Top Left Badges: CUSTOM & Garment Type -->
@@ -604,6 +619,10 @@ if (!empty($category_ids)) {
                                         ?>
                                             <img src="<?= htmlspecialchars($swUrl) ?>" 
                                                  alt="" 
+                                                 loading="lazy"
+                                                 decoding="async"
+                                                 width="32"
+                                                 height="32"
                                                  onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
                                                  onclick="document.getElementById('cg-main-img-<?= $prod['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
                                                  class="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-110 transition-transform flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
@@ -709,7 +728,7 @@ if (!empty($category_ids)) {
                                             echo render_discount_starburst($discPercent, 'transition-transform duration-300 group-hover:scale-105');
                                         }
                                         ?>
-                                        <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" class="w-full h-full object-<?= htmlspecialchars($image_fit) ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
+                                        <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" width="250" height="250" class="w-full h-full object-<?= htmlspecialchars($image_fit) ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
                                     </a>
 
                                     <!-- Product Details -->
@@ -782,14 +801,15 @@ if (!empty($category_ids)) {
             <!-- Horizontal Scrollable Tab Bar -->
             <div class="mobile-tab-bar">
                 <?php foreach ($gridCategories as $index => $cat): 
-                    $img = !empty($cat['image_path']) ? (str_starts_with($cat['image_path'], 'http') ? $cat['image_path'] : (BASE_URL . '/' . ltrim($cat['image_path'], '/'))) : 'https://placehold.co/100?text=' . urlencode($cat['name']);
+                    $rawImg = !empty($cat['image_path']) ? (str_starts_with($cat['image_path'], 'http') ? $cat['image_path'] : (BASE_URL . '/' . ltrim($cat['image_path'], '/'))) : 'https://placehold.co/100?text=' . urlencode($cat['name']);
+                    $img = get_image_url($rawImg, 80, 80);
                     $count = $catProductCounts[$cat['id']] ?? 0;
                     $isFirst = $index === 0;
                 ?>
                 <button class="mobile-cat-btn <?= $isFirst ? 'mobile-active-btn' : '' ?>"
                         data-mobile-target="mob_pane_<?= $id ?>_<?= $cat['id'] ?>"
                         style="<?= $isFirst ? 'background-color:'.$button_bg_color.'; color:'.$button_text_color.'; border-color:'.$button_bg_color.';' : '' ?>">
-                    <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($cat['name']) ?>">
+                    <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($cat['name']) ?>" loading="lazy" decoding="async" width="24" height="24">
                     <div style="text-align:left; line-height:1.15;">
                         <div class="mobile-cat-name flex items-center gap-1">
                             <span><?= htmlspecialchars($cat['name']) ?></span>
@@ -815,7 +835,8 @@ if (!empty($category_ids)) {
                 <div class="mobile-product-grid">
                     <?php foreach ($gridMobProducts as $prod): 
                         $imgPath = $prod['main_image'] ?? '';
-                        $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                        $rawImg = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                        $img = get_image_url($rawImg, 300, 300);
                         $catGst = (float)($prod['category_sgst'] ?? 0) + (float)($prod['category_cgst'] ?? 0);
                         $prodGst = $catGst > 0 ? $catGst : ((float)($prod['variant_total_gst'] ?? 0) ?: (float)($prod['total_gst'] ?? 0));
 
@@ -860,6 +881,10 @@ if (!empty($category_ids)) {
                                 <img id="cg-mob-img-<?= $prod['id'] ?>" 
                                      src="<?= htmlspecialchars($img) ?>" 
                                      alt="<?= htmlspecialchars($prod['name']) ?>" 
+                                     loading="lazy"
+                                     decoding="async"
+                                     width="200"
+                                     height="160"
                                      class="w-full h-full object-cover">
 
                                 <!-- Badges top left -->
@@ -896,6 +921,10 @@ if (!empty($category_ids)) {
                                 ?>
                                     <img src="<?= htmlspecialchars($swUrl) ?>" 
                                          alt="" 
+                                         loading="lazy"
+                                         decoding="async"
+                                         width="24"
+                                         height="24"
                                          onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
                                          onclick="document.getElementById('cg-mob-img-<?= $prod['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
                                          class="w-6 h-6 rounded-full border-2 border-white shadow-xs object-cover cursor-pointer flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
@@ -980,7 +1009,7 @@ if (!empty($category_ids)) {
                                         echo render_discount_starburst($mobDiscPercent, 'transition-transform duration-300 group-hover:scale-105');
                                     }
                                     ?>
-                                <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" loading="lazy" decoding="async">
+                                <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" loading="lazy" decoding="async" width="200" height="200">
                             </a>
 
                             <!-- Body -->

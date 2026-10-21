@@ -133,7 +133,11 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
                          data-cta-url="<?= htmlspecialchars($finalCtaUrl ?: $ctaUrl) ?>"
                          data-cta-text="<?= htmlspecialchars($ctaText) ?>">
                         
-                        <!-- 24-Hour Continuous Looping Video Player -->
+                        <!-- 24-Hour Looping Video Player (Preload none avoids massive initial payload) -->
+                        <?php 
+                            $optDeskImg = get_image_url($deskImg, 400, 700);
+                            $optMobImg = get_image_url($mobImg ?: $deskImg, 300, 500);
+                        ?>
                         <?php if (!empty($videoUrl)): ?>
                             <video class="reel-bg-video w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                    src="<?= htmlspecialchars($videoUrl) ?>"
@@ -142,15 +146,15 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
                                    muted
                                    playsinline
                                    webkit-playsinline
-                                   preload="auto"
-                                   poster="<?= htmlspecialchars($deskImg ?: $mobImg) ?>">
+                                   preload="none"
+                                   poster="<?= htmlspecialchars($optDeskImg ?: $optMobImg) ?>">
                             </video>
                         <?php elseif (!empty($deskImg) || !empty($mobImg)): ?>
                             <picture class="w-full h-full block">
-                                <?php if (!empty($deskImg)): ?>
-                                    <source media="(min-width: 768px)" srcset="<?= htmlspecialchars($deskImg) ?>">
+                                <?php if (!empty($optDeskImg)): ?>
+                                    <source media="(min-width: 768px)" srcset="<?= htmlspecialchars($optDeskImg) ?>">
                                 <?php endif; ?>
-                                <img src="<?= htmlspecialchars($mobImg ?: $deskImg) ?>" alt="<?= htmlspecialchars($reelTitle) ?>" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105">
+                                <img src="<?= htmlspecialchars($optMobImg ?: $optDeskImg) ?>" alt="<?= htmlspecialchars($reelTitle) ?>" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" decoding="async" width="300" height="500">
                             </picture>
                         <?php else: ?>
                             <div class="w-full h-full flex items-center justify-center bg-gray-900 text-gray-600">

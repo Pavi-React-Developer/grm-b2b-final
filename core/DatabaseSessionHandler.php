@@ -36,6 +36,20 @@ class DatabaseSessionHandler implements \SessionHandlerInterface
 
     public function read(string $id): string|false
     {
+        // Optimization 1: If browser sent no session cookie, this is a new session - skip remote DB query
+        $sessName = session_name();
+        if (empty($_COOKIE[$sessName])) {
+            $this->readHashes[$id] = md5('');
+            return '';
+        }
+
+        // Optimization 2: Fast-path local file check (if written recently within 300s, avoid remote network ping)
+        $localData = $this->readFileFallback($id, 300);
+        if ($localData !== null) {
+            $this->readHashes[$id] = md5((string)$localData);
+            return $localData;
+        }
+
         try {
             $db = $this->getDb();
             if ($db) {
@@ -52,10 +66,11 @@ class DatabaseSessionHandler implements \SessionHandlerInterface
             // DB temporarily unreachable
         }
 
-        // Fallback to local file cache
-        $fallback = $this->readFileFallback($id);
-        $this->readHashes[$id] = md5((string)$fallback);
-        return $fallback;
+        // Fallback to local file cache even if older
+        $fallback = $this->readFileFallback($id, 0);
+        $final = $fallback ?? '';
+        $this->readHashes[$id] = md5((string)$final);
+        return $final;
     }
 
     public function write(string $id, string $data): bool
@@ -63,6 +78,11 @@ class DatabaseSessionHandler implements \SessionHandlerInterface
         $timestamp = time();
         // Always write to local fallback cache first for instant safety
         $this->writeFileFallback($id, $data);
+
+        // Optimization: If session data is empty, skip remote network write completely
+        if (empty($data) || trim($data) === '') {
+            return true;
+        }
 
         // Optimization: If session data did not change during this request, skip remote network write
         $currentHash = md5($data);
@@ -122,14 +142,17 @@ class DatabaseSessionHandler implements \SessionHandlerInterface
         return 1;
     }
 
-    private function readFileFallback(string $id): string
+    private function readFileFallback(string $id, int $maxAge = 0): ?string
     {
         $file = $this->fallbackPath . '/sess_' . preg_replace('/[^a-zA-Z0-9,-]/', '', $id);
         if (is_file($file)) {
+            if ($maxAge > 0 && (time() - filemtime($file)) > $maxAge) {
+                return null; // Local copy is older than maxAge
+            }
             $content = @file_get_contents($file);
             return $content !== false ? $content : '';
         }
-        return '';
+        return null;
     }
 
     private function writeFileFallback(string $id, string $data): void

@@ -127,12 +127,19 @@ $renderItems = function($items) use ($textColor, $globalFontSize, $globalIconSiz
             <?php if ($hasDropdown): ?>
             <?php 
                 $customSubItems = !empty($item['sub_items']) && is_array($item['sub_items']) ? $item['sub_items'] : [];
-                $hasAutoFill = !empty($item['auto_fill_catalog']);
+                $hasAutoFillCatalog = !empty($item['auto_fill_catalog']);
+                $hasAutoFillCustomize = !empty($item['auto_fill_customize']);
+                $hasAutoFill = $hasAutoFillCatalog || $hasAutoFillCustomize;
                 $catIds = [];
-                if ($hasAutoFill) {
-                    $catIds = is_string($item['auto_fill_catalog']) ? explode(',', $item['auto_fill_catalog']) : (array)$item['auto_fill_catalog'];
-                    $catIds = array_filter(array_map('intval', $catIds));
+                if (!empty($item['auto_fill_catalog'])) {
+                    $cIds = is_string($item['auto_fill_catalog']) ? explode(',', $item['auto_fill_catalog']) : (array)$item['auto_fill_catalog'];
+                    $catIds = array_merge($catIds, $cIds);
                 }
+                if (!empty($item['auto_fill_customize'])) {
+                    $custIds = is_string($item['auto_fill_customize']) ? explode(',', $item['auto_fill_customize']) : (array)$item['auto_fill_customize'];
+                    $catIds = array_merge($catIds, $custIds);
+                }
+                $catIds = array_unique(array_filter(array_map('intval', $catIds)));
                 $navDropData = !empty($catIds) ? $getNavCategoriesWithSubcategories($catIds) : [];
                 $hasAnyContent = !empty($customSubItems) || !empty($navDropData);
                 $isMega = count($catIds) > 1 || (!empty($customSubItems) && !empty($navDropData));
@@ -224,8 +231,10 @@ $renderItems = function($items) use ($textColor, $globalFontSize, $globalIconSiz
 $renderLogo = function() use ($logo, $logoCta, $textColor) {
 ?>
     <a href="<?= htmlspecialchars($logoCta) ?>" class="flex items-center shrink-0">
-        <?php if ($logo): ?>
-            <img src="<?= htmlspecialchars($logo) ?>" alt="Navbar Logo" class="h-9 lg:h-10 max-h-11 max-w-[160px] lg:max-w-[220px] object-contain shrink-0">
+        <?php if ($logo): 
+            $optLogo = get_image_url($logo);
+        ?>
+            <img src="<?= htmlspecialchars($optLogo) ?>" alt="Navbar Logo" width="180" height="40" loading="eager" fetchpriority="high" decoding="async" class="h-9 lg:h-10 max-h-11 max-w-[160px] lg:max-w-[220px] object-contain shrink-0">
         <?php else: ?>
             <span class="text-xl font-black tracking-tight" style="color: <?= htmlspecialchars($textColor) ?>;">Brand Logo</span>
         <?php endif; ?>
@@ -443,8 +452,10 @@ $renderSystemIcons = function() use ($textColor, $bgColorVal, $globalFontSize, $
         <!-- Brand Logo -->
         <div class="shrink-0 flex items-center">
             <a href="<?= htmlspecialchars($logoCta) ?>" class="flex items-center">
-                <?php if ($logo): ?>
-                    <img src="<?= htmlspecialchars($logo) ?>" alt="Navbar Logo" class="h-8 sm:h-9 max-h-9 max-w-[140px] sm:max-w-[190px] md:max-w-[220px] object-contain shrink-0">
+                <?php if ($logo): 
+                    $optMobLogo = get_image_url($logo);
+                ?>
+                    <img src="<?= htmlspecialchars($optMobLogo) ?>" alt="Navbar Logo" width="140" height="36" loading="eager" fetchpriority="high" decoding="async" class="h-8 sm:h-9 max-h-9 max-w-[140px] sm:max-w-[190px] md:max-w-[220px] object-contain shrink-0">
                 <?php else: ?>
                     <span class="text-lg sm:text-xl font-black tracking-tight" style="color: <?= htmlspecialchars($textColor) ?>;">Brand Logo</span>
                 <?php endif; ?>
@@ -514,9 +525,16 @@ $renderSystemIcons = function() use ($textColor, $bgColorVal, $globalFontSize, $
                         $borderColor = strlen($textColor) === 7 ? $textColor . '25' : $textColor;
 
                         $mCatIds = [];
-                        if ($hasDropdown && !empty($item['auto_fill_catalog'])) {
-                            $mCatIds = is_string($item['auto_fill_catalog']) ? explode(',', $item['auto_fill_catalog']) : (array)$item['auto_fill_catalog'];
-                            $mCatIds = array_filter(array_map('intval', $mCatIds));
+                        if ($hasDropdown) {
+                            if (!empty($item['auto_fill_catalog'])) {
+                                $cIds = is_string($item['auto_fill_catalog']) ? explode(',', $item['auto_fill_catalog']) : (array)$item['auto_fill_catalog'];
+                                $mCatIds = array_merge($mCatIds, $cIds);
+                            }
+                            if (!empty($item['auto_fill_customize'])) {
+                                $custIds = is_string($item['auto_fill_customize']) ? explode(',', $item['auto_fill_customize']) : (array)$item['auto_fill_customize'];
+                                $mCatIds = array_merge($mCatIds, $custIds);
+                            }
+                            $mCatIds = array_unique(array_filter(array_map('intval', $mCatIds)));
                         }
                         $mNavData = !empty($mCatIds) ? $getNavCategoriesWithSubcategories($mCatIds) : [];
                         $mCustomSubs = !empty($item['sub_items']) && is_array($item['sub_items']) ? $item['sub_items'] : [];

@@ -40,48 +40,57 @@ $selectedIds = !empty($contentData['selected_review_ids']) && is_array($contentD
     : [];
 
 $displayReviews = [];
+$revCacheKey = 'cms_reviews_' . md5(json_encode($selectedIds));
+$cachedReviews = class_exists('\Core\Cache') ? \Core\Cache::get($revCacheKey) : null;
 
-try {
-    $db = \Core\Database::getInstance();
-    if (!empty($selectedIds)) {
-        $placeholders = implode(',', array_fill(0, count($selectedIds), '?'));
-        $sql = "
-            SELECT 
-                r.*,
-                p.name AS product_name,
-                p.id AS product_id,
-                (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS product_image,
-                u.name AS reviewer_name
-            FROM reviews r
-            JOIN products p ON r.product_id = p.id
-            JOIN users u ON r.user_id = u.id
-            WHERE r.id IN ($placeholders)
-            ORDER BY FIELD(r.id, $placeholders)
-        ";
-        $params = array_merge($selectedIds, $selectedIds);
-        $stmt = $db->prepare($sql);
-        $stmt->execute($params);
-        $displayReviews = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-    } else {
-        // Fallback: fetch top 6 approved reviews if none specifically selected
-        $stmt = $db->query("
-            SELECT 
-                r.*,
-                p.name AS product_name,
-                p.id AS product_id,
-                (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS product_image,
-                u.name AS reviewer_name
-            FROM reviews r
-            JOIN products p ON r.product_id = p.id
-            JOIN users u ON r.user_id = u.id
-            WHERE r.is_approved = 1
-            ORDER BY r.created_at DESC
-            LIMIT 6
-        ");
-        $displayReviews = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+if ($cachedReviews !== null) {
+    $displayReviews = $cachedReviews;
+} else {
+    try {
+        $db = \Core\Database::getInstance();
+        if (!empty($selectedIds)) {
+            $placeholders = implode(',', array_fill(0, count($selectedIds), '?'));
+            $sql = "
+                SELECT 
+                    r.*,
+                    p.name AS product_name,
+                    p.id AS product_id,
+                    (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS product_image,
+                    u.name AS reviewer_name
+                FROM reviews r
+                JOIN products p ON r.product_id = p.id
+                JOIN users u ON r.user_id = u.id
+                WHERE r.id IN ($placeholders)
+                ORDER BY FIELD(r.id, $placeholders)
+            ";
+            $params = array_merge($selectedIds, $selectedIds);
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+            $displayReviews = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } else {
+            // Fallback: fetch top 6 approved reviews if none specifically selected
+            $stmt = $db->query("
+                SELECT 
+                    r.*,
+                    p.name AS product_name,
+                    p.id AS product_id,
+                    (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS product_image,
+                    u.name AS reviewer_name
+                FROM reviews r
+                JOIN products p ON r.product_id = p.id
+                JOIN users u ON r.user_id = u.id
+                WHERE r.is_approved = 1
+                ORDER BY r.created_at DESC
+                LIMIT 6
+            ");
+            $displayReviews = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        }
+        if (class_exists('\Core\Cache') && !empty($displayReviews)) {
+            \Core\Cache::set($revCacheKey, $displayReviews, 3600);
+        }
+    } catch (\Exception $e) {
+        $displayReviews = [];
     }
-} catch (\Exception $e) {
-    $displayReviews = [];
 }
 
 if (empty($displayReviews)) {
@@ -157,10 +166,11 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
                         $reviewerName = !empty($rev['reviewer_name']) ? $rev['reviewer_name'] : 'Verified Buyer';
                         $initials = strtoupper(substr($reviewerName, 0, 1));
                         
-                        $productImg = !empty($rev['product_image']) ? $rev['product_image'] : 'https://placehold.co/100x100?text=Product';
-                        if (!str_starts_with($productImg, 'http') && !str_starts_with($productImg, '/')) {
-                            $productImg = '/' . ltrim($productImg, '/');
+                        $rawProductImg = !empty($rev['product_image']) ? $rev['product_image'] : 'https://placehold.co/100x100?text=Product';
+                        if (!str_starts_with($rawProductImg, 'http') && !str_starts_with($rawProductImg, '/')) {
+                            $rawProductImg = '/' . ltrim($rawProductImg, '/');
                         }
+                        $productImg = get_image_url($rawProductImg, 60, 60);
                         $dateStr = !empty($rev['created_at']) ? date('M j, Y', strtotime($rev['created_at'])) : '';
                     ?>
                     <div class="rev-slide flex-shrink-0 px-2 sm:px-2.5 flex flex-col justify-stretch" style="width: <?= 100 / $cardsDesktop ?>%;">
@@ -219,7 +229,7 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
                                 <!-- Optional Product Pill -->
                                 <?php if ($showProduct && !empty($rev['product_name'])): ?>
                                     <a href="<?= BASE_URL ?>/product?id=<?= $rev['product_id'] ?>" class="flex items-center gap-2 p-1.5 px-2 rounded-lg bg-gray-50/80 hover:bg-gray-100/90 transition-colors group/item">
-                                        <img src="<?= htmlspecialchars($productImg) ?>" class="w-6 h-6 rounded-md object-cover border border-gray-100 flex-shrink-0" alt="<?= htmlspecialchars($rev['product_name']) ?>">
+                                        <img src="<?= htmlspecialchars($productImg) ?>" class="w-6 h-6 rounded-md object-cover border border-gray-100 flex-shrink-0" alt="<?= htmlspecialchars($rev['product_name']) ?>" loading="lazy" decoding="async" width="24" height="24">
                                         <span class="text-[11px] text-gray-600 font-medium truncate group-hover/item:text-gray-900 transition-colors" title="<?= htmlspecialchars($rev['product_name']) ?>">
                                             <?= htmlspecialchars($rev['product_name']) ?>
                                         </span>

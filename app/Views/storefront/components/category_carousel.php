@@ -50,18 +50,29 @@ if (!empty($theme['value'])) {
 // Find actual category data: either from selected category IDs or active categories
 $carouselCategories = [];
 if (!empty($category_ids) && is_array($category_ids)) {
-    $db = \Core\Database::getInstance();
     $inClause = implode(',', array_map('intval', $category_ids));
     if (!empty($inClause)) {
-        $catsFromDb = $db->query("SELECT id, name, slug, image_path, is_customizable FROM categories WHERE id IN ($inClause) AND status = 'active'")->fetchAll(\PDO::FETCH_ASSOC);
-        $catsById = [];
-        foreach ($catsFromDb as $cdb) {
-            $catsById[$cdb['id']] = $cdb;
-        }
-        foreach ($category_ids as $cid) {
-            if (isset($catsById[$cid])) {
-                $carouselCategories[] = $catsById[$cid];
-            }
+        $catCarCacheKey = 'cms_cat_carousel_' . md5($inClause);
+        $cachedCats = class_exists('\Core\Cache') ? \Core\Cache::get($catCarCacheKey) : null;
+        if ($cachedCats !== null) {
+            $carouselCategories = $cachedCats;
+        } else {
+            try {
+                $db = \Core\Database::getInstance();
+                $catsFromDb = $db->query("SELECT id, name, slug, image_path, is_customizable FROM categories WHERE id IN ($inClause) AND status = 'active'")->fetchAll(\PDO::FETCH_ASSOC);
+                $catsById = [];
+                foreach ($catsFromDb as $cdb) {
+                    $catsById[$cdb['id']] = $cdb;
+                }
+                foreach ($category_ids as $cid) {
+                    if (isset($catsById[$cid])) {
+                        $carouselCategories[] = $catsById[$cid];
+                    }
+                }
+                if (class_exists('\Core\Cache') && !empty($carouselCategories)) {
+                    \Core\Cache::set($catCarCacheKey, $carouselCategories, 3600);
+                }
+            } catch (\Exception $e) {}
         }
     }
 }
@@ -306,7 +317,8 @@ if (empty($carouselCategories) && isset($categories) && is_array($categories)) {
                                 </div>
                             <?php else: ?>
                                 <?php foreach ($carouselCategories as $cat): 
-                                    $img = !empty($cat['image_path']) ? (str_starts_with($cat['image_path'], 'http') ? $cat['image_path'] : (BASE_URL . '/' . ltrim($cat['image_path'], '/'))) : 'https://placehold.co/400?text=' . urlencode($cat['name']);
+                                    $rawImg = !empty($cat['image_path']) ? (str_starts_with($cat['image_path'], 'http') ? $cat['image_path'] : (BASE_URL . '/' . ltrim($cat['image_path'], '/'))) : 'https://placehold.co/400?text=' . urlencode($cat['name']);
+                                    $img = get_image_url($rawImg, 300, 300);
                                 ?>
                                     <!-- Slide Item -->
                                     <div class="slide-item flex-none">
@@ -326,7 +338,7 @@ if (empty($carouselCategories) && isset($categories) && is_array($categories)) {
                                                         </span>
                                                     </div>
                                                 <?php endif; ?>
-                                                <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($cat['name']) ?>" class="w-full h-full <?= $objectFitClass ?> group-hover:scale-105 transition-transform duration-500" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
+                                                <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($cat['name']) ?>" width="200" height="200" loading="lazy" decoding="async" class="w-full h-full <?= $objectFitClass ?> group-hover:scale-105 transition-transform duration-500" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
                                             </div>
                                             <h3 class="category-name font-serif font-bold text-center leading-snug tracking-wide" style="font-size: 1rem; color: <?= htmlspecialchars($text_color) ?>;"><?= htmlspecialchars($cat['name']) ?></h3>
                                         </a>

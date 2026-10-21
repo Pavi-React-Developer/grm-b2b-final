@@ -22,13 +22,24 @@ class CatalogController extends Controller
         $attributeFilters = $_GET['attr'] ?? [];
         $sort = in_array($_GET['sort'] ?? '', ['newest','price_asc','price_desc']) ? $_GET['sort'] : 'newest';
         
-        $products = $productModel->getAllActive($searchQuery, $categoryId, $subCategoryId, $attributeFilters, $sort);
-        
-        // Attach variants to each product (batch loaded in a single query to eliminate N+1 latency)
-        $pIds = array_column($products, 'id');
-        $variantsMap = $productModel->getInventoryVariantsForProducts($pIds);
-        foreach ($products as &$product) {
-            $product['variants'] = $variantsMap[$product['id']] ?? [];
+        $isDefaultCatalog = ($searchQuery === null && $categoryId === null && $subCategoryId === null && empty($attributeFilters) && $sort === 'newest');
+        $catCacheKey = $isDefaultCatalog ? 'catalog_default_products' : null;
+        $cachedProducts = ($catCacheKey && class_exists('\Core\Cache')) ? \Core\Cache::get($catCacheKey) : null;
+
+        if ($cachedProducts !== null) {
+            $products = $cachedProducts;
+        } else {
+            $products = $productModel->getAllActive($searchQuery, $categoryId, $subCategoryId, $attributeFilters, $sort);
+            
+            // Attach variants to each product (batch loaded in a single query to eliminate N+1 latency)
+            $pIds = array_column($products, 'id');
+            $variantsMap = $productModel->getInventoryVariantsForProducts($pIds);
+            foreach ($products as &$product) {
+                $product['variants'] = $variantsMap[$product['id']] ?? [];
+            }
+            if ($catCacheKey && class_exists('\Core\Cache')) {
+                \Core\Cache::set($catCacheKey, $products, 600);
+            }
         }
         
         $categoryModel = new Category();

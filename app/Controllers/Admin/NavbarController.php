@@ -37,11 +37,16 @@ class NavbarController extends Controller
     public function create()
     {
         $db = \Core\Database::getInstance();
-        $categories = $db->query("SELECT id, name, slug FROM categories WHERE status = 'active' ORDER BY name ASC")->fetchAll();
+        $categories = $db->query("SELECT id, name, slug, is_customizable FROM categories WHERE status = 'active' ORDER BY name ASC")->fetchAll();
+
+        $normalCategories = array_values(array_filter($categories, fn($c) => empty($c['is_customizable'])));
+        $customizeCategories = array_values(array_filter($categories, fn($c) => !empty($c['is_customizable'])));
 
         $this->render('admin/cms/navbars/create', [
             'title' => 'New Navbar Configuration',
-            'categories' => $categories
+            'categories' => $categories,
+            'normalCategories' => $normalCategories,
+            'customizeCategories' => $customizeCategories
         ], 'admin');
     }
 
@@ -92,7 +97,9 @@ class NavbarController extends Controller
                     }
                 }
 
-                $hasAutoFill = !empty($_POST['menu_item_auto_fill'][$index]);
+                $hasAutoFillCatalog = !empty($_POST['menu_item_auto_fill'][$index]);
+                $hasAutoFillCustomize = !empty($_POST['menu_item_auto_fill_customize'][$index]);
+                $hasAutoFill = $hasAutoFillCatalog || $hasAutoFillCustomize;
                 $isDropdown = (!empty($_POST['menu_item_is_dropdown'][$index]) || !empty($subItems) || $hasAutoFill) ? 1 : 0;
 
                 $contentDataArray['menu_items'][] = [
@@ -100,6 +107,7 @@ class NavbarController extends Controller
                     'cta_url' => $_POST['menu_item_cta_url'][$index] ?? '',
                     'position' => $_POST['menu_item_position'][$index] ?? 'Left',
                     'auto_fill_catalog' => $_POST['menu_item_auto_fill'][$index] ?? [],
+                    'auto_fill_customize' => $_POST['menu_item_auto_fill_customize'][$index] ?? [],
                     'text_color' => $_POST['menu_item_text_color'][$index] ?? '',
                     'bg_color' => $_POST['menu_item_bg_color'][$index] ?? '',
                     'dropdown_bg_color' => $_POST['menu_item_dropdown_bg_color'][$index] ?? '#ffffff',
@@ -126,6 +134,7 @@ class NavbarController extends Controller
         \Core\Cache::delete('cms_layout_home');
         \Core\Cache::delete('layout_main_components');
         \Core\Cache::delete('layout_admin_navbar');
+        \Core\Cache::deleteByPrefix('nav_drop_v2_subcats_');
         Session::setFlash('success', 'Navbar created successfully.');
         $this->redirect('/admin/cms/navbars');
     }
@@ -144,12 +153,17 @@ class NavbarController extends Controller
         $navbar['content'] = json_decode($navbar['content_data'], true) ?: [];
 
         $db = \Core\Database::getInstance();
-        $categories = $db->query("SELECT id, name, slug FROM categories WHERE status = 'active' ORDER BY name ASC")->fetchAll();
+        $categories = $db->query("SELECT id, name, slug, is_customizable FROM categories WHERE status = 'active' ORDER BY name ASC")->fetchAll();
+
+        $normalCategories = array_values(array_filter($categories, fn($c) => empty($c['is_customizable'])));
+        $customizeCategories = array_values(array_filter($categories, fn($c) => !empty($c['is_customizable'])));
 
         $this->render('admin/cms/navbars/edit', [
             'title' => 'Edit Navbar Configuration',
             'navbar' => $navbar,
-            'categories' => $categories
+            'categories' => $categories,
+            'normalCategories' => $normalCategories,
+            'customizeCategories' => $customizeCategories
         ], 'admin');
     }
 
@@ -207,7 +221,9 @@ class NavbarController extends Controller
                     }
                 }
 
-                $hasAutoFill = !empty($_POST['menu_item_auto_fill'][$index]);
+                $hasAutoFillCatalog = !empty($_POST['menu_item_auto_fill'][$index]);
+                $hasAutoFillCustomize = !empty($_POST['menu_item_auto_fill_customize'][$index]);
+                $hasAutoFill = $hasAutoFillCatalog || $hasAutoFillCustomize;
                 $isDropdown = (!empty($_POST['menu_item_is_dropdown'][$index]) || !empty($subItems) || $hasAutoFill) ? 1 : 0;
 
                 $contentDataArray['menu_items'][] = [
@@ -215,6 +231,7 @@ class NavbarController extends Controller
                     'cta_url' => $_POST['menu_item_cta_url'][$index] ?? '',
                     'position' => $_POST['menu_item_position'][$index] ?? 'Left',
                     'auto_fill_catalog' => $_POST['menu_item_auto_fill'][$index] ?? [],
+                    'auto_fill_customize' => $_POST['menu_item_auto_fill_customize'][$index] ?? [],
                     'text_color' => $_POST['menu_item_text_color'][$index] ?? '',
                     'bg_color' => $_POST['menu_item_bg_color'][$index] ?? '',
                     'dropdown_bg_color' => $_POST['menu_item_dropdown_bg_color'][$index] ?? '#ffffff',
@@ -238,6 +255,7 @@ class NavbarController extends Controller
         \Core\Cache::delete('cms_layout_home');
         \Core\Cache::delete('layout_main_components');
         \Core\Cache::delete('layout_admin_navbar');
+        \Core\Cache::deleteByPrefix('nav_drop_v2_subcats_');
         Session::setFlash('success', 'Navbar updated successfully.');
         $this->redirect('/admin/cms/navbars');
     }

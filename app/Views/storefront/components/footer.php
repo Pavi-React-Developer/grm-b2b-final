@@ -80,8 +80,10 @@ $gridTemplate = implode(' ', $gridParts);
 
             <!-- Col 1: Brand + Description + Social -->
             <div style="display:flex; flex-direction:column; gap:1.25rem; padding-right:1rem;">
-                <?php if ($logo): ?>
-                    <img src="<?= htmlspecialchars($logo) ?>" alt="Store Logo" style="height:3rem; width:auto; object-fit:contain;">
+                <?php if ($logo): 
+                    $optFooterLogo = get_image_url($logo);
+                ?>
+                    <img src="<?= htmlspecialchars($optFooterLogo) ?>" alt="Store Logo" style="height:3rem; width:auto; object-fit:contain;" loading="lazy" decoding="async" width="160" height="48">
                 <?php else: ?>
                     <div style="font-size:1.25rem; font-weight:700; line-height:1.2; color:<?= htmlspecialchars($headingColor) ?>; font-family: 'Inter', 'Segoe UI', sans-serif;">GRM B2B</div>
                 <?php endif; ?>

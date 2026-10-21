@@ -69,11 +69,14 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
         <!-- Slide Track -->
         <div class="slider-track-mb w-full h-full absolute inset-0 rounded-inherit overflow-hidden" id="<?= $sliderId ?>">
             <?php foreach($mediaItems as $idx => $m): 
-                $dUrl = trim((string)($m['desktop'] ?? ''));
-                $mUrl = trim((string)($m['mobile'] ?? ''));
-                if ($dUrl === '' && $mUrl !== '') $dUrl = $mUrl;
-                if ($mUrl === '' && $dUrl !== '') $mUrl = $dUrl;
-                if ($dUrl === '') continue;
+                $dRaw = trim((string)($m['desktop'] ?? ''));
+                $mRaw = trim((string)($m['mobile'] ?? ''));
+                if ($dRaw === '' && $mRaw !== '') $dRaw = $mRaw;
+                if ($mRaw === '' && $dRaw !== '') $mRaw = $dRaw;
+                if ($dRaw === '') continue;
+
+                $dUrl = get_image_url($dRaw, 1600, 800);
+                $mUrl = get_image_url($mRaw, 800, 800);
 
                 $overlayOpacity = isset($m['opacity']) && $m['opacity'] !== '' ? (float)$m['opacity'] : 0;
                 $overlayFrac = $overlayOpacity > 1 ? ($overlayOpacity / 100) : $overlayOpacity;
@@ -87,30 +90,30 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
                     return $defaultType === 'video';
                 };
 
-                $dIsVideo = $checkIsVideo($dUrl);
-                $mIsVideo = $checkIsVideo($mUrl);
-                $isSameMedia = ($dUrl === $mUrl && $dIsVideo === $mIsVideo);
+                $dIsVideo = $checkIsVideo($dRaw);
+                $mIsVideo = $checkIsVideo($mRaw);
+                $isSameMedia = ($dRaw === $mRaw && $dIsVideo === $mIsVideo);
             ?>
                 <div class="slide-mb absolute inset-0 w-full h-full transition-all duration-700 ease-in-out <?= $idx === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0' ?>" data-index="<?= $idx ?>">
                     <?php if ($isSameMedia): ?>
                         <?php if ($dIsVideo): ?>
                             <video src="<?= htmlspecialchars($dUrl) ?>" autoplay loop muted playsinline class="absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>"></video>
                         <?php else: ?>
-                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>">
+                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>" loading="<?= $idx === 0 ? 'eager' : 'lazy' ?>" decoding="async" width="1600" height="800">
                         <?php endif; ?>
                     <?php else: ?>
                         <!-- Desktop Media (>= 768px) -->
                         <?php if ($dIsVideo): ?>
                             <video src="<?= htmlspecialchars($dUrl) ?>" autoplay loop muted playsinline class="hidden md:block absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>"></video>
                         <?php else: ?>
-                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="hidden md:block absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>">
+                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="hidden md:block absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>" loading="<?= $idx === 0 ? 'eager' : 'lazy' ?>" decoding="async" width="1600" height="800">
                         <?php endif; ?>
 
                         <!-- Mobile Media (< 768px) -->
                         <?php if ($mIsVideo): ?>
                             <video src="<?= htmlspecialchars($mUrl) ?>" autoplay loop muted playsinline class="block md:hidden absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>"></video>
                         <?php else: ?>
-                            <img src="<?= htmlspecialchars($mUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="block md:hidden absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>">
+                            <img src="<?= htmlspecialchars($mUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="block md:hidden absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>" loading="<?= $idx === 0 ? 'eager' : 'lazy' ?>" decoding="async" width="800" height="800">
                         <?php endif; ?>
                     <?php endif; ?>
 
@@ -398,11 +401,12 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
                     if (!$prod) continue;
                     
                     $imgPath = $prod['main_image'] ?? '';
-                    $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                    $rawImg = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                    $img = get_image_url($rawImg, 400, 400);
                 ?>
                     <div class="swiper-slide w-full h-full relative">
                         <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="block w-full h-full absolute inset-0">
-                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>">
+                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" loading="lazy" decoding="async" width="400" height="400">
                             <div class="absolute inset-0 bg-black/10 transition-opacity hover:bg-black/20"></div>
                         </a>
                     </div>
@@ -464,11 +468,12 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
                     if (!$cat) continue;
                     
                     $imgPath = $cat['image_path'] ?? '';
-                    $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($cat['name']);
+                    $rawImg = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($cat['name']);
+                    $img = get_image_url($rawImg, 400, 400);
                 ?>
                     <div class="swiper-slide w-full h-full relative">
                         <a href="<?= BASE_URL ?>/catalog?category=<?= $cat['id'] ?>" class="block w-full h-full absolute inset-0">
-                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>">
+                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" loading="lazy" decoding="async" width="400" height="400">
                             <div class="absolute inset-0 bg-black/10 transition-opacity hover:bg-black/20"></div>
                         </a>
                     </div>
@@ -527,11 +532,12 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
             <div class="swiper-wrapper h-full">
                 <?php foreach(array_slice($items, 0, 8) as $prod): 
                     $imgPath = $prod['main_image'] ?? '';
-                    $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                    $rawImg = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                    $img = get_image_url($rawImg, 400, 400);
                 ?>
                     <div class="swiper-slide w-full h-full relative">
                         <a href="<?= BASE_URL ?>/fabrics/customize?fabric_id=<?= (int)$prod['id'] ?>" class="block w-full h-full absolute inset-0" title="<?= htmlspecialchars($prod['name']) ?>">
-                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($prod['name']) ?>">
+                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($prod['name']) ?>" loading="lazy" decoding="async" width="400" height="400">
                             <div class="absolute inset-0 bg-black/10 transition-opacity hover:bg-black/20"></div>
                         </a>
                     </div>
@@ -586,11 +592,12 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
                     if (!$prod) continue;
                     
                     $imgPath = $prod['main_image'] ?? '';
-                    $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                    $rawImg = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                    $img = get_image_url($rawImg, 400, 400);
                 ?>
                     <div class="swiper-slide w-full h-full relative">
                         <a href="<?= BASE_URL ?>/fabrics/customize?fabric_id=<?= (int)$prod['id'] ?>" class="block w-full h-full absolute inset-0" title="<?= htmlspecialchars($prod['name']) ?>">
-                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($prod['name']) ?>">
+                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($prod['name']) ?>" loading="lazy" decoding="async" width="400" height="400">
                             <div class="absolute inset-0 bg-black/10 transition-opacity hover:bg-black/20"></div>
                         </a>
                     </div>
@@ -649,11 +656,12 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
             <div class="swiper-wrapper h-full">
                 <?php foreach(array_slice($items, 0, 8) as $cat): 
                     $imgPath = $cat['image_path'] ?? '';
-                    $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($cat['name']);
+                    $rawImg = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($cat['name']);
+                    $img = get_image_url($rawImg, 400, 400);
                 ?>
                     <div class="swiper-slide w-full h-full relative">
                         <a href="<?= BASE_URL ?>/customize?category_id=<?= (int)$cat['id'] ?>" class="block w-full h-full absolute inset-0" title="<?= htmlspecialchars($cat['name']) ?>">
-                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($cat['name']) ?>">
+                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($cat['name']) ?>" loading="lazy" decoding="async" width="400" height="400">
                             <div class="absolute inset-0 bg-black/10 transition-opacity hover:bg-black/20"></div>
                         </a>
                     </div>
@@ -708,11 +716,12 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
                     if (!$cat) continue;
                     
                     $imgPath = $cat['image_path'] ?? '';
-                    $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($cat['name']);
+                    $rawImg = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($cat['name']);
+                    $img = get_image_url($rawImg, 400, 400);
                 ?>
                     <div class="swiper-slide w-full h-full relative">
                         <a href="<?= BASE_URL ?>/customize?category_id=<?= (int)$cat['id'] ?>" class="block w-full h-full absolute inset-0" title="<?= htmlspecialchars($cat['name']) ?>">
-                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($cat['name']) ?>">
+                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($cat['name']) ?>" loading="lazy" decoding="async" width="400" height="400">
                             <div class="absolute inset-0 bg-black/10 transition-opacity hover:bg-black/20"></div>
                         </a>
                     </div>
@@ -887,9 +896,7 @@ $mobileContainerHeight = !empty($contentData['mobile_container_height']) ? $cont
 if (is_numeric($mobileContainerHeight)) $mobileContainerHeight .= 'vh';
 ?>
 
-<!-- Swiper CSS/JS -->
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<!-- Swiper assets are loaded deferred in <head> -->
 
 <style>
 <?php foreach ($sectionsData as $prefix => $data):
