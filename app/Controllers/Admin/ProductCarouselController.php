@@ -54,12 +54,16 @@ class ProductCarouselController extends Controller
     public function create()
     {
         $categories = $this->categoryModel->getAll(0);
-        $products = $this->productModel->getAllActive(null, null, null, [], 'newest', 0);
+        $customCategories = $this->categoryModel->getAll(1);
+        $normalProducts = $this->productModel->getAllActive(null, null, null, [], 'newest', 0);
+        $customProducts = $this->productModel->getAllActive(null, null, null, [], 'newest', 1);
+        $products = array_merge($normalProducts, $customProducts);
         $vendors = is_vendor_module_enabled() ? $this->userModel->getActiveVendors() : [];
 
         $this->render('admin/cms/product_carousels/create', [
             'title' => 'New Product Carousel',
             'categories' => $categories,
+            'customCategories' => $customCategories,
             'products' => $products,
             'vendors' => $vendors
         ], 'admin');
@@ -142,13 +146,17 @@ class ProductCarouselController extends Controller
         $carousel['content'] = json_decode($carousel['content_data'], true) ?: [];
         
         $categories = $this->categoryModel->getAll(0);
-        $products = $this->productModel->getAllActive(null, null, null, [], 'newest', 0);
+        $customCategories = $this->categoryModel->getAll(1);
+        $normalProducts = $this->productModel->getAllActive(null, null, null, [], 'newest', 0);
+        $customProducts = $this->productModel->getAllActive(null, null, null, [], 'newest', 1);
+        $products = array_merge($normalProducts, $customProducts);
         $vendors = is_vendor_module_enabled() ? $this->userModel->getActiveVendors() : [];
 
         $this->render('admin/cms/product_carousels/edit', [
             'title' => 'Edit Product Carousel',
             'carousel' => $carousel,
             'categories' => $categories,
+            'customCategories' => $customCategories,
             'products' => $products,
             'vendors' => $vendors
         ], 'admin');

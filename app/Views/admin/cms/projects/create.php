@@ -191,12 +191,15 @@
 
 <script>
 // Image Management Logic
-let imageList = [];
+let imageFilesDataTransfer = new DataTransfer();
 
 function updateImageCount() {
     const count = document.querySelectorAll('.image-item-card').length;
     document.getElementById('imageCount').innerText = count;
-    document.getElementById('imageEmptyNotice').style.display = count === 0 ? 'block' : 'none';
+    const emptyNotice = document.getElementById('imageEmptyNotice');
+    if (emptyNotice) {
+        emptyNotice.style.display = count === 0 ? 'block' : 'none';
+    }
 }
 
 function addImageCard(url) {
@@ -207,12 +210,19 @@ function addImageCard(url) {
     card.innerHTML = `
         <img src="${url}" class="w-full h-full object-cover">
         <input type="hidden" name="image_urls[]" value="${url}">
-        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
-            <button type="button" onclick="this.closest('.image-item-card').remove(); updateImageCount();" class="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full shadow-md text-xs font-bold transition-transform hover:scale-110">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        <!-- Top Right Delete Button (Always Visible & Accessible) -->
+        <button type="button" onclick="this.closest('.image-item-card').remove(); updateImageCount();" 
+                class="absolute top-2 right-2 z-10 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full shadow-md transition-all hover:scale-110 flex items-center justify-center" title="Remove image">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </button>
+        <!-- Center Hover Overlay -->
+        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 pointer-events-none group-hover:pointer-events-auto">
+            <button type="button" onclick="this.closest('.image-item-card').remove(); updateImageCount();" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-full shadow-md text-xs font-bold transition-transform hover:scale-105 flex items-center gap-1.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                Remove
             </button>
         </div>
-        <div class="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-mono truncate max-w-[90%]">
+        <div class="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded font-mono truncate max-w-[85%]">
             URL / Cloudinary
         </div>
     `;
@@ -233,13 +243,30 @@ function previewSelectedImageFiles(input) {
     const grid = document.getElementById('imageGalleryGrid');
     
     Array.from(input.files).forEach(file => {
+        const fileId = 'img_f_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        file._fileId = fileId;
+        imageFilesDataTransfer.items.add(file);
+        
         const reader = new FileReader();
         reader.onload = function(e) {
             const card = document.createElement('div');
             card.className = 'image-item-card relative group rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-xs aspect-square';
+            card.dataset.fileId = fileId;
             card.innerHTML = `
                 <img src="${e.target.result}" class="w-full h-full object-cover">
-                <div class="absolute bottom-1 left-1 bg-emerald-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold truncate max-w-[90%]">
+                <!-- Top Right Delete Button (Always Visible) -->
+                <button type="button" onclick="removeSelectedImageFile('${fileId}', this)" 
+                        class="absolute top-2 right-2 z-10 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full shadow-md transition-all hover:scale-110 flex items-center justify-center" title="Remove image">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
+                <!-- Center Hover Overlay -->
+                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 pointer-events-none group-hover:pointer-events-auto">
+                    <button type="button" onclick="removeSelectedImageFile('${fileId}', this)" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-full shadow-md text-xs font-bold transition-transform hover:scale-105 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Remove
+                    </button>
+                </div>
+                <div class="absolute bottom-1 left-1 bg-emerald-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold truncate max-w-[85%]">
                     New File: ${file.name}
                 </div>
             `;
@@ -248,13 +275,40 @@ function previewSelectedImageFiles(input) {
         };
         reader.readAsDataURL(file);
     });
+
+    input.files = imageFilesDataTransfer.files;
+}
+
+function removeSelectedImageFile(fileId, btn) {
+    const card = btn.closest('.image-item-card');
+    if (card) {
+        card.remove();
+    }
+    const newDT = new DataTransfer();
+    for (let i = 0; i < imageFilesDataTransfer.files.length; i++) {
+        const file = imageFilesDataTransfer.files[i];
+        if (file._fileId !== fileId) {
+            newDT.items.add(file);
+        }
+    }
+    imageFilesDataTransfer = newDT;
+    const input = document.getElementById('imageFileInput');
+    if (input) {
+        input.files = imageFilesDataTransfer.files;
+    }
+    updateImageCount();
 }
 
 // Video Management Logic
+let videoFilesDataTransfer = new DataTransfer();
+
 function updateVideoCount() {
     const count = document.querySelectorAll('.video-item-card').length;
     document.getElementById('videoCount').innerText = count;
-    document.getElementById('videoEmptyNotice').style.display = count === 0 ? 'block' : 'none';
+    const emptyNotice = document.getElementById('videoEmptyNotice');
+    if (emptyNotice) {
+        emptyNotice.style.display = count === 0 ? 'block' : 'none';
+    }
 }
 
 function addVideoCard(url, type = 'url') {
@@ -276,7 +330,13 @@ function addVideoCard(url, type = 'url') {
     }
 
     card.innerHTML = `
-        ${previewHtml}
+        <div class="relative">
+            ${previewHtml}
+            <button type="button" onclick="this.closest('.video-item-card').remove(); updateVideoCount();" 
+                    class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full shadow-md transition-all hover:scale-110 flex items-center justify-center z-10" title="Remove video">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+        </div>
         <input type="hidden" name="video_urls[]" value="${url}">
         <div class="mt-2 flex items-center justify-between gap-2">
             <span class="text-[11px] font-mono text-gray-500 truncate" title="${url}">${url}</span>
@@ -362,19 +422,55 @@ function previewSelectedVideoFiles(input) {
     const grid = document.getElementById('videoGalleryGrid');
 
     Array.from(input.files).forEach(file => {
+        const fileId = 'vid_f_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
+        file._fileId = fileId;
+        videoFilesDataTransfer.items.add(file);
+
         const card = document.createElement('div');
         card.className = 'video-item-card relative rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-xs p-3';
+        card.dataset.fileId = fileId;
         card.innerHTML = `
-            <div class="aspect-video bg-indigo-950 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-col gap-1 p-2">
+            <div class="aspect-video bg-indigo-950 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-col gap-1 p-2 relative">
+                <button type="button" onclick="removeSelectedVideoFile('${fileId}', this)" 
+                        class="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full shadow-md transition-all hover:scale-110 flex items-center justify-center z-10" title="Remove video">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                </button>
                 <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
                 <span class="truncate max-w-full font-mono text-[11px]">${file.name}</span>
             </div>
-            <div class="mt-2 text-[11px] font-bold text-indigo-600">
-                New Video File: ${(file.size / (1024*1024)).toFixed(2)} MB
+            <div class="mt-2 flex items-center justify-between gap-2">
+                <span class="text-[11px] font-bold text-indigo-600">
+                    New Video: ${(file.size / (1024*1024)).toFixed(2)} MB
+                </span>
+                <button type="button" onclick="removeSelectedVideoFile('${fileId}', this)" class="text-red-500 hover:text-red-700 text-xs font-bold transition-colors">
+                    Remove
+                </button>
             </div>
         `;
         grid.appendChild(card);
         updateVideoCount();
     });
+
+    input.files = videoFilesDataTransfer.files;
+}
+
+function removeSelectedVideoFile(fileId, btn) {
+    const card = btn.closest('.video-item-card');
+    if (card) {
+        card.remove();
+    }
+    const newDT = new DataTransfer();
+    for (let i = 0; i < videoFilesDataTransfer.files.length; i++) {
+        const file = videoFilesDataTransfer.files[i];
+        if (file._fileId !== fileId) {
+            newDT.items.add(file);
+        }
+    }
+    videoFilesDataTransfer = newDT;
+    const input = document.getElementById('videoFileInput');
+    if (input) {
+        input.files = videoFilesDataTransfer.files;
+    }
+    updateVideoCount();
 }
 </script>

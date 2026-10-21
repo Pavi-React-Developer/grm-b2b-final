@@ -274,26 +274,26 @@ $curAnimation = $content['animation'] ?? 'fade';
                         <input type="number" name="autoplay_speed" value="<?= (int)($content['autoplay_speed'] ?? 4) ?>" min="2" max="15" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs focus:ring-2 focus:ring-[#F25996] focus:border-transparent">
                     </div>
 
-                    <!-- Desktop Cards Count -->
-                    <?php $cardsD = (int)($content['cards_desktop'] ?? 3); ?>
+                    <!-- Desktop Count -->
+                    <?php $cardsD = (int)($content['desktop_count'] ?? $content['cards_desktop'] ?? 3); ?>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">Cards Visible on Desktop</label>
-                        <select name="cards_desktop" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs focus:ring-2 focus:ring-[#F25996] focus:border-transparent">
-                            <option value="1" <?= $cardsD === 1 ? 'selected' : '' ?>>1 Card (Full Focus)</option>
-                            <option value="2" <?= $cardsD === 2 ? 'selected' : '' ?>>2 Cards (Side by side)</option>
-                            <option value="3" <?= $cardsD === 3 ? 'selected' : '' ?>>3 Cards (Recommended)</option>
-                            <option value="4" <?= $cardsD === 4 ? 'selected' : '' ?>>4 Cards (Compact)</option>
-                        </select>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-700">Desktop Count</label>
+                            <span class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-black">Desktop View</span>
+                        </div>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" name="desktop_count" value="<?= htmlspecialchars((string)$cardsD) ?>" required class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold focus:ring-2 focus:ring-[#F25996] focus:border-transparent" placeholder="3">
+                        <p class="text-[11px] text-gray-400 mt-1">Cards visible on desktop (e.g. 3, 4)</p>
                     </div>
 
-                    <!-- Tablet Cards Count -->
-                    <?php $cardsT = (int)($content['cards_tablet'] ?? 2); ?>
+                    <!-- Mobile Count -->
+                    <?php $cardsM = (int)($content['mobile_count'] ?? $content['cards_mobile'] ?? $content['cards_tablet'] ?? 1); ?>
                     <div>
-                        <label class="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">Cards Visible on Tablet</label>
-                        <select name="cards_tablet" class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs focus:ring-2 focus:ring-[#F25996] focus:border-transparent">
-                            <option value="1" <?= $cardsT === 1 ? 'selected' : '' ?>>1 Card</option>
-                            <option value="2" <?= $cardsT === 2 ? 'selected' : '' ?>>2 Cards</option>
-                        </select>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-bold uppercase tracking-wider text-gray-700">Mobile Count</label>
+                            <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-black">Mobile View</span>
+                        </div>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" name="mobile_count" value="<?= htmlspecialchars((string)$cardsM) ?>" required class="w-full px-3 py-2 rounded-xl border border-gray-200 bg-white text-xs font-bold focus:ring-2 focus:ring-[#F25996] focus:border-transparent" placeholder="1">
+                        <p class="text-[11px] text-gray-400 mt-1">Cards visible on mobile (e.g. 1, 2)</p>
                     </div>
 
                     <!-- Show Product Info -->
@@ -378,6 +378,22 @@ $curAnimation = $content['animation'] ?? 'fade';
                         <div class="flex items-center gap-2 color-sync-group">
                             <input type="color" value="<?= htmlspecialchars($content['card_bg_color'] ?? '#ffffff') ?>" class="color-picker w-8 h-8 rounded-lg cursor-pointer border border-gray-200 p-0 shadow-xs">
                             <input type="text" name="card_bg_color" value="<?= htmlspecialchars($content['card_bg_color'] ?? '#ffffff') ?>" placeholder="#ffffff" class="color-hex w-24 px-2 py-1 text-xs font-mono text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-gray-300 focus:border-[#F25996] focus:ring-1 focus:ring-pink-200 outline-none uppercase transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-medium text-gray-700">Title Color</span>
+                        <div class="flex items-center gap-2 color-sync-group">
+                            <input type="color" value="<?= htmlspecialchars($content['title_color'] ?? '#111827') ?>" class="color-picker w-8 h-8 rounded-lg cursor-pointer border border-gray-200 p-0 shadow-xs">
+                            <input type="text" name="title_color" value="<?= htmlspecialchars($content['title_color'] ?? '#111827') ?>" placeholder="#111827" class="color-hex w-24 px-2 py-1 text-xs font-mono text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-gray-300 focus:border-[#F25996] focus:ring-1 focus:ring-pink-200 outline-none uppercase transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-medium text-gray-700">Subtitle Color</span>
+                        <div class="flex items-center gap-2 color-sync-group">
+                            <input type="color" value="<?= htmlspecialchars($content['subtitle_color'] ?? '#6b7280') ?>" class="color-picker w-8 h-8 rounded-lg cursor-pointer border border-gray-200 p-0 shadow-xs">
+                            <input type="text" name="subtitle_color" value="<?= htmlspecialchars($content['subtitle_color'] ?? '#6b7280') ?>" placeholder="#6b7280" class="color-hex w-24 px-2 py-1 text-xs font-mono text-gray-700 bg-white border border-gray-200 rounded-lg hover:border-gray-300 focus:border-[#F25996] focus:ring-1 focus:ring-pink-200 outline-none uppercase transition-colors">
                         </div>
                     </div>
 

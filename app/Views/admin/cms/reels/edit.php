@@ -4,8 +4,9 @@ $title = $content['title'] ?? '';
 $subtitle = $content['subtitle'] ?? '';
 $deskHeight = $content['desktop_height_vh'] ?? '70';
 $mobHeight = $content['mobile_height_vh'] ?? '55';
-$deskCols = $content['desktop_view_count'] ?? 4;
-$mobCols = $content['mobile_view_count'] ?? 2;
+$deskCols = (float)($content['desktop_count'] ?? $content['desktop_view_count'] ?? $content['cards_desktop'] ?? 4);
+$tabCols = (float)($content['tablet_view_count'] ?? $content['cards_tablet'] ?? 2);
+$mobCols = (float)($content['mobile_count'] ?? $content['mobile_view_count'] ?? $content['cards_mobile'] ?? 2);
 $autoplay = !empty($content['autoplay']);
 $muted = !empty($content['muted']);
 $loop = !empty($content['loop']);
@@ -47,21 +48,24 @@ $items = !empty($content['items']) && is_array($content['items']) ? $content['it
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Section Title -->
-            <div class="lg:col-span-2">
+        <!-- Title & Subtitle -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Section Headline / Title</label>
                 <input type="text" name="title" value="<?= htmlspecialchars($title) ?>" placeholder="e.g. Trending Reels & Live Styles" class="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#F25996]/30 focus:border-[#F25996] outline-none transition-all">
             </div>
 
-            <!-- Section Subtitle -->
-            <div class="lg:col-span-2">
+            <div>
                 <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Section Subtitle / Tagline</label>
                 <input type="text" name="subtitle" value="<?= htmlspecialchars($subtitle) ?>" placeholder="e.g. Tap to watch video and order direct" class="w-full px-4 py-2.5 bg-gray-50/50 border border-gray-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-[#F25996]/30 focus:border-[#F25996] outline-none transition-all">
             </div>
+        </div>
+
+        <!-- Section Dimensions & Responsive Card Counts -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
 
             <!-- Desktop Height in VH -->
-            <div class="bg-gray-50/70 p-4 rounded-2xl border border-gray-100">
+            <div class="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 flex flex-col justify-between">
                 <div class="flex items-center justify-between mb-2">
                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Desktop Height (vh)</label>
                     <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-black">Desktop View</span>
@@ -74,7 +78,7 @@ $items = !empty($content['items']) && is_array($content['items']) ? $content['it
             </div>
 
             <!-- Mobile Height in VH -->
-            <div class="bg-gray-50/70 p-4 rounded-2xl border border-gray-100">
+            <div class="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 flex flex-col justify-between">
                 <div class="flex items-center justify-between mb-2">
                     <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Mobile Height (vh)</label>
                     <span class="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded font-black">Mobile View</span>
@@ -86,28 +90,35 @@ $items = !empty($content['items']) && is_array($content['items']) ? $content['it
                 <p class="text-[11px] text-gray-400 mt-1.5">Recommended: 50vh – 60vh</p>
             </div>
 
-            <!-- Desktop View Count -->
-            <div class="bg-gray-50/70 p-4 rounded-2xl border border-gray-100">
+            <!-- Desktop Count -->
+            <div class="bg-white p-4 rounded-2xl border border-gray-100 flex flex-col justify-between shadow-2xs">
                 <div class="flex items-center justify-between mb-2">
-                    <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Desktop View Count</label>
-                    <span class="text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-black">Columns</span>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-700">Desktop Count</label>
+                    <span class="text-[10px] bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-black">Desktop View</span>
                 </div>
-                <input type="number" step="0.5" min="2" max="8" name="desktop_view_count" value="<?= htmlspecialchars((string)$deskCols) ?>" required class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:ring-2 focus:ring-[#F25996]/30 outline-none">
-                <p class="text-[11px] text-gray-400 mt-1.5">Visible reels on desktop (e.g. 4 or 5)</p>
+                <div class="flex items-center gap-2">
+                    <input type="text" inputmode="decimal" pattern="[0-9.]*" name="desktop_count" value="<?= htmlspecialchars((string)$deskCols) ?>" required class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:ring-2 focus:ring-[#F25996]/30 outline-none" placeholder="4">
+                    <span class="text-xs font-bold text-gray-500">Cards</span>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-1.5">Cards visible on desktop (e.g. 3, 4, 5)</p>
             </div>
 
-            <!-- Mobile View Count -->
-            <div class="bg-gray-50/70 p-4 rounded-2xl border border-gray-100">
+            <!-- Mobile Count -->
+            <div class="bg-white p-4 rounded-2xl border border-gray-100 flex flex-col justify-between shadow-2xs">
                 <div class="flex items-center justify-between mb-2">
-                    <label class="text-xs font-bold text-gray-700 uppercase tracking-wider">Mobile View Count</label>
-                    <span class="text-[10px] bg-pink-100 text-pink-700 px-2 py-0.5 rounded font-black">Columns</span>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-700">Mobile Count</label>
+                    <span class="text-[10px] bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-black">Mobile View</span>
                 </div>
-                <input type="number" step="0.5" min="1" max="4" name="mobile_view_count" value="<?= htmlspecialchars((string)$mobCols) ?>" required class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:ring-2 focus:ring-[#F25996]/30 outline-none">
-                <p class="text-[11px] text-gray-400 mt-1.5">Visible reels on mobile (e.g. 1.5 or 2)</p>
+                <div class="flex items-center gap-2">
+                    <input type="text" inputmode="decimal" pattern="[0-9.]*" name="mobile_count" value="<?= htmlspecialchars((string)$mobCols) ?>" required class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:ring-2 focus:ring-[#F25996]/30 outline-none" placeholder="2">
+                    <span class="text-xs font-bold text-gray-500">Cards</span>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-1.5">Cards visible on mobile (e.g. 1.5, 2)</p>
             </div>
+        </div>
 
-            <!-- Video Player Controls -->
-            <div class="lg:col-span-4 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
+        <!-- Video Player Controls -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
                 <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100/70 transition-colors">
                     <input type="checkbox" name="autoplay" value="1" <?= $autoplay ? 'checked' : '' ?> class="w-4 h-4 text-[#F25996] rounded border-gray-300 focus:ring-[#F25996]">
                     <span class="text-xs font-semibold text-gray-700">Autoplay on Scroll / Hover</span>
@@ -136,7 +147,7 @@ $items = !empty($content['items']) && is_array($content['items']) ? $content['it
             </div>
             <button type="button" onclick="addReelRow()" class="bg-[#F25996] hover:bg-[#e04481] text-white px-5 py-2.5 rounded-full font-bold text-xs uppercase tracking-wider shadow-sm flex items-center gap-2 transition-all hover:scale-105 active:scale-95">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-                + Add Another Reel
+                <span>Add Another Reel</span>
             </button>
         </div>
 

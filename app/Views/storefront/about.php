@@ -1,6 +1,45 @@
-<?php if (!empty($aboutUs)):
+<?php
+if (!function_exists('cmsRenderSvgIcon')) {
+    function cmsRenderSvgIcon(?string $svg): string {
+        if (empty($svg)) return '';
+        $clean = trim($svg);
+        if (stripos($clean, '<svg') === false) return $clean;
+        $clean = preg_replace('/\s*(width|height)=["\'][^"\']*["\']/i', '', $clean);
+        $clean = preg_replace_callback('/<([a-z0-9_-]+)\b([^>]*)>/i', function($matches) {
+            $tag = $matches[1];
+            $attrs = $matches[2];
+            if (strtolower($tag) === 'svg') {
+                $attrs = preg_replace('/\s*fill=["\'][^"\']*["\']/i', '', $attrs);
+                $attrs = preg_replace('/\s*class=["\'][^"\']*["\']/i', '', $attrs);
+                return '<svg ' . trim($attrs) . ' class="w-full h-full" fill="currentColor">';
+            }
+            $attrs = preg_replace('/\s*fill=["\'](?!none\b)[^"\']*["\']/i', '', $attrs);
+            return '<' . $tag . $attrs . '>';
+        }, $clean);
+        return $clean;
+    }
+}
+
+if (!empty($aboutUs)):
     $c = $aboutUs['content_data'];
-    $theme = $c['theme'];
+    $theme = !empty($c['theme']) && is_array($c['theme']) ? $c['theme'] : [];
+    
+    // Theme colors with safe fallbacks (prevent empty string / null CSS failure)
+    $themeBgColor        = !empty($theme['bg_color']) ? $theme['bg_color'] : '#ffffff';
+    $heroTextColor       = !empty($theme['hero_text_color']) ? $theme['hero_text_color'] : '#111827';
+    $heroDescColor       = !empty($theme['hero_desc_color']) ? $theme['hero_desc_color'] : '#4b5563';
+    $btnBgColor          = !empty($theme['btn_bg_color']) ? $theme['btn_bg_color'] : '#059669';
+    $btnTextColor        = !empty($theme['btn_text_color']) ? $theme['btn_text_color'] : '#ffffff';
+    $featureBgColor      = !empty($theme['feature_bg_color']) ? $theme['feature_bg_color'] : '#ffffff';
+    $featureTextColor    = !empty($theme['feature_text_color']) ? $theme['feature_text_color'] : '#111827';
+    $featureIconColor    = !empty($theme['feature_icon_color']) ? $theme['feature_icon_color'] : '#059669';
+    $whyChooseBgColor    = !empty($theme['why_choose_bg_color']) ? $theme['why_choose_bg_color'] : '#ffffff';
+    $whyChooseTextColor  = !empty($theme['why_choose_text_color']) ? $theme['why_choose_text_color'] : '#111827';
+    $whyChooseIconColor  = !empty($theme['why_choose_icon_color']) ? $theme['why_choose_icon_color'] : '#059669';
+    $faqBgColor          = !empty($theme['faq_bg_color']) ? $theme['faq_bg_color'] : '#ffffff';
+    $faqTextColor        = !empty($theme['faq_text_color']) ? $theme['faq_text_color'] : '#111827';
+    $faqQuestionColor    = !empty($theme['faq_question_color']) ? $theme['faq_question_color'] : $faqTextColor;
+    $faqAnswerColor      = !empty($theme['faq_answer_color']) ? $theme['faq_answer_color'] : '#4b5563';
 ?>
 <style>
     .about-cta-btn {
@@ -31,7 +70,7 @@
         }
     }
     .about-features {
-        background-color: <?= htmlspecialchars($theme['feature_bg_color'] ?? '#ffffff') ?> !important;
+        background-color: <?= htmlspecialchars($featureBgColor) ?> !important;
     }
     .no-scrollbar::-webkit-scrollbar,
     .hide-scrollbar::-webkit-scrollbar,
@@ -66,7 +105,7 @@
     </div>
 </div>
 
-<div class="cms-section pb-6" data-cms-id="<?= htmlspecialchars($aboutUs['id'] ?? '') ?>" style="display: <?= ($aboutUs['is_active'] ?? 1) ? 'block' : 'none' ?>; background-color: <?= htmlspecialchars($theme['bg_color'] ?? '#ffffff') ?>;">
+<div class="cms-section pb-6" data-cms-id="<?= htmlspecialchars($aboutUs['id'] ?? '') ?>" style="display: <?= ($aboutUs['is_active'] ?? 1) ? 'block' : 'none' ?>; background-color: <?= htmlspecialchars($themeBgColor) ?>;">
     
     <!-- Hero Section -->
     <div class="about-hero relative overflow-hidden mb-8 lg:mb-12">
@@ -76,19 +115,19 @@
             <div class="w-full lg:w-1/2 px-4 sm:px-6 lg:px-8 py-8 sm:py-10 lg:py-12 relative z-20 order-2 lg:order-1 flex flex-col justify-between">
                 <div>
                     <?php if(!empty($c['hero']['subtitle'])): ?>
-                    <h4 class="font-bold tracking-wider text-xs sm:text-sm uppercase mb-3" style="color: <?= htmlspecialchars($theme['hero_text_color'] ?? '#111827') ?>; opacity: 0.85;">
+                    <h4 class="font-bold tracking-wider text-xs sm:text-sm uppercase mb-3" style="color: <?= htmlspecialchars($heroTextColor) ?>; opacity: 0.85;">
                         <?= htmlspecialchars($c['hero']['subtitle']) ?>
                     </h4>
                     <?php endif; ?>
                     
                     <?php if(!empty($c['hero']['title'])): ?>
-                    <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-display font-extrabold leading-tight tracking-tight mb-4" style="color: <?= htmlspecialchars($theme['hero_text_color'] ?? '#111827') ?>;">
+                    <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-5xl font-display font-extrabold leading-tight tracking-tight mb-4" style="color: <?= htmlspecialchars($heroTextColor) ?>;">
                         <?= htmlspecialchars($c['hero']['title']) ?>
                     </h1>
                     <?php endif; ?>
                     
                     <?php if(!empty($c['hero']['description'])): ?>
-                    <div class="text-sm sm:text-base leading-relaxed max-w-2xl space-y-3" style="color: <?= htmlspecialchars($theme['hero_desc_color'] ?? '#4b5563') ?>;">
+                    <div class="text-sm sm:text-base leading-relaxed max-w-2xl space-y-3" style="color: <?= htmlspecialchars($heroDescColor) ?>;">
                         <?= nl2br(htmlspecialchars($c['hero']['description'])) ?>
                     </div>
                     <?php endif; ?>
@@ -96,7 +135,7 @@
                 
                 <?php if(!empty($c['hero']['cta_text']) && !empty($c['hero']['cta_url'])): ?>
                 <div class="pt-4">
-                    <a href="<?= htmlspecialchars($c['hero']['cta_url']) ?>" class="about-cta-btn inline-flex items-center border border-transparent font-bold tracking-wide shadow-xl transition-opacity hover:opacity-90 focus:outline-none" style="background-color: <?= htmlspecialchars($theme['btn_bg_color'] ?? '#059669') ?>; color: <?= htmlspecialchars($theme['btn_text_color'] ?? '#ffffff') ?>;">
+                    <a href="<?= htmlspecialchars($c['hero']['cta_url']) ?>" class="about-cta-btn inline-flex items-center border border-transparent font-bold tracking-wide shadow-xl transition-opacity hover:opacity-90 focus:outline-none" style="background-color: <?= htmlspecialchars($btnBgColor) ?>; color: <?= htmlspecialchars($btnTextColor) ?>;">
                         <span class="about-cta-text"><?= htmlspecialchars($c['hero']['cta_text']) ?></span>
                         <span class="about-cta-icon flex-shrink-0 bg-white rounded-full flex items-center justify-center shadow-sm" style="color:#111827;">
                             <svg class="about-cta-svg" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"></path></svg>
@@ -109,7 +148,7 @@
             <!-- Right Media Column: Image shows on top on mobile & tablet (order-1), side-by-side on desktop (order-2) -->
             <?php if(!empty($c['hero']['image'])): ?>
             <div class="about-hero-media w-full overflow-hidden lg:mx-0 lg:rounded-none lg:overflow-visible lg:absolute lg:top-0 lg:right-0 lg:w-1/2 lg:h-full lg:bottom-0 h-80 sm:h-96 lg:h-auto relative z-10 order-1 lg:order-2">
-                <div class="absolute inset-y-0 left-0 transform -skew-x-6 -ml-5 w-10 z-10 hidden lg:block" style="background-color: <?= htmlspecialchars($theme['bg_color'] ?? '#ffffff') ?>;"></div>
+                <div class="absolute inset-y-0 left-0 transform -skew-x-6 -ml-5 w-10 z-10 hidden lg:block" style="background-color: <?= htmlspecialchars($themeBgColor) ?>;"></div>
                 <img src="<?= htmlspecialchars($c['hero']['image']) ?>" alt="<?= htmlspecialchars($c['hero']['title'] ?? 'About Us') ?>" class="absolute inset-0 w-full h-full object-cover object-top lg:rounded-none">
             </div>
             <?php endif; ?>
@@ -120,14 +159,14 @@
     <?php if(!empty($c['features'])): 
         $featuresCount = count($c['features']);
     ?>
-    <div class="about-features py-8 sm:py-12 mb-10 mx-3 sm:mx-6 md:mx-8 lg:mx-12 rounded-3xl" style="background-color: <?= htmlspecialchars($theme['feature_bg_color'] ?? '#ffffff') ?>;">
+    <div class="about-features py-8 sm:py-12 mb-10 mx-3 sm:mx-6 md:mx-8 lg:mx-12 rounded-3xl" style="background-color: <?= htmlspecialchars($featureBgColor) ?>;">
         <div class="max-w-[90rem] mx-auto px-3 sm:px-6 lg:px-8">
             <?php 
             $featuresHeading = !empty($c['features_heading']) ? $c['features_heading'] : (!empty($c['features_title']) ? $c['features_title'] : '');
             if (!empty($featuresHeading)): 
             ?>
             <div class="text-center mb-8 sm:mb-12">
-                <h2 class="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold" style="color: <?= htmlspecialchars($theme['feature_text_color'] ?? '#111827') ?>;">
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold" style="color: <?= htmlspecialchars($featureTextColor) ?>;">
                     <?= htmlspecialchars($featuresHeading) ?>
                 </h2>
             </div>
@@ -136,31 +175,29 @@
             <!-- Horizontal Scrollable Row (No Arrows, No Dots, Desktop Mouse Drag & Wheel enabled) -->
             <div id="featuresScroller" class="about-features-scroller flex flex-nowrap overflow-x-auto gap-4 sm:gap-6 snap-x snap-mandatory scroll-smooth no-scrollbar hide-scrollbar scrollbar-none py-2 pb-4 cursor-grab select-none" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
                 <?php foreach($c['features'] as $idx => $f): 
-                    $rawSvg = $f['icon'] ?? '';
-                    $cleanSvg = preg_replace('/\s*(width|height)=["\'][^"\']*["\']/i', '', $rawSvg);
-                    if (strpos($cleanSvg, '<svg') !== false) {
-                        $cleanSvg = preg_replace('/<svg\b([^>]*)>/i', '<svg $1 class="w-full h-full" fill="currentColor">', $cleanSvg);
-                    }
+                    $cardBg = !empty($f['bg_color']) ? $f['bg_color'] : '#ffffff';
+                    $cardText = !empty($f['text_color']) ? $f['text_color'] : $featureTextColor;
+                    $cleanSvg = cmsRenderSvgIcon($f['icon'] ?? '');
                 ?>
                 <div class="w-full min-w-full flex-shrink-0 snap-start">
-                    <div class="about-feature-card rounded-2xl p-6 sm:p-8 md:p-10 text-center flex flex-col items-center justify-start relative h-full max-w-4xl mx-auto shadow-sm" style="background-color: <?= htmlspecialchars($f['bg_color'] ?? '#ffffff') ?>;" data-feature-card>
+                    <div class="about-feature-card rounded-2xl p-6 sm:p-8 md:p-10 text-center flex flex-col items-center justify-start relative h-full max-w-4xl mx-auto shadow-sm" style="background-color: <?= htmlspecialchars($cardBg) ?>;" data-feature-card>
                         
                         <!-- Card Step Badge -->
-                        <div class="absolute top-3.5 right-4 sm:top-4 sm:right-5 text-xs font-bold uppercase tracking-widest opacity-40" style="color: <?= htmlspecialchars($f['text_color'] ?? $theme['feature_text_color'] ?? '#111827') ?>;">
+                        <div class="absolute top-3.5 right-4 sm:top-4 sm:right-5 text-xs font-bold uppercase tracking-widest opacity-40" style="color: <?= htmlspecialchars($cardText) ?>;">
                             <?= sprintf('%02d', $idx + 1) ?> / <?= sprintf('%02d', $featuresCount) ?>
                         </div>
 
                         <?php if(!empty($cleanSvg)): ?>
-                        <div class="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 flex items-center justify-center" style="color: <?= htmlspecialchars($theme['feature_icon_color'] ?? '#059669') ?>;">
+                        <div class="w-12 h-12 sm:w-14 sm:h-14 mx-auto mb-3 flex items-center justify-center" style="color: <?= htmlspecialchars($featureIconColor) ?>;">
                             <?= $cleanSvg ?>
                         </div>
                         <?php endif; ?>
 
-                        <h3 class="font-bold text-xl sm:text-2xl mb-3 uppercase tracking-wide" style="color: <?= htmlspecialchars($f['text_color'] ?? $theme['feature_text_color'] ?? '#111827') ?>;">
+                        <h3 class="font-bold text-xl sm:text-2xl mb-3 uppercase tracking-wide" style="color: <?= htmlspecialchars($cardText) ?>;">
                             <?= htmlspecialchars($f['title'] ?? '') ?>
                         </h3>
 
-                        <div class="text-base sm:text-lg opacity-90 leading-relaxed font-normal text-left w-full space-y-4" style="color: <?= htmlspecialchars($f['text_color'] ?? $theme['feature_text_color'] ?? '#111827') ?>;">
+                        <div class="text-base sm:text-lg opacity-90 leading-relaxed font-normal text-left w-full space-y-4" style="color: <?= htmlspecialchars($cardText) ?>;">
                             <?= nl2br(htmlspecialchars($f['description'] ?? '')) ?>
                         </div>
                     </div>
@@ -174,25 +211,29 @@
 
     <!-- Why Choose Section -->
     <?php if(!empty($c['why_choose'])): ?>
-    <div class="py-8 sm:py-12 mb-8 mx-3 sm:mx-6 md:mx-8 lg:mx-12 rounded-3xl" style="background-color: <?= htmlspecialchars($theme['why_choose_bg_color'] ?? '#ffffff') ?>;">
+    <div class="py-8 sm:py-12 mb-8 mx-3 sm:mx-6 md:mx-8 lg:mx-12 rounded-3xl" style="background-color: <?= htmlspecialchars($whyChooseBgColor) ?>;">
         <div class="max-w-[90rem] mx-auto px-3 sm:px-6 lg:px-8">
             <div class="text-center mb-8 sm:mb-10">
-                <h2 class="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold" style="color: <?= htmlspecialchars($theme['why_choose_text_color'] ?? '#111827') ?>;">
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold" style="color: <?= htmlspecialchars($whyChooseTextColor) ?>;">
                     <?= htmlspecialchars(!empty($c['why_choose_heading']) ? $c['why_choose_heading'] : (!empty($c['why_choose_title']) ? $c['why_choose_title'] : 'Why Choose Us')) ?>
                 </h2>
             </div>
             <div id="whyChooseScroller" class="flex flex-nowrap overflow-x-auto gap-4 snap-x snap-mandatory pb-2 md:gap-6 lg:grid lg:grid-cols-3 lg:gap-8 lg:overflow-visible lg:pb-0 scroll-smooth no-scrollbar hide-scrollbar scrollbar-none cursor-grab select-none" style="-webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none;">
-                <?php foreach($c['why_choose'] as $w): ?>
-                <div class="w-full min-w-full flex-shrink-0 snap-start md:w-[calc(50%-0.75rem)] md:min-w-[calc(50%-0.75rem)] lg:w-auto lg:min-w-0 lg:flex-shrink rounded-2xl p-6 sm:p-8 text-center shadow-sm border border-white hover:shadow-md transition-shadow" style="background-color: <?= htmlspecialchars($w['bg_color'] ?? '#ffffff') ?>;">
-                    <?php if(!empty($w['icon'])): ?>
-                    <div class="w-12 h-12 mx-auto mb-4" style="color: <?= htmlspecialchars($theme['why_choose_icon_color'] ?? '#059669') ?>;">
-                        <?= str_replace('<svg ', '<svg fill="currentColor" ', $w['icon']) ?>
+                <?php foreach($c['why_choose'] as $w): 
+                    $wCardBg = !empty($w['bg_color']) ? $w['bg_color'] : '#ffffff';
+                    $wCardText = !empty($w['text_color']) ? $w['text_color'] : $whyChooseTextColor;
+                    $wCleanSvg = cmsRenderSvgIcon($w['icon'] ?? '');
+                ?>
+                <div class="w-full min-w-full flex-shrink-0 snap-start md:w-[calc(50%-0.75rem)] md:min-w-[calc(50%-0.75rem)] lg:w-auto lg:min-w-0 lg:flex-shrink rounded-2xl p-6 sm:p-8 text-center shadow-sm border border-white hover:shadow-md transition-shadow" style="background-color: <?= htmlspecialchars($wCardBg) ?>;">
+                    <?php if(!empty($wCleanSvg)): ?>
+                    <div class="w-12 h-12 mx-auto mb-4 flex items-center justify-center" style="color: <?= htmlspecialchars($whyChooseIconColor) ?>;">
+                        <?= $wCleanSvg ?>
                     </div>
                     <?php endif; ?>
-                    <h4 class="font-bold text-lg mb-2 uppercase" style="color: <?= htmlspecialchars($w['text_color'] ?? $theme['why_choose_text_color'] ?? '#111827') ?>;">
+                    <h4 class="font-bold text-lg mb-2 uppercase" style="color: <?= htmlspecialchars($wCardText) ?>;">
                         <?= htmlspecialchars($w['title'] ?? '') ?>
                     </h4>
-                    <p class="text-sm opacity-80" style="color: <?= htmlspecialchars($w['text_color'] ?? $theme['why_choose_text_color'] ?? '#111827') ?>;">
+                    <p class="text-sm opacity-80" style="color: <?= htmlspecialchars($wCardText) ?>;">
                         <?= nl2br(htmlspecialchars($w['description'] ?? '')) ?>
                     </p>
                 </div>
@@ -203,22 +244,22 @@
     <?php endif; ?>
     <!-- FAQ Section (Row 4) -->
     <?php if(!empty($c['faqs'])): ?>
-    <div class="py-8 sm:py-12 mb-4 mx-3 sm:mx-6 md:mx-8 lg:mx-12 rounded-3xl" style="background-color: <?= htmlspecialchars($theme['faq_bg_color'] ?? '#ffffff') ?>;">
+    <div class="py-8 sm:py-12 mb-4 mx-3 sm:mx-6 md:mx-8 lg:mx-12 rounded-3xl" style="background-color: <?= htmlspecialchars($faqBgColor) ?>;">
         <div class="max-w-[90rem] mx-auto px-3 sm:px-6 lg:px-8">
             <div class="text-center mb-6 sm:mb-8">
-                <h2 class="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold" style="color: <?= htmlspecialchars($theme['faq_text_color'] ?? '#111827') ?>;"><?= htmlspecialchars(!empty($c['faq_heading']) ? $c['faq_heading'] : (!empty($c['faq_title']) ? $c['faq_title'] : 'Frequently Asked Questions')) ?></h2>
+                <h2 class="text-2xl sm:text-3xl md:text-4xl font-display font-extrabold" style="color: <?= htmlspecialchars($faqTextColor) ?>;"><?= htmlspecialchars(!empty($c['faq_heading']) ? $c['faq_heading'] : (!empty($c['faq_title']) ? $c['faq_title'] : 'Frequently Asked Questions')) ?></h2>
             </div>
             <div class="max-w-6xl mx-auto space-y-4">
                 <?php foreach($c['faqs'] as $faq): ?>
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     <button class="w-full p-4 sm:p-5 text-left flex justify-between items-center focus:outline-none" onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180');">
-                        <h3 class="font-bold text-base sm:text-lg pr-4 uppercase" style="color: <?= htmlspecialchars($theme['faq_question_color'] ?? $theme['faq_text_color'] ?? '#111827') ?>;">
+                        <h3 class="font-bold text-base sm:text-lg pr-4 uppercase" style="color: <?= htmlspecialchars($faqQuestionColor) ?>;">
                             <?= htmlspecialchars($faq['question'] ?? '') ?>
                         </h3>
                         <svg class="w-5 h-5 text-gray-400 transition-transform duration-200 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
                     <div class="hidden px-4 sm:px-5 pb-4 sm:pb-5 border-t border-gray-50 pt-3">
-                        <p class="text-sm leading-relaxed" style="color: <?= htmlspecialchars($theme['faq_answer_color'] ?? '#4b5563') ?>;">
+                        <p class="text-sm leading-relaxed" style="color: <?= htmlspecialchars($faqAnswerColor) ?>;">
                             <?= nl2br(htmlspecialchars($faq['answer'] ?? '')) ?>
                         </p>
                     </div>

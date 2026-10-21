@@ -215,7 +215,7 @@ if (!empty($inactiveComponents)) {
                                             <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php elseif ($isAboutUs): ?>
-                                        <a href="<?= BASE_URL ?>/admin/cms/about-us/edit?id=<?= $cmp['id'] ?>" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit About Us">
+                                        <a href="<?= BASE_URL ?>/admin/cms/about-us/edit?id=<?= $cmp['id'] ?>&ref=builder" class="p-1 text-blue-600 hover:text-blue-800 transition-colors" title="Edit About Us">
                                             <i class="bi bi-pencil-square text-base"></i>
                                         </a>
                                     <?php elseif ($isReelsContainer): ?>

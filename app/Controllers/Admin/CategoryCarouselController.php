@@ -5,6 +5,7 @@ use Core\Controller;
 use App\Models\CmsComponent;
 use App\Models\Category;
 use Core\Session;
+use Core\Cache;
 
 class CategoryCarouselController extends Controller
 {
@@ -14,7 +15,7 @@ class CategoryCarouselController extends Controller
     public function __construct()
     {
         parent::__construct();
-        if (\Core\Session::get('user_role') !== 'super_admin') {
+        if (Session::get('user_role') !== 'super_admin') {
             $this->redirect('/admin/dashboard');
         }
         $this->cmsModel = new CmsComponent();
@@ -59,8 +60,8 @@ class CategoryCarouselController extends Controller
     {
         $title = $_POST['title'] ?? '';
         $sort_order = $_POST['sort_order'] ?? 0;
-        $mobile_count = $_POST['mobile_count'] ?? 2;
-        $desktop_count = $_POST['desktop_count'] ?? 4;
+        $mobile_count = max(1, min(6, (int)($_POST['mobile_count'] ?? 2)));
+        $desktop_count = max(1, min(12, (int)($_POST['desktop_count'] ?? 6)));
         $cta_text = $_POST['cta_text'] ?? '';
         $cta_url = $_POST['cta_url'] ?? '';
         $cta_position = $_POST['cta_position'] ?? 'Right';
@@ -111,9 +112,9 @@ class CategoryCarouselController extends Controller
             'is_active' => $is_active
         ]);
 
-        \Core\Cache::delete('cms_layout_home');
+        Cache::delete('cms_layout_home');
 
-        \Core\Session::setFlash('success', 'Category Carousel created successfully.');
+        Session::setFlash('success', 'Category Carousel created successfully.');
         $this->redirect('/admin/cms/category-carousels');
     }
 
@@ -123,7 +124,7 @@ class CategoryCarouselController extends Controller
         $carousel = $this->cmsModel->getById($id);
         
         if (!$carousel || $carousel['section_type'] !== 'category_carousel') {
-            \Core\Session::setFlash('error', 'Category Carousel not found.');
+            Session::setFlash('error', 'Category Carousel not found.');
             $this->redirect('/admin/cms/category-carousels');
         }
 
@@ -144,14 +145,14 @@ class CategoryCarouselController extends Controller
         $carousel = $this->cmsModel->getById($id);
         
         if (!$carousel || $carousel['section_type'] !== 'category_carousel') {
-            \Core\Session::setFlash('error', 'Category Carousel not found.');
+            Session::setFlash('error', 'Category Carousel not found.');
             $this->redirect('/admin/cms/category-carousels');
         }
 
         $title = $_POST['title'] ?? '';
         $sort_order = $_POST['sort_order'] ?? 0;
-        $mobile_count = $_POST['mobile_count'] ?? 2;
-        $desktop_count = $_POST['desktop_count'] ?? 4;
+        $mobile_count = max(1, min(6, (int)($_POST['mobile_count'] ?? 2)));
+        $desktop_count = max(1, min(12, (int)($_POST['desktop_count'] ?? 6)));
         $cta_text = $_POST['cta_text'] ?? '';
         $cta_url = $_POST['cta_url'] ?? '';
         $cta_position = $_POST['cta_position'] ?? 'Right';
@@ -200,9 +201,9 @@ class CategoryCarouselController extends Controller
             'is_active' => $is_active
         ]);
 
-        \Core\Cache::delete('cms_layout_home');
+        Cache::delete('cms_layout_home');
 
-        \Core\Session::setFlash('success', 'Category Carousel updated successfully.');
+        Session::setFlash('success', 'Category Carousel updated successfully.');
         $this->redirect('/admin/cms/category-carousels');
     }
 
@@ -211,9 +212,9 @@ class CategoryCarouselController extends Controller
         $id = $_POST['id'] ?? '';
         $this->cmsModel->delete($id);
         
-        \Core\Cache::delete('cms_layout_home');
+        Cache::delete('cms_layout_home');
 
-        \Core\Session::setFlash('success', 'Category Carousel deleted successfully.');
+        Session::setFlash('success', 'Category Carousel deleted successfully.');
         $this->redirect('/admin/cms/category-carousels');
     }
 }

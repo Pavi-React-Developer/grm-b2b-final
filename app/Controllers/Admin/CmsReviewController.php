@@ -78,6 +78,7 @@ class CmsReviewController extends Controller
             Cache::delete('cms_layout_home');
             Cache::delete('cms_layout_sections');
             Cache::delete('cms_reviews');
+            Cache::clear();
         }
 
         Session::setFlash('success', 'Review section created successfully.');
@@ -148,6 +149,7 @@ class CmsReviewController extends Controller
             Cache::delete('cms_layout_home');
             Cache::delete('cms_layout_sections');
             Cache::delete('cms_reviews');
+            Cache::clear();
         }
 
         Session::setFlash('success', 'Review section updated successfully.');
@@ -223,17 +225,29 @@ class CmsReviewController extends Controller
             $animation = 'fade';
         }
 
+        $desktopCount = !empty($_POST['desktop_count']) ? (int)$_POST['desktop_count'] : (!empty($_POST['cards_desktop']) ? (int)$_POST['cards_desktop'] : 3);
+        $desktopCount = max(1, min(8, $desktopCount));
+
+        $mobileCount = !empty($_POST['mobile_count']) ? (int)$_POST['mobile_count'] : (!empty($_POST['cards_mobile']) ? (int)$_POST['cards_mobile'] : (!empty($_POST['cards_tablet']) ? (int)$_POST['cards_tablet'] : 1));
+        $mobileCount = max(1, min(4, $mobileCount));
+
+        $tabletCount = !empty($_POST['cards_tablet']) ? (int)$_POST['cards_tablet'] : max(1, min(3, (int)round($desktopCount * 0.6)));
+
         return [
             'title'          => trim($_POST['title'] ?? ''),
             'subtitle'       => trim($_POST['subtitle'] ?? ''),
             'animation'      => $animation,
             'autoplay'       => isset($_POST['autoplay']) ? 1 : 0,
             'autoplay_speed' => max(2, min(15, (int)($_POST['autoplay_speed'] ?? 4))),
-            'cards_desktop'  => max(1, min(4, (int)($_POST['cards_desktop'] ?? 3))),
-            'cards_tablet'   => max(1, min(3, (int)($_POST['cards_tablet'] ?? 2))),
-            'cards_mobile'   => 1,
+            'desktop_count'  => $desktopCount,
+            'mobile_count'   => $mobileCount,
+            'cards_desktop'  => $desktopCount,
+            'cards_tablet'   => $tabletCount,
+            'cards_mobile'   => $mobileCount,
             'bg_color'       => $this->normalizeHex($_POST['bg_color'] ?? '#ffffff', '#ffffff'),
             'card_bg_color'  => $this->normalizeHex($_POST['card_bg_color'] ?? '#ffffff', '#ffffff'),
+            'title_color'    => $this->normalizeHex($_POST['title_color'] ?? '#111827', '#111827'),
+            'subtitle_color' => $this->normalizeHex($_POST['subtitle_color'] ?? '#6b7280', '#6b7280'),
             'text_color'     => $this->normalizeHex($_POST['text_color'] ?? '#111827', '#111827'),
             'star_color'     => $this->normalizeHex($_POST['star_color'] ?? '#f59e0b', '#f59e0b'),
             'accent_color'   => $this->normalizeHex($_POST['accent_color'] ?? '#F25996', '#F25996'),

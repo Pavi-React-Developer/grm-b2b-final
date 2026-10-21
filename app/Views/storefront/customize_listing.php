@@ -244,7 +244,7 @@
                                 <?php endif; ?>
                             </div>
 
-                            <!-- Top Right: Stock Counter & Wishlist Heart Button -->
+                            <!-- Top Right: Stock Counter -->
                             <div class="absolute top-2 right-2 sm:top-3.5 sm:right-3.5 z-10 flex flex-col items-end gap-1 sm:gap-2">
                                 <?php if (isset($f['fabric_stock']) && (float)$f['fabric_stock'] > 0): ?>
                                     <span class="px-1.5 sm:px-2.5 py-0.5 bg-emerald-600/95 backdrop-blur-xs text-white font-bold text-[8px] sm:text-[10px] tracking-wide rounded-full shadow-sm flex items-center gap-1">
@@ -256,21 +256,21 @@
                                         Out of Stock
                                     </span>
                                 <?php endif; ?>
-
-                                <button type="button" 
-                                        onclick="event.preventDefault(); event.stopPropagation(); if (typeof toggleWishlist === 'function') { toggleWishlist(<?= (int)$f['fabric_id'] ?>, this); } else { window.location.href='<?= BASE_URL ?>/login'; }" 
-                                        class="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white text-gray-800 hover:text-[#F25996] flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all cursor-pointer"
-                                        aria-label="Add to Wishlist">
-                                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-                                    </svg>
-                                </button>
                             </div>
                         </div>
 
                         <!-- Circular Variant Swatches Overlapping Border (only when multiple images exist) -->
                         <?php 
                             $validImages = !empty($f['images']) && is_array($f['images']) ? array_values(array_filter($f['images'])) : [];
+                            if ((empty($validImages) || count($validImages) <= 1) && !empty($f['id'])) {
+                                try {
+                                    $db = \Core\Database::getInstance();
+                                    $cFallbackImgs = $db->query("SELECT image_path FROM product_images WHERE product_id = " . (int)$f['id'] . " ORDER BY is_primary DESC, sort_order ASC, id ASC")->fetchAll(\PDO::FETCH_COLUMN);
+                                    if (!empty($cFallbackImgs) && count($cFallbackImgs) > 1) {
+                                        $validImages = $cFallbackImgs;
+                                    }
+                                } catch (\Throwable $e) {}
+                            }
                             if (count($validImages) > 1):
                         ?>
                         <div class="-mt-4 sm:-mt-6 mb-1.5 sm:mb-2 px-2.5 sm:px-5 flex items-center gap-1.5 sm:gap-2 relative z-20 overflow-x-auto scrollbar-none pb-0.5">
@@ -281,7 +281,7 @@
                             ?>
                                 <img src="<?= htmlspecialchars($swUrl) ?>" 
                                      alt="" 
-                                     onerror="this.style.display='none';"
+                                     onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
                                      onclick="document.getElementById('fabric-main-img-<?= $f['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
                                      class="w-7 h-7 sm:w-11 sm:h-11 rounded-full border-2 border-white shadow-sm sm:shadow-md object-cover cursor-pointer hover:scale-110 transition-transform flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
                             <?php endforeach; ?>
@@ -320,7 +320,7 @@
 
                                         <!-- Min Stitch Badge -->
                                         <div class="text-right flex-shrink-0">
-                                            <span class="text-[8px] sm:text-[9px] uppercase font-bold text-gray-400 block tracking-wider">Min Stitch</span>
+                                            <span class="text-[6.5px] sm:text-[7px] uppercase font-bold text-gray-400 block tracking-wider leading-none">Min Stitch</span>
                                             <span class="px-1.5 sm:px-2 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] sm:text-[11px] rounded-md inline-block mt-0.5">
                                                 <?= (int)($f['minimum_pieces'] ?? 10) ?> Pcs
                                             </span>

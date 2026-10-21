@@ -294,39 +294,63 @@ document.addEventListener('DOMContentLoaded', function() {
     categorySelect.addEventListener('change', function() {
         const catId = this.value;
         if (!catId) {
-            subCategorySelect.innerHTML = '<option value="">Select Category first...</option>';
+            subCategorySelect.innerHTML = '<option value="">None</option>';
             subCategorySelect.disabled = true;
+            subCategorySelect.dispatchEvent(new Event('change'));
             return;
         }
 
-        if(initialLoad) {
+        // On initial page load, if subcategories were already populated by PHP for this category, preserve them
+        if (initialLoad) {
             initialLoad = false;
             subCategorySelect.disabled = false;
-            return;
+            if (subCategorySelect.options.length > 1) {
+                return;
+            }
         }
 
         subCategorySelect.disabled = true;
         subCategorySelect.innerHTML = '<option value="">Loading...</option>';
+        subCategorySelect.dispatchEvent(new Event('change'));
 
-        fetch('<?= BASE_URL ?>/admin/catalog/subcategories/api-get-by-category?category_id=' + catId)
-            .then(res => res.json())
-            .then(data => {
-                subCategorySelect.innerHTML = '<option value="">None</option>';
+        const formModule = document.querySelector('input[name="module"]')?.value || '';
+        const moduleParam = formModule ? '&module=' + encodeURIComponent(formModule) : '';
+        const currentSelectedSub = <?= json_encode((string)($attribute['sub_category_id'] ?? '')) ?>;
+
+        fetch('/admin/catalog/subcategories/api-get-by-category?category_id=' + encodeURIComponent(catId) + moduleParam, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            subCategorySelect.innerHTML = '<option value="">None</option>';
+            if (Array.isArray(data)) {
                 data.forEach(sub => {
                     const option = document.createElement('option');
                     option.value = sub.id;
                     option.textContent = sub.name;
+                    if (currentSelectedSub && String(sub.id) === String(currentSelectedSub)) {
+                        option.selected = true;
+                    }
                     subCategorySelect.appendChild(option);
                 });
-                subCategorySelect.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                subCategorySelect.innerHTML = '<option value="">Error loading subcategories</option>';
-            });
+            }
+            subCategorySelect.disabled = false;
+            subCategorySelect.dispatchEvent(new Event('change'));
+        })
+        .catch(err => {
+            console.error('Error loading subcategories:', err);
+            subCategorySelect.innerHTML = '<option value="">Error loading subcategories</option>';
+            subCategorySelect.disabled = false;
+            subCategorySelect.dispatchEvent(new Event('change'));
+        });
     });
 
-    categorySelect.dispatchEvent(new Event('change'));
+    if (categorySelect && categorySelect.value && subCategorySelect.options.length <= 1) {
+        categorySelect.dispatchEvent(new Event('change'));
+    }
 
     // Standard Value Adder
     function addStandardValue(valStr) {

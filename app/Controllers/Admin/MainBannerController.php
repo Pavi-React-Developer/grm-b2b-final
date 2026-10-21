@@ -40,11 +40,29 @@ class MainBannerController extends Controller
         $db = \Core\Database::getInstance();
         $previewProducts = $db->query("SELECT id, name, slug, (SELECT image_path FROM product_images WHERE product_id = products.id AND is_primary = 1 LIMIT 1) as main_image FROM products WHERE status = 'active' ORDER BY id DESC")->fetchAll();
         $previewCategories = $db->query("SELECT id, name, slug, image_path as image FROM categories WHERE status = 'active' ORDER BY name ASC")->fetchAll();
+        $previewCustomProducts = $db->query("
+            SELECT p.id, p.name, p.slug, fc.id as customization_id, fc.program_name, fc.garment_type,
+                   (SELECT pi.image_path FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order ASC, pi.id ASC LIMIT 1) as main_image
+            FROM products p
+            JOIN fabric_customizations fc ON fc.fabric_id = p.id
+            WHERE p.status = 'active' AND p.is_customizable = 1 AND fc.status = 'active' AND fc.customization_enabled = 1
+            ORDER BY p.id DESC
+        ")->fetchAll();
+        $previewCustomCategories = $db->query("
+            SELECT DISTINCT c.id, c.name, c.slug, c.image_path as image
+            FROM categories c
+            JOIN products p ON (p.category_id = c.id)
+            JOIN fabric_customizations fc ON (fc.fabric_id = p.id)
+            WHERE c.status = 'active' AND p.status = 'active' AND p.is_customizable = 1 AND fc.status = 'active' AND fc.customization_enabled = 1
+            ORDER BY c.name ASC
+        ")->fetchAll();
 
         $this->render('admin/cms/main_banners/create', [
             'title' => 'New Main Banner',
             'previewProducts' => $previewProducts,
-            'previewCategories' => $previewCategories
+            'previewCategories' => $previewCategories,
+            'previewCustomProducts' => $previewCustomProducts,
+            'previewCustomCategories' => $previewCustomCategories
         ], 'admin');
     }
 
@@ -73,13 +91,15 @@ class MainBannerController extends Controller
             if (isset($_POST[$prefix . '_media_desktop']) && is_array($_POST[$prefix . '_media_desktop'])) {
                 foreach ($_POST[$prefix . '_media_desktop'] as $index => $desktop_url) {
                     $desktop_url = trim((string)$desktop_url);
-                    if ($desktop_url === '') continue;
                     $mobile_url = trim((string)($_POST[$prefix . '_media_mobile'][$index] ?? ''));
+                    if ($desktop_url === '' && $mobile_url === '') continue;
+                    if ($desktop_url === '') $desktop_url = $mobile_url;
+                    if ($mobile_url === '') $mobile_url = $desktop_url;
                     $opacity = isset($_POST[$prefix . '_media_opacity'][$index]) && $_POST[$prefix . '_media_opacity'][$index] !== '' ? (float)$_POST[$prefix . '_media_opacity'][$index] : 100;
                     $media_items[] = [
                         'type' => $_POST[$prefix . '_media_type'][$index] ?? 'image',
                         'desktop' => $desktop_url,
-                        'mobile' => $mobile_url !== '' ? $mobile_url : $desktop_url,
+                        'mobile' => $mobile_url,
                         'opacity' => max(0, min(100, $opacity))
                     ];
                 }
@@ -113,7 +133,9 @@ class MainBannerController extends Controller
                 'alignment' => $_POST[$prefix . '_alignment'] ?? 'center',
                 'media' => $media_items,
                 'selected_products' => $_POST[$prefix . '_selected_products'] ?? [],
-                'selected_categories' => $_POST[$prefix . '_selected_categories'] ?? []
+                'selected_categories' => $_POST[$prefix . '_selected_categories'] ?? [],
+                'selected_custom_products' => $_POST[$prefix . '_selected_custom_products'] ?? [],
+                'selected_custom_categories' => $_POST[$prefix . '_selected_custom_categories'] ?? []
             ];
         }
 
@@ -149,12 +171,30 @@ class MainBannerController extends Controller
         $db = \Core\Database::getInstance();
         $previewProducts = $db->query("SELECT id, name, slug, (SELECT image_path FROM product_images WHERE product_id = products.id AND is_primary = 1 LIMIT 1) as main_image FROM products WHERE status = 'active' ORDER BY id DESC")->fetchAll();
         $previewCategories = $db->query("SELECT id, name, slug, image_path as image FROM categories WHERE status = 'active' ORDER BY name ASC")->fetchAll();
+        $previewCustomProducts = $db->query("
+            SELECT p.id, p.name, p.slug, fc.id as customization_id, fc.program_name, fc.garment_type,
+                   (SELECT pi.image_path FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order ASC, pi.id ASC LIMIT 1) as main_image
+            FROM products p
+            JOIN fabric_customizations fc ON fc.fabric_id = p.id
+            WHERE p.status = 'active' AND p.is_customizable = 1 AND fc.status = 'active' AND fc.customization_enabled = 1
+            ORDER BY p.id DESC
+        ")->fetchAll();
+        $previewCustomCategories = $db->query("
+            SELECT DISTINCT c.id, c.name, c.slug, c.image_path as image
+            FROM categories c
+            JOIN products p ON (p.category_id = c.id)
+            JOIN fabric_customizations fc ON (fc.fabric_id = p.id)
+            WHERE c.status = 'active' AND p.status = 'active' AND p.is_customizable = 1 AND fc.status = 'active' AND fc.customization_enabled = 1
+            ORDER BY c.name ASC
+        ")->fetchAll();
 
         $this->render('admin/cms/main_banners/edit', [
             'title' => 'Edit Main Banner',
             'banner' => $banner,
             'previewProducts' => $previewProducts,
-            'previewCategories' => $previewCategories
+            'previewCategories' => $previewCategories,
+            'previewCustomProducts' => $previewCustomProducts,
+            'previewCustomCategories' => $previewCustomCategories
         ], 'admin');
     }
 
@@ -192,13 +232,15 @@ class MainBannerController extends Controller
             if (isset($_POST[$prefix . '_media_desktop']) && is_array($_POST[$prefix . '_media_desktop'])) {
                 foreach ($_POST[$prefix . '_media_desktop'] as $index => $desktop_url) {
                     $desktop_url = trim((string)$desktop_url);
-                    if ($desktop_url === '') continue;
                     $mobile_url = trim((string)($_POST[$prefix . '_media_mobile'][$index] ?? ''));
+                    if ($desktop_url === '' && $mobile_url === '') continue;
+                    if ($desktop_url === '') $desktop_url = $mobile_url;
+                    if ($mobile_url === '') $mobile_url = $desktop_url;
                     $opacity = isset($_POST[$prefix . '_media_opacity'][$index]) && $_POST[$prefix . '_media_opacity'][$index] !== '' ? (float)$_POST[$prefix . '_media_opacity'][$index] : 100;
                     $media_items[] = [
                         'type' => $_POST[$prefix . '_media_type'][$index] ?? 'image',
                         'desktop' => $desktop_url,
-                        'mobile' => $mobile_url !== '' ? $mobile_url : $desktop_url,
+                        'mobile' => $mobile_url,
                         'opacity' => max(0, min(100, $opacity))
                     ];
                 }
@@ -232,7 +274,9 @@ class MainBannerController extends Controller
                 'alignment' => $_POST[$prefix . '_alignment'] ?? 'center',
                 'media' => $media_items,
                 'selected_products' => $_POST[$prefix . '_selected_products'] ?? [],
-                'selected_categories' => $_POST[$prefix . '_selected_categories'] ?? []
+                'selected_categories' => $_POST[$prefix . '_selected_categories'] ?? [],
+                'selected_custom_products' => $_POST[$prefix . '_selected_custom_products'] ?? [],
+                'selected_custom_categories' => $_POST[$prefix . '_selected_custom_categories'] ?? []
             ];
         }
 

@@ -57,11 +57,6 @@
                                         <h3 class="font-bold text-gray-900 text-xs sm:text-sm md:text-base leading-snug line-clamp-2" title="<?= htmlspecialchars($item['product_name']) ?>">
                                             <?= htmlspecialchars($item['product_name']) ?>
                                         </h3>
-                                        <?php if (!empty($item['customization_id']) || !empty($item['garment_type'])): ?>
-                                            <span class="inline-block my-1 text-[10px] sm:text-xs font-bold text-[#F25996] bg-pink-50 border border-pink-200 px-2 py-0.5 rounded-full">
-                                                ✂️ Custom <?= htmlspecialchars($item['garment_type'] ?? 'Garment') ?><?= !empty($item['program_name']) ? ' — ' . htmlspecialchars($item['program_name']) : '' ?>
-                                            </span>
-                                        <?php endif; ?>
                                         <p class="text-[11px] sm:text-xs text-gray-500 mt-0.5">Order #<?= htmlspecialchars($item['order_number']) ?></p>
                                         <button type="button" onclick="openReviewModal(<?= (int)$item['product_id'] ?>, <?= (int)$item['order_id'] ?>, <?= !empty($item['customization_id']) ? (int)$item['customization_id'] : 'null' ?>)" class="mt-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-[#F25996] text-white hover:bg-[#d8407d] text-xs sm:text-sm font-bold rounded-xl transition-all shadow-sm inline-flex items-center gap-1.5 whitespace-nowrap">
                                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
@@ -140,11 +135,6 @@
                                                 <h4 class="font-bold text-gray-900 text-xs sm:text-sm md:text-base leading-snug line-clamp-1" title="<?= htmlspecialchars($review['product_name']) ?>">
                                                     <?= htmlspecialchars($review['product_name']) ?>
                                                 </h4>
-                                                <?php if (!empty($review['customization_id']) || !empty($review['garment_type'])): ?>
-                                                    <span class="inline-block my-0.5 text-[10px] font-bold text-[#F25996] bg-pink-50 border border-pink-200 px-2 py-0.5 rounded-full">
-                                                        ✂️ Custom <?= htmlspecialchars($review['garment_type'] ?? 'Garment') ?><?= !empty($review['program_name']) ? ' — ' . htmlspecialchars($review['program_name']) : '' ?>
-                                                    </span>
-                                                <?php endif; ?>
                                                 <div class="flex items-center text-yellow-400 mt-0.5 text-xs">
                                                     <?php for($i=1; $i<=5; $i++): ?>
                                                         <svg class="w-3.5 h-3.5 <?= $i <= $review['rating'] ? 'fill-current' : 'text-gray-300' ?>" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.363 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.363-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>

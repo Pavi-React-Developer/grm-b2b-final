@@ -53,8 +53,9 @@
             
             $deskHeight = htmlspecialchars($content['desktop_height_vh'] ?? '70');
             $mobHeight = htmlspecialchars($content['mobile_height_vh'] ?? '55');
-            $deskCols = htmlspecialchars($content['desktop_view_count'] ?? '4');
-            $mobCols = htmlspecialchars($content['mobile_view_count'] ?? '2');
+            $deskCols = htmlspecialchars((string)($content['desktop_count'] ?? $content['desktop_view_count'] ?? $content['cards_desktop'] ?? '4'));
+            $tabCols = htmlspecialchars((string)($content['tablet_view_count'] ?? $content['cards_tablet'] ?? '2'));
+            $mobCols = htmlspecialchars((string)($content['mobile_count'] ?? $content['mobile_view_count'] ?? $content['cards_mobile'] ?? '2'));
             $isActive = (bool)$c['is_active'];
         ?>
         <div class="bg-white rounded-3xl overflow-hidden shadow-sm border border-gray-100 flex flex-col transition-all hover:shadow-lg hover:-translate-y-1 duration-300 relative group">

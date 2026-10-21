@@ -51,23 +51,8 @@ if (!function_exists('isExternalNavbarUrl')) {
     }
 }
 
-// Ensure Customize is available in navbar
-$hasCustomizeInNav = false;
-foreach ($menuItems as $m) {
-    if (isset($m['cta_url']) && strpos($m['cta_url'], 'customize') !== false) {
-        $hasCustomizeInNav = true;
-        break;
-    }
-}
-if (!$hasCustomizeInNav) {
-    $menuItems[] = [
-        'title' => 'Customize',
-        'cta_url' => BASE_URL . '/customize',
-        'position' => 'Left',
-        'active' => 1,
-        'is_dropdown' => 0
-    ];
-}
+// Only display the menu items configured by admin in CMS Builder
+
 
 $leftItems = [];
 $centerItems = [];

@@ -14,8 +14,9 @@ $title = $reelsData['title'] ?? '';
 $subtitle = $reelsData['subtitle'] ?? '';
 $deskHeight = !empty($reelsData['desktop_height_vh']) ? (float)$reelsData['desktop_height_vh'] : 70;
 $mobHeight = !empty($reelsData['mobile_height_vh']) ? (float)$reelsData['mobile_height_vh'] : 55;
-$deskCols = !empty($reelsData['desktop_view_count']) ? (float)$reelsData['desktop_view_count'] : 4;
-$mobCols = !empty($reelsData['mobile_view_count']) ? (float)$reelsData['mobile_view_count'] : 2;
+$deskCols = max(1, min(10, (float)(!empty($reelsData['desktop_count']) ? $reelsData['desktop_count'] : (!empty($reelsData['desktop_view_count']) ? $reelsData['desktop_view_count'] : (!empty($reelsData['cards_desktop']) ? $reelsData['cards_desktop'] : 4)))));
+$tabCols  = max(1, min(6, (float)(!empty($reelsData['tablet_view_count']) ? $reelsData['tablet_view_count'] : (!empty($reelsData['cards_tablet']) ? $reelsData['cards_tablet'] : max(1, min(3, round($deskCols * 0.6)))))));
+$mobCols  = max(1, min(6, (float)(!empty($reelsData['mobile_count']) ? $reelsData['mobile_count'] : (!empty($reelsData['mobile_view_count']) ? $reelsData['mobile_view_count'] : (!empty($reelsData['cards_mobile']) ? $reelsData['cards_mobile'] : 2)))));
 $autoplay = !empty($reelsData['autoplay']);
 $isMuted = !empty($reelsData['muted']);
 $isLoop = !empty($reelsData['loop']);
@@ -26,18 +27,42 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
 <style>
 /* Dynamic Responsive Viewport Heights & Column Counts */
 #<?= $uniqueId ?> {
-    --reel-gap: 1rem;
+    --reel-gap: 0.875rem;
     --mob-cols: <?= $mobCols ?>;
+    --tab-cols: <?= $tabCols ?>;
     --desk-cols: <?= $deskCols ?>;
+}
+#<?= $uniqueId ?> .reels-track {
+    display: flex !important;
+    gap: var(--reel-gap) !important;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+#<?= $uniqueId ?> .reels-track::-webkit-scrollbar {
+    display: none;
 }
 #<?= $uniqueId ?> .reel-card {
     height: <?= $mobHeight ?>vh;
     min-height: 280px;
     max-height: 600px;
-    flex: 0 0 calc((100% - ((var(--mob-cols) - 1) * var(--reel-gap))) / var(--mob-cols));
+    width: calc((100% - ((var(--mob-cols) - 1) * var(--reel-gap))) / var(--mob-cols)) !important;
+    max-width: calc((100% - ((var(--mob-cols) - 1) * var(--reel-gap))) / var(--mob-cols)) !important;
+    min-width: 0 !important;
+    flex: 0 0 calc((100% - ((var(--mob-cols) - 1) * var(--reel-gap))) / var(--mob-cols)) !important;
+    box-sizing: border-box !important;
     scroll-snap-align: start;
 }
-@media (min-width: 768px) {
+@media (min-width: 640px) and (max-width: 1023px) {
+    #<?= $uniqueId ?> {
+        --reel-gap: 1.125rem;
+    }
+    #<?= $uniqueId ?> .reel-card {
+        width: calc((100% - ((var(--tab-cols) - 1) * var(--reel-gap))) / var(--tab-cols)) !important;
+        max-width: calc((100% - ((var(--tab-cols) - 1) * var(--reel-gap))) / var(--tab-cols)) !important;
+        flex: 0 0 calc((100% - ((var(--tab-cols) - 1) * var(--reel-gap))) / var(--tab-cols)) !important;
+    }
+}
+@media (min-width: 1024px) {
     #<?= $uniqueId ?> {
         --reel-gap: 1.25rem;
     }
@@ -45,20 +70,15 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
         height: <?= $deskHeight ?>vh;
         min-height: 400px;
         max-height: 750px;
-        flex: 0 0 calc((100% - ((var(--desk-cols) - 1) * var(--reel-gap))) / var(--desk-cols));
-        <?= count($items) === 1 ? 'max-width: 380px; width: 100%;' : '' ?>
+        width: calc((100% - ((var(--desk-cols) - 1) * var(--reel-gap))) / var(--desk-cols)) !important;
+        max-width: calc((100% - ((var(--desk-cols) - 1) * var(--reel-gap))) / var(--desk-cols)) !important;
+        flex: 0 0 calc((100% - ((var(--desk-cols) - 1) * var(--reel-gap))) / var(--desk-cols)) !important;
+        <?= count($items) === 1 ? 'max-width: 380px !important; width: 100% !important;' : '' ?>
     }
-}
-#<?= $uniqueId ?> .reels-track::-webkit-scrollbar {
-    display: none;
-}
-#<?= $uniqueId ?> .reels-track {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
 }
 </style>
 
-<section id="<?= $uniqueId ?>" class="py-6 sm:py-10 relative overflow-hidden" style="background-color: <?= htmlspecialchars($bgColor) ?>;">
+<section id="<?= $uniqueId ?>" class="py-3 sm:py-5 md:py-6 relative overflow-hidden" style="background-color: <?= htmlspecialchars($bgColor) ?>;">
     <div class="w-full px-3 sm:px-5 lg:px-6">
         
         <!-- Header (without top arrows) -->
@@ -94,7 +114,7 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
             <?php endif; ?>
 
             <!-- Horizontal Scrollable Snap Track -->
-            <div class="reels-track flex items-stretch gap-4 sm:gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 pt-1 <?= count($items) < $deskCols ? 'justify-center' : 'justify-start' ?>" id="track-<?= $uniqueId ?>">
+            <div class="reels-track flex items-stretch overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 pt-1 <?= count($items) < $deskCols ? 'justify-start lg:justify-center' : 'justify-start' ?>" id="track-<?= $uniqueId ?>">
                 <?php foreach ($items as $idx => $item): 
                     $reelTitle = !empty($item['title']) ? $item['title'] : 'Explore Style';
                     $ctaUrl = !empty($item['cta_url']) ? $item['cta_url'] : '#';
@@ -102,12 +122,15 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
                     $deskImg = !empty($item['desktop_image']) ? $item['desktop_image'] : '';
                     $mobImg = !empty($item['mobile_image']) ? $item['mobile_image'] : $deskImg;
                     $videoUrl = !empty($item['video_url']) ? $item['video_url'] : '';
+                    $finalCtaUrl = (!empty($ctaUrl) && $ctaUrl !== '#') 
+                        ? ((str_starts_with($ctaUrl, 'http://') || str_starts_with($ctaUrl, 'https://')) ? $ctaUrl : (rtrim(BASE_URL, '/') . '/' . ltrim($ctaUrl, '/'))) 
+                        : '';
                 ?>
                     <div class="reel-card relative rounded-2xl sm:rounded-3xl overflow-hidden bg-gray-950 shadow-md group cursor-pointer transition-all duration-300 hover:shadow-2xl hover:-translate-y-1"
-                         onclick="openReelModal('<?= $uniqueId ?>', <?= (int)$idx ?>)"
+                         <?= !empty($finalCtaUrl) ? 'onclick="window.location.href=\'' . htmlspecialchars($finalCtaUrl, ENT_QUOTES) . '\'"' : '' ?>
                          data-video="<?= htmlspecialchars($videoUrl) ?>"
                          data-title="<?= htmlspecialchars($reelTitle) ?>"
-                         data-cta-url="<?= htmlspecialchars($ctaUrl) ?>"
+                         data-cta-url="<?= htmlspecialchars($finalCtaUrl ?: $ctaUrl) ?>"
                          data-cta-text="<?= htmlspecialchars($ctaText) ?>">
                         
                         <!-- 24-Hour Continuous Looping Video Player -->
@@ -118,6 +141,7 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
                                    loop
                                    muted
                                    playsinline
+                                   webkit-playsinline
                                    preload="auto"
                                    poster="<?= htmlspecialchars($deskImg ?: $mobImg) ?>">
                             </video>
@@ -151,22 +175,13 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
                             <?php endif; ?>
                         </div>
 
-                        <!-- Center Play Prompt (animated on hover) -->
-                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <div class="w-12 h-12 rounded-full bg-white/30 backdrop-blur-md border border-white/40 flex items-center justify-center text-white shadow-xl transform scale-90 group-hover:scale-100 transition-transform">
-                                <svg class="w-6 h-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-                            </div>
-                        </div>
-
                         <!-- Bottom Content & CTA -->
                         <div class="absolute bottom-0 inset-x-0 p-4 sm:p-5 flex flex-col justify-end text-white pointer-events-none z-20">
                             <h3 class="font-display font-bold text-sm sm:text-base leading-snug line-clamp-2 drop-shadow-md mb-2">
                                 <?= htmlspecialchars($reelTitle) ?>
                             </h3>
                             
-                            <?php if (!empty($ctaUrl) && $ctaUrl !== '#'): 
-                                $finalCtaUrl = (str_starts_with($ctaUrl, 'http://') || str_starts_with($ctaUrl, 'https://')) ? $ctaUrl : (rtrim(BASE_URL, '/') . '/' . ltrim($ctaUrl, '/'));
-                            ?>
+                            <?php if (!empty($finalCtaUrl)): ?>
                                 <a href="<?= htmlspecialchars($finalCtaUrl) ?>" 
                                    onclick="event.stopPropagation(); window.location.href=this.href;" 
                                    class="pointer-events-auto relative z-30 inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-3 rounded-xl bg-white/95 hover:bg-white text-gray-900 font-bold text-xs shadow-lg backdrop-blur-sm transition-all transform hover:scale-[1.02] active:scale-[0.98]">
@@ -193,55 +208,6 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
     </div>
 </section>
 
-<!-- Fullscreen / Modal Reel Viewer (Instagram / TikTok Style) -->
-<div id="reel-modal-<?= $uniqueId ?>" class="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl hidden flex items-center justify-center p-0 sm:p-4 transition-opacity">
-    <!-- Close Button -->
-    <button type="button" onclick="closeReelModal('<?= $uniqueId ?>')" class="absolute top-4 right-4 z-50 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center border border-white/20 transition-all">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-    </button>
-
-    <!-- Prev & Next Arrows (Desktop) -->
-    <button type="button" onclick="navigateModalReel('<?= $uniqueId ?>', -1)" class="hidden md:flex absolute left-6 top-1/2 -translate-y-1/2 z-50 w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 text-white items-center justify-center border border-white/20 transition-all hover:scale-110">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
-    </button>
-    <button type="button" onclick="navigateModalReel('<?= $uniqueId ?>', 1)" class="hidden md:flex absolute right-6 top-1/2 -translate-y-1/2 z-50 w-12 h-12 rounded-full bg-white/10 hover:bg-white/25 text-white items-center justify-center border border-white/20 transition-all hover:scale-110">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
-    </button>
-
-    <!-- Reel Screen Card -->
-    <div class="relative w-full h-full sm:h-[88vh] sm:max-w-md sm:rounded-3xl overflow-hidden bg-black shadow-2xl flex flex-col justify-between border sm:border-white/20">
-        <!-- Progress bar -->
-        <div class="absolute top-0 inset-x-0 h-1 bg-white/20 z-30">
-            <div id="modal-progress-<?= $uniqueId ?>" class="h-full bg-[#F25996] transition-all duration-100" style="width: 0%;"></div>
-        </div>
-
-        <!-- Video Display -->
-        <div class="absolute inset-0 z-10 flex items-center justify-center">
-            <video id="modal-video-<?= $uniqueId ?>" class="w-full h-full object-cover" playsinline loop></video>
-        </div>
-
-        <!-- Top Controls in Modal -->
-        <div class="relative z-20 p-5 flex items-center justify-between text-white">
-            <span class="text-xs font-bold bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 flex items-center gap-1.5">
-                <span class="w-2 h-2 rounded-full bg-[#F25996] animate-pulse"></span>
-                Reel Player
-            </span>
-            <button type="button" id="modal-sound-btn-<?= $uniqueId ?>" onclick="toggleModalSound('<?= $uniqueId ?>')" class="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/20 flex items-center justify-center text-white">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path></svg>
-            </button>
-        </div>
-
-        <!-- Bottom Controls in Modal -->
-        <div class="relative z-20 p-6 bg-gradient-to-t from-black/95 via-black/60 to-transparent text-white flex flex-col gap-3">
-            <h4 id="modal-title-<?= $uniqueId ?>" class="font-display font-bold text-lg leading-snug drop-shadow-md"></h4>
-            <a id="modal-cta-<?= $uniqueId ?>" href="#" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-[#F25996] to-rose-600 hover:from-[#e04481] hover:to-rose-700 text-white font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all">
-                <span id="modal-cta-text-<?= $uniqueId ?>">Shop Now</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
-            </a>
-        </div>
-    </div>
-</div>
-
 <script>
 window.reelsComponentsData = window.reelsComponentsData || {};
 window.reelsComponentsData['<?= $uniqueId ?>'] = {
@@ -253,7 +219,8 @@ window.reelsComponentsData['<?= $uniqueId ?>'] = {
 function scrollReelsTrack(containerId, direction) {
     const track = document.getElementById(`track-${containerId}`);
     if (track) {
-        const scrollAmount = track.clientWidth * 0.75 * direction;
+        const card = track.querySelector('.reel-card');
+        const scrollAmount = card ? (card.getBoundingClientRect().width + 16) * direction : (track.clientWidth * 0.75 * direction);
         track.scrollBy({ left: scrollAmount, behavior: 'smooth' });
     }
 }
@@ -276,94 +243,41 @@ function toggleReelCardSound(e, btn) {
     }
 }
 
-function openReelModal(containerId, idx) {
-    const data = window.reelsComponentsData[containerId];
-    if (!data || !data.items || !data.items[idx]) return;
-
-    data.currentIndex = idx;
-    const item = data.items[idx];
-
-    const modal = document.getElementById(`reel-modal-${containerId}`);
-    const video = document.getElementById(`modal-video-${containerId}`);
-    const titleEl = document.getElementById(`modal-title-${containerId}`);
-    const ctaEl = document.getElementById(`modal-cta-${containerId}`);
-    const ctaTextEl = document.getElementById(`modal-cta-text-${containerId}`);
-
-    if (modal && video) {
-        titleEl.innerText = item.title || 'Reel Style';
-        ctaEl.href = item.cta_url || '#';
-        ctaTextEl.innerText = item.cta_text || 'Shop Now';
-        
-        if (item.video_url) {
-            video.src = item.video_url;
-            video.currentTime = 0;
-            video.muted = false;
-            video.play().catch(() => {
-                video.muted = true;
-                video.play();
-            });
-        }
-
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-
-        video.ontimeupdate = () => {
-            if (video.duration) {
-                const prog = (video.currentTime / video.duration) * 100;
-                const pBar = document.getElementById(`modal-progress-${containerId}`);
-                if (pBar) pBar.style.width = prog + '%';
-            }
-        };
-    }
-}
-
-function closeReelModal(containerId) {
-    const modal = document.getElementById(`reel-modal-${containerId}`);
-    const video = document.getElementById(`modal-video-${containerId}`);
-    if (modal) {
-        modal.classList.add('hidden');
-        document.body.style.overflow = '';
-    }
-    if (video) {
-        video.pause();
-        video.src = '';
-    }
-}
-
-function navigateModalReel(containerId, dir) {
-    const data = window.reelsComponentsData[containerId];
-    if (!data || !data.items) return;
-    let nextIdx = data.currentIndex + dir;
-    if (nextIdx < 0) nextIdx = data.items.length - 1;
-    if (nextIdx >= data.items.length) nextIdx = 0;
-    openReelModal(containerId, nextIdx);
-}
-
-function toggleModalSound(containerId) {
-    const video = document.getElementById(`modal-video-${containerId}`);
-    if (video) {
-        video.muted = !video.muted;
-    }
-}
-
 // 24-Hour Continuous Non-Stop Looping Video Engine
 function init24HrVideoLoop_<?= $uniqueId ?>() {
     const track = document.getElementById('track-<?= $uniqueId ?>');
     if (!track) return;
     const cards = track.querySelectorAll('.reel-card');
+    
+    // IntersectionObserver to ensure playback starts as soon as card is in viewport
+    const observer = ('IntersectionObserver' in window) ? new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const v = entry.target.querySelector('video.reel-bg-video');
+            if (v && entry.isIntersecting) {
+                v.muted = true;
+                v.defaultMuted = true;
+                v.play().catch(() => {});
+            }
+        });
+    }, { threshold: 0.15 }) : null;
+
     cards.forEach(card => {
         const video = card.querySelector('video.reel-bg-video');
         if (!video) return;
 
         video.muted = true;
+        video.defaultMuted = true;
         video.loop = true;
         video.playsInline = true;
         video.setAttribute('muted', '');
         video.setAttribute('loop', '');
         video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
         video.setAttribute('autoplay', '');
 
         const startPlayback = () => {
+            video.muted = true;
+            video.defaultMuted = true;
             const playPromise = video.play();
             if (playPromise !== undefined) {
                 playPromise.catch(() => {
@@ -376,6 +290,14 @@ function init24HrVideoLoop_<?= $uniqueId ?>() {
         // Start playing immediately on page load
         startPlayback();
 
+        if (observer) {
+            observer.observe(card);
+        }
+
+        // Hover or touch on card triggers playback
+        card.addEventListener('mouseenter', startPlayback);
+        card.addEventListener('touchstart', startPlayback, { passive: true });
+
         // 24-hour continuous loop guarantee: immediately restart if video ends
         video.addEventListener('ended', () => {
             video.currentTime = 0;
@@ -384,15 +306,70 @@ function init24HrVideoLoop_<?= $uniqueId ?>() {
 
         // If paused by browser battery saver or OS, resume looping automatically
         video.addEventListener('pause', () => {
-            const modal = document.getElementById('reel-modal-<?= $uniqueId ?>');
-            if (!modal || modal.classList.contains('hidden')) {
+            if (!document.hidden) {
                 video.play().catch(() => {});
             }
         });
     });
+
+    // One-time kickstarter on first user scroll or interaction
+    const kickstart = () => {
+        cards.forEach(card => {
+            const v = card.querySelector('video.reel-bg-video');
+            if (v && v.paused) {
+                v.muted = true;
+                v.play().catch(() => {});
+            }
+        });
+    };
+    window.addEventListener('scroll', kickstart, { once: true, passive: true });
+    window.addEventListener('click', kickstart, { once: true });
+    window.addEventListener('touchstart', kickstart, { once: true, passive: true });
+
+    // Track Auto-Scroll Carousel Engine (when autoplay is enabled in CMS)
+    const isAutoplay = <?= $autoplay ? 'true' : 'false' ?>;
+    if (isAutoplay && cards.length > 1) {
+        let autoScrollInterval = null;
+
+        const startAutoScroll = () => {
+            if (autoScrollInterval) return;
+            autoScrollInterval = setInterval(() => {
+                const firstCard = track.querySelector('.reel-card');
+                if (!firstCard) return;
+                const cardWidth = firstCard.getBoundingClientRect().width + 16;
+                const maxScroll = track.scrollWidth - track.clientWidth;
+
+                if (track.scrollLeft >= maxScroll - 10) {
+                    track.scrollTo({ left: 0, behavior: 'smooth' });
+                } else {
+                    track.scrollBy({ left: cardWidth, behavior: 'smooth' });
+                }
+            }, 3500);
+        };
+
+        const stopAutoScroll = () => {
+            if (autoScrollInterval) {
+                clearInterval(autoScrollInterval);
+                autoScrollInterval = null;
+            }
+        };
+
+        // Pause auto-scroll on hover or touch, resume on leave
+        track.addEventListener('mouseenter', stopAutoScroll);
+        track.addEventListener('mouseleave', startAutoScroll);
+        track.addEventListener('touchstart', stopAutoScroll, { passive: true });
+        track.addEventListener('touchend', () => setTimeout(startAutoScroll, 2000), { passive: true });
+
+        startAutoScroll();
+    }
 }
 
-document.addEventListener('DOMContentLoaded', init24HrVideoLoop_<?= $uniqueId ?>);
+// Ensure execution even if DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init24HrVideoLoop_<?= $uniqueId ?>);
+} else {
+    init24HrVideoLoop_<?= $uniqueId ?>();
+}
 window.addEventListener('load', init24HrVideoLoop_<?= $uniqueId ?>);
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {

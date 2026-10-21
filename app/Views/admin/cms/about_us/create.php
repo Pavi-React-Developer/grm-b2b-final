@@ -13,12 +13,14 @@
 .color-link-group { display:flex; align-items:center; gap:6px; border:1px solid #e5e7eb; border-radius:10px; padding:6px 8px; background:#fff; }
 .color-link-group input[type=color] { width:32px; height:32px; border-radius:6px; border:2px solid #e5e7eb; cursor:pointer; padding:2px; background:#fff; flex-shrink:0; }
 .color-link-hex { flex:1; min-width:0; border:none; font-size:12px; font-family:monospace; text-transform:uppercase; outline:none; background:transparent; color:#374151; }
-.color-link-preview { width:28px; height:28px; border-radius:6px; border:1px solid #e5e7eb; flex-shrink:0; }
+.color-link-preview { width:28px; height:28px; border-radius:6px; border:1px solid #e5e7eb; flex-shrink:0; cursor:pointer; transition:transform .15s ease, box-shadow .15s ease; }
+.color-link-preview:hover { transform:scale(1.1); box-shadow:0 2px 6px rgba(0,0,0,0.15); }
 .theme-colors-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:20px; }
 </style>
 
 <div class="max-w-[95rem] mx-auto py-8 px-4 sm:px-6 font-sans">
     <form action="<?= BASE_URL ?>/admin/cms/about-us/store" method="POST" id="aboutUsForm">
+        <input type="hidden" name="ref" value="<?= htmlspecialchars($_GET['ref'] ?? '') ?>">
         
         <!-- Main Container -->
         <div class="bg-white rounded-[1.5rem] shadow-custom border border-gray-100 p-8 space-y-10">
@@ -86,41 +88,45 @@
                         <div class="border border-gray-200 rounded-xl p-4 bg-gray-50 space-y-4">
                             <h4 class="font-bold text-gray-700 text-sm mb-3">Theme Colors (Hero)</h4>
                             <div class="theme-colors-grid">
-<div class="color-field-item">
-                            <label>Background</label>
-                            <div class="color-link-group">
-                                <input type="color" name="theme_bg_color" id="clr_theme_bg_color" value="#f9fafb" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#f9fafb" oninput="syncColorHex(this,'clr_theme_bg_color')" placeholder="#f9fafb">
-                                <span class="color-link-preview" id="prev_theme_bg_color" style="background:#f9fafb;"></span>
-                            </div>
-                        </div>
                                 <div class="color-field-item">
-                            <label>Title Text</label>
-                            <div class="color-link-group">
-                                <input type="color" name="theme_hero_text_color" id="clr_theme_hero_text_color" value="#111827" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHex(this,'clr_theme_hero_text_color')" placeholder="#111827">
-                                <span class="color-link-preview" id="prev_theme_hero_text_color" style="background:#111827;"></span>
-                            </div>
-                        </div>
+                                    <label>Background</label>
+                                    <div class="color-link-group">
+                                        <input type="color" name="theme_bg_color" id="clr_theme_bg_color" value="#f9fafb" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                        <input type="text" class="color-link-hex" value="#f9fafb" oninput="syncColorHex(this,'clr_theme_bg_color')" onchange="syncColorHex(this,'clr_theme_bg_color')" placeholder="#f9fafb">
+                                        <span class="color-link-preview" id="prev_theme_bg_color" style="background:#f9fafb;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                                    </div>
+                                </div>
                                 <div class="color-field-item">
-                            <label>Description</label>
-                            <div class="color-link-group">
-                                <input type="color" name="theme_hero_desc_color" id="clr_theme_hero_desc_color" value="#4b5563" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#4b5563" oninput="syncColorHex(this,'clr_theme_hero_desc_color')" placeholder="#4b5563">
-                                <span class="color-link-preview" id="prev_theme_hero_desc_color" style="background:#4b5563;"></span>
-                            </div>
-                        </div>
+                                    <label>Title Text</label>
+                                    <div class="color-link-group">
+                                        <input type="color" name="theme_hero_text_color" id="clr_theme_hero_text_color" value="#111827" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                        <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHex(this,'clr_theme_hero_text_color')" onchange="syncColorHex(this,'clr_theme_hero_text_color')" placeholder="#111827">
+                                        <span class="color-link-preview" id="prev_theme_hero_text_color" style="background:#111827;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                                    </div>
+                                </div>
                                 <div class="color-field-item">
-                            <label>Button BG</label>
-                            <div class="color-link-group">
-                                <input type="color" name="theme_btn_bg_color" id="clr_theme_btn_bg_color" value="#059669" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#059669" oninput="syncColorHex(this,'clr_theme_btn_bg_color')" placeholder="#059669">
-                                <span class="color-link-preview" id="prev_theme_btn_bg_color" style="background:#059669;"></span>
-                            </div>
-                        </div>
-                                <div class="flex items-center gap-3">
-                                    <label class="text-xs font-serif font-bold text-gray-500 uppercase tracking-wider w-24">Button Text</label>
-                                    <input type="color" name="theme_btn_text_color" value="#ffffff" class="w-8 h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                                    <label>Description</label>
+                                    <div class="color-link-group">
+                                        <input type="color" name="theme_hero_desc_color" id="clr_theme_hero_desc_color" value="#4b5563" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                        <input type="text" class="color-link-hex" value="#4b5563" oninput="syncColorHex(this,'clr_theme_hero_desc_color')" onchange="syncColorHex(this,'clr_theme_hero_desc_color')" placeholder="#4b5563">
+                                        <span class="color-link-preview" id="prev_theme_hero_desc_color" style="background:#4b5563;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                                    </div>
+                                </div>
+                                <div class="color-field-item">
+                                    <label>Button BG</label>
+                                    <div class="color-link-group">
+                                        <input type="color" name="theme_btn_bg_color" id="clr_theme_btn_bg_color" value="#059669" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                        <input type="text" class="color-link-hex" value="#059669" oninput="syncColorHex(this,'clr_theme_btn_bg_color')" onchange="syncColorHex(this,'clr_theme_btn_bg_color')" placeholder="#059669">
+                                        <span class="color-link-preview" id="prev_theme_btn_bg_color" style="background:#059669;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                                    </div>
+                                </div>
+                                <div class="color-field-item">
+                                    <label>Button Text</label>
+                                    <div class="color-link-group">
+                                        <input type="color" name="theme_btn_text_color" id="clr_theme_btn_text_color" value="#ffffff" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                        <input type="text" class="color-link-hex" value="#ffffff" oninput="syncColorHex(this,'clr_theme_btn_text_color')" onchange="syncColorHex(this,'clr_theme_btn_text_color')" placeholder="#ffffff">
+                                        <span class="color-link-preview" id="prev_theme_btn_text_color" style="background:#ffffff;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -149,22 +155,26 @@
                         <div class="color-field-item">
                             <label>Background</label>
                             <div class="color-link-group">
-                                <input type="color" name="theme_feature_bg_color" id="clr_theme_feature_bg_color" value="#ffffff" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#ffffff" oninput="syncColorHex(this,'clr_theme_feature_bg_color')" placeholder="#ffffff">
-                                <span class="color-link-preview" id="prev_theme_feature_bg_color" style="background:#ffffff;"></span>
+                                <input type="color" name="theme_feature_bg_color" id="clr_theme_feature_bg_color" value="#ffffff" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#ffffff" oninput="syncColorHex(this,'clr_theme_feature_bg_color')" onchange="syncColorHex(this,'clr_theme_feature_bg_color')" placeholder="#ffffff">
+                                <span class="color-link-preview" id="prev_theme_feature_bg_color" style="background:#ffffff;" onclick="openColorPicker(this)" title="Click to pick color"></span>
                             </div>
                         </div>
                         <div class="color-field-item">
                             <label>Icon Color</label>
                             <div class="color-link-group">
-                                <input type="color" name="theme_feature_icon_color" id="clr_theme_feature_icon_color" value="#059669" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#059669" oninput="syncColorHex(this,'clr_theme_feature_icon_color')" placeholder="#059669">
-                                <span class="color-link-preview" id="prev_theme_feature_icon_color" style="background:#059669;"></span>
+                                <input type="color" name="theme_feature_icon_color" id="clr_theme_feature_icon_color" value="#059669" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#059669" oninput="syncColorHex(this,'clr_theme_feature_icon_color')" onchange="syncColorHex(this,'clr_theme_feature_icon_color')" placeholder="#059669">
+                                <span class="color-link-preview" id="prev_theme_feature_icon_color" style="background:#059669;" onclick="openColorPicker(this)" title="Click to pick color"></span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <label class="text-xs font-serif font-bold text-gray-500 uppercase tracking-wider w-24">Text Color</label>
-                            <input type="color" name="theme_feature_text_color" value="#111827" class="w-8 h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                        <div class="color-field-item">
+                            <label>Text Color</label>
+                            <div class="color-link-group">
+                                <input type="color" name="theme_feature_text_color" id="clr_theme_feature_text_color" value="#111827" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHex(this,'clr_theme_feature_text_color')" onchange="syncColorHex(this,'clr_theme_feature_text_color')" placeholder="#111827">
+                                <span class="color-link-preview" id="prev_theme_feature_text_color" style="background:#111827;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -191,11 +201,19 @@
                             <div class="grid grid-cols-2 gap-4 mt-2 border-t border-gray-100 pt-3">
                                 <div>
                                     <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">Card BG Color</label>
-                                    <input type="color" name="feature_bg_color[]" value="#ffffff" class="w-full h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                                    <div class="color-link-group">
+                                        <input type="color" name="feature_bg_color[]" value="#ffffff" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                        <input type="text" class="color-link-hex" value="#ffffff" oninput="syncColorHexAnon(this)" onchange="syncColorHexAnon(this)" placeholder="#ffffff">
+                                        <span class="color-link-preview" style="background:#ffffff;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">Card Text Color</label>
-                                    <input type="color" name="feature_text_color[]" value="#111827" class="w-full h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                                    <div class="color-link-group">
+                                        <input type="color" name="feature_text_color[]" value="#111827" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                        <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHexAnon(this)" onchange="syncColorHexAnon(this)" placeholder="#111827">
+                                        <span class="color-link-preview" style="background:#111827;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -222,25 +240,29 @@
                 <div class="border border-gray-200 rounded-xl p-4 bg-gray-50 mb-6">
                     <h4 class="font-bold text-gray-700 text-sm mb-3">Theme Colors (Why Choose)</h4>
                     <div class="theme-colors-grid">
-<div class="color-field-item">
+                        <div class="color-field-item">
                             <label>Background</label>
                             <div class="color-link-group">
-                                <input type="color" name="theme_why_choose_bg_color" id="clr_theme_why_choose_bg_color" value="#ffffff" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#ffffff" oninput="syncColorHex(this,'clr_theme_why_choose_bg_color')" placeholder="#ffffff">
-                                <span class="color-link-preview" id="prev_theme_why_choose_bg_color" style="background:#ffffff;"></span>
+                                <input type="color" name="theme_why_choose_bg_color" id="clr_theme_why_choose_bg_color" value="#ffffff" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#ffffff" oninput="syncColorHex(this,'clr_theme_why_choose_bg_color')" onchange="syncColorHex(this,'clr_theme_why_choose_bg_color')" placeholder="#ffffff">
+                                <span class="color-link-preview" id="prev_theme_why_choose_bg_color" style="background:#ffffff;" onclick="openColorPicker(this)" title="Click to pick color"></span>
                             </div>
                         </div>
                         <div class="color-field-item">
                             <label>Icon Color</label>
                             <div class="color-link-group">
-                                <input type="color" name="theme_why_choose_icon_color" id="clr_theme_why_choose_icon_color" value="#059669" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#059669" oninput="syncColorHex(this,'clr_theme_why_choose_icon_color')" placeholder="#059669">
-                                <span class="color-link-preview" id="prev_theme_why_choose_icon_color" style="background:#059669;"></span>
+                                <input type="color" name="theme_why_choose_icon_color" id="clr_theme_why_choose_icon_color" value="#059669" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#059669" oninput="syncColorHex(this,'clr_theme_why_choose_icon_color')" onchange="syncColorHex(this,'clr_theme_why_choose_icon_color')" placeholder="#059669">
+                                <span class="color-link-preview" id="prev_theme_why_choose_icon_color" style="background:#059669;" onclick="openColorPicker(this)" title="Click to pick color"></span>
                             </div>
                         </div>
-                        <div class="flex items-center gap-3">
-                            <label class="text-xs font-serif font-bold text-gray-500 uppercase tracking-wider w-24">Text Color</label>
-                            <input type="color" name="theme_why_choose_text_color" value="#111827" class="w-8 h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                        <div class="color-field-item">
+                            <label>Text Color</label>
+                            <div class="color-link-group">
+                                <input type="color" name="theme_why_choose_text_color" id="clr_theme_why_choose_text_color" value="#111827" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHex(this,'clr_theme_why_choose_text_color')" onchange="syncColorHex(this,'clr_theme_why_choose_text_color')" placeholder="#111827">
+                                <span class="color-link-preview" id="prev_theme_why_choose_text_color" style="background:#111827;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -274,11 +296,19 @@
                             <div class="grid grid-cols-2 gap-4 mt-2 border-t border-gray-100 pt-3">
                                 <div>
                                     <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">Card BG Color</label>
-                                    <input type="color" name="why_choose_bg_color[]" value="<?= htmlspecialchars($w['bg_color'] ?? '#ffffff') ?>" class="w-full h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                                    <div class="color-link-group">
+                                        <input type="color" name="why_choose_bg_color[]" value="<?= htmlspecialchars($w['bg_color'] ?? '#ffffff') ?>" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                        <input type="text" class="color-link-hex" value="<?= htmlspecialchars($w['bg_color'] ?? '#ffffff') ?>" oninput="syncColorHexAnon(this)" onchange="syncColorHexAnon(this)" placeholder="#ffffff">
+                                        <span class="color-link-preview" style="background:<?= htmlspecialchars($w['bg_color'] ?? '#ffffff') ?>;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">Card Text Color</label>
-                                    <input type="color" name="why_choose_text_color[]" value="<?= htmlspecialchars($w['text_color'] ?? '#111827') ?>" class="w-full h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                                    <div class="color-link-group">
+                                        <input type="color" name="why_choose_text_color[]" value="<?= htmlspecialchars($w['text_color'] ?? '#111827') ?>" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                        <input type="text" class="color-link-hex" value="<?= htmlspecialchars($w['text_color'] ?? '#111827') ?>" oninput="syncColorHexAnon(this)" onchange="syncColorHexAnon(this)" placeholder="#111827">
+                                        <span class="color-link-preview" style="background:<?= htmlspecialchars($w['text_color'] ?? '#111827') ?>;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -308,33 +338,33 @@
                         <div class="color-field-item">
                             <label>Background</label>
                             <div class="color-link-group">
-                                <input type="color" name="theme_faq_bg_color" id="clr_theme_faq_bg_color" value="#ffffff" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#ffffff" oninput="syncColorHex(this,'clr_theme_faq_bg_color')" placeholder="#ffffff">
-                                <span class="color-link-preview" id="prev_theme_faq_bg_color" style="background:#ffffff;"></span>
+                                <input type="color" name="theme_faq_bg_color" id="clr_theme_faq_bg_color" value="#ffffff" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#ffffff" oninput="syncColorHex(this,'clr_theme_faq_bg_color')" onchange="syncColorHex(this,'clr_theme_faq_bg_color')" placeholder="#ffffff">
+                                <span class="color-link-preview" id="prev_theme_faq_bg_color" style="background:#ffffff;" onclick="openColorPicker(this)" title="Click to pick color"></span>
                             </div>
                         </div>
                         <div class="color-field-item">
                             <label>Section Title Color</label>
                             <div class="color-link-group">
-                                <input type="color" name="theme_faq_text_color" id="clr_theme_faq_text_color" value="#111827" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHex(this,'clr_theme_faq_text_color')" placeholder="#111827">
-                                <span class="color-link-preview" id="prev_theme_faq_text_color" style="background:#111827;"></span>
+                                <input type="color" name="theme_faq_text_color" id="clr_theme_faq_text_color" value="#111827" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHex(this,'clr_theme_faq_text_color')" onchange="syncColorHex(this,'clr_theme_faq_text_color')" placeholder="#111827">
+                                <span class="color-link-preview" id="prev_theme_faq_text_color" style="background:#111827;" onclick="openColorPicker(this)" title="Click to pick color"></span>
                             </div>
                         </div>
                         <div class="color-field-item">
                             <label>Question Color</label>
                             <div class="color-link-group">
-                                <input type="color" name="theme_faq_question_color" id="clr_theme_faq_question_color" value="#111827" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHex(this,'clr_theme_faq_question_color')" placeholder="#111827">
-                                <span class="color-link-preview" id="prev_theme_faq_question_color" style="background:#111827;"></span>
+                                <input type="color" name="theme_faq_question_color" id="clr_theme_faq_question_color" value="#111827" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHex(this,'clr_theme_faq_question_color')" onchange="syncColorHex(this,'clr_theme_faq_question_color')" placeholder="#111827">
+                                <span class="color-link-preview" id="prev_theme_faq_question_color" style="background:#111827;" onclick="openColorPicker(this)" title="Click to pick color"></span>
                             </div>
                         </div>
                         <div class="color-field-item">
                             <label>Answer Color</label>
                             <div class="color-link-group">
-                                <input type="color" name="theme_faq_answer_color" id="clr_theme_faq_answer_color" value="#4b5563" oninput="syncColorLink(this)">
-                                <input type="text" class="color-link-hex" value="#4b5563" oninput="syncColorHex(this,'clr_theme_faq_answer_color')" placeholder="#4b5563">
-                                <span class="color-link-preview" id="prev_theme_faq_answer_color" style="background:#4b5563;"></span>
+                                <input type="color" name="theme_faq_answer_color" id="clr_theme_faq_answer_color" value="#4b5563" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                                <input type="text" class="color-link-hex" value="#4b5563" oninput="syncColorHex(this,'clr_theme_faq_answer_color')" onchange="syncColorHex(this,'clr_theme_faq_answer_color')" placeholder="#4b5563">
+                                <span class="color-link-preview" id="prev_theme_faq_answer_color" style="background:#4b5563;" onclick="openColorPicker(this)" title="Click to pick color"></span>
                             </div>
                         </div>
                     </div>
@@ -366,7 +396,8 @@
                     <span class="text-sm font-bold text-[#0056b3]">Active (Visible on Site)</span>
                 </label>
                 <div class="flex items-center gap-3">
-                    <a href="<?= BASE_URL ?>/admin/cms/about-us" class="px-6 py-2.5 border border-red-200 text-red-500 hover:bg-red-50 font-bold text-sm rounded-full transition-colors">CANCEL</a>
+                    <?php $cancelUrl = (!empty($_GET['ref']) && $_GET['ref'] === 'builder') ? BASE_URL . '/admin/cms/builder' : BASE_URL . '/admin/cms/about-us'; ?>
+                    <a href="<?= $cancelUrl ?>" class="px-6 py-2.5 border border-red-200 text-red-500 hover:bg-red-50 font-bold text-sm rounded-full transition-colors">CANCEL</a>
                     <button type="submit" class="px-8 py-2.5 bg-gray-900 text-white font-bold text-sm rounded-full shadow-sm hover:bg-black transition-all">Save About Us Component</button>
                 </div>
             </div>
@@ -441,11 +472,19 @@ function addFeatureColumn() {
             <div class="grid grid-cols-2 gap-4 mt-2 border-t border-gray-100 pt-3">
                 <div>
                     <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">Card BG Color</label>
-                    <input type="color" name="feature_bg_color[]" value="#ffffff" class="w-full h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                    <div class="color-link-group">
+                        <input type="color" name="feature_bg_color[]" value="#ffffff" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                        <input type="text" class="color-link-hex" value="#ffffff" oninput="syncColorHexAnon(this)" onchange="syncColorHexAnon(this)" placeholder="#ffffff">
+                        <span class="color-link-preview" style="background:#ffffff;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">Card Text Color</label>
-                    <input type="color" name="feature_text_color[]" value="#111827" class="w-full h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                    <div class="color-link-group">
+                        <input type="color" name="feature_text_color[]" value="#111827" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                        <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHexAnon(this)" onchange="syncColorHexAnon(this)" placeholder="#111827">
+                        <span class="color-link-preview" style="background:#111827;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -477,11 +516,19 @@ function addWhyChooseColumn() {
             <div class="grid grid-cols-2 gap-4 mt-2 border-t border-gray-100 pt-3">
                 <div>
                     <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">Card BG Color</label>
-                    <input type="color" name="why_choose_bg_color[]" value="#ffffff" class="w-full h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                    <div class="color-link-group">
+                        <input type="color" name="why_choose_bg_color[]" value="#ffffff" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                        <input type="text" class="color-link-hex" value="#ffffff" oninput="syncColorHexAnon(this)" onchange="syncColorHexAnon(this)" placeholder="#ffffff">
+                        <span class="color-link-preview" style="background:#ffffff;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">Card Text Color</label>
-                    <input type="color" name="why_choose_text_color[]" value="#111827" class="w-full h-8 rounded border-2 border-gray-200 cursor-pointer p-0.5 bg-white">
+                    <div class="color-link-group">
+                        <input type="color" name="why_choose_text_color[]" value="#111827" oninput="syncColorLink(this)" onchange="syncColorLink(this)">
+                        <input type="text" class="color-link-hex" value="#111827" oninput="syncColorHexAnon(this)" onchange="syncColorHexAnon(this)" placeholder="#111827">
+                        <span class="color-link-preview" style="background:#111827;" onclick="openColorPicker(this)" title="Click to pick color"></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -489,19 +536,128 @@ function addWhyChooseColumn() {
     container.appendChild(col);
 }
 
-function syncColorLink(input) {
-    const hexInput = input.nextElementSibling;
-    const preview = hexInput.nextElementSibling;
-    hexInput.value = input.value;
-    preview.style.background = input.value;
+// Expand 3-digit hex #rgb to 6-digit #rrggbb and guarantee #
+function normalizeHex(hex) {
+    if (!hex) return '';
+    hex = hex.trim();
+    if (!hex.startsWith('#')) hex = '#' + hex;
+    // 3-digit hex #rgb -> #rrggbb
+    if (/^#[0-9A-Fa-f]{3}$/.test(hex)) {
+        return ('#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3]).toLowerCase();
+    }
+    // 6-digit hex
+    if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        return hex.toLowerCase();
+    }
+    return '';
 }
 
-function syncColorHex(hexInput, colorInputId) {
-    let val = hexInput.value;
-    if(val.match(/^#[0-9a-fA-F]{6}$/)) {
-        document.getElementById(colorInputId).value = val;
-        hexInput.nextElementSibling.style.background = val;
+// Click preview circle to open the native color picker
+function openColorPicker(previewEl) {
+    const group = previewEl.closest('.color-link-group');
+    if (!group) return;
+    const picker = group.querySelector('input[type=color]');
+    if (picker) {
+        if (typeof picker.showPicker === 'function') {
+            try { picker.showPicker(); return; } catch(e) {}
+        }
+        picker.click();
     }
 }
 
+// Sync color picker -> hex text + preview
+function syncColorLink(colorInput) {
+    const group = colorInput.closest('.color-link-group');
+    const hex = colorInput.value;
+    if (group) {
+        const hexInput = group.querySelector('.color-link-hex');
+        const preview = group.querySelector('.color-link-preview');
+        if (hexInput) hexInput.value = hex.toUpperCase();
+        if (preview) preview.style.background = hex;
+    }
+    // Also update named preview if exists
+    if (colorInput.id) {
+        const namedPreview = document.getElementById('prev_' + colorInput.id.replace('clr_',''));
+        if (namedPreview) namedPreview.style.background = hex;
+    }
+}
+
+// Sync hex text -> color picker + preview (named)
+function syncColorHex(hexInput, colorPickerId) {
+    const raw = hexInput.value.trim();
+    const normalized = normalizeHex(raw);
+    const group = hexInput.closest('.color-link-group');
+    const preview = group ? group.querySelector('.color-link-preview') : null;
+    const picker = document.getElementById(colorPickerId);
+    if (normalized) {
+        if (picker) picker.value = normalized;
+        if (preview) preview.style.background = normalized;
+        const namedPreview = document.getElementById('prev_' + colorPickerId.replace('clr_',''));
+        if (namedPreview) namedPreview.style.background = normalized;
+    }
+}
+
+// Sync hex text -> color picker + preview (anonymous, in card arrays)
+function syncColorHexAnon(hexInput) {
+    const raw = hexInput.value.trim();
+    const normalized = normalizeHex(raw);
+    const group = hexInput.closest('.color-link-group');
+    const picker = group ? group.querySelector('input[type=color]') : null;
+    const preview = group ? group.querySelector('.color-link-preview') : null;
+    if (normalized) {
+        if (picker) picker.value = normalized;
+        if (preview) preview.style.background = normalized;
+    }
+}
+
+// Restore decoded SVG if browser restored a Base64-encoded state (e.g. Back button)
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('textarea[name="feature_icon[]"], textarea[name="why_choose_icon[]"]').forEach(function(ta) {
+        var val = ta.value.trim();
+        if (val.startsWith('BASE64:')) {
+            try {
+                var raw = atob(val.substring(7));
+                try {
+                    ta.value = decodeURIComponent(escape(raw));
+                } catch(e) {
+                    ta.value = raw;
+                }
+            } catch(e) {}
+        }
+    });
+});
+
+// Intercept form submission: sync all typed hex values and encode SVG markup to Base64 (WAF protection)
+var aboutForm = document.getElementById('aboutUsForm');
+if (aboutForm) {
+    aboutForm.addEventListener('submit', function(e) {
+        if (!aboutForm.checkValidity()) {
+            return;
+        }
+
+        // 1. Ensure any typed or modified hex text inputs are pushed into their corresponding input[type=color]
+        aboutForm.querySelectorAll('.color-link-group').forEach(function(group) {
+            var hexInput = group.querySelector('.color-link-hex');
+            var picker = group.querySelector('input[type=color]');
+            if (hexInput && picker && hexInput.value) {
+                var norm = normalizeHex(hexInput.value);
+                if (norm) {
+                    picker.value = norm;
+                }
+            }
+        });
+
+        // 2. Encode SVG icons to Base64 to prevent Web Application Firewall / ModSecurity 403 Forbidden
+        aboutForm.querySelectorAll('textarea[name="feature_icon[]"], textarea[name="why_choose_icon[]"]').forEach(function(ta) {
+            var val = ta.value.trim();
+            if (val && !val.startsWith('BASE64:')) {
+                try {
+                    ta.value = 'BASE64:' + btoa(unescape(encodeURIComponent(val)));
+                } catch (err) {
+                    console.warn('SVG encode fallback:', err);
+                }
+            }
+        });
+    });
+}
 </script>

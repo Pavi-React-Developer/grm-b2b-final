@@ -21,7 +21,9 @@ $buttonTextColor = $contentData['theme']['button_text_color'] ?? '#ffffff';
 
 $themeValue  = $contentData['theme']['value'] ?? '';
 $mediaItems  = $contentData['media'] ?? [];
-$mediaItems  = array_values(array_filter($mediaItems, function($m) { return !empty(trim($m['desktop'] ?? '')); }));
+$mediaItems  = array_values(array_filter($mediaItems, function($m) { 
+    return !empty(trim($m['desktop'] ?? '')) || !empty(trim($m['mobile'] ?? '')); 
+}));
 $description = $contentData['description'] ?? '';
 
 $containerHeight = !empty($contentData['container_height']) ? $contentData['container_height'] : '80';
@@ -123,30 +125,51 @@ if ($themeValue) {
         
         <div class="slider-track w-full h-full relative">
             <?php foreach ($mediaItems as $index => $media): 
-                $dUrl = $media['desktop'] ?? '';
-                $mUrl = !empty($media['mobile']) ? $media['mobile'] : $dUrl;
-                $type = $media['type'] ?? 'image';
+                $dUrl = trim((string)($media['desktop'] ?? ''));
+                $mUrl = trim((string)($media['mobile'] ?? ''));
+                if ($dUrl === '' && $mUrl !== '') $dUrl = $mUrl;
+                if ($mUrl === '' && $dUrl !== '') $mUrl = $dUrl;
                 if (!$dUrl) continue;
+
                 $overlayOpacity = isset($media['opacity']) && $media['opacity'] !== '' ? (float)$media['opacity'] : 0;
                 $overlayFrac = $overlayOpacity > 1 ? ($overlayOpacity / 100) : $overlayOpacity;
                 $overlayFrac = max(0, min(1, $overlayFrac));
+
+                $defaultType = $media['type'] ?? 'image';
+                $checkIsVideo = function($url) use ($defaultType) {
+                    if (empty($url)) return false;
+                    if (preg_match('/\.(mp4|webm|ogg|mov)(\?.*)?$/i', $url) || str_contains($url, '/video/upload/')) return true;
+                    if (preg_match('/\.(jpg|jpeg|png|webp|gif|svg|avif)(\?.*)?$/i', $url) || str_contains($url, '/image/upload/')) return false;
+                    return $defaultType === 'video';
+                };
+
+                $dIsVideo = $checkIsVideo($dUrl);
+                $mIsVideo = $checkIsVideo($mUrl);
+                $isSameMedia = ($dUrl === $mUrl && $dIsVideo === $mIsVideo);
             ?>
                 <div class="slide absolute inset-0 w-full h-full transition-all duration-700 ease-in-out <?= $index === 0 ? 'opacity-100 z-1' : 'opacity-0 z-0' ?>" data-index="<?= $index ?>">
-                    <?php if ($type === 'video'): ?>
-                        <video class="w-full h-full" style="<?= $fitStyle ?>" autoplay muted loop playsinline>
-                            <?php if ($mUrl && $mUrl !== $dUrl): ?>
-                                <source src="<?= htmlspecialchars($mUrl) ?>" type="video/mp4" media="(max-width: 767px)">
-                            <?php endif; ?>
-                            <source src="<?= htmlspecialchars($dUrl) ?>" type="video/mp4">
-                        </video>
-                    <?php else: ?>
-                        <picture class="block w-full h-full">
-                            <?php if ($mUrl && $mUrl !== $dUrl): ?>
-                                <source media="(max-width: 767px)" srcset="<?= htmlspecialchars($mUrl) ?>">
-                            <?php endif; ?>
+                    <?php if ($isSameMedia): ?>
+                        <?php if ($dIsVideo): ?>
+                            <video class="w-full h-full" style="<?= $fitStyle ?>" autoplay muted loop playsinline src="<?= htmlspecialchars($dUrl) ?>"></video>
+                        <?php else: ?>
                             <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="w-full h-full" style="<?= $fitStyle ?>">
-                        </picture>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <!-- Desktop Media (>= 768px) -->
+                        <?php if ($dIsVideo): ?>
+                            <video class="hidden md:block w-full h-full" style="<?= $fitStyle ?>" autoplay muted loop playsinline src="<?= htmlspecialchars($dUrl) ?>"></video>
+                        <?php else: ?>
+                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="hidden md:block w-full h-full" style="<?= $fitStyle ?>">
+                        <?php endif; ?>
+
+                        <!-- Mobile Media (< 768px) -->
+                        <?php if ($mIsVideo): ?>
+                            <video class="block md:hidden w-full h-full" style="<?= $fitStyle ?>" autoplay muted loop playsinline src="<?= htmlspecialchars($mUrl) ?>"></video>
+                        <?php else: ?>
+                            <img src="<?= htmlspecialchars($mUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="block md:hidden w-full h-full" style="<?= $fitStyle ?>">
+                        <?php endif; ?>
                     <?php endif; ?>
+
                     <?php if ($overlayFrac > 0): ?>
                         <div class="absolute inset-0 pointer-events-none" style="background-color: rgba(0, 0, 0, <?= $overlayFrac ?>);"></div>
                     <?php endif; ?>

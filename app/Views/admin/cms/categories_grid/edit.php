@@ -206,7 +206,18 @@ $theme = $content['theme'] ?? ['type' => 'solid', 'value' => '#ffffff'];
 
     <!-- Category Selection (Custom UI) -->
     <div class="p-6 border border-gray-200 rounded-xl space-y-4">
-        <h3 class="text-base font-bold text-gray-900 mb-4 uppercase tracking-wide">Select Categories *</h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+            <div>
+                <h3 class="text-base font-bold text-gray-900 uppercase tracking-wide">Select Categories *</h3>
+                <p class="text-xs text-gray-500 mt-0.5">Choose normal or customize categories to feature in this grid.</p>
+            </div>
+            <!-- Category Type Filter Tabs -->
+            <div class="flex items-center gap-1.5 bg-gray-100 p-1 rounded-xl">
+                <button type="button" class="cat-type-btn px-3 py-1 rounded-lg text-xs font-bold transition-all bg-white text-gray-900 shadow-xs" data-type="all">All Categories</button>
+                <button type="button" class="cat-type-btn px-3 py-1 rounded-lg text-xs font-bold transition-all text-gray-600 hover:text-gray-900" data-type="normal">📦 Normal</button>
+                <button type="button" class="cat-type-btn px-3 py-1 rounded-lg text-xs font-bold transition-all text-pink-600 hover:text-pink-800" data-type="custom">✨ Customize</button>
+            </div>
+        </div>
         
         <div class="relative mb-4">
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -219,12 +230,20 @@ $theme = $content['theme'] ?? ['type' => 'solid', 'value' => '#ffffff'];
             <?php foreach ($categories as $cat): 
                 $img = !empty($cat['image_path']) ? (str_starts_with($cat['image_path'], 'http') ? $cat['image_path'] : (BASE_URL . '/' . ltrim($cat['image_path'], '/'))) : 'https://placehold.co/100?text=' . urlencode($cat['name']);
                 $isChecked = in_array($cat['id'], $selectedCategories ?? []) ? 'checked' : '';
+                $isCustom = !empty($cat['is_customizable']);
             ?>
-            <label class="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors category-item" data-name="<?= htmlspecialchars(strtolower($cat['name'])) ?>">
+            <label class="flex items-center px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors category-item" 
+                   data-name="<?= htmlspecialchars(strtolower($cat['name'])) ?>"
+                   data-is-custom="<?= $isCustom ? '1' : '0' ?>">
                 <input type="checkbox" name="category_ids[]" value="<?= $cat['id'] ?>" <?= $isChecked ?> class="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500 mr-4">
                 <img src="<?= htmlspecialchars($img) ?>" class="w-10 h-10 object-contain rounded border border-gray-200 bg-white mr-4">
-                <div class="flex-1">
+                <div class="flex-1 flex items-center justify-between">
                     <div class="font-medium text-sm text-gray-900"><?= htmlspecialchars($cat['name']) ?></div>
+                    <?php if ($isCustom): ?>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-pink-100 text-pink-700 border border-pink-200">
+                            ✨ Customize
+                        </span>
+                    <?php endif; ?>
                 </div>
             </label>
             <?php endforeach; ?>
@@ -409,15 +428,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // Category Filter Logic
     const searchInput = document.getElementById('catSearch');
     const categoryItems = document.querySelectorAll('.category-item');
+    const typeButtons = document.querySelectorAll('.cat-type-btn');
+    let activeType = 'all';
 
     function filterCategories() {
-        const searchTerm = searchInput.value.toLowerCase();
+        const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
         categoryItems.forEach(item => {
-            const name = item.getAttribute('data-name');
+            const name = item.getAttribute('data-name') || '';
+            const isCustom = item.getAttribute('data-is-custom') || '0';
             const matchesSearch = name.includes(searchTerm);
+            
+            let matchesType = true;
+            if (activeType === 'normal') {
+                matchesType = (isCustom === '0');
+            } else if (activeType === 'custom') {
+                matchesType = (isCustom === '1');
+            }
 
-            if (matchesSearch) {
+            if (matchesSearch && matchesType) {
                 item.style.display = 'flex';
             } else {
                 item.style.display = 'none';
@@ -425,6 +454,19 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    searchInput.addEventListener('input', filterCategories);
+    if (searchInput) searchInput.addEventListener('input', filterCategories);
+
+    typeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            typeButtons.forEach(b => {
+                b.classList.remove('bg-white', 'text-gray-900', 'shadow-xs');
+                b.classList.add('text-gray-600');
+            });
+            btn.classList.remove('text-gray-600');
+            btn.classList.add('bg-white', 'text-gray-900', 'shadow-xs');
+            activeType = btn.getAttribute('data-type') || 'all';
+            filterCategories();
+        });
+    });
 });
 </script>

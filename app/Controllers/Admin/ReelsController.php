@@ -64,8 +64,9 @@ class ReelsController extends Controller
         $subtitle = trim($_POST['subtitle'] ?? '');
         $desktopHeightVh = !empty($_POST['desktop_height_vh']) ? trim((string)$_POST['desktop_height_vh']) : '70';
         $mobileHeightVh = !empty($_POST['mobile_height_vh']) ? trim((string)$_POST['mobile_height_vh']) : '55';
-        $desktopViewCount = !empty($_POST['desktop_view_count']) ? (float)$_POST['desktop_view_count'] : 4;
-        $mobileViewCount = !empty($_POST['mobile_view_count']) ? (float)$_POST['mobile_view_count'] : 2;
+        $desktopCount = !empty($_POST['desktop_count']) ? (float)$_POST['desktop_count'] : (!empty($_POST['desktop_view_count']) ? (float)$_POST['desktop_view_count'] : (!empty($_POST['cards_desktop']) ? (float)$_POST['cards_desktop'] : 4));
+        $mobileCount = !empty($_POST['mobile_count']) ? (float)$_POST['mobile_count'] : (!empty($_POST['mobile_view_count']) ? (float)$_POST['mobile_view_count'] : (!empty($_POST['cards_mobile']) ? (float)$_POST['cards_mobile'] : 2));
+        $tabletCount = !empty($_POST['tablet_view_count']) ? (float)$_POST['tablet_view_count'] : (!empty($_POST['cards_tablet']) ? (float)$_POST['cards_tablet'] : max(1, min(3, round($desktopCount * 0.6))));
         $autoplay = isset($_POST['autoplay']) ? 1 : 0;
         $muted = isset($_POST['muted']) ? 1 : 0;
         $loop = isset($_POST['loop']) ? 1 : 0;
@@ -80,8 +81,14 @@ class ReelsController extends Controller
             'subtitle'           => $subtitle,
             'desktop_height_vh'  => $desktopHeightVh,
             'mobile_height_vh'   => $mobileHeightVh,
-            'desktop_view_count' => $desktopViewCount,
-            'mobile_view_count'  => $mobileViewCount,
+            'desktop_count'      => $desktopCount,
+            'mobile_count'       => $mobileCount,
+            'desktop_view_count' => $desktopCount,
+            'tablet_view_count'  => $tabletCount,
+            'mobile_view_count'  => $mobileCount,
+            'cards_desktop'      => $desktopCount,
+            'cards_tablet'       => $tabletCount,
+            'cards_mobile'       => $mobileCount,
             'autoplay'           => $autoplay,
             'muted'              => $muted,
             'loop'               => $loop,
@@ -102,6 +109,7 @@ class ReelsController extends Controller
 
         if (class_exists('\Core\Cache')) {
             Cache::delete('cms_layout_home');
+            Cache::clear();
         }
 
         Session::setFlash('success', 'Reels Container created and added to Layout Builder.');
@@ -152,8 +160,9 @@ class ReelsController extends Controller
         $subtitle = trim($_POST['subtitle'] ?? '');
         $desktopHeightVh = !empty($_POST['desktop_height_vh']) ? trim((string)$_POST['desktop_height_vh']) : '70';
         $mobileHeightVh = !empty($_POST['mobile_height_vh']) ? trim((string)$_POST['mobile_height_vh']) : '55';
-        $desktopViewCount = !empty($_POST['desktop_view_count']) ? (float)$_POST['desktop_view_count'] : 4;
-        $mobileViewCount = !empty($_POST['mobile_view_count']) ? (float)$_POST['mobile_view_count'] : 2;
+        $desktopCount = !empty($_POST['desktop_count']) ? (float)$_POST['desktop_count'] : (!empty($_POST['desktop_view_count']) ? (float)$_POST['desktop_view_count'] : (!empty($_POST['cards_desktop']) ? (float)$_POST['cards_desktop'] : 4));
+        $mobileCount = !empty($_POST['mobile_count']) ? (float)$_POST['mobile_count'] : (!empty($_POST['mobile_view_count']) ? (float)$_POST['mobile_view_count'] : (!empty($_POST['cards_mobile']) ? (float)$_POST['cards_mobile'] : 2));
+        $tabletCount = !empty($_POST['tablet_view_count']) ? (float)$_POST['tablet_view_count'] : (!empty($_POST['cards_tablet']) ? (float)$_POST['cards_tablet'] : max(1, min(3, round($desktopCount * 0.6))));
         $autoplay = isset($_POST['autoplay']) ? 1 : 0;
         $muted = isset($_POST['muted']) ? 1 : 0;
         $loop = isset($_POST['loop']) ? 1 : 0;
@@ -168,8 +177,14 @@ class ReelsController extends Controller
             'subtitle'           => $subtitle,
             'desktop_height_vh'  => $desktopHeightVh,
             'mobile_height_vh'   => $mobileHeightVh,
-            'desktop_view_count' => $desktopViewCount,
-            'mobile_view_count'  => $mobileViewCount,
+            'desktop_count'      => $desktopCount,
+            'mobile_count'       => $mobileCount,
+            'desktop_view_count' => $desktopCount,
+            'tablet_view_count'  => $tabletCount,
+            'mobile_view_count'  => $mobileCount,
+            'cards_desktop'      => $desktopCount,
+            'cards_tablet'       => $tabletCount,
+            'cards_mobile'       => $mobileCount,
             'autoplay'           => $autoplay,
             'muted'              => $muted,
             'loop'               => $loop,
@@ -184,6 +199,7 @@ class ReelsController extends Controller
 
         if (class_exists('\Core\Cache')) {
             Cache::delete('cms_layout_home');
+            Cache::clear();
         }
 
         Session::setFlash('success', 'Reels Container updated successfully.');
@@ -218,6 +234,7 @@ class ReelsController extends Controller
 
             if (class_exists('\Core\Cache')) {
                 Cache::delete('cms_layout_home');
+                Cache::clear();
             }
 
             if ($isAjax) {
@@ -255,6 +272,7 @@ class ReelsController extends Controller
 
             if (class_exists('\Core\Cache')) {
                 Cache::delete('cms_layout_home');
+                Cache::clear();
             }
 
             echo json_encode(['success' => true, 'is_active' => $newStatus]);

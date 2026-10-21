@@ -14,10 +14,13 @@ if (!in_array($animation, $validAnimations)) {
 
 $autoplay = !empty($contentData['autoplay']);
 $autoplaySpeed = max(2, min(15, (int)($contentData['autoplay_speed'] ?? 4)));
-$cardsDesktop = max(1, min(4, (int)($contentData['cards_desktop'] ?? 3)));
-$cardsTablet = max(1, min(3, (int)($contentData['cards_tablet'] ?? 2)));
+$cardsDesktop = max(1, min(8, (int)($contentData['desktop_count'] ?? $contentData['cards_desktop'] ?? 3)));
+$cardsMobile = max(1, min(4, (int)($contentData['mobile_count'] ?? $contentData['cards_mobile'] ?? 1)));
+$cardsTablet = max(1, min(4, (int)($contentData['cards_tablet'] ?? max(1, min(3, (int)round($cardsDesktop * 0.6))))));
 
 $bgColor = !empty($contentData['bg_color']) ? $contentData['bg_color'] : '#ffffff';
+$titleColor = !empty($contentData['title_color']) ? $contentData['title_color'] : '#111827';
+$subtitleColor = !empty($contentData['subtitle_color']) ? $contentData['subtitle_color'] : '#6b7280';
 $cardBgColor = !empty($contentData['card_bg_color']) ? $contentData['card_bg_color'] : '#ffffff';
 $starColor = !empty($contentData['star_color']) ? $contentData['star_color'] : '#f59e0b';
 $accentColor = !empty($contentData['accent_color']) ? $contentData['accent_color'] : '#F25996';
@@ -109,9 +112,9 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
 </style>
 <?php endif; ?>
 
-<section class="cms-reviews-section w-full relative py-4 sm:py-6 md:py-8 <?= $hasCustomHeight ? 'flex flex-col justify-center' : '' ?>" id="<?= $sectionUid ?>" style="background-color: <?= htmlspecialchars($bgColor) ?>;">
+<section class="cms-reviews-section w-full relative py-3 sm:py-4 md:py-6 <?= $hasCustomHeight ? 'flex flex-col justify-center' : '' ?>" id="<?= $sectionUid ?>">
     <div class="carousel-outer-wrap w-full max-w-full mx-auto px-1 sm:px-6 lg:px-8">
-        <div class="w-full relative">
+        <div class="reviews-bg-wrap rounded-2xl md:rounded-[2rem] p-3.5 sm:p-5 md:p-6 lg:p-8 relative w-full" style="background-color: <?= htmlspecialchars($bgColor) ?>;">
             
             <!-- Section Header -->
             <div class="mb-4 sm:mb-6 px-1 sm:px-2">
@@ -122,12 +125,12 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
                             Customer Feedback
                         </div>
                         <?php if (!empty($title)): ?>
-                            <h2 class="text-xl sm:text-2xl md:text-3xl font-serif font-bold text-gray-900 tracking-tight leading-tight">
+                            <h2 class="text-xl sm:text-2xl md:text-3xl font-serif font-bold tracking-tight leading-tight" style="color: <?= htmlspecialchars($titleColor) ?>;">
                                 <?= htmlspecialchars($title) ?>
                             </h2>
                         <?php endif; ?>
                         <?php if (!empty($subtitle)): ?>
-                            <p class="mt-1 text-xs sm:text-sm text-gray-500 font-normal leading-normal">
+                            <p class="mt-1 text-xs sm:text-sm font-normal leading-normal" style="color: <?= htmlspecialchars($subtitleColor) ?>;">
                                 <?= htmlspecialchars($subtitle) ?>
                             </p>
                         <?php endif; ?>
@@ -331,7 +334,7 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
 }
 @media (max-width: 640px) {
     #<?= $sectionUid ?> .rev-slide {
-        width: 100% !important;
+        width: <?= 100 / $cardsMobile ?>% !important;
     }
 }
 </style>
@@ -357,7 +360,7 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
     const autoplaySpeed = <?= $autoplaySpeed * 1000 ?>;
 
     function getVisibleCount() {
-        if (window.innerWidth <= 640) return 1;
+        if (window.innerWidth <= 640) return <?= $cardsMobile ?>;
         if (window.innerWidth <= 1024) return <?= $cardsTablet ?>;
         return <?= $cardsDesktop ?>;
     }

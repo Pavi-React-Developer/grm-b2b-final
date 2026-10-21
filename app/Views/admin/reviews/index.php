@@ -196,9 +196,10 @@
                                         <div class="inline-flex items-center gap-2">
                                             <?php if ($this->hasPermission('reviews', 'edit')): ?>
                                                 <?php if (!$review['is_approved']): ?>
-                                                    <button onclick="updateReviewStatus(<?= $review['id'] ?>, 'approve')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-2xs">Approve</button>
+                                                    <button onclick="updateReviewStatus(<?= $review['id'] ?>, 'approve')" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-2xs font-bold text-xs" title="Approve Review">Approve</button>
+                                                    <button onclick="updateReviewStatus(<?= $review['id'] ?>, 'reject')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition-colors font-bold text-xs" title="Reject Review">Reject</button>
                                                 <?php else: ?>
-                                                    <button onclick="updateReviewStatus(<?= $review['id'] ?>, 'reject')" class="px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg transition-colors">Revoke</button>
+                                                    <button onclick="updateReviewStatus(<?= $review['id'] ?>, 'reject')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg transition-colors font-bold text-xs" title="Revoke Approval">Revoke</button>
                                                 <?php endif; ?>
                                             <?php endif; ?>
                                             <button onclick="viewReview(<?= htmlspecialchars(json_encode([
@@ -360,19 +361,35 @@
                                                 <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Pending
                                             </span>
                                         <?php endif; ?>
-                                    <button onclick="viewReview(<?= htmlspecialchars(json_encode([
-                                        'id' => $review['id'],
-                                        'name' => $review['reviewer_name'],
-                                        'product' => $review['product_name'],
-                                        'rating' => $review['rating'],
-                                        'text' => $review['review_text'],
-                                        'photos' => $review['photos'] ? json_decode($review['photos']) : [],
-                                        'date' => date('M d, Y', strtotime($review['created_at']))
-                                    ])) ?>)" class="inline-flex items-center justify-center p-1 text-emerald-600 hover:text-emerald-800 transition-colors align-middle" title="View Details">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                                    </button>
-                                </td>
-                            </tr>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-bold">
+                                        <div class="inline-flex items-center gap-2">
+                                            <?php if ($this->hasPermission('reviews', 'edit')): ?>
+                                                <?php if (!$review['is_approved']): ?>
+                                                    <button onclick="updateReviewStatus(<?= $review['id'] ?>, 'approve')" class="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors shadow-2xs font-bold text-xs" title="Approve Review">Approve</button>
+                                                    <button onclick="updateReviewStatus(<?= $review['id'] ?>, 'reject')" class="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition-colors font-bold text-xs" title="Reject Review">Reject</button>
+                                                <?php else: ?>
+                                                    <button onclick="updateReviewStatus(<?= $review['id'] ?>, 'reject')" class="px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg transition-colors font-bold text-xs" title="Revoke Approval">Revoke</button>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                            <button onclick="viewReview(<?= htmlspecialchars(json_encode([
+                                                'id' => $review['id'],
+                                                'name' => $review['reviewer_name'],
+                                                'email' => $review['reviewer_email'],
+                                                'product' => $review['product_name'],
+                                                'isCustom' => true,
+                                                'garmentType' => $review['garment_type'] ?? 'Garment',
+                                                'programName' => $review['program_name'] ?? '',
+                                                'rating' => $review['rating'],
+                                                'text' => $review['review_text'],
+                                                'photos' => $photos,
+                                                'date' => date('M d, Y', strtotime($review['created_at']))
+                                            ])) ?>)" class="p-1.5 text-gray-500 hover:text-[#F25996] hover:bg-pink-50 rounded-lg transition-colors border border-gray-200" title="View Review Details">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>

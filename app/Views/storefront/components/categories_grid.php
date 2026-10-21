@@ -37,9 +37,27 @@ $image_fit = $contentData['image_fit'] ?? 'cover';
 $desktop_height = $contentData['desktop_height'] ?? '80';
 $mobile_height = $contentData['mobile_height'] ?? '50';
 
-// Fetch grid categories
+// Fetch grid categories (ensure both normal and customizable categories are fetched with correct attributes)
 $gridCategories = [];
-if (isset($categories) && is_array($categories)) {
+$db = \Core\Database::getInstance();
+if (!empty($category_ids) && is_array($category_ids)) {
+    $inClause = implode(',', array_map('intval', $category_ids));
+    if (!empty($inClause)) {
+        try {
+            $catsFromDb = $db->query("SELECT id, name, slug, image_path, is_customizable FROM categories WHERE id IN ($inClause) AND status = 'active'")->fetchAll(\PDO::FETCH_ASSOC);
+            $catsById = [];
+            foreach ($catsFromDb as $cdb) {
+                $catsById[$cdb['id']] = $cdb;
+            }
+            foreach ($category_ids as $cid) {
+                if (isset($catsById[$cid])) {
+                    $gridCategories[] = $catsById[$cid];
+                }
+            }
+        } catch (\Exception $e) {}
+    }
+}
+if (empty($gridCategories) && isset($categories) && is_array($categories)) {
     foreach ($categories as $c) {
         if (in_array($c['id'], $category_ids)) {
             $gridCategories[] = $c;
@@ -48,7 +66,6 @@ if (isset($categories) && is_array($categories)) {
 }
 
 // Fetch products for these categories
-$db = \Core\Database::getInstance();
 $catProducts = [];
 $catProductCounts = [];
 if (!empty($category_ids)) {
@@ -62,12 +79,17 @@ if (!empty($category_ids)) {
         try {
             $stmt = $db->query("
                 SELECT p.*, 
+                       c.name as category_name, c.is_customizable as category_is_customizable,
                        c.sgst as category_sgst, c.cgst as category_cgst, c.moq as category_moq,
                        (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) as main_image,
                        pv_agg.base_price,
-                       pv_agg.discount_price
+                       pv_agg.discount_price,
+                       fc.minimum_pieces as custom_moq,
+                       fc.garment_type,
+                       fc.id as customization_id
                 FROM products p 
                 JOIN categories c ON c.id = p.category_id AND c.status = 'active'
+                LEFT JOIN fabric_customizations fc ON fc.fabric_id = p.id AND fc.status = 'active' AND fc.customization_enabled = 1
                 LEFT JOIN (
                     SELECT product_id,
                            MIN(base_price) AS base_price,
@@ -75,12 +97,45 @@ if (!empty($category_ids)) {
                     FROM product_variants
                     GROUP BY product_id
                 ) pv_agg ON pv_agg.product_id = p.id
-                WHERE p.category_id IN ($ids) AND p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL)
+                WHERE p.category_id IN ($ids) AND p.status = 'active' AND p.category_id IS NOT NULL 
+                  AND (
+                      (c.is_customizable = 1 AND p.is_customizable = 1)
+                      OR (COALESCE(c.is_customizable, 0) = 0 AND (p.is_customizable = 0 OR p.is_customizable IS NULL))
+                  )
                 ORDER BY p.id DESC
             ");
             $productsRaw = $stmt->fetchAll();
+
+            $customProdIds = [];
+            $customProgIds = [];
+            foreach ($productsRaw as $rawP) {
+                if (!empty($rawP['is_customizable']) || !empty($rawP['category_is_customizable'])) {
+                    $customProdIds[] = (int)$rawP['id'];
+                    if (!empty($rawP['customization_id'])) {
+                        $customProgIds[] = (int)$rawP['customization_id'];
+                    }
+                }
+            }
+            $customImgs = [];
+            if (!empty($customProdIds)) {
+                $cpidList = implode(',', array_unique($customProdIds));
+                $cimgStmt = $db->query("SELECT product_id, image_path FROM product_images WHERE product_id IN ($cpidList) ORDER BY is_primary DESC, sort_order ASC, id ASC");
+                while ($cir = $cimgStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $customImgs[$cir['product_id']][] = $cir['image_path'];
+                }
+            }
+            $customSizes = [];
+            if (!empty($customProgIds)) {
+                $cprogList = implode(',', array_unique($customProgIds));
+                $cszStmt = $db->query("SELECT customization_id, size_name FROM fabric_customization_sizes WHERE customization_id IN ($cprogList) AND enabled = 1 ORDER BY sort_order ASC, id ASC");
+                while ($csz = $cszStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $customSizes[$csz['customization_id']][] = $csz['size_name'];
+                }
+            }
             
             foreach ($productsRaw as $p) {
+                $p['images'] = $customImgs[$p['id']] ?? (!empty($p['main_image']) ? [$p['main_image']] : []);
+                $p['sizes'] = $customSizes[$p['customization_id'] ?? 0] ?? ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
                 $cId = $p['category_id'];
                 if (!isset($catProducts[$cId])) {
                     $catProducts[$cId] = [];
@@ -127,7 +182,7 @@ if (!empty($category_ids)) {
             padding-right: 0.25rem !important;
         }
         #<?= $id ?> .catgrid-bg-wrap {
-            padding: 0.65rem 0.35rem 0.5rem 0.35rem !important;
+            padding: 0.65rem 0.35rem 0.65rem 0.35rem !important;
             border-radius: 1.25rem !important;
         }
         #<?= $id ?> .catgrid-header-wrap {
@@ -388,13 +443,13 @@ if (!empty($category_ids)) {
     }
 </style>
 
-<div class="w-full relative py-3 sm:py-4 md:py-6" id="<?= $id ?>">
+<div class="w-full relative py-3 sm:py-5 md:py-6" id="<?= $id ?>">
     <div class="catgrid-outer-container w-full max-w-full mx-auto px-1 sm:px-6 lg:px-8">
-        <div class="catgrid-bg-wrap rounded-2xl md:rounded-[2rem] p-2 sm:p-4 md:p-6 lg:p-8 relative" style="<?= htmlspecialchars($bgStyle) ?>">
+        <div class="catgrid-bg-wrap rounded-2xl md:rounded-[2rem] px-3 sm:px-6 md:px-8 py-5 sm:py-7 md:py-8 relative" style="<?= htmlspecialchars($bgStyle) ?>">
 
         <!-- Header -->
         <?php if (!empty(trim($title)) || (!empty(trim($cta_text)) && !empty(trim($cta_url)))): ?>
-        <div class="catgrid-header-wrap flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3 mb-3 md:mb-6">
+        <div class="catgrid-header-wrap flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3 mb-3 sm:mb-4 md:mb-5">
             <?php if (!empty(trim($title))): ?>
             <h2 class="text-2xl md:text-3xl font-serif font-bold" style="color: <?= htmlspecialchars($title_color) ?>;">
                 <?= htmlspecialchars($title) ?>
@@ -430,7 +485,12 @@ if (!empty($category_ids)) {
                             <img src="<?= htmlspecialchars($img) ?>" style="width:100%; height:100%; object-fit:cover;" loading="lazy" decoding="async">
                         </div>
                         <div style="flex:1; min-width:0;">
-                            <h4 class="tab-title" style="font-weight:700; font-size:0.875rem; color:inherit; margin:0 0 0.2rem 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?= htmlspecialchars($cat['name']) ?></h4>
+                            <div style="display:flex; align-items:center; gap:0.35rem; margin:0 0 0.2rem 0;">
+                                <h4 class="tab-title" style="font-weight:700; font-size:0.875rem; color:inherit; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"><?= htmlspecialchars($cat['name']) ?></h4>
+                                <?php if (!empty($cat['is_customizable'])): ?>
+                                    <span style="font-size:0.625rem; font-weight:700; padding:0.1rem 0.35rem; border-radius:9999px; background:#fce7f3; color:#be185d; border:1px solid #fbcfe8; flex-shrink:0;">✨ Custom</span>
+                                <?php endif; ?>
+                            </div>
                             <p class="tab-count" style="font-size:0.75rem; margin:0; <?= $isActive ? 'color:rgba(255,255,255,0.8);' : 'color:#64748b;' ?>"><?= $count ?> products</p>
                         </div>
                         <div class="tab-dot" style="width:0.45rem; height:0.45rem; border-radius:9999px; background:#fff; flex-shrink:0; <?= $isActive ? 'opacity:1;' : 'opacity:0;' ?>"></div>
@@ -477,92 +537,237 @@ if (!empty($category_ids)) {
                                 if ($discountPrice && $basePrice > $discountPrice) {
                                     $displayOriginalPrice = $basePrice;
                                 }
-                                $moq = !empty($prod['moq_override']) ? $prod['moq_override'] : ($prod['category_moq'] ?? ($prod['moq'] ?? 1));
+                                $isCustomProduct = !empty($prod['is_customizable']) || !empty($cat['is_customizable']);
+                                $prodDetailUrl = $isCustomProduct ? (BASE_URL . '/fabrics/customize?fabric_id=' . (int)$prod['id']) : (BASE_URL . '/product?id=' . (int)$prod['id']);
+                                $moq = !empty($prod['custom_moq']) ? $prod['custom_moq'] : (!empty($prod['moq_override']) ? $prod['moq_override'] : ($prod['category_moq'] ?? ($prod['moq'] ?? 1)));
                                 $isLoggedIn = \Core\Session::get('user_id') !== null;
                             ?>
-                            <div class="product-card catgrid-slide-card bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 flex flex-col h-full relative group shrink-0" style="width: 250px; min-width: 250px; max-width: 250px; scroll-snap-align: start;">
-                                
-                                <!-- Wishlist Icon -->
-                                <?php if ($isLoggedIn): ?>
-                                <?php 
-                                    $inWishlist = false;
-                                    if (!empty($wishlistIds) && is_array($wishlistIds)) {
-                                        $inWishlist = in_array($prod['id'], $wishlistIds);
-                                    } elseif (!empty($wishlistItems) && is_array($wishlistItems)) {
-                                        $inWishlist = in_array($prod['id'], array_column($wishlistItems, 'product_id')) || in_array($prod['id'], array_column($wishlistItems, 'id'));
-                                    }
+                            <?php if ($isCustomProduct): ?>
+                                <?php
+                                $cGarmentType = !empty($prod['garment_type']) ? $prod['garment_type'] : 'CUSTOM GARMENT';
+                                $cStock = isset($prod['stock_quantity']) ? (int)$prod['stock_quantity'] : 100;
+                                $cImages = !empty($prod['images']) && is_array($prod['images']) ? array_values(array_filter($prod['images'])) : (!empty($img) ? [$img] : []);
+                                if ((empty($cImages) || count($cImages) <= 1) && !empty($prod['id'])) {
+                                    try {
+                                        $cFallbackImgs = $db->query("SELECT image_path FROM product_images WHERE product_id = " . (int)$prod['id'] . " ORDER BY is_primary DESC, sort_order ASC, id ASC")->fetchAll(\PDO::FETCH_COLUMN);
+                                        if (!empty($cFallbackImgs) && count($cFallbackImgs) > 1) {
+                                            $cImages = $cFallbackImgs;
+                                        }
+                                    } catch (\Throwable $e) {}
+                                }
+                                $cSizes = !empty($prod['sizes']) && is_array($prod['sizes']) ? $prod['sizes'] : ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
+                                $cCatName = !empty($prod['category_name']) ? $prod['category_name'] : $cGarmentType;
+                                $cCleanDesc = !empty($prod['description']) 
+                                    ? trim(preg_replace('/\s+/', ' ', str_replace(["\r\n", "\r", "\n"], ' ', strip_tags($prod['description'])))) 
+                                    : 'Soft, breathable cotton fabric perfect for maternity wear.';
                                 ?>
-                                <button onclick="toggleWishlist(<?= $prod['id'] ?>, this)" data-wishlist-btn-id="<?= $prod['id'] ?>" class="wishlist-btn <?= $inWishlist ? 'is-active' : '' ?> absolute top-2 right-2 w-6 h-6 sm:w-7 sm:h-7 hover:opacity-80 transition-opacity rounded-full flex items-center justify-center z-10 shadow-sm" style="background-color: <?= htmlspecialchars($wishlist_color) ?>;">
-                                    <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 <?= $inWishlist ? 'text-[#F25996] fill-[#F25996] is-active' : 'text-gray-400 fill-none' ?>" fill="<?= $inWishlist ? '#F25996' : 'none' ?>" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                                </button>
-                                <?php endif; ?>
-
-                                <!-- Product Image -->
-                                <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="product-image-wrap block w-full bg-gray-100 overflow-hidden shrink-0 product-img-container aspect-square relative">
-                                    <?php 
-                                    $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
-                                    if ($isLoggedIn && $discPercent > 0) {
-                                        echo render_discount_starburst($discPercent, 'transition-transform duration-300 group-hover:scale-105');
-                                    }
-                                    ?>
-                                    <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" class="w-full h-full object-<?= htmlspecialchars($image_fit) ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
-                                </a>
-
-                                <!-- Product Details -->
-                                <div class="product-card-body p-3 md:p-4 flex flex-col flex-1 bg-white relative z-10">
-                                    <?php 
-                                    $cardBrand = !empty($prod['vendor_store_name']) ? $prod['vendor_store_name'] : (!empty($prod['vendor_company_name']) ? $prod['vendor_company_name'] : '');
-                                    ?>
-                                    <?php if (!empty($cardBrand)): ?>
-                                        <div class="mb-1">
-                                            <span class="inline-flex items-center gap-1 text-[10px] md:text-[11px] font-bold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded border border-indigo-100/70 capitalize">
-                                                <svg class="w-2.5 h-2.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                                <?= htmlspecialchars($cardBrand) ?>
-                                            </span>
-                                        </div>
-                                    <?php endif; ?>
-
-                                    <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="product-link block mb-1.5">
-                                        <h3 class="product-name font-bold leading-snug line-clamp-2"><?= htmlspecialchars($prod['name']) ?></h3>
-                                    </a>
+                                <div class="product-card catgrid-slide-card bg-white rounded-2xl sm:rounded-[22px] border border-gray-100 overflow-hidden shadow-xs hover:shadow-xl hover:border-pink-200 transition-all duration-300 flex flex-col group transform hover:-translate-y-1 relative shrink-0" style="width: 250px; min-width: 250px; max-width: 250px; scroll-snap-align: start;">
                                     
-                                    <?php if (!empty($prod['sku'])): ?>
-                                        <p class="font-medium mb-3" style="font-size: 0.875rem; color: <?= htmlspecialchars($subtitle_color) ?>;">SKU: <?= htmlspecialchars($prod['sku']) ?></p>
+                                    <!-- Top Image Area -->
+                                    <div class="relative h-48 sm:h-56 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
+                                        <img id="cg-main-img-<?= $prod['id'] ?>" 
+                                             src="<?= htmlspecialchars($img) ?>" 
+                                             alt="<?= htmlspecialchars($prod['name']) ?>" 
+                                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+
+                                        <!-- Top Left Badges: CUSTOM & Garment Type -->
+                                        <div class="absolute top-2 left-2 pointer-events-none z-10 flex flex-col gap-1 items-start">
+                                            <span class="px-2 py-0.5 bg-[#F25996] text-white font-extrabold text-[8.5px] uppercase tracking-wider rounded-md shadow-sm flex items-center gap-0.5">
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/></svg>
+                                                <span>CUSTOM</span>
+                                            </span>
+                                            <?php if (!empty($cGarmentType)): ?>
+                                                <span class="px-1.5 py-0.5 bg-black/65 backdrop-blur-xs text-white font-bold text-[8px] uppercase tracking-wider rounded shadow-xs">
+                                                    <?= htmlspecialchars($cGarmentType) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <!-- Top Right: Stock Counter (Wishlist removed for customize card) -->
+                                        <?php if ($cStock > 0): ?>
+                                            <div class="absolute top-2 right-2 z-10 flex flex-col items-end">
+                                                <span class="px-2 py-0.5 bg-emerald-600/95 backdrop-blur-xs text-white font-bold text-[8px] tracking-wide rounded-full shadow-sm flex items-center gap-1">
+                                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                                                    <?= $cStock ?> Qty
+                                                </span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <!-- Circular Variant Swatches Overlapping Border (when multiple images exist) -->
+                                    <?php if (count($cImages) > 1): ?>
+                                    <div class="-mt-4 mb-1.5 px-3 flex items-center gap-1.5 relative z-20 overflow-x-auto scrollbar-none pb-0.5">
+                                        <?php 
+                                            foreach (array_slice($cImages, 0, 5) as $idx => $swImg):
+                                                $swUrl = get_image_url($swImg, 100, 100);
+                                                $fullSwUrl = get_image_url($swImg);
+                                        ?>
+                                            <img src="<?= htmlspecialchars($swUrl) ?>" 
+                                                 alt="" 
+                                                 onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
+                                                 onclick="document.getElementById('cg-main-img-<?= $prod['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
+                                                 class="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-110 transition-transform flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <?php else: ?>
+                                    <div class="h-2"></div>
                                     <?php endif; ?>
 
-                                    <?php if ($isLoggedIn): ?>
-                                        <div class="mt-auto">
-                                            <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-2">
-                                                <span class="product-price font-black tracking-tight">₹<?= format_price($displayPrice) ?></span>
-                                                <?php if ($displayOriginalPrice && $displayOriginalPrice > $displayPrice): ?>
-                                                    <span class="product-orig-price text-sm font-bold text-gray-400 line-through">₹<?= format_price($displayOriginalPrice) ?></span>
-                                                <?php endif; ?>
+                                    <!-- Card Content Body -->
+                                    <div class="px-3 pt-0 pb-3 flex-1 flex flex-col justify-between">
+                                        <div>
+                                            <!-- Category Label in Pink -->
+                                            <div class="text-[#F25996] font-bold text-[9.5px] uppercase tracking-wide mb-0.5 truncate">
+                                                <?= htmlspecialchars($cCatName) ?>
                                             </div>
-                                            
-                                            <p class="product-moq-row font-semibold flex items-center gap-1" style="color: var(--pc-price);">
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                                Min. Order: <?= htmlspecialchars($moq) ?> Pcs
+
+                                            <!-- Product Title -->
+                                            <h2 class="font-bold text-[#1e293b] text-xs sm:text-sm leading-snug line-clamp-1 mb-1 hover:text-[#F25996] transition-colors" title="<?= htmlspecialchars($prod['name']) ?>">
+                                                <a href="<?= $prodDetailUrl ?>"><?= htmlspecialchars($prod['name']) ?></a>
+                                            </h2>
+
+                                            <!-- Description -->
+                                            <p class="text-[10px] text-[#64748b] line-clamp-2 mb-2 leading-tight">
+                                                <?= htmlspecialchars($cCleanDesc) ?>
                                             </p>
 
-                                            <form action="<?= BASE_URL ?>/cart/add" method="POST" onsubmit="ajaxAddToCart(event, this)">
-                                                <input type="hidden" name="product_id" value="<?= $prod['id'] ?>">
-                                                <input type="hidden" name="quantity" value="<?= htmlspecialchars($moq) ?>">
-                                                <button type="submit" class="product-btn w-full font-bold transition-colors flex items-center justify-center gap-2 hover:opacity-90 shadow-sm" style="background-color: <?= htmlspecialchars($button_bg_color) ?>; color: <?= htmlspecialchars($button_text_color) ?>;">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                                    Add to Cart
-                                                </button>
-                                            </form>
+                                            <!-- Custom Stitching & Min Stitch -->
+                                            <div class="mb-2">
+                                                <div class="flex items-center justify-between gap-1">
+                                                    <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[10px] font-bold">
+                                                        <svg class="w-3 h-3 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
+                                                        </svg>
+                                                        <span>Custom Stitching</span>
+                                                    </div>
+
+                                                    <!-- Min Stitch Badge -->
+                                                    <div class="text-right flex-shrink-0">
+                                                        <span class="text-[6.5px] sm:text-[7px] uppercase font-bold text-gray-400 block tracking-wider leading-none">Min Stitch</span>
+                                                        <span class="px-1.5 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] rounded-md inline-block mt-0.5">
+                                                            <?= (int)$moq ?> Pcs
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Sizes Matrix -->
+                                            <div class="mb-2.5">
+                                                <div class="flex items-center gap-1 flex-wrap">
+                                                    <?php foreach ($cSizes as $sIndex => $szName): ?>
+                                                        <?php if ($sIndex === 0): ?>
+                                                            <span class="px-1.5 py-0.5 bg-[#F25996] text-white font-bold text-[9px] rounded shadow-xs flex items-center justify-center min-w-[20px]">
+                                                                <?= htmlspecialchars($szName) ?>
+                                                            </span>
+                                                        <?php else: ?>
+                                                            <span class="px-1.5 py-0.5 bg-[#fff0f6] text-[#db2777] font-bold text-[9px] rounded border border-pink-100/80 flex items-center justify-center min-w-[20px]">
+                                                                <?= htmlspecialchars($szName) ?>
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
                                         </div>
-                                    <?php else: ?>
-                                        <div class="mt-auto pt-2 border-t border-gray-100">
-                                            <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-semibold py-1 text-xs md:text-[11px] lg:text-xs hover:underline leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
-                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                                                <span class="truncate">Register to view price</span>
+
+                                        <!-- Action Button: Customize & Stitch → -->
+                                        <div>
+                                            <a href="<?= $prodDetailUrl ?>" 
+                                               class="w-full py-2 px-3 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5 group/btn active:scale-[0.98]">
+                                                <span class="truncate">Customize & Stitch</span>
+                                                <svg class="w-3.5 h-3.5 flex-shrink-0 transition-transform group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                                </svg>
                                             </a>
                                         </div>
-                                    <?php endif; ?>
+
+                                    </div>
                                 </div>
-                            </div>
+                            <?php else: ?>
+                                <!-- Normal Product Card: 100% UNTOUCHED -->
+                                <div class="product-card catgrid-slide-card bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 flex flex-col h-full relative group shrink-0" style="width: 250px; min-width: 250px; max-width: 250px; scroll-snap-align: start;">
+                                    
+                                    <!-- Wishlist Icon -->
+                                    <?php if ($isLoggedIn): ?>
+                                    <?php 
+                                        $inWishlist = false;
+                                        if (!empty($wishlistIds) && is_array($wishlistIds)) {
+                                            $inWishlist = in_array($prod['id'], $wishlistIds);
+                                        } elseif (!empty($wishlistItems) && is_array($wishlistItems)) {
+                                            $inWishlist = in_array($prod['id'], array_column($wishlistItems, 'product_id')) || in_array($prod['id'], array_column($wishlistItems, 'id'));
+                                        }
+                                    ?>
+                                    <button onclick="toggleWishlist(<?= $prod['id'] ?>, this)" data-wishlist-btn-id="<?= $prod['id'] ?>" class="wishlist-btn <?= $inWishlist ? 'is-active' : '' ?> absolute top-2 right-2 w-6 h-6 sm:w-7 sm:h-7 hover:opacity-80 transition-opacity rounded-full flex items-center justify-center z-10 shadow-sm" style="background-color: <?= htmlspecialchars($wishlist_color) ?>;">
+                                        <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 <?= $inWishlist ? 'text-[#F25996] fill-[#F25996] is-active' : 'text-gray-400 fill-none' ?>" fill="<?= $inWishlist ? '#F25996' : 'none' ?>" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                                    </button>
+                                    <?php endif; ?>
+
+                                    <!-- Product Image -->
+                                    <a href="<?= $prodDetailUrl ?>" class="product-image-wrap block w-full bg-gray-100 overflow-hidden shrink-0 product-img-container aspect-square relative">
+                                        <?php 
+                                        $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
+                                        if ($isLoggedIn && $discPercent > 0) {
+                                            echo render_discount_starburst($discPercent, 'transition-transform duration-300 group-hover:scale-105');
+                                        }
+                                        ?>
+                                        <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" class="w-full h-full object-<?= htmlspecialchars($image_fit) ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
+                                    </a>
+
+                                    <!-- Product Details -->
+                                    <div class="product-card-body p-3 md:p-4 flex flex-col flex-1 bg-white relative z-10">
+                                        <?php 
+                                        $cardBrand = !empty($prod['vendor_store_name']) ? $prod['vendor_store_name'] : (!empty($prod['vendor_company_name']) ? $prod['vendor_company_name'] : '');
+                                        ?>
+                                        <?php if (!empty($cardBrand)): ?>
+                                            <div class="mb-1">
+                                                <span class="inline-flex items-center gap-1 text-[10px] md:text-[11px] font-bold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded border border-indigo-100/70 capitalize">
+                                                    <svg class="w-2.5 h-2.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                                    <?= htmlspecialchars($cardBrand) ?>
+                                                </span>
+                                            </div>
+                                        <?php endif; ?>
+
+                                        <a href="<?= $prodDetailUrl ?>" class="product-link block mb-1.5">
+                                            <h3 class="product-name font-bold leading-snug line-clamp-2"><?= htmlspecialchars($prod['name']) ?></h3>
+                                        </a>
+                                        
+                                        <?php if (!empty($prod['sku'])): ?>
+                                            <p class="font-medium mb-3" style="font-size: 0.875rem; color: <?= htmlspecialchars($subtitle_color) ?>;">SKU: <?= htmlspecialchars($prod['sku']) ?></p>
+                                        <?php endif; ?>
+
+                                        <?php if ($isLoggedIn): ?>
+                                            <div class="mt-auto">
+                                                <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-2">
+                                                    <span class="product-price font-black tracking-tight">₹<?= format_price($displayPrice) ?></span>
+                                                    <?php if ($displayOriginalPrice && $displayOriginalPrice > $displayPrice): ?>
+                                                        <span class="product-orig-price text-sm font-bold text-gray-400 line-through">₹<?= format_price($displayOriginalPrice) ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                
+                                                <p class="product-moq-row font-semibold flex items-center gap-1" style="color: var(--pc-price);">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                                    Min. Order: <?= htmlspecialchars($moq) ?> Pcs
+                                                </p>
+
+                                                <form action="<?= BASE_URL ?>/cart/add" method="POST" onsubmit="ajaxAddToCart(event, this)">
+                                                    <input type="hidden" name="product_id" value="<?= $prod['id'] ?>">
+                                                    <input type="hidden" name="quantity" value="<?= htmlspecialchars($moq) ?>">
+                                                    <button type="submit" class="product-btn w-full font-bold transition-colors flex items-center justify-center gap-2 hover:opacity-90 shadow-sm" style="background-color: <?= htmlspecialchars($button_bg_color) ?>; color: <?= htmlspecialchars($button_text_color) ?>;">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                                        Add to Cart
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="mt-auto pt-2 border-t border-gray-100">
+                                                <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-semibold py-1 text-xs md:text-[11px] lg:text-xs hover:underline leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
+                                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                                    <span class="truncate">Register to view price</span>
+                                                </a>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                             <?php endforeach; ?>
                         </div>
                     <?php endif; ?>
@@ -586,7 +791,12 @@ if (!empty($category_ids)) {
                         style="<?= $isFirst ? 'background-color:'.$button_bg_color.'; color:'.$button_text_color.'; border-color:'.$button_bg_color.';' : '' ?>">
                     <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($cat['name']) ?>">
                     <div style="text-align:left; line-height:1.15;">
-                        <div class="mobile-cat-name"><?= htmlspecialchars($cat['name']) ?></div>
+                        <div class="mobile-cat-name flex items-center gap-1">
+                            <span><?= htmlspecialchars($cat['name']) ?></span>
+                            <?php if (!empty($cat['is_customizable'])): ?>
+                                <span style="font-size:0.55rem; font-weight:700; padding:0.05rem 0.25rem; border-radius:9999px; background:#fce7f3; color:#be185d; border:1px solid #fbcfe8;">✨ Custom</span>
+                            <?php endif; ?>
+                        </div>
                         <div class="mobile-cat-count"><?= $count ?> products</div>
                     </div>
                 </button>
@@ -620,73 +830,215 @@ if (!empty($category_ids)) {
                             $displayOriginalPrice = $basePrice;
                         }
 
-                        $moq = !empty($prod['moq_override']) ? $prod['moq_override'] : ($prod['category_moq'] ?? 1);
+                        $isMobCustomProd = !empty($prod['is_customizable']) || !empty($cat['is_customizable']);
+                        $mobProdUrl = $isMobCustomProd ? (BASE_URL . '/fabrics/customize?fabric_id=' . (int)$prod['id']) : (BASE_URL . '/product?id=' . (int)$prod['id']);
+                        $moq = !empty($prod['custom_moq']) ? $prod['custom_moq'] : (!empty($prod['moq_override']) ? $prod['moq_override'] : ($prod['category_moq'] ?? 1));
                         $isLoggedIn = \Core\Session::get('user_id') !== null;
                     ?>
-                    <div class="product-card mobile-product-card">
-                        <!-- Wishlist -->
-                        <?php if ($isLoggedIn): ?>
-                        <?php 
-                            $inWishlist = false;
-                            if (!empty($wishlistIds) && is_array($wishlistIds)) {
-                                $inWishlist = in_array($prod['id'], $wishlistIds);
-                            } elseif (!empty($wishlistItems) && is_array($wishlistItems)) {
-                                $inWishlist = in_array($prod['id'], array_column($wishlistItems, 'product_id')) || in_array($prod['id'], array_column($wishlistItems, 'id'));
-                            }
-                        ?>
-                        <button onclick="toggleWishlist(<?= $prod['id'] ?>, this)" data-wishlist-btn-id="<?= $prod['id'] ?>" class="wishlist-btn <?= $inWishlist ? 'is-active' : '' ?> absolute top-2 right-2 w-7 h-7 hover:opacity-80 transition-opacity rounded-full flex items-center justify-center z-10 shadow-sm" style="background-color: <?= htmlspecialchars($wishlist_color) ?>;">
-                            <svg class="w-3.5 h-3.5 <?= $inWishlist ? 'text-[#F25996] fill-[#F25996] is-active' : 'text-gray-400 fill-none' ?>" fill="<?= $inWishlist ? '#F25996' : 'none' ?>" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                        </button>
-                        <?php endif; ?>
-
-                        <!-- Image -->
-                        <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="mobile-img-wrap relative">
-                                <?php 
-                                $mobDiscPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
-                                if ($isLoggedIn && $mobDiscPercent > 0) {
-                                    echo render_discount_starburst($mobDiscPercent, 'transition-transform duration-300 group-hover:scale-105');
+                    <?php if ($isMobCustomProd): ?>
+                        <?php
+                        $cGarmentType = !empty($prod['garment_type']) ? $prod['garment_type'] : 'CUSTOM GARMENT';
+                        $cStock = isset($prod['stock_quantity']) ? (int)$prod['stock_quantity'] : 100;
+                        $cImages = !empty($prod['images']) && is_array($prod['images']) ? array_values(array_filter($prod['images'])) : (!empty($img) ? [$img] : []);
+                        if ((empty($cImages) || count($cImages) <= 1) && !empty($prod['id'])) {
+                            try {
+                                $cFallbackImgs = $db->query("SELECT image_path FROM product_images WHERE product_id = " . (int)$prod['id'] . " ORDER BY is_primary DESC, sort_order ASC, id ASC")->fetchAll(\PDO::FETCH_COLUMN);
+                                if (!empty($cFallbackImgs) && count($cFallbackImgs) > 1) {
+                                    $cImages = $cFallbackImgs;
                                 }
-                                ?>
-                            <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" loading="lazy" decoding="async">
-                        </a>
+                            } catch (\Throwable $e) {}
+                        }
+                        $cSizes = !empty($prod['sizes']) && is_array($prod['sizes']) ? $prod['sizes'] : ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
+                        $cCatName = !empty($prod['category_name']) ? $prod['category_name'] : $cGarmentType;
+                        $cCleanDesc = !empty($prod['description']) 
+                            ? trim(preg_replace('/\s+/', ' ', str_replace(["\r\n", "\r", "\n"], ' ', strip_tags($prod['description'])))) 
+                            : 'Soft, breathable cotton fabric perfect for maternity wear.';
+                        ?>
+                        <div class="product-card mobile-product-card bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-xs flex flex-col group">
+                            <!-- Top Image Area -->
+                            <div class="relative h-40 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
+                                <img id="cg-mob-img-<?= $prod['id'] ?>" 
+                                     src="<?= htmlspecialchars($img) ?>" 
+                                     alt="<?= htmlspecialchars($prod['name']) ?>" 
+                                     class="w-full h-full object-cover">
 
-                        <!-- Body -->
-                        <div class="product-card-body mobile-card-body">
-                            <!-- Row 1: Product Name -->
-                            <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="product-link block mb-1">
-                                <h3 class="product-name mobile-card-name"><?= htmlspecialchars($prod['name']) ?></h3>
-                            </a>
-                            <?php if ($isLoggedIn): ?>
-                            <div class="mt-auto flex flex-col justify-end">
-                                <!-- Selling Price, Strikethrough & Discount Badge (Same Row) -->
-                                <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-1">
-                                    <span class="product-price mobile-card-price">₹<?= format_price($displayPrice) ?></span>
-                                    <?php if ($displayOriginalPrice && $displayOriginalPrice > $displayPrice): ?>
-                                        <span class="product-orig-price text-[0.625rem] font-bold text-gray-400 line-through">₹<?= format_price($displayOriginalPrice) ?></span>
+                                <!-- Badges top left -->
+                                <div class="absolute top-1.5 left-1.5 pointer-events-none z-10 flex flex-col gap-0.5 items-start">
+                                    <span class="px-1.5 py-0.5 bg-[#F25996] text-white font-extrabold text-[8px] uppercase tracking-wider rounded shadow-xs flex items-center gap-0.5">
+                                        <svg class="w-2 h-2" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/></svg>
+                                        <span>CUSTOM</span>
+                                    </span>
+                                    <?php if (!empty($cGarmentType)): ?>
+                                        <span class="px-1 py-0.5 bg-black/65 backdrop-blur-xs text-white font-bold text-[7.5px] uppercase tracking-wider rounded shadow-xs">
+                                            <?= htmlspecialchars($cGarmentType) ?>
+                                        </span>
                                     <?php endif; ?>
                                 </div>
 
-                                <!-- Row 4: Minimum Order Count -->
-                                <p class="product-moq-row text-[0.525rem] font-semibold mb-2 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis" style="color: var(--pc-price);">
-                                    <svg class="w-2.5 h-2.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                    <span>Min. Order: <?= htmlspecialchars($moq) ?> Pcs</span>
-                                </p>
+                                <!-- Badges top right: Stock (Wishlist removed for customize card) -->
+                                <?php if ($cStock > 0): ?>
+                                    <div class="absolute top-1.5 right-1.5 z-10 flex flex-col items-end">
+                                        <span class="px-1.5 py-0.5 bg-emerald-600/95 backdrop-blur-xs text-white font-bold text-[7.5px] tracking-wide rounded-full shadow-sm flex items-center gap-0.5">
+                                            <span class="w-1 h-1 rounded-full bg-emerald-300 animate-pulse"></span>
+                                            <?= $cStock ?> Qty
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
 
-                                <!-- Row 5: CTA Button -->
-                                <form action="<?= BASE_URL ?>/cart/add" method="POST" onsubmit="ajaxAddToCart(event, this)">
-                                    <input type="hidden" name="product_id" value="<?= $prod['id'] ?>">
-                                    <input type="hidden" name="quantity" value="<?= htmlspecialchars($moq) ?>">
-                                    <button type="submit" class="product-btn mobile-card-btn">
-                                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                        <span class="whitespace-nowrap">Add to Cart</span>
-                                    </button>
-                                </form>
+                            <!-- Circular Swatches Overlapping -->
+                            <?php if (count($cImages) > 1): ?>
+                            <div class="-mt-3 mb-1 px-2 flex items-center gap-1 relative z-20 overflow-x-auto scrollbar-none pb-0.5">
+                                <?php 
+                                    foreach (array_slice($cImages, 0, 5) as $idx => $swImg):
+                                        $swUrl = get_image_url($swImg, 80, 80);
+                                        $fullSwUrl = get_image_url($swImg);
+                                ?>
+                                    <img src="<?= htmlspecialchars($swUrl) ?>" 
+                                         alt="" 
+                                         onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
+                                         onclick="document.getElementById('cg-mob-img-<?= $prod['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
+                                         class="w-6 h-6 rounded-full border-2 border-white shadow-xs object-cover cursor-pointer flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
+                                <?php endforeach; ?>
                             </div>
                             <?php else: ?>
-                            <a href="<?= BASE_URL ?>/login" style="font-size:0.75rem; color:#F25996; font-weight:600; margin-top:auto; display:block; padding-top:0.3rem;">Login to view price</a>
+                            <div class="h-1.5"></div>
                             <?php endif; ?>
+
+                            <!-- Body -->
+                            <div class="px-2 pt-0 pb-2.5 flex-1 flex flex-col justify-between">
+                                <div>
+                                    <div class="text-[#F25996] font-bold text-[8.5px] uppercase tracking-wide mb-0.5 truncate">
+                                        <?= htmlspecialchars($cCatName) ?>
+                                    </div>
+                                    <a href="<?= $mobProdUrl ?>" class="block mb-0.5">
+                                        <h3 class="font-bold text-[#1e293b] text-xs leading-snug line-clamp-1"><?= htmlspecialchars($prod['name']) ?></h3>
+                                    </a>
+                                    <p class="text-[9px] text-[#64748b] line-clamp-1 mb-1.5 leading-tight">
+                                        <?= htmlspecialchars($cCleanDesc) ?>
+                                    </p>
+
+                                    <!-- Custom Stitching & Min Stitch -->
+                                    <div class="flex items-center justify-between gap-1 mb-1.5">
+                                        <div class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[8.5px] font-bold">
+                                            <svg class="w-2.5 h-2.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/></svg>
+                                            <span>Stitching</span>
+                                        </div>
+                                        <span class="px-1 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[8px] rounded">
+                                            Min <?= (int)$moq ?> Pcs
+                                        </span>
+                                    </div>
+
+                                    <!-- Sizes Matrix -->
+                                    <div class="flex items-center gap-1 flex-wrap mb-2">
+                                        <?php foreach (array_slice($cSizes, 0, 5) as $sIndex => $szName): ?>
+                                            <span class="px-1 py-0.5 <?= $sIndex === 0 ? 'bg-[#F25996] text-white' : 'bg-[#fff0f6] text-[#db2777] border border-pink-100/80' ?> font-bold text-[8px] rounded flex items-center justify-center min-w-[16px]">
+                                                <?= htmlspecialchars($szName) ?>
+                                            </span>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+
+                                <!-- CTA Button -->
+                                <a href="<?= $mobProdUrl ?>" 
+                                   class="w-full py-1.5 px-2 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-bold text-[10.5px] rounded-lg shadow-xs flex items-center justify-center gap-1 active:scale-[0.98]">
+                                    <span>Customize &amp; Stitch</span>
+                                    <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                </a>
+                            </div>
                         </div>
-                    </div>
+                    <?php else: ?>
+                        <!-- Normal Mobile Product Card: 100% UNTOUCHED -->
+                        <div class="product-card mobile-product-card">
+                            <!-- Wishlist -->
+                            <?php if ($isLoggedIn): ?>
+                            <?php 
+                                $inWishlist = false;
+                                if (!empty($wishlistIds) && is_array($wishlistIds)) {
+                                    $inWishlist = in_array($prod['id'], $wishlistIds);
+                                } elseif (!empty($wishlistItems) && is_array($wishlistItems)) {
+                                    $inWishlist = in_array($prod['id'], array_column($wishlistItems, 'product_id')) || in_array($prod['id'], array_column($wishlistItems, 'id'));
+                                }
+                            ?>
+                            <button onclick="toggleWishlist(<?= $prod['id'] ?>, this)" data-wishlist-btn-id="<?= $prod['id'] ?>" class="wishlist-btn <?= $inWishlist ? 'is-active' : '' ?> absolute top-2 right-2 w-7 h-7 hover:opacity-80 transition-opacity rounded-full flex items-center justify-center z-10 shadow-sm" style="background-color: <?= htmlspecialchars($wishlist_color) ?>;">
+                                <svg class="w-3.5 h-3.5 <?= $inWishlist ? 'text-[#F25996] fill-[#F25996] is-active' : 'text-gray-400 fill-none' ?>" fill="<?= $inWishlist ? '#F25996' : 'none' ?>" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                            </button>
+                            <?php endif; ?>
+
+                            <!-- Image -->
+                            <a href="<?= $mobProdUrl ?>" class="mobile-img-wrap relative">
+                                    <?php if ($isMobCustomProd): ?>
+                                        <div class="absolute top-1.5 left-1.5 z-10">
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-pink-100/95 text-pink-700 border border-pink-200 shadow-2xs backdrop-blur-xs">
+                                                ✨ Customize
+                                            </span>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php 
+                                    $mobDiscPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
+                                    if ($isLoggedIn && $mobDiscPercent > 0) {
+                                        echo render_discount_starburst($mobDiscPercent, 'transition-transform duration-300 group-hover:scale-105');
+                                    }
+                                    ?>
+                                <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" loading="lazy" decoding="async">
+                            </a>
+
+                            <!-- Body -->
+                            <div class="product-card-body mobile-card-body">
+                                <!-- Row 1: Product Name -->
+                                <a href="<?= $mobProdUrl ?>" class="product-link block mb-1">
+                                    <h3 class="product-name mobile-card-name"><?= htmlspecialchars($prod['name']) ?></h3>
+                                </a>
+                                <?php if ($isLoggedIn): ?>
+                                <div class="mt-auto flex flex-col justify-end">
+                                    <!-- Selling Price, Strikethrough & Discount Badge (Same Row) -->
+                                    <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-1">
+                                        <span class="product-price mobile-card-price">₹<?= format_price($displayPrice) ?></span>
+                                        <?php if ($displayOriginalPrice && $displayOriginalPrice > $displayPrice): ?>
+                                            <span class="product-orig-price text-[0.625rem] font-bold text-gray-400 line-through">₹<?= format_price($displayOriginalPrice) ?></span>
+                                        <?php endif; ?>
+                                    </div>
+
+                                    <!-- Row 4: Minimum Order Count -->
+                                    <p class="product-moq-row text-[0.525rem] font-semibold mb-2 flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis" style="color: var(--pc-price);">
+                                        <svg class="w-2.5 h-2.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 012-2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                        <span>Min. Order: <?= htmlspecialchars($moq) ?> Pcs</span>
+                                    </p>
+
+                                    <!-- Row 5: CTA Button -->
+                                    <?php if ($isMobCustomProd): ?>
+                                        <a href="<?= BASE_URL ?>/fabrics/customize?fabric_id=<?= (int)$prod['id'] ?>" 
+                                           class="product-btn mobile-card-btn text-white" 
+                                           style="background: linear-gradient(135deg, #F25996, #db2777); text-decoration: none;">
+                                            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                            <span class="whitespace-nowrap">Customize Now</span>
+                                        </a>
+                                    <?php else: ?>
+                                        <form action="<?= BASE_URL ?>/cart/add" method="POST" onsubmit="ajaxAddToCart(event, this)">
+                                            <input type="hidden" name="product_id" value="<?= $prod['id'] ?>">
+                                            <input type="hidden" name="quantity" value="<?= htmlspecialchars($moq) ?>">
+                                            <button type="submit" class="product-btn mobile-card-btn">
+                                                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                                <span class="whitespace-nowrap">Add to Cart</span>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
+                                <?php else: ?>
+                                    <?php if ($isMobCustomProd): ?>
+                                        <a href="<?= BASE_URL ?>/fabrics/customize?fabric_id=<?= (int)$prod['id'] ?>" 
+                                           class="product-btn mobile-card-btn text-white" 
+                                           style="background: linear-gradient(135deg, #F25996, #db2777); text-decoration: none; margin-top: auto;">
+                                            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                            <span class="whitespace-nowrap">Customize Now</span>
+                                        </a>
+                                    <?php else: ?>
+                                        <a href="<?= BASE_URL ?>/login" style="font-size:0.75rem; color:#F25996; font-weight:600; margin-top:auto; display:block; padding-top:0.3rem;">Login to view price</a>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
                 <?php endif; ?>

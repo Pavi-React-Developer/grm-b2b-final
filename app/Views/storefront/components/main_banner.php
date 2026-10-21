@@ -8,6 +8,7 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
     $objectFitClass = 'object-cover';
     if ($imageFit === 'contain') $objectFitClass = 'object-contain';
     elseif ($imageFit === 'fill') $objectFitClass = 'object-fill';
+    $fitStyle = 'object-fit: ' . htmlspecialchars($imageFit) . ';';
     
     $media = $data['media'] ?? [];
     $title = $data['title'] ?? '';
@@ -16,7 +17,11 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
     $btnText = trim((string)($data['button_text'] ?? ''));
     $ctaUrl = trim((string)($data['cta_url'] ?? ''));
     if ($ctaUrl === '') {
-        $ctaUrl = '/catalog';
+        if (in_array($contentType, ['custom_product_carousel', 'selected_custom_products', 'custom_category_grid', 'selected_custom_categories'], true)) {
+            $ctaUrl = '/customize';
+        } else {
+            $ctaUrl = '/catalog';
+        }
     }
     $theme = $data['theme'] ?? [];
     $btnBg = $theme['button_bg_color'] ?? '#111827';
@@ -45,7 +50,9 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
 
     if ($contentType === 'custom_image') {
         // HERO-STYLE CUSTOM SLIDER
-        $mediaItems = array_values(array_filter($media, function($m){ return !empty(trim($m['desktop'] ?? '')); }));
+        $mediaItems = array_values(array_filter($media, function($m){
+            return !empty(trim($m['desktop'] ?? '')) || !empty(trim($m['mobile'] ?? ''));
+        }));
         $showArrows = ($data['show_arrows'] ?? true) !== false;
         $showDots   = ($data['show_dots']   ?? true) !== false;
         $aCol = $theme['arrow_color'] ?? '#ffffff';
@@ -62,21 +69,51 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
         <!-- Slide Track -->
         <div class="slider-track-mb w-full h-full absolute inset-0 rounded-inherit overflow-hidden" id="<?= $sliderId ?>">
             <?php foreach($mediaItems as $idx => $m): 
+                $dUrl = trim((string)($m['desktop'] ?? ''));
+                $mUrl = trim((string)($m['mobile'] ?? ''));
+                if ($dUrl === '' && $mUrl !== '') $dUrl = $mUrl;
+                if ($mUrl === '' && $dUrl !== '') $mUrl = $dUrl;
+                if ($dUrl === '') continue;
+
                 $overlayOpacity = isset($m['opacity']) && $m['opacity'] !== '' ? (float)$m['opacity'] : 0;
                 $overlayFrac = $overlayOpacity > 1 ? ($overlayOpacity / 100) : $overlayOpacity;
                 $overlayFrac = max(0, min(1, $overlayFrac));
+
+                $defaultType = $m['type'] ?? 'image';
+                $checkIsVideo = function($url) use ($defaultType) {
+                    if (empty($url)) return false;
+                    if (preg_match('/\.(mp4|webm|ogg|mov)(\?.*)?$/i', $url) || str_contains($url, '/video/upload/')) return true;
+                    if (preg_match('/\.(jpg|jpeg|png|webp|gif|svg|avif)(\?.*)?$/i', $url) || str_contains($url, '/image/upload/')) return false;
+                    return $defaultType === 'video';
+                };
+
+                $dIsVideo = $checkIsVideo($dUrl);
+                $mIsVideo = $checkIsVideo($mUrl);
+                $isSameMedia = ($dUrl === $mUrl && $dIsVideo === $mIsVideo);
             ?>
                 <div class="slide-mb absolute inset-0 w-full h-full transition-all duration-700 ease-in-out <?= $idx === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0' ?>" data-index="<?= $idx ?>">
-                    <?php if(($m['type'] ?? 'image') === 'video'): ?>
-                        <video src="<?= htmlspecialchars($m['desktop']) ?>" autoplay loop muted playsinline class="absolute inset-0 w-full h-full <?= $objectFitClass ?>"></video>
+                    <?php if ($isSameMedia): ?>
+                        <?php if ($dIsVideo): ?>
+                            <video src="<?= htmlspecialchars($dUrl) ?>" autoplay loop muted playsinline class="absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>"></video>
+                        <?php else: ?>
+                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>">
+                        <?php endif; ?>
                     <?php else: ?>
-                        <picture class="absolute inset-0 w-full h-full block">
-                            <?php if(!empty($m['mobile'])): ?>
-                                <source media="(max-width: 768px)" srcset="<?= htmlspecialchars($m['mobile']) ?>">
-                            <?php endif; ?>
-                            <img src="<?= htmlspecialchars($m['desktop']) ?>" class="absolute inset-0 w-full h-full <?= $objectFitClass ?>">
-                        </picture>
+                        <!-- Desktop Media (>= 768px) -->
+                        <?php if ($dIsVideo): ?>
+                            <video src="<?= htmlspecialchars($dUrl) ?>" autoplay loop muted playsinline class="hidden md:block absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>"></video>
+                        <?php else: ?>
+                            <img src="<?= htmlspecialchars($dUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="hidden md:block absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>">
+                        <?php endif; ?>
+
+                        <!-- Mobile Media (< 768px) -->
+                        <?php if ($mIsVideo): ?>
+                            <video src="<?= htmlspecialchars($mUrl) ?>" autoplay loop muted playsinline class="block md:hidden absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>"></video>
+                        <?php else: ?>
+                            <img src="<?= htmlspecialchars($mUrl) ?>" alt="<?= htmlspecialchars($title) ?>" class="block md:hidden absolute inset-0 w-full h-full <?= $objectFitClass ?>" style="<?= $fitStyle ?>">
+                        <?php endif; ?>
                     <?php endif; ?>
+
                     <?php if ($overlayFrac > 0): ?>
                         <div class="absolute inset-0 pointer-events-none" style="background-color: rgba(0, 0, 0, <?= $overlayFrac ?>);"></div>
                     <?php endif; ?>
@@ -459,6 +496,250 @@ function renderBannerSection($data, $prefix, $uniqueId, $dynamicData) {
         <?php $renderCta(); ?>
         <?php
     }
+    elseif ($contentType === 'custom_product_carousel') {
+        $items = $dynamicData['custom_product_carousel'] ?? [];
+        $cpcShowArrows = ($data['show_arrows'] ?? true) !== false;
+        $cpcShowDots   = ($data['show_dots']   ?? true) !== false;
+        $aColCPC = $theme['arrow_color'] ?? '#000000';
+        $aBgCPC  = $theme['arrow_bg_color'] ?? '#ffffff';
+        $align = $data['alignment'] ?? 'center';
+        if ($align === 'left') { $alignClass = 'items-start text-left'; $justifyClass = 'justify-center'; }
+        elseif ($align === 'right') { $alignClass = 'items-end text-right'; $justifyClass = 'justify-center'; }
+        elseif ($align === 'bottom') { $alignClass = 'items-start text-left'; $justifyClass = 'justify-end pb-16'; }
+        else { $alignClass = 'items-center text-center'; $justifyClass = 'justify-center'; }
+        ?>
+        <!-- Text Overlay -->
+        <div class="absolute inset-0 flex flex-col <?= $justifyClass ?> <?= $alignClass ?> px-4 pt-2 pb-12 sm:pb-14 md:p-8 z-10 pointer-events-none">
+            <div class="max-w-[270px] sm:max-w-md md:max-w-xl">
+                <?php if($subtitle): ?>
+                    <p class="mb-subtitle text-[9px] sm:text-xs md:text-base tracking-[0.15em] md:tracking-[0.2em] font-bold mb-1 sm:mb-2 md:mb-4 uppercase drop-shadow-sm leading-tight"><?= htmlspecialchars($subtitle) ?></p>
+                <?php endif; ?>
+                <?php if($title): ?>
+                    <h3 class="mb-title text-lg sm:text-2xl md:text-5xl font-extrabold mb-1 sm:mb-2 md:mb-6 drop-shadow-md leading-tight"><?= htmlspecialchars($title) ?></h3>
+                <?php endif; ?>
+                <?php if($desc): ?>
+                    <p class="mb-desc text-[11px] sm:text-sm md:text-base lg:text-lg max-w-xl md:max-w-2xl font-medium drop-shadow-sm mb-2 sm:mb-4 md:mb-6 leading-tight sm:leading-normal" style="word-break: break-word; overflow-wrap: break-word;"><?= nl2br(htmlspecialchars($desc)) ?></p>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="swiper mySwiper-<?= $prefix ?>-<?= $uniqueId ?> w-full h-full absolute inset-0 z-0 rounded-inherit overflow-hidden">
+            <div class="swiper-wrapper h-full">
+                <?php foreach(array_slice($items, 0, 8) as $prod): 
+                    $imgPath = $prod['main_image'] ?? '';
+                    $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                ?>
+                    <div class="swiper-slide w-full h-full relative">
+                        <a href="<?= BASE_URL ?>/fabrics/customize?fabric_id=<?= (int)$prod['id'] ?>" class="block w-full h-full absolute inset-0" title="<?= htmlspecialchars($prod['name']) ?>">
+                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($prod['name']) ?>">
+                            <div class="absolute inset-0 bg-black/10 transition-opacity hover:bg-black/20"></div>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            
+            <?php if($cpcShowArrows && !empty($items)): ?>
+                <button class="swiper-button-prev-custom absolute left-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all focus:outline-none" style="background-color:<?= $aBgCPC ?>; color:<?= $aColCPC ?>;" aria-label="Previous">
+                    <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button class="swiper-button-next-custom absolute right-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all focus:outline-none" style="background-color:<?= $aBgCPC ?>; color:<?= $aColCPC ?>;" aria-label="Next">
+                    <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
+            <?php endif; ?>
+
+            <?php if($cpcShowDots): ?>
+                <div class="swiper-pagination-custom" style="position:absolute; bottom:0.625rem; left:0; right:0; z-index:20; display:flex; justify-content:center; align-items:center; gap:0.25rem;"></div>
+            <?php endif; ?>
+        </div>
+        <?php $renderCta(); ?>
+        <?php
+    }
+    elseif ($contentType === 'selected_custom_products') {
+        $selCustomProdIds = $data['selected_custom_products'] ?? [];
+        if (empty($selCustomProdIds)) return;
+        $scpShowArrows = ($data['show_arrows'] ?? true) !== false;
+        $align = $data['alignment'] ?? 'center';
+        if ($align === 'left') { $alignClass = 'items-start text-left'; $justifyClass = 'justify-center'; }
+        elseif ($align === 'right') { $alignClass = 'items-end text-right'; $justifyClass = 'justify-center'; }
+        elseif ($align === 'bottom') { $alignClass = 'items-start text-left'; $justifyClass = 'justify-end pb-16'; }
+        else { $alignClass = 'items-center text-center'; $justifyClass = 'justify-center'; }
+        ?>
+        <!-- Text Overlay -->
+        <div class="absolute inset-0 flex flex-col <?= $justifyClass ?> <?= $alignClass ?> px-4 pt-2 pb-12 sm:pb-14 md:p-8 z-10 pointer-events-none">
+            <div class="max-w-[270px] sm:max-w-md md:max-w-xl">
+                <?php if($subtitle): ?>
+                    <p class="mb-subtitle text-[9px] sm:text-xs md:text-base tracking-[0.15em] md:tracking-[0.2em] font-bold mb-1 sm:mb-2 md:mb-4 uppercase drop-shadow-sm leading-tight"><?= htmlspecialchars($subtitle) ?></p>
+                <?php endif; ?>
+                <?php if($title): ?>
+                    <h3 class="mb-title text-lg sm:text-2xl md:text-5xl font-extrabold mb-1 sm:mb-2 md:mb-6 drop-shadow-md leading-tight"><?= htmlspecialchars($title) ?></h3>
+                <?php endif; ?>
+                <?php if($desc): ?>
+                    <p class="mb-desc text-[11px] sm:text-sm md:text-base lg:text-lg max-w-xl md:max-w-2xl font-medium drop-shadow-sm mb-2 sm:mb-4 md:mb-6 leading-tight sm:leading-normal" style="word-break: break-word; overflow-wrap: break-word;"><?= nl2br(htmlspecialchars($desc)) ?></p>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="swiper mySwiper-<?= $prefix ?>-<?= $uniqueId ?> w-full h-full absolute inset-0 z-0 rounded-inherit overflow-hidden">
+            <div class="swiper-wrapper h-full">
+                <?php foreach($selCustomProdIds as $prodId): 
+                    $prod = $dynamicData['selected_custom_products'][$prodId] ?? null;
+                    if (!$prod) continue;
+                    
+                    $imgPath = $prod['main_image'] ?? '';
+                    $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($prod['name']);
+                ?>
+                    <div class="swiper-slide w-full h-full relative">
+                        <a href="<?= BASE_URL ?>/fabrics/customize?fabric_id=<?= (int)$prod['id'] ?>" class="block w-full h-full absolute inset-0" title="<?= htmlspecialchars($prod['name']) ?>">
+                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($prod['name']) ?>">
+                            <div class="absolute inset-0 bg-black/10 transition-opacity hover:bg-black/20"></div>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            
+            <?php 
+                $scpShowDots = ($data['show_dots'] ?? true) !== false;
+                $aColSCP = $theme['arrow_color'] ?? '#000000';
+                $aBgSCP  = $theme['arrow_bg_color'] ?? '#ffffff';
+            ?>
+            <?php if($scpShowArrows && count($selCustomProdIds) > 1): ?>
+                <button class="swiper-button-prev-custom absolute left-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all focus:outline-none" style="background-color:<?= $aBgSCP ?>; color:<?= $aColSCP ?>;" aria-label="Previous">
+                    <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button class="swiper-button-next-custom absolute right-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all focus:outline-none" style="background-color:<?= $aBgSCP ?>; color:<?= $aColSCP ?>;" aria-label="Next">
+                    <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
+            <?php endif; ?>
+
+            <?php if($scpShowDots): ?>
+                <div class="swiper-pagination-custom" style="position:absolute; bottom:0.625rem; left:0; right:0; z-index:20; display:flex; justify-content:center; align-items:center; gap:0.25rem;"></div>
+            <?php endif; ?>
+        </div>
+        <?php $renderCta(); ?>
+        <?php
+    }
+    elseif ($contentType === 'custom_category_grid') {
+        $items = $dynamicData['custom_category_grid'] ?? [];
+        $ccgShowArrows = ($data['show_arrows'] ?? true) !== false;
+        $ccgShowDots   = ($data['show_dots']   ?? true) !== false;
+        $aColCCG = $theme['arrow_color'] ?? '#000000';
+        $aBgCCG  = $theme['arrow_bg_color'] ?? '#ffffff';
+        $align = $data['alignment'] ?? 'center';
+        if ($align === 'left') { $alignClass = 'items-start text-left'; $justifyClass = 'justify-center'; }
+        elseif ($align === 'right') { $alignClass = 'items-end text-right'; $justifyClass = 'justify-center'; }
+        elseif ($align === 'bottom') { $alignClass = 'items-start text-left'; $justifyClass = 'justify-end pb-16'; }
+        else { $alignClass = 'items-center text-center'; $justifyClass = 'justify-center'; }
+        ?>
+        <!-- Text Overlay -->
+        <div class="absolute inset-0 flex flex-col <?= $justifyClass ?> <?= $alignClass ?> px-4 pt-2 pb-12 sm:pb-14 md:p-8 z-10 pointer-events-none">
+            <div class="max-w-[270px] sm:max-w-md md:max-w-xl">
+                <?php if($subtitle): ?>
+                    <p class="mb-subtitle text-[9px] sm:text-xs md:text-base tracking-[0.15em] md:tracking-[0.2em] font-bold mb-1 sm:mb-2 md:mb-4 uppercase drop-shadow-sm leading-tight"><?= htmlspecialchars($subtitle) ?></p>
+                <?php endif; ?>
+                <?php if($title): ?>
+                    <h3 class="mb-title text-lg sm:text-2xl md:text-5xl font-extrabold mb-1 sm:mb-2 md:mb-6 drop-shadow-md leading-tight"><?= htmlspecialchars($title) ?></h3>
+                <?php endif; ?>
+                <?php if($desc): ?>
+                    <p class="mb-desc text-[11px] sm:text-sm md:text-base lg:text-lg max-w-xl md:max-w-2xl font-medium drop-shadow-sm mb-2 sm:mb-4 md:mb-6 leading-tight sm:leading-normal" style="word-break: break-word; overflow-wrap: break-word;"><?= nl2br(htmlspecialchars($desc)) ?></p>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="swiper mySwiper-<?= $prefix ?>-<?= $uniqueId ?> w-full h-full absolute inset-0 z-0 rounded-inherit overflow-hidden">
+            <div class="swiper-wrapper h-full">
+                <?php foreach(array_slice($items, 0, 8) as $cat): 
+                    $imgPath = $cat['image_path'] ?? '';
+                    $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($cat['name']);
+                ?>
+                    <div class="swiper-slide w-full h-full relative">
+                        <a href="<?= BASE_URL ?>/customize?category_id=<?= (int)$cat['id'] ?>" class="block w-full h-full absolute inset-0" title="<?= htmlspecialchars($cat['name']) ?>">
+                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($cat['name']) ?>">
+                            <div class="absolute inset-0 bg-black/10 transition-opacity hover:bg-black/20"></div>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            
+            <?php if($ccgShowArrows && count($items) > 1): ?>
+                <button class="swiper-button-prev-custom absolute left-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all focus:outline-none" style="background-color:<?= $aBgCCG ?>; color:<?= $aColCCG ?>;" aria-label="Previous">
+                    <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button class="swiper-button-next-custom absolute right-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all focus:outline-none" style="background-color:<?= $aBgCCG ?>; color:<?= $aColCCG ?>;" aria-label="Next">
+                    <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
+            <?php endif; ?>
+
+            <?php if($ccgShowDots): ?>
+                <div class="swiper-pagination-custom" style="position:absolute; bottom:0.625rem; left:0; right:0; z-index:20; display:flex; justify-content:center; align-items:center; gap:0.25rem;"></div>
+            <?php endif; ?>
+        </div>
+        <?php $renderCta(); ?>
+        <?php
+    }
+    elseif ($contentType === 'selected_custom_categories') {
+        $selCustomCatIds = $data['selected_custom_categories'] ?? [];
+        if (empty($selCustomCatIds)) return;
+        $sccShowArrows = ($data['show_arrows'] ?? true) !== false;
+        $align = $data['alignment'] ?? 'center';
+        if ($align === 'left') { $alignClass = 'items-start text-left'; $justifyClass = 'justify-center'; }
+        elseif ($align === 'right') { $alignClass = 'items-end text-right'; $justifyClass = 'justify-center'; }
+        elseif ($align === 'bottom') { $alignClass = 'items-start text-left'; $justifyClass = 'justify-end pb-16'; }
+        else { $alignClass = 'items-center text-center'; $justifyClass = 'justify-center'; }
+        ?>
+        <!-- Text Overlay -->
+        <div class="absolute inset-0 flex flex-col <?= $justifyClass ?> <?= $alignClass ?> px-4 pt-2 pb-12 sm:pb-14 md:p-8 z-10 pointer-events-none">
+            <div class="max-w-[270px] sm:max-w-md md:max-w-xl">
+                <?php if($subtitle): ?>
+                    <p class="mb-subtitle text-[9px] sm:text-xs md:text-base tracking-[0.15em] md:tracking-[0.2em] font-bold mb-1 sm:mb-2 md:mb-4 uppercase drop-shadow-sm leading-tight"><?= htmlspecialchars($subtitle) ?></p>
+                <?php endif; ?>
+                <?php if($title): ?>
+                    <h3 class="mb-title text-lg sm:text-2xl md:text-5xl font-extrabold mb-1 sm:mb-2 md:mb-6 drop-shadow-md leading-tight"><?= htmlspecialchars($title) ?></h3>
+                <?php endif; ?>
+                <?php if($desc): ?>
+                    <p class="mb-desc text-[11px] sm:text-sm md:text-base lg:text-lg max-w-xl md:max-w-2xl font-medium drop-shadow-sm mb-2 sm:mb-4 md:mb-6 leading-tight sm:leading-normal" style="word-break: break-word; overflow-wrap: break-word;"><?= nl2br(htmlspecialchars($desc)) ?></p>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <div class="swiper mySwiper-<?= $prefix ?>-<?= $uniqueId ?> w-full h-full absolute inset-0 z-0 rounded-inherit overflow-hidden">
+            <div class="swiper-wrapper h-full">
+                <?php foreach($selCustomCatIds as $catId): 
+                    $cat = $dynamicData['selected_custom_categories'][$catId] ?? null;
+                    if (!$cat) continue;
+                    
+                    $imgPath = $cat['image_path'] ?? '';
+                    $img = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=' . urlencode($cat['name']);
+                ?>
+                    <div class="swiper-slide w-full h-full relative">
+                        <a href="<?= BASE_URL ?>/customize?category_id=<?= (int)$cat['id'] ?>" class="block w-full h-full absolute inset-0" title="<?= htmlspecialchars($cat['name']) ?>">
+                            <img src="<?= htmlspecialchars($img) ?>" class="w-full h-full <?= $objectFitClass ?>" alt="<?= htmlspecialchars($cat['name']) ?>">
+                            <div class="absolute inset-0 bg-black/10 transition-opacity hover:bg-black/20"></div>
+                        </a>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            
+            <?php 
+                $sccShowDots   = ($data['show_dots']   ?? true) !== false;
+                $aColSCC = $theme['arrow_color'] ?? '#000000';
+                $aBgSCC  = $theme['arrow_bg_color'] ?? '#ffffff';
+            ?>
+            <?php if($sccShowArrows && count($selCustomCatIds) > 1): ?>
+                <button class="swiper-button-prev-custom absolute left-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all focus:outline-none" style="background-color:<?= $aBgSCC ?>; color:<?= $aColSCC ?>;" aria-label="Previous">
+                    <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                </button>
+                <button class="swiper-button-next-custom absolute right-2 top-1/2 -translate-y-1/2 z-20 w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shadow-md hover:scale-110 active:scale-95 transition-all focus:outline-none" style="background-color:<?= $aBgSCC ?>; color:<?= $aColSCC ?>;" aria-label="Next">
+                    <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>
+            <?php endif; ?>
+
+            <?php if($sccShowDots): ?>
+                <div class="swiper-pagination-custom" style="position:absolute; bottom:0.625rem; left:0; right:0; z-index:20; display:flex; justify-content:center; align-items:center; gap:0.25rem;"></div>
+            <?php endif; ?>
+        </div>
+        <?php $renderCta(); ?>
+        <?php
+    }
 }
 }
 
@@ -477,28 +758,44 @@ $dynamicData = [
     'product_carousel' => [], 
     'category_grid' => [],
     'selected_products' => [],
-    'selected_categories' => []
+    'selected_categories' => [],
+    'custom_product_carousel' => [],
+    'custom_category_grid' => [],
+    'selected_custom_products' => [],
+    'selected_custom_categories' => []
 ];
 
 $needProducts = false;
 $needCategories = false;
+$needCustomProducts = false;
+$needCustomCategories = false;
 $selProdIds = [];
 $selCatIds = [];
+$selCustomProdIds = [];
+$selCustomCatIds = [];
 
 foreach ($sectionsData as $data) {
     if (isset($data['content_type'])) {
         if ($data['content_type'] === 'product_carousel') $needProducts = true;
         if ($data['content_type'] === 'category_grid') $needCategories = true;
+        if ($data['content_type'] === 'custom_product_carousel') $needCustomProducts = true;
+        if ($data['content_type'] === 'custom_category_grid') $needCustomCategories = true;
         if ($data['content_type'] === 'selected_products' && !empty($data['selected_products'])) {
             $selProdIds = array_merge($selProdIds, $data['selected_products']);
         }
         if ($data['content_type'] === 'selected_categories' && !empty($data['selected_categories'])) {
             $selCatIds = array_merge($selCatIds, $data['selected_categories']);
         }
+        if ($data['content_type'] === 'selected_custom_products' && !empty($data['selected_custom_products'])) {
+            $selCustomProdIds = array_merge($selCustomProdIds, $data['selected_custom_products']);
+        }
+        if ($data['content_type'] === 'selected_custom_categories' && !empty($data['selected_custom_categories'])) {
+            $selCustomCatIds = array_merge($selCustomCatIds, $data['selected_custom_categories']);
+        }
     }
 }
 
-$mbCacheKey = 'mb_dyn_' . md5(json_encode([$needProducts, $needCategories, $selProdIds, $selCatIds]));
+$mbCacheKey = 'mb_dyn_' . md5(json_encode([$needProducts, $needCategories, $needCustomProducts, $needCustomCategories, $selProdIds, $selCatIds, $selCustomProdIds, $selCustomCatIds]));
 $dynamicData = (empty($_GET['preview']) && class_exists('\Core\Cache')) ? \Core\Cache::get($mbCacheKey) : null;
 
 if ($dynamicData === null) {
@@ -506,7 +803,11 @@ if ($dynamicData === null) {
         'product_carousel' => [], 
         'category_grid' => [],
         'selected_products' => [],
-        'selected_categories' => []
+        'selected_categories' => [],
+        'custom_product_carousel' => [],
+        'custom_category_grid' => [],
+        'selected_custom_products' => [],
+        'selected_custom_categories' => []
     ];
 
     if ($needProducts) {
@@ -516,6 +817,28 @@ if ($dynamicData === null) {
     if ($needCategories) {
         $stmt = $db->query("SELECT * FROM categories WHERE status = 'active' ORDER BY id ASC LIMIT 4");
         $dynamicData['category_grid'] = $stmt->fetchAll();
+    }
+    if ($needCustomProducts) {
+        $stmt = $db->query("
+            SELECT p.*, fc.id as customization_id, fc.program_name, fc.garment_type,
+                   (SELECT pi.image_path FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order ASC, pi.id ASC LIMIT 1) as main_image 
+            FROM products p 
+            JOIN fabric_customizations fc ON fc.fabric_id = p.id 
+            WHERE p.status = 'active' AND p.is_customizable = 1 AND fc.status = 'active' AND fc.customization_enabled = 1 
+            ORDER BY p.id DESC LIMIT 8
+        ");
+        $dynamicData['custom_product_carousel'] = $stmt->fetchAll();
+    }
+    if ($needCustomCategories) {
+        $stmt = $db->query("
+            SELECT DISTINCT c.* 
+            FROM categories c 
+            JOIN products p ON (p.category_id = c.id) 
+            JOIN fabric_customizations fc ON (fc.fabric_id = p.id) 
+            WHERE c.status = 'active' AND p.status = 'active' AND p.is_customizable = 1 AND fc.status = 'active' AND fc.customization_enabled = 1 
+            ORDER BY c.name ASC LIMIT 8
+        ");
+        $dynamicData['custom_category_grid'] = $stmt->fetchAll();
     }
     if (!empty($selProdIds)) {
         $ids = implode(',', array_map('intval', array_unique($selProdIds)));
@@ -529,6 +852,26 @@ if ($dynamicData === null) {
         $stmt = $db->query("SELECT * FROM categories WHERE id IN ($ids) AND status = 'active'");
         foreach ($stmt->fetchAll() as $c) {
             $dynamicData['selected_categories'][$c['id']] = $c;
+        }
+    }
+    if (!empty($selCustomProdIds)) {
+        $ids = implode(',', array_map('intval', array_unique($selCustomProdIds)));
+        $stmt = $db->query("
+            SELECT p.*, fc.id as customization_id, fc.program_name, fc.garment_type,
+                   (SELECT pi.image_path FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order ASC, pi.id ASC LIMIT 1) as main_image 
+            FROM products p 
+            JOIN fabric_customizations fc ON fc.fabric_id = p.id 
+            WHERE p.id IN ($ids) AND p.status = 'active' AND p.is_customizable = 1 AND fc.status = 'active' AND fc.customization_enabled = 1
+        ");
+        foreach ($stmt->fetchAll() as $p) {
+            $dynamicData['selected_custom_products'][$p['id']] = $p;
+        }
+    }
+    if (!empty($selCustomCatIds)) {
+        $ids = implode(',', array_map('intval', array_unique($selCustomCatIds)));
+        $stmt = $db->query("SELECT * FROM categories WHERE id IN ($ids) AND status = 'active'");
+        foreach ($stmt->fetchAll() as $c) {
+            $dynamicData['selected_custom_categories'][$c['id']] = $c;
         }
     }
 

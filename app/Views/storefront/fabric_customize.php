@@ -477,6 +477,191 @@
         </div>
         </div>
 
+        <!-- ── You May Also Like Section (Matches Product Details Page) ── -->
+        <?php 
+        $relatedProducts = $relatedProducts ?? [];
+        if (!empty($relatedProducts)): 
+        ?>
+        <style>
+        @media (max-width: 767px) {
+            .fbt-section .fbt-track {
+                gap: 0.5rem !important;
+                padding-bottom: 0.5rem !important;
+            }
+            .fbt-section .product-card {
+                width: calc(50% - 0.25rem) !important;
+                min-width: calc(50% - 0.25rem) !important;
+                max-width: calc(50% - 0.25rem) !important;
+                flex-shrink: 0 !important;
+            }
+        }
+        </style>
+        <div class="fbt-section mt-8 md:mt-12 border-t border-gray-200/80 pt-6 md:pt-10 mb-8 w-full max-w-full mx-auto px-2 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-3 md:mb-6 px-1 md:px-0">
+                <div>
+                    <h2 class="text-lg md:text-2xl font-black text-gray-900 tracking-tight">You May Also Like</h2>
+                    <p class="text-xs text-gray-500 font-medium mt-0.5 hidden sm:block">Recommended customizable garments &amp; matching collections</p>
+                </div>
+                <a href="<?= BASE_URL ?>/customize" class="text-xs md:text-sm font-bold text-[#F25996] hover:underline flex items-center gap-1">
+                    <span>View all</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+            <div class="fbt-track flex overflow-x-auto pb-4 px-1 md:px-0 gap-2.5 sm:gap-4 snap-x snap-mandatory sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 sm:overflow-visible style-scrollbars items-stretch">
+                <?php foreach($relatedProducts as $relProduct): ?>
+                    <?php
+                    $relPrimaryImage = !empty($relProduct['primary_image']) ? get_image_url($relProduct['primary_image']) : 'https://placehold.co/400x400/f3f4f6/9ca3af?text=No+Image';
+                    $relMoq = $relProduct['custom_moq'] ?? $relProduct['minimum_pieces'] ?? $relProduct['moq_override'] ?? $relProduct['category_moq'] ?? 35;
+                    $relCustomizeUrl = BASE_URL . '/fabrics/customize?fabric_id=' . (int)$relProduct['id'];
+                    $relCatName = !empty($relProduct['category_name']) ? $relProduct['category_name'] : (!empty($relProduct['subcategory_name']) ? $relProduct['subcategory_name'] : 'MATERNITY');
+                    $relGarmentType = !empty($relProduct['garment_type']) ? $relProduct['garment_type'] : 'CUSTOM GARMENT';
+                    $relStock = isset($relProduct['stock_quantity']) ? (int)$relProduct['stock_quantity'] : 100;
+                    $relImages = !empty($relProduct['images']) && is_array($relProduct['images']) ? array_values(array_filter($relProduct['images'])) : (!empty($relProduct['primary_image']) ? [$relProduct['primary_image']] : []);
+                    if ((empty($relImages) || count($relImages) <= 1) && !empty($relProduct['id'])) {
+                        try {
+                            $db = \Core\Database::getInstance();
+                            $relFallbackImgs = $db->query("SELECT image_path FROM product_images WHERE product_id = " . (int)$relProduct['id'] . " ORDER BY is_primary DESC, sort_order ASC, id ASC")->fetchAll(\PDO::FETCH_COLUMN);
+                            if (!empty($relFallbackImgs) && count($relFallbackImgs) > 1) {
+                                $relImages = $relFallbackImgs;
+                            }
+                        } catch (\Throwable $e) {}
+                    }
+                    $relSizes = !empty($relProduct['sizes']) && is_array($relProduct['sizes']) ? $relProduct['sizes'] : ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
+                    
+                    $cleanDesc = !empty($relProduct['description']) 
+                        ? trim(preg_replace('/\s+/', ' ', str_replace(["\r\n", "\r", "\n"], ' ', strip_tags($relProduct['description'])))) 
+                        : 'Soft, breathable cotton fabric perfect for maternity wear.';
+                    ?>
+                    <div class="product-card h-full w-[calc(50%-0.25rem)] min-w-[calc(50%-0.25rem)] sm:w-full sm:min-w-0 snap-start bg-white rounded-2xl sm:rounded-[22px] border border-gray-100 overflow-hidden shadow-xs hover:shadow-xl hover:border-pink-200 transition-all duration-300 flex flex-col group transform hover:-translate-y-1 relative shrink-0 sm:shrink">
+                        
+                        <!-- Top Image Area -->
+                        <div class="relative h-44 sm:h-64 md:h-72 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
+                            <img id="rel-main-img-<?= $relProduct['id'] ?>" 
+                                 src="<?= htmlspecialchars($relPrimaryImage) ?>" 
+                                 alt="<?= htmlspecialchars($relProduct['name']) ?>" 
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+
+                            <!-- Top Left Badges: CUSTOM & Garment Type -->
+                            <div class="absolute top-2 left-2 sm:top-3 sm:left-3 pointer-events-none z-10 flex flex-col gap-1 sm:gap-1.5 items-start">
+                                <span class="px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-[#F25996] text-white font-extrabold text-[8.5px] sm:text-[10px] uppercase tracking-wider rounded sm:rounded-lg shadow-sm flex items-center gap-0.5 sm:gap-1">
+                                    <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/></svg>
+                                    <span>CUSTOM</span>
+                                </span>
+                                <?php if (!empty($relGarmentType)): ?>
+                                    <span class="px-1.5 sm:px-2 py-0.5 bg-black/65 backdrop-blur-xs text-white font-bold text-[8.5px] sm:text-[10px] uppercase tracking-wider rounded sm:rounded-md shadow-xs">
+                                        <?= htmlspecialchars($relGarmentType) ?>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- Top Right: Stock Counter -->
+                            <div class="absolute top-2 right-2 sm:top-3.5 sm:right-3.5 z-10 flex flex-col items-end gap-1 sm:gap-2">
+                                <?php if ($relStock > 0): ?>
+                                    <span class="px-1.5 sm:px-2.5 py-0.5 bg-emerald-600/95 backdrop-blur-xs text-white font-bold text-[8px] sm:text-[10px] tracking-wide rounded-full shadow-sm flex items-center gap-1">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                                        <?= $relStock ?> Qty
+                                    </span>
+                                <?php else: ?>
+                                    <span class="px-1.5 sm:px-2.5 py-0.5 bg-amber-600/95 backdrop-blur-xs text-white font-bold text-[8px] sm:text-[10px] tracking-wide rounded-full shadow-sm flex items-center gap-1">
+                                        Out of Stock
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+
+                        <!-- Circular Variant Swatches Overlapping Border (when multiple images exist) -->
+                        <?php if (count($relImages) > 1): ?>
+                        <div class="-mt-4 sm:-mt-6 mb-1.5 sm:mb-2 px-2.5 sm:px-5 flex items-center gap-1.5 sm:gap-2 relative z-20 overflow-x-auto scrollbar-none pb-0.5">
+                            <?php 
+                                foreach (array_slice($relImages, 0, 5) as $idx => $swImg):
+                                    $swUrl = get_image_url($swImg, 100, 100);
+                                    $fullSwUrl = get_image_url($swImg);
+                            ?>
+                                <img src="<?= htmlspecialchars($swUrl) ?>" 
+                                     alt="" 
+                                     onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
+                                     onclick="document.getElementById('rel-main-img-<?= $relProduct['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
+                                     class="w-7 h-7 sm:w-11 sm:h-11 rounded-full border-2 border-white shadow-sm sm:shadow-md object-cover cursor-pointer hover:scale-110 transition-transform flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
+                            <?php endforeach; ?>
+                        </div>
+                        <?php else: ?>
+                        <div class="h-2 sm:h-3"></div>
+                        <?php endif; ?>
+
+                        <!-- Card Content Body -->
+                        <div class="px-2.5 sm:px-5 pt-0 pb-3 sm:pb-5 flex-1 flex flex-col justify-between">
+                            <div>
+                                <!-- Category Label in Pink -->
+                                <div class="text-[#F25996] font-bold text-[9px] sm:text-[11px] uppercase tracking-wide mb-0.5 sm:mb-1">
+                                    <?= htmlspecialchars($relCatName) ?>
+                                </div>
+
+                                <!-- Product Title -->
+                                <h2 class="font-bold text-[#1e293b] text-xs sm:text-base leading-snug line-clamp-1 mb-0.5 sm:mb-1 hover:text-[#F25996] transition-colors" title="<?= htmlspecialchars($relProduct['name']) ?>">
+                                    <a href="<?= $relCustomizeUrl ?>"><?= htmlspecialchars($relProduct['name']) ?></a>
+                                </h2>
+
+                                <!-- Description -->
+                                <p class="text-[10px] sm:text-xs text-[#64748b] line-clamp-1 sm:line-clamp-2 mb-2 sm:mb-3 leading-tight sm:leading-relaxed">
+                                    <?= htmlspecialchars($cleanDesc) ?>
+                                </p>
+
+                                <!-- Custom Stitching & Min Stitch (Price completely hidden for customize fabrics) -->
+                                <div class="mb-2 sm:mb-3">
+                                    <div class="flex items-center justify-between gap-1 sm:gap-2">
+                                        <div class="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[10px] sm:text-xs font-bold">
+                                            <svg class="w-3.5 h-3.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
+                                            </svg>
+                                            <span>Custom Stitching</span>
+                                        </div>
+
+                                        <!-- Min Stitch Badge -->
+                                        <div class="text-right flex-shrink-0">
+                                            <span class="text-[6.5px] sm:text-[7px] uppercase font-bold text-gray-400 block tracking-wider leading-none">Min Stitch</span>
+                                            <span class="px-1.5 sm:px-2 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] sm:text-[11px] rounded-md inline-block mt-0.5">
+                                                <?= (int)$relMoq ?> Pcs
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sizes Matrix -->
+                                <div class="mb-2.5 sm:mb-4">
+                                    <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+                                        <?php foreach ($relSizes as $sIndex => $szName): ?>
+                                            <?php if ($sIndex === 0): ?>
+                                                <span class="px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-[#F25996] text-white font-bold text-[9px] sm:text-[11px] rounded sm:rounded-md shadow-xs flex items-center justify-center min-w-[20px] sm:min-w-[28px]">
+                                                    <?= htmlspecialchars($szName) ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-[#fff0f6] text-[#db2777] font-bold text-[9px] sm:text-[11px] rounded sm:rounded-md border border-pink-100/80 flex items-center justify-center min-w-[20px] sm:min-w-[28px]">
+                                                    <?= htmlspecialchars($szName) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Action Button: Customize & Stitch → -->
+                            <div>
+                                <a href="<?= $relCustomizeUrl ?>" 
+                                   class="w-full py-2 sm:py-3 px-2 sm:px-4 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-bold text-xs sm:text-sm rounded-xl sm:rounded-2xl shadow-sm sm:shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1 sm:gap-2 group/btn active:scale-[0.98]">
+                                    <span class="truncate">Customize & Stitch</span>
+                                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 transition-transform group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                    </svg>
+                                </a>
+                            </div>
+
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+
         <!-- ── Customer Reviews Section (Matches Product Details Page Pink Container Style) ── -->
         <?php
             $crList = !empty($customizationReviews) ? $customizationReviews : [];
@@ -1257,8 +1442,11 @@ function renderFabricSetContainers() {
             });
         }
 
-        // Generate label options
+        // Generate label options (both native select and custom dropdown matching register.php state dropdown style)
         let labelOptionsHtml = '';
+        let customOptionsListHtml = '';
+        let selectedLabelText = 'Select Style / Label';
+
         if (CUSTOMIZATION_LABELS && CUSTOMIZATION_LABELS.length > 0) {
             let matched = false;
             CUSTOMIZATION_LABELS.forEach((lbl, lIdx) => {
@@ -1267,12 +1455,28 @@ function renderFabricSetContainers() {
                     matched = true;
                     st.label_id = lbl.id;
                     st.label_name = lbl.display_label || lbl.name;
+                    selectedLabelText = lbl.display_label || lbl.name;
                 }
                 const txt = lbl.display_label || lbl.name;
                 labelOptionsHtml += `<option value="${lbl.id}" ${isSel ? 'selected' : ''}>${txt}</option>`;
+                customOptionsListHtml += `
+                    <div class="reg-cs-option ${isSel ? 'selected' : ''}" 
+                         data-value="${lbl.id}" 
+                         onclick="onCustomSetLabelSelect(${setIdx}, this, event)">
+                        ${txt}
+                    </div>
+                `;
             });
         } else {
             labelOptionsHtml = `<option value="">Standard Custom Style</option>`;
+            selectedLabelText = 'Standard Custom Style';
+            customOptionsListHtml = `
+                <div class="reg-cs-option selected" 
+                     data-value="" 
+                     onclick="onCustomSetLabelSelect(${setIdx}, this, event)">
+                    Standard Custom Style
+                </div>
+            `;
         }
 
         const isMet = setTotalPcs >= MIN_PIECES;
@@ -1305,29 +1509,47 @@ function renderFabricSetContainers() {
         });
 
         html += `
-        <div class="fabric-set-card bg-white rounded-2xl border-2 border-pink-100 shadow-xs p-3.5 sm:p-4 mb-3.5 transition-all hover:border-[#F25996]/40" id="set_card_${setIdx}">
+        <div class="fabric-set-card bg-white rounded-2xl border-2 border-pink-100 shadow-xs p-3.5 sm:p-4 mb-3.5 transition-all hover:border-[#F25996]/40 relative" id="set_card_${setIdx}">
             <!-- Header of Set Container -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-pink-100/80 mb-2">
-                <div class="flex items-center gap-2.5">
-                    <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#F25996] to-[#db2777] text-white font-black text-xs flex items-center justify-center shadow-xs">#${setIdx}</span>
-                    <div>
-                        <h4 class="font-extrabold text-sm text-gray-900 flex items-center gap-2">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-2.5 pb-3 border-b border-pink-100/80 mb-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                    <span class="w-8 h-8 rounded-xl bg-gradient-to-br from-[#F25996] to-[#db2777] text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">#${setIdx}</span>
+                    <div class="min-w-0">
+                        <h4 class="font-extrabold text-sm text-gray-900 flex items-center gap-2 flex-wrap">
                             <span>Roll / Set #${setIdx}</span>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-50 text-[#F25996] border border-pink-100">${setSizes.length} variant(s)</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-pink-50 text-[#F25996] border border-pink-100 whitespace-nowrap">${setSizes.length} variant(s)</span>
                         </h4>
-                        <p class="text-[11px] text-gray-500">Configure label & piece allocation for this roll</p>
+                        <p class="text-[11px] text-gray-500 truncate">Configure label & piece allocation for this roll</p>
                     </div>
                 </div>
 
                 <!-- Label Selector & Set Piece Badge -->
-                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                    <label class="text-xs font-bold text-gray-700 flex items-center gap-1 shrink-0">
-                        <span>🏷️ Style / Label:</span>
-                    </label>
-                    <select class="set-label-select text-xs font-bold bg-white border-2 border-pink-200 text-gray-800 rounded-xl px-3 py-1.5 focus:outline-none focus:border-[#F25996] focus:ring-2 focus:ring-pink-200 cursor-pointer shadow-xs max-w-[260px] truncate" onchange="onSetLabelChange(${setIdx}, this)">
-                        ${labelOptionsHtml}
-                    </select>
-                    <span class="${badgeClass}" id="set_pieces_badge_${setIdx}">
+                <div class="flex items-center gap-2 flex-wrap justify-between md:justify-end min-w-0">
+                    <div class="flex items-center gap-1.5 min-w-0">
+                        <label class="text-xs font-bold text-gray-700 flex items-center gap-1 shrink-0">
+                            <span>🏷️ Style / Label:</span>
+                        </label>
+                        <!-- Preserved native select for function/form compatibility -->
+                        <select id="set_label_select_${setIdx}" class="set-label-select hidden" onchange="onSetLabelChange(${setIdx}, this)">
+                            ${labelOptionsHtml}
+                        </select>
+                        <!-- Custom Select Dropdown Styled Exactly Like Register Page State Dropdown -->
+                        <div class="reg-cs-wrapper" id="set_label_wrapper_${setIdx}">
+                            <button type="button" 
+                                    id="set_label_trigger_${setIdx}" 
+                                    class="reg-cs-trigger" 
+                                    onclick="toggleCustomSetLabel(${setIdx}, event)">
+                                <span class="reg-cs-label" id="set_label_display_${setIdx}">${selectedLabelText}</span>
+                                <svg class="reg-cs-arrow" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 7l5 5 5-5"></path>
+                                </svg>
+                            </button>
+                            <div class="reg-cs-list" id="set_label_list_${setIdx}">
+                                ${customOptionsListHtml}
+                            </div>
+                        </div>
+                    </div>
+                    <span class="${badgeClass} shrink-0" id="set_pieces_badge_${setIdx}">
                         ${badgeText}
                     </span>
                 </div>
@@ -1341,9 +1563,6 @@ function renderFabricSetContainers() {
                     </span>
                     ${sizePillsHtml}
                 </div>
-                <button type="button" onclick="setActiveConfigSet(${setIdx})" class="text-[11px] font-bold text-[#F25996] hover:underline cursor-pointer ml-auto">
-                    Configure above ↑
-                </button>
             </div>
 
             <!-- Variant Steppers for this Set -->
@@ -1449,6 +1668,66 @@ function onSetLabelChange(setIdx, sel) {
     }
     triggerRecalc();
 }
+
+function toggleCustomSetLabel(setIdx, e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    const trigger = document.getElementById('set_label_trigger_' + setIdx);
+    const list = document.getElementById('set_label_list_' + setIdx);
+    const card = document.getElementById('set_card_' + setIdx);
+    if (!trigger || !list) return;
+
+    const isOpen = list.classList.contains('open');
+    closeAllSetLabelDropdowns();
+
+    if (!isOpen) {
+        trigger.classList.add('open');
+        list.classList.add('open');
+        if (card) card.classList.add('has-open-dropdown');
+    }
+}
+
+function onCustomSetLabelSelect(setIdx, optEl, e) {
+    if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    const val = optEl.getAttribute('data-value') || '';
+    const sel = document.getElementById('set_label_select_' + setIdx);
+    if (sel) {
+        sel.value = val;
+        onSetLabelChange(setIdx, sel);
+    }
+    const displayEl = document.getElementById('set_label_display_' + setIdx);
+    if (displayEl && optEl) {
+        displayEl.textContent = optEl.textContent.trim();
+    }
+    const list = document.getElementById('set_label_list_' + setIdx);
+    if (list) {
+        list.querySelectorAll('.reg-cs-option').forEach(o => o.classList.remove('selected'));
+        optEl.classList.add('selected');
+    }
+    closeAllSetLabelDropdowns();
+}
+
+function closeAllSetLabelDropdowns() {
+    document.querySelectorAll('.reg-cs-trigger.open').forEach(t => t.classList.remove('open'));
+    document.querySelectorAll('.reg-cs-list.open').forEach(l => l.classList.remove('open'));
+    document.querySelectorAll('.fabric-set-card.has-open-dropdown').forEach(c => c.classList.remove('has-open-dropdown'));
+}
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.reg-cs-wrapper')) {
+        closeAllSetLabelDropdowns();
+    }
+});
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAllSetLabelDropdowns();
+    }
+});
 
 function updateFabricMultiplierDisplay(mult) {
     const topInp = document.getElementById('fabric_multiplier_top');
@@ -2946,8 +3225,153 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<!-- Custom Pink Dropdown Component Styles (Matches Image 2 Style) -->
+<!-- Custom Pink Dropdown Component Styles (Matches Image 2 Style & Registration Page State Dropdown) -->
 <style>
+    /* ── Custom Select (Matches Registration Page State Dropdown) ── */
+    .reg-cs-wrapper {
+        position: relative;
+        display: inline-block;
+        width: auto;
+        min-width: 170px;
+        max-width: 220px;
+    }
+    @media (min-width: 640px) {
+        .reg-cs-wrapper {
+            min-width: 190px;
+            max-width: 270px;
+        }
+    }
+    .reg-cs-trigger {
+        width: 100%;
+        border-radius: 0.75rem;
+        border: 1px solid #e5e7eb;
+        background-color: #ffffff;
+        padding: 0.45rem 0.75rem;
+        font-size: 0.8125rem;
+        color: #111827;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s ease-in-out;
+        outline: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        user-select: none;
+        font-weight: 500;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+    .reg-cs-trigger:hover {
+        border-color: #d1d5db;
+    }
+    .reg-cs-trigger.placeholder {
+        color: #9ca3af;
+        font-weight: 400;
+    }
+    .reg-cs-trigger:focus,
+    .reg-cs-trigger.open {
+        border-color: #F25996 !important;
+        box-shadow: 0 0 0 3px rgba(242, 89, 150, 0.2) !important;
+    }
+    .reg-cs-arrow {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        color: #9ca3af;
+        transition: transform 0.2s ease, color 0.2s ease;
+        pointer-events: none;
+    }
+    .reg-cs-trigger.open .reg-cs-arrow {
+        transform: rotate(180deg);
+        color: #F25996;
+    }
+    .reg-cs-label {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        text-align: left;
+        flex: 1;
+        min-width: 0;
+    }
+    .reg-cs-list {
+        position: absolute;
+        top: calc(100% + 4px);
+        right: 0;
+        left: auto;
+        min-width: 220px;
+        width: max-content;
+        max-width: 330px;
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+        z-index: 9999;
+        max-height: 220px;
+        overflow-y: auto;
+        display: none;
+        padding: 4px;
+    }
+    @media (max-width: 640px) {
+        .reg-cs-list {
+            right: 0;
+            left: auto;
+            max-width: calc(100vw - 40px);
+        }
+    }
+    .reg-cs-list.open {
+        display: block;
+        animation: regCsFadeIn 0.15s ease-out;
+    }
+    @keyframes regCsFadeIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .reg-cs-list::-webkit-scrollbar {
+        width: 4px;
+    }
+    .reg-cs-list::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .reg-cs-list::-webkit-scrollbar-thumb {
+        background: #F25996;
+        border-radius: 4px;
+    }
+    .reg-cs-option {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        color: #374151;
+        font-weight: 500;
+        transition: background 0.15s, color 0.15s;
+        line-height: 1.35;
+        white-space: normal;
+        word-break: break-word;
+        text-align: left;
+    }
+    .reg-cs-option:hover {
+        background: #fce7f3;
+        color: #F25996;
+    }
+    .reg-cs-option.selected {
+        background: #F25996 !important;
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+    .reg-cs-option.disabled {
+        color: #9ca3af;
+        cursor: default;
+        pointer-events: none;
+    }
+    .fabric-set-card {
+        position: relative;
+        overflow: visible !important;
+    }
+    .fabric-set-card.has-open-dropdown,
+    .fabric-set-card:has(.reg-cs-trigger.open) {
+        z-index: 50 !important;
+    }
+
     .custom-select-pink-wrapper {
         position: relative;
         width: 100%;

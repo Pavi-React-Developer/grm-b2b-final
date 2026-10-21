@@ -4,16 +4,13 @@ $id = uniqid('cat_carousel_');
 $title = $contentData['title'] ?? '';
 $sort_order = $contentData['sort_order'] ?? 0;
 $mobile_count = max(1, (int)($contentData['mobile_count'] ?? 2));
-$desktop_count = (int)($contentData['desktop_count'] ?? 6);
-if ($desktop_count < 2) {
-    $desktop_count = 6;
-}
+$desktop_count = max(1, (int)($contentData['desktop_count'] ?? 6));
 $cta_text = $contentData['cta_text'] ?? '';
 $cta_url = $contentData['cta_url'] ?? '';
 $cta_url = trim((string)$cta_url) !== '' ? $cta_url : (BASE_URL . '/catalog');
 $cta_position = $contentData['cta_position'] ?? 'Right';
-$show_arrows = $contentData['show_arrows'] ?? true;
-$show_dots = $contentData['show_dots'] ?? true;
+$show_arrows = isset($contentData['show_arrows']) ? (bool)$contentData['show_arrows'] : true;
+$show_dots = isset($contentData['show_dots']) ? (bool)$contentData['show_dots'] : true;
 $category_ids = $contentData['category_ids'] ?? [];
 $theme = $contentData['theme'] ?? ['type' => 'solid', 'value' => '#ffffff'];
 $title_color = $contentData['title_color'] ?? '#111827';
@@ -36,9 +33,11 @@ if ($image_fit === 'stretch') $objectFitClass = 'object-fill';
 
 // Height styles
 $heightStyle = '';
-if (!empty($container_height) || !empty($mobile_container_height)) {
-    $mHeight = !empty($mobile_container_height) ? "min-height: {$mobile_container_height}vh;" : '';
-    $dHeight = !empty($container_height) ? "min-height: {$container_height}vh;" : '';
+$hasCustomHeight = (!empty($container_height) && is_numeric($container_height) && (int)$container_height > 0) || 
+                   (!empty($mobile_container_height) && is_numeric($mobile_container_height) && (int)$mobile_container_height > 0);
+if ($hasCustomHeight) {
+    $mHeight = (!empty($mobile_container_height) && (int)$mobile_container_height > 0) ? "min-height: {$mobile_container_height}vh;" : '';
+    $dHeight = (!empty($container_height) && (int)$container_height > 0) ? "min-height: {$container_height}vh;" : '';
     $heightStyle = "style=\"$mHeight\" data-desktop-height=\"$dHeight\"";
 }
 
@@ -48,34 +47,34 @@ if (!empty($theme['value'])) {
     $bgStyle = 'background: ' . $theme['value'] . ';';
 }
 
-// Find actual category data from the globally injected $categories array in home.php
+// Find actual category data: either from selected category IDs or active categories
 $carouselCategories = [];
-if (isset($categories) && is_array($categories)) {
-    foreach ($categories as $c) {
-        if (in_array($c['id'], $category_ids)) {
-            $carouselCategories[] = $c;
+if (!empty($category_ids) && is_array($category_ids)) {
+    $db = \Core\Database::getInstance();
+    $inClause = implode(',', array_map('intval', $category_ids));
+    if (!empty($inClause)) {
+        $catsFromDb = $db->query("SELECT id, name, slug, image_path, is_customizable FROM categories WHERE id IN ($inClause) AND status = 'active'")->fetchAll(\PDO::FETCH_ASSOC);
+        $catsById = [];
+        foreach ($catsFromDb as $cdb) {
+            $catsById[$cdb['id']] = $cdb;
+        }
+        foreach ($category_ids as $cid) {
+            if (isset($catsById[$cid])) {
+                $carouselCategories[] = $catsById[$cid];
+            }
         }
     }
 }
 
-$actualCount = count($carouselCategories);
-
-// Calculate adaptive items per view so fewer items are displayed prominently instead of tiny thumbnails
-if ($actualCount > 0 && $actualCount < $desktop_count) {
-    $effectiveDesktopCount = max(2, min($desktop_count, $actualCount));
-} else {
-    $effectiveDesktopCount = max(2, $desktop_count);
+if (empty($carouselCategories) && isset($categories) && is_array($categories)) {
+    $carouselCategories = $categories;
 }
-
-$effectiveMobileCount = max(1, min($mobile_count, $actualCount));
-
-$mobileWidth = 100 / $effectiveMobileCount;
-$desktopWidth = 100 / $effectiveDesktopCount;
 ?>
 
 <style>
     #<?= $id ?> .slide-item {
-        width: calc(<?= $mobileWidth ?>% - <?= (($effectiveMobileCount - 1) * 0.75) / $effectiveMobileCount ?>rem);
+        width: calc((100% - <?= ($desktop_count - 1) * 1.5 ?>rem) / <?= $desktop_count ?>);
+        flex: 0 0 calc((100% - <?= ($desktop_count - 1) * 1.5 ?>rem) / <?= $desktop_count ?>);
     }
     #<?= $id ?> .carousel-btn {
         top: 38%; /* Center vertically with category image */
@@ -97,58 +96,37 @@ $desktopWidth = 100 / $effectiveDesktopCount;
     #prev_<?= $id ?> { left: -0.25rem; }
     #next_<?= $id ?> { right: -0.25rem; }
     #track_container_<?= $id ?> { padding-left: 0.25rem; padding-right: 0.25rem; }
-    #inner_<?= $id ?> { gap: 1rem !important; }
+    #inner_<?= $id ?> { gap: 0.75rem !important; }
     
     @media (max-width: 767px) {
+        #<?= $id ?> {
+            min-height: 0 !important;
+            height: auto !important;
+        }
         #<?= $id ?> .cat-outer-wrap {
             padding-left: 0.25rem !important;
             padding-right: 0.25rem !important;
         }
         #<?= $id ?> .cat-bg-wrap {
-            padding: 1.25rem 0.85rem 1rem 0.85rem !important;
+            padding: 1.25rem 0.85rem 1.25rem 0.85rem !important;
             border-radius: 1.5rem !important;
         }
         #track_container_<?= $id ?> {
             padding-left: 0 !important;
             padding-right: 0 !important;
         }
-    }
-
-    #<?= $id ?> .slider-dot {
-        width: 8px;
-        height: 8px;
-        background-color: <?= htmlspecialchars($dot_color) ?> !important;
-        border-radius: 9999px;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        transition: all 0.3s ease;
-        opacity: 0.5;
-        display: inline-block;
-        vertical-align: middle;
-    }
-    #<?= $id ?> .slider-dot.active {
-        width: 10px;
-        height: 10px;
-        background-color: <?= htmlspecialchars($dot_color) ?> !important;
-        opacity: 1;
-        outline: 2px solid <?= htmlspecialchars($dot_color) ?> !important;
-        outline-offset: 2px;
-    }
-
-    @media (max-width: 767px) {
-        #<?= $id ?> {
-            min-height: 0 !important;
-            height: auto !important;
+        #inner_<?= $id ?> {
+            gap: 0.75rem !important;
         }
         #<?= $id ?> .slide-item {
-            width: calc(<?= $mobileWidth ?>% - <?= (($effectiveMobileCount - 1) * 0.75) / $effectiveMobileCount ?>rem) !important;
-            flex: 0 0 calc(<?= $mobileWidth ?>% - <?= (($effectiveMobileCount - 1) * 0.75) / $effectiveMobileCount ?>rem) !important;
-            max-width: 140px !important;
+            width: calc((100% - <?= ($mobile_count - 1) * 0.75 ?>rem) / <?= $mobile_count ?>) !important;
+            flex: 0 0 calc((100% - <?= ($mobile_count - 1) * 0.75 ?>rem) / <?= $mobile_count ?>) !important;
+            max-width: none !important;
+            min-width: 0 !important;
         }
         #<?= $id ?> .category-card-img {
             width: 100% !important;
-            max-width: 140px !important;
+            max-width: none !important;
             aspect-ratio: 1 / 1 !important;
             border-radius: 1.25rem !important;
             margin-left: auto !important;
@@ -199,16 +177,44 @@ $desktopWidth = 100 / $effectiveDesktopCount;
         }
     }
 
+    #<?= $id ?> .slider-dot {
+        width: 8px;
+        height: 8px;
+        background-color: <?= htmlspecialchars($dot_color) ?> !important;
+        border-radius: 9999px;
+        border: none;
+        cursor: pointer;
+        padding: 0;
+        transition: all 0.3s ease;
+        opacity: 0.5;
+        display: inline-block;
+        vertical-align: middle;
+    }
+    #<?= $id ?> .slider-dot.active {
+        width: 10px;
+        height: 10px;
+        background-color: <?= htmlspecialchars($dot_color) ?> !important;
+        opacity: 1;
+        outline: 2px solid <?= htmlspecialchars($dot_color) ?> !important;
+        outline-offset: 2px;
+    }
+
     @media (min-width: 768px) {
+        #track_container_<?= $id ?> {
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+        }
+        #inner_<?= $id ?> {
+            gap: 1.5rem !important;
+        }
         #<?= $id ?> .slide-item {
-            width: calc(<?= $desktopWidth ?>% - <?= (($effectiveDesktopCount - 1) * 1.5) / $effectiveDesktopCount ?>rem) !important;
-            flex: 0 0 calc(<?= $desktopWidth ?>% - <?= (($effectiveDesktopCount - 1) * 1.5) / $effectiveDesktopCount ?>rem) !important;
-            max-width: 190px !important;
-            min-width: 120px !important;
+            width: calc((100% - <?= ($desktop_count - 1) * 1.5 ?>rem) / <?= $desktop_count ?>) !important;
+            flex: 0 0 calc((100% - <?= ($desktop_count - 1) * 1.5 ?>rem) / <?= $desktop_count ?>) !important;
+            max-width: none !important;
+            min-width: 0 !important;
         }
         #<?= $id ?> .category-card-img {
             width: 100% !important;
-            max-width: 190px !important;
             aspect-ratio: 1 / 1 !important;
             border-radius: 1.5rem !important;
             margin-left: auto !important;
@@ -216,8 +222,13 @@ $desktopWidth = 100 / $effectiveDesktopCount;
             margin-bottom: 0.5rem !important;
             box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.06) !important;
         }
+        #<?= $id ?> .category-slide-link {
+            width: 100%;
+            margin-left: auto !important;
+            margin-right: auto !important;
+        }
         #<?= $id ?> .category-name {
-            font-size: 1rem !important;
+            font-size: 0.95rem !important;
             font-weight: 700 !important;
             letter-spacing: 0.02em !important;
         }
@@ -238,8 +249,6 @@ $desktopWidth = 100 / $effectiveDesktopCount;
         }
         #prev_<?= $id ?> { left: 0.25rem; }
         #next_<?= $id ?> { right: 0.25rem; }
-        #track_container_<?= $id ?> { padding-left: 1.5rem; padding-right: 1.5rem; }
-        #inner_<?= $id ?> { gap: 1.75rem !important; }
         #<?= $id ?> .slider-dot {
             width: 8px;
             height: 8px;
@@ -253,7 +262,7 @@ $desktopWidth = 100 / $effectiveDesktopCount;
     }
 </style>
 
-<div class="w-full relative py-3 sm:py-4 md:py-6" id="<?= $id ?>" <?= $heightStyle ?>>
+<div class="w-full relative py-3 sm:py-5 md:py-6" id="<?= $id ?>" <?= $heightStyle ?>>
     <script>
         (function() {
             var el = document.getElementById('<?= $id ?>');
@@ -262,12 +271,12 @@ $desktopWidth = 100 / $effectiveDesktopCount;
             }
         })();
     </script>
-    <div class="cat-outer-wrap w-full max-w-full mx-auto px-1 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
-        <div class="cat-bg-wrap rounded-2xl md:rounded-[2rem] p-3.5 sm:p-5 md:p-6 lg:p-7 relative w-full" style="<?= $bgStyle ?>">
+    <div class="cat-outer-wrap w-full max-w-full mx-auto px-1 sm:px-6 lg:px-8<?= $hasCustomHeight ? ' h-full flex flex-col justify-center' : '' ?>">
+        <div class="cat-bg-wrap rounded-2xl md:rounded-[2rem] px-3 sm:px-6 md:px-8 py-5 sm:py-7 md:py-8 relative w-full" style="<?= $bgStyle ?>">
             <div class="w-full relative">
                 
                 <!-- Header -->
-                <div class="category-carousel-header flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5 md:gap-4 mb-3 md:mb-8">
+                <div class="category-carousel-header flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3 mb-3 sm:mb-4 md:mb-5">
                     <?php if ($cta_position === 'Center'): ?>
                         <div class="flex-1 hidden md:block"></div>
                     <?php endif; ?>
@@ -286,12 +295,11 @@ $desktopWidth = 100 / $effectiveDesktopCount;
                 </div>
 
                 <!-- Slider Container -->
-                <?php $isFewItems = count($carouselCategories) <= 4; ?>
-                <div class="relative group/carousel" id="track_container_<?= $id ?>">
+                <div class="relative group/carousel pb-1 sm:pb-2" id="track_container_<?= $id ?>">
                     
                     <!-- Track -->
                     <div class="overflow-hidden touch-pan-y" id="track_<?= $id ?>">
-                        <div class="flex transition-transform duration-500 ease-out <?= $isFewItems ? 'justify-center' : '' ?>" id="inner_<?= $id ?>" style="transform: translateX(0%);">
+                        <div class="flex transition-transform duration-500 ease-out" id="inner_<?= $id ?>" style="transform: translateX(0%);">
                             <?php if (empty($carouselCategories)): ?>
                                 <div class="w-full py-20 text-center text-gray-500 bg-white/50 rounded-2xl">
                                     No categories selected for this carousel.
@@ -302,9 +310,23 @@ $desktopWidth = 100 / $effectiveDesktopCount;
                                 ?>
                                     <!-- Slide Item -->
                                     <div class="slide-item flex-none">
-                                        <a href="<?= BASE_URL ?>/category?id=<?= $cat['id'] ?>" class="category-slide-link block group text-center px-0">
-                                            <div class="category-card-img w-full aspect-square rounded-2xl md:rounded-[1.5rem] bg-white shadow-sm hover:shadow-md transition-all border border-gray-100 flex flex-col relative overflow-hidden mb-3">
-                                                <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($cat['name']) ?>" class="w-full h-full <?= $objectFitClass ?> group-hover:scale-105 transition-transform duration-500 rounded-2xl md:rounded-[1.5rem]" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
+                                        <?php 
+                                            $isCustomCat = !empty($cat['is_customizable']);
+                                            $catLink = $isCustomCat 
+                                                ? (BASE_URL . '/customize?category_id=' . (int)$cat['id'])
+                                                : (BASE_URL . '/category?id=' . (int)$cat['id']);
+                                        ?>
+                                        <a href="<?= $catLink ?>" class="category-slide-link block group text-center px-0">
+                                            <div class="category-card-img w-full aspect-square rounded-2xl md:rounded-[1.5rem] bg-gray-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden mb-3">
+                                                <?php if ($isCustomCat): ?>
+                                                    <div class="absolute top-2 left-2 z-10 pointer-events-none">
+                                                        <span class="px-2 py-0.5 bg-[#F25996] text-white font-extrabold text-[8.5px] md:text-[10px] uppercase tracking-wider rounded-md shadow-sm flex items-center gap-1">
+                                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/></svg>
+                                                            <span>CUSTOM</span>
+                                                        </span>
+                                                    </div>
+                                                <?php endif; ?>
+                                                <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($cat['name']) ?>" class="w-full h-full <?= $objectFitClass ?> group-hover:scale-105 transition-transform duration-500" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
                                             </div>
                                             <h3 class="category-name font-serif font-bold text-center leading-snug tracking-wide" style="font-size: 1rem; color: <?= htmlspecialchars($text_color) ?>;"><?= htmlspecialchars($cat['name']) ?></h3>
                                         </a>
@@ -315,19 +337,19 @@ $desktopWidth = 100 / $effectiveDesktopCount;
                     </div>
 
                     <!-- Arrows -->
-                    <?php if ($show_arrows && !empty($carouselCategories) && !$isFewItems): ?>
-                        <button id="prev_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-0 disabled:cursor-not-allowed z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
+                    <?php if ($show_arrows && count($carouselCategories) > 1): ?>
+                        <button id="prev_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:cursor-not-allowed z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
                         </button>
-                        <button id="next_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-0 disabled:cursor-not-allowed z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
+                        <button id="next_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:cursor-not-allowed z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
                         </button>
                     <?php endif; ?>
                 </div>
 
                 <!-- Dots -->
-                <?php if ($show_dots && !empty($carouselCategories)): ?>
-                    <div class="mt-3 md:mt-6 flex justify-center items-center gap-2" id="dots_<?= $id ?>">
+                <?php if ($show_dots && count($carouselCategories) > 1): ?>
+                    <div class="mt-2 md:mt-3 flex justify-center items-center gap-2" id="dots_<?= $id ?>">
                         <!-- Dots generated by JS -->
                     </div>
                 <?php endif; ?>
@@ -349,59 +371,87 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (slides.length === 0) return;
 
-    // Desktop/Mobile items count configuration
-    const mobileCount = <?= (int)$effectiveMobileCount ?>;
-    const desktopCount = <?= (int)$effectiveDesktopCount ?>;
+    // Desktop/Mobile items count configuration directly from admin settings
+    const mobileCount = <?= (int)$mobile_count ?>;
+    const desktopCount = <?= (int)$desktop_count ?>;
     
     let currentIndex = 0;
-    let itemsPerView = window.innerWidth >= 768 ? desktopCount : mobileCount;
+    
+    function getItemsPerView() {
+        return window.innerWidth >= 768 ? desktopCount : mobileCount;
+    }
+
+    let itemsPerView = getItemsPerView();
     let maxIndex = Math.max(0, slides.length - itemsPerView);
 
     function updateSlider() {
-        // Calculate exact slide width by measuring the distance between first and second slide
-        let slideWidth = 0;
-        if (slides.length > 1) {
-            slideWidth = slides[1].getBoundingClientRect().left - slides[0].getBoundingClientRect().left;
+        itemsPerView = getItemsPerView();
+        maxIndex = Math.max(0, slides.length - itemsPerView);
+        currentIndex = Math.min(Math.max(0, currentIndex), maxIndex);
+
+        if (maxIndex === 0) {
+            inner.style.justifyContent = 'center';
+            inner.style.transform = 'translateX(0px)';
         } else {
-            slideWidth = slides[0].getBoundingClientRect().width;
+            inner.style.justifyContent = 'flex-start';
+            let slideWidth = 0;
+            if (slides.length > 1) {
+                slideWidth = slides[1].getBoundingClientRect().left - slides[0].getBoundingClientRect().left;
+            } else {
+                slideWidth = slides[0].getBoundingClientRect().width;
+            }
+            inner.style.transform = `translateX(-${currentIndex * slideWidth}px)`;
         }
-        
-        inner.style.transform = `translateX(-${currentIndex * slideWidth}px)`;
         
         // Update Buttons
         if (prevBtn) {
-            prevBtn.disabled = currentIndex === 0;
-            prevBtn.style.opacity = '1';
-            prevBtn.style.visibility = 'visible';
-            prevBtn.style.display = 'flex';
+            if (maxIndex === 0) {
+                prevBtn.style.display = 'none';
+            } else {
+                prevBtn.style.display = 'flex';
+                prevBtn.disabled = currentIndex === 0;
+                prevBtn.style.opacity = currentIndex === 0 ? '0.35' : '1';
+                prevBtn.style.cursor = currentIndex === 0 ? 'not-allowed' : 'pointer';
+            }
         }
         if (nextBtn) {
-            nextBtn.disabled = currentIndex >= maxIndex;
-            nextBtn.style.opacity = '1';
-            nextBtn.style.visibility = 'visible';
-            nextBtn.style.display = 'flex';
+            if (maxIndex === 0) {
+                nextBtn.style.display = 'none';
+            } else {
+                nextBtn.style.display = 'flex';
+                nextBtn.disabled = currentIndex >= maxIndex;
+                nextBtn.style.opacity = currentIndex >= maxIndex ? '0.35' : '1';
+                nextBtn.style.cursor = currentIndex >= maxIndex ? 'not-allowed' : 'pointer';
+            }
         }
         
         // Update Dots
         if (dotsContainer) {
-            const dots = dotsContainer.querySelectorAll('.slider-dot');
-            dots.forEach((dot, idx) => {
-                if (idx === currentIndex) {
-                    dot.classList.add('active');
-                } else {
-                    dot.classList.remove('active');
-                }
-            });
+            if (maxIndex > 0) {
+                dotsContainer.style.display = 'flex';
+                const dots = dotsContainer.querySelectorAll('.slider-dot');
+                dots.forEach((dot, idx) => {
+                    if (idx === currentIndex) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+            } else {
+                dotsContainer.style.display = 'none';
+            }
         }
     }
 
-    // Initialize Dots
-    if (dotsContainer) {
+    function renderDots() {
+        if (!dotsContainer) return;
+        dotsContainer.innerHTML = '';
         if (maxIndex > 0) {
             dotsContainer.style.display = 'flex';
             for (let i = 0; i <= maxIndex; i++) {
                 const dot = document.createElement('button');
-                dot.className = 'slider-dot' + (i === 0 ? ' active' : '');
+                dot.type = 'button';
+                dot.className = 'slider-dot' + (i === currentIndex ? ' active' : '');
                 dot.setAttribute('aria-label', `Slide ${i + 1}`);
                 dot.onclick = () => {
                     currentIndex = i;
@@ -432,36 +482,49 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
+    renderDots();
+    updateSlider();
+
     // Handle Resize
     window.addEventListener('resize', () => {
-        const newItemsPerView = window.innerWidth >= 768 ? desktopCount : mobileCount;
-        if (newItemsPerView !== itemsPerView) {
-            itemsPerView = newItemsPerView;
+        const newItems = getItemsPerView();
+        if (newItems !== itemsPerView) {
+            itemsPerView = newItems;
             maxIndex = Math.max(0, slides.length - itemsPerView);
             currentIndex = Math.min(currentIndex, maxIndex);
-            
-            // Re-render dots
-            if (dotsContainer) {
-                dotsContainer.innerHTML = '';
-                if (maxIndex > 0) {
-                    dotsContainer.style.display = 'flex';
-                    for (let i = 0; i <= maxIndex; i++) {
-                        const dot = document.createElement('button');
-                        dot.className = 'slider-dot' + (i === currentIndex ? ' active' : '');
-                        dot.setAttribute('aria-label', `Slide ${i + 1}`);
-                        dot.onclick = () => { currentIndex = i; updateSlider(); };
-                        dotsContainer.appendChild(dot);
-                    }
-                } else {
-                    dotsContainer.style.display = 'none';
-                }
-            }
-            updateSlider();
+            renderDots();
         }
+        updateSlider();
         manageAutoPlay();
     });
 
-    updateSlider();
+    // Touch swipe support for smooth mobile interaction
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    track.addEventListener('touchstart', (e) => {
+        if (autoPlayInterval) clearInterval(autoPlayInterval);
+        touchStartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+
+    track.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+        manageAutoPlay();
+    }, {passive: true});
+
+    function handleSwipe() {
+        const diff = touchStartX - touchEndX;
+        if (Math.abs(diff) > 40) {
+            if (diff > 0 && currentIndex < maxIndex) {
+                currentIndex++;
+                updateSlider();
+            } else if (diff < 0 && currentIndex > 0) {
+                currentIndex--;
+                updateSlider();
+            }
+        }
+    }
 
     // Auto-play logic for mobile only
     let autoPlayInterval;
@@ -478,13 +541,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentIndex = 0;
                 }
                 updateSlider();
-            }, 3000); // 3 seconds
+            }, 3000);
         }
     }
 
-    // Pause auto-play on user interaction
-    track.addEventListener('touchstart', () => { if (autoPlayInterval) clearInterval(autoPlayInterval); }, {passive: true});
-    track.addEventListener('touchend', manageAutoPlay);
     track.addEventListener('mouseenter', () => { if (autoPlayInterval) clearInterval(autoPlayInterval); });
     track.addEventListener('mouseleave', manageAutoPlay);
 

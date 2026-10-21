@@ -438,7 +438,6 @@ $router->post('/admin/cms/main-banners/delete', 'App\Controllers\Admin\MainBanne
 // CMS About Us
 $router->get('/admin/cms/about-us', 'App\Controllers\Admin\AboutUsController@index');
 $router->get('/admin/cms/about-us/create', 'App\Controllers\Admin\AboutUsController@create');
-$router->get('/admin/cms/about-us/store', 'App\Controllers\Admin\AboutUsController@store');
 $router->post('/admin/cms/about-us/store', 'App\Controllers\Admin\AboutUsController@store');
 $router->get('/admin/cms/about-us/edit', 'App\Controllers\Admin\AboutUsController@edit');
 $router->post('/admin/cms/about-us/update', 'App\Controllers\Admin\AboutUsController@update');
@@ -467,14 +466,6 @@ $router->post('/admin/cms/footers/store', 'App\Controllers\Admin\FooterControlle
 $router->get('/admin/cms/footers/edit', 'App\Controllers\Admin\FooterController@edit');
 $router->post('/admin/cms/footers/update', 'App\Controllers\Admin\FooterController@update');
 $router->post('/admin/cms/footers/delete', 'App\Controllers\Admin\FooterController@delete');
-
-// CMS About Us
-$router->get('/admin/cms/about-us', 'App\Controllers\Admin\AboutUsController@index');
-$router->get('/admin/cms/about-us/create', 'App\Controllers\Admin\AboutUsController@create');
-$router->post('/admin/cms/about-us/store', 'App\Controllers\Admin\AboutUsController@store');
-$router->get('/admin/cms/about-us/edit', 'App\Controllers\Admin\AboutUsController@edit');
-$router->post('/admin/cms/about-us/update', 'App\Controllers\Admin\AboutUsController@update');
-$router->post('/admin/cms/about-us/delete', 'App\Controllers\Admin\AboutUsController@delete');
 
 // CMS Reviews
 $router->get('/admin/cms/reviews', 'App\Controllers\Admin\CmsReviewController@index');

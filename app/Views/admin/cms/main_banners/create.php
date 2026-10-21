@@ -252,6 +252,10 @@ $media = $media ?? [];
                 <option value="selected_products" <?= $ct === 'selected_products' ? 'selected' : '' ?>>Selected Products (Manual Pick)</option>
                 <option value="category_grid" <?= $ct === 'category_grid' ? 'selected' : '' ?>>All Categories</option>
                 <option value="selected_categories" <?= $ct === 'selected_categories' ? 'selected' : '' ?>>Selected Categories (Manual Pick)</option>
+                <option value="custom_category_grid" <?= $ct === 'custom_category_grid' ? 'selected' : '' ?>>All Customizable Categories</option>
+                <option value="selected_custom_categories" <?= $ct === 'selected_custom_categories' ? 'selected' : '' ?>>Selected Customizable Categories (Manual Pick)</option>
+                <option value="custom_product_carousel" <?= $ct === 'custom_product_carousel' ? 'selected' : '' ?>>All Customizable Products</option>
+                <option value="selected_custom_products" <?= $ct === 'selected_custom_products' ? 'selected' : '' ?>>Selected Customizable Products (Manual Pick)</option>
             </select>
         </div>
         <?php endif; ?>
@@ -545,10 +549,14 @@ $media = $media ?? [];
             <?php 
                 $selProds = isset($data['selected_products']) ? json_encode($data['selected_products']) : '[]';
                 $selCats = isset($data['selected_categories']) ? json_encode($data['selected_categories']) : '[]';
+                $selCustomProds = isset($data['selected_custom_products']) ? json_encode($data['selected_custom_products']) : '[]';
+                $selCustomCats = isset($data['selected_custom_categories']) ? json_encode($data['selected_custom_categories']) : '[]';
             ?>
             <!-- Hidden inputs to hold the selected items on edit -->
             <input type="hidden" class="pre-selected-products" value='<?= htmlspecialchars($selProds) ?>'>
             <input type="hidden" class="pre-selected-categories" value='<?= htmlspecialchars($selCats) ?>'>
+            <input type="hidden" class="pre-selected-custom-products" value='<?= htmlspecialchars($selCustomProds) ?>'>
+            <input type="hidden" class="pre-selected-custom-categories" value='<?= htmlspecialchars($selCustomCats) ?>'>
         </div>
     </div>
 </div>
@@ -641,6 +649,10 @@ $media = $media ?? [];
                 <option value="selected_products" <?= $ct === 'selected_products' ? 'selected' : '' ?>>Selected Products (Manual Pick)</option>
                 <option value="category_grid" <?= $ct === 'category_grid' ? 'selected' : '' ?>>All Categories</option>
                 <option value="selected_categories" <?= $ct === 'selected_categories' ? 'selected' : '' ?>>Selected Categories (Manual Pick)</option>
+                <option value="custom_category_grid" <?= $ct === 'custom_category_grid' ? 'selected' : '' ?>>All Customizable Categories</option>
+                <option value="selected_custom_categories" <?= $ct === 'selected_custom_categories' ? 'selected' : '' ?>>Selected Customizable Categories (Manual Pick)</option>
+                <option value="custom_product_carousel" <?= $ct === 'custom_product_carousel' ? 'selected' : '' ?>>All Customizable Products</option>
+                <option value="selected_custom_products" <?= $ct === 'selected_custom_products' ? 'selected' : '' ?>>Selected Customizable Products (Manual Pick)</option>
             </select>
         </div>
         <?php endif; ?>
@@ -934,10 +946,14 @@ $media = $media ?? [];
             <?php 
                 $selProds = isset($data['selected_products']) ? json_encode($data['selected_products']) : '[]';
                 $selCats = isset($data['selected_categories']) ? json_encode($data['selected_categories']) : '[]';
+                $selCustomProds = isset($data['selected_custom_products']) ? json_encode($data['selected_custom_products']) : '[]';
+                $selCustomCats = isset($data['selected_custom_categories']) ? json_encode($data['selected_custom_categories']) : '[]';
             ?>
             <!-- Hidden inputs to hold the selected items on edit -->
             <input type="hidden" class="pre-selected-products" value='<?= htmlspecialchars($selProds) ?>'>
             <input type="hidden" class="pre-selected-categories" value='<?= htmlspecialchars($selCats) ?>'>
+            <input type="hidden" class="pre-selected-custom-products" value='<?= htmlspecialchars($selCustomProds) ?>'>
+            <input type="hidden" class="pre-selected-custom-categories" value='<?= htmlspecialchars($selCustomCats) ?>'>
         </div>
     </div>
 </div>
@@ -1030,6 +1046,10 @@ $media = $media ?? [];
                 <option value="selected_products" <?= $ct === 'selected_products' ? 'selected' : '' ?>>Selected Products (Manual Pick)</option>
                 <option value="category_grid" <?= $ct === 'category_grid' ? 'selected' : '' ?>>All Categories</option>
                 <option value="selected_categories" <?= $ct === 'selected_categories' ? 'selected' : '' ?>>Selected Categories (Manual Pick)</option>
+                <option value="custom_category_grid" <?= $ct === 'custom_category_grid' ? 'selected' : '' ?>>All Customizable Categories</option>
+                <option value="selected_custom_categories" <?= $ct === 'selected_custom_categories' ? 'selected' : '' ?>>Selected Customizable Categories (Manual Pick)</option>
+                <option value="custom_product_carousel" <?= $ct === 'custom_product_carousel' ? 'selected' : '' ?>>All Customizable Products</option>
+                <option value="selected_custom_products" <?= $ct === 'selected_custom_products' ? 'selected' : '' ?>>Selected Customizable Products (Manual Pick)</option>
             </select>
         </div>
         <?php endif; ?>
@@ -1323,10 +1343,14 @@ $media = $media ?? [];
             <?php 
                 $selProds = isset($data['selected_products']) ? json_encode($data['selected_products']) : '[]';
                 $selCats = isset($data['selected_categories']) ? json_encode($data['selected_categories']) : '[]';
+                $selCustomProds = isset($data['selected_custom_products']) ? json_encode($data['selected_custom_products']) : '[]';
+                $selCustomCats = isset($data['selected_custom_categories']) ? json_encode($data['selected_custom_categories']) : '[]';
             ?>
             <!-- Hidden inputs to hold the selected items on edit -->
             <input type="hidden" class="pre-selected-products" value='<?= htmlspecialchars($selProds) ?>'>
             <input type="hidden" class="pre-selected-categories" value='<?= htmlspecialchars($selCats) ?>'>
+            <input type="hidden" class="pre-selected-custom-products" value='<?= htmlspecialchars($selCustomProds) ?>'>
+            <input type="hidden" class="pre-selected-custom-categories" value='<?= htmlspecialchars($selCustomCats) ?>'>
         </div>
     </div>
 </div>
@@ -1426,6 +1450,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const previewProducts = <?= json_encode($previewProducts ?? []) ?>;
     const previewCategories = <?= json_encode($previewCategories ?? []) ?>;
+    const previewCustomProducts = <?= json_encode($previewCustomProducts ?? []) ?>;
+    const previewCustomCategories = <?= json_encode($previewCustomCategories ?? []) ?>;
 
     // --- Dynamic Content Type Logic ---
     document.querySelectorAll('.content-type-select').forEach(select => {
@@ -1443,7 +1469,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (select.value === 'custom_image') {
                     mediaSection.style.display = 'block';
-                } else if (select.value === 'product_carousel' || select.value === 'category_grid') {
+                } else if (select.value === 'product_carousel' || select.value === 'category_grid' || select.value === 'custom_product_carousel' || select.value === 'custom_category_grid') {
                     infoSection.style.display = 'block';
                     
                     const title = infoSection.querySelector('.dynamic-info-title');
@@ -1472,8 +1498,32 @@ document.addEventListener('DOMContentLoaded', function() {
                                 </div>
                             `;
                         });
+                    } else if (select.value === 'custom_product_carousel') {
+                        title.innerText = 'Preview: All Customizable Products (Auto-Fetched)';
+                        previewCustomProducts.forEach(p => {
+                            const img = p.main_image ? p.main_image : 'https://placehold.co/400x400/f3f4f6/a1a1aa?text=No+Image';
+                            grid.innerHTML += `
+                                <div class="flex items-center gap-3 p-2 bg-white border border-gray-200 rounded-xl shadow-2xs hover:bg-gray-50 transition-colors">
+                                    <img src="${img}" class="w-12 h-12 rounded-lg object-cover bg-gray-100 border border-gray-200 shrink-0" onerror="this.src='https://placehold.co/400x400/f3f4f6/a1a1aa?text=No+Image'">
+                                    <span class="text-xs sm:text-sm font-semibold text-gray-800 flex-1 truncate" title="${p.name}">${p.name}</span>
+                                    <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-pink-50 text-[#F25996] border border-pink-200 shrink-0">Customizable</span>
+                                </div>
+                            `;
+                        });
+                    } else if (select.value === 'custom_category_grid') {
+                        title.innerText = 'Preview: All Customizable Categories (Auto-Fetched)';
+                        previewCustomCategories.forEach(c => {
+                            const img = c.image ? c.image : 'https://placehold.co/400x400/f3f4f6/a1a1aa?text=No+Image';
+                            grid.innerHTML += `
+                                <div class="flex items-center gap-3 p-2 bg-white border border-gray-200 rounded-xl shadow-2xs hover:bg-gray-50 transition-colors">
+                                    <img src="${img}" class="w-12 h-12 rounded-full object-cover bg-gray-100 border border-gray-200 shrink-0" onerror="this.src='https://placehold.co/400x400/f3f4f6/a1a1aa?text=No+Image'">
+                                    <span class="text-xs sm:text-sm font-semibold text-gray-800 flex-1 truncate" title="${c.name}">${c.name}</span>
+                                    <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-pink-50 text-[#F25996] border border-pink-200 shrink-0">Custom</span>
+                                </div>
+                            `;
+                        });
                     }
-                } else if (select.value === 'selected_products' || select.value === 'selected_categories') {
+                } else if (select.value === 'selected_products' || select.value === 'selected_categories' || select.value === 'selected_custom_products' || select.value === 'selected_custom_categories') {
                     manualSection.style.display = 'block';
                     
                     const title = manualSection.querySelector('.manual-selection-title');
@@ -1507,6 +1557,38 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <input type="checkbox" name="${prefix}_selected_categories[]" value="${c.id}" class="w-4 h-4 text-[#F25996] rounded border-gray-300 focus:ring-[#F25996]" ${checked}>
                                     <img src="${img}" class="w-10 h-10 object-cover rounded-full shadow-2xs bg-gray-100 shrink-0">
                                     <span class="text-xs font-medium text-gray-700 flex-1 truncate" title="${c.name}">${c.name}</span>
+                                </label>
+                            `;
+                        });
+                    } else if (select.value === 'selected_custom_products') {
+                        title.innerText = 'Select Customizable Products to Display';
+                        const preSelected = JSON.parse(manualSection.querySelector('.pre-selected-custom-products').value || '[]');
+                        
+                        previewCustomProducts.forEach(p => {
+                            const img = p.main_image ? p.main_image : 'https://placehold.co/400x400/f3f4f6/a1a1aa?text=No+Image';
+                            const checked = preSelected.includes(p.id.toString()) || preSelected.includes(p.id) ? 'checked' : '';
+                            listContainer.innerHTML += `
+                                <label class="flex items-center gap-3 p-2 hover:bg-pink-50/60 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-pink-100 manual-list-item" data-search="${p.name.toLowerCase()}">
+                                    <input type="checkbox" name="${prefix}_selected_custom_products[]" value="${p.id}" class="w-4 h-4 text-[#F25996] rounded border-gray-300 focus:ring-[#F25996]" ${checked}>
+                                    <img src="${img}" class="w-10 h-10 object-cover rounded-md shadow-2xs bg-gray-100 shrink-0">
+                                    <span class="text-xs font-medium text-gray-700 flex-1 truncate" title="${p.name}">${p.name}</span>
+                                    <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-pink-50 text-[#F25996] border border-pink-200 shrink-0">Custom</span>
+                                </label>
+                            `;
+                        });
+                    } else if (select.value === 'selected_custom_categories') {
+                        title.innerText = 'Select Customizable Categories to Display';
+                        const preSelected = JSON.parse(manualSection.querySelector('.pre-selected-custom-categories').value || '[]');
+                        
+                        previewCustomCategories.forEach(c => {
+                            const img = c.image ? c.image : 'https://placehold.co/400x400/f3f4f6/a1a1aa?text=No+Image';
+                            const checked = preSelected.includes(c.id.toString()) || preSelected.includes(c.id) ? 'checked' : '';
+                            listContainer.innerHTML += `
+                                <label class="flex items-center gap-3 p-2 hover:bg-pink-50/60 rounded-lg cursor-pointer transition-colors border border-transparent hover:border-pink-100 manual-list-item" data-search="${c.name.toLowerCase()}">
+                                    <input type="checkbox" name="${prefix}_selected_custom_categories[]" value="${c.id}" class="w-4 h-4 text-[#F25996] rounded border-gray-300 focus:ring-[#F25996]" ${checked}>
+                                    <img src="${img}" class="w-10 h-10 object-cover rounded-full shadow-2xs bg-gray-100 shrink-0">
+                                    <span class="text-xs font-medium text-gray-700 flex-1 truncate" title="${c.name}">${c.name}</span>
+                                    <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-pink-50 text-[#F25996] border border-pink-200 shrink-0">Custom</span>
                                 </label>
                             `;
                         });

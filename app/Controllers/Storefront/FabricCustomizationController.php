@@ -117,6 +117,81 @@ class FabricCustomizationController extends Controller
         $customizationReviews = $reviewModel->getApprovedCustomizationReviews((int)$customization['id'], (int)$customization['fabric_id']);
         $customizationStats = $reviewModel->getCustomizationReviewStats((int)$customization['id'], (int)$customization['fabric_id']);
 
+        // Fetch "You May Also Like" products (customizable products only, prioritizing different subcategories)
+        $relatedProducts = [];
+        try {
+            $catId = !empty($customization['category_id']) ? (int)$customization['category_id'] : 0;
+            $currentSubCatId = !empty($customization['sub_category_id']) ? (int)$customization['sub_category_id'] : (!empty($fabric['sub_category_id']) ? (int)$fabric['sub_category_id'] : 0);
+            $currentFabricId = !empty($customization['fabric_id']) ? (int)$customization['fabric_id'] : 0;
+
+            // Only fetch active customizable products (is_customizable = 1) from different subcategories / categories
+            $candidateStmt = $db->prepare("
+                SELECT p.*, 
+                       c.name AS category_name, 
+                       c.moq AS category_moq,
+                       sc.name AS subcategory_name,
+                       fc.id AS customization_id,
+                       fc.program_name,
+                       fc.garment_type,
+                       fc.minimum_pieces AS custom_moq,
+                       (SELECT pi.image_path FROM product_images pi WHERE pi.product_id = p.id ORDER BY pi.is_primary DESC, pi.sort_order ASC, pi.id ASC LIMIT 1) AS primary_image,
+                       pv_agg.base_price,
+                       pv_agg.discount_price
+                FROM products p
+                JOIN categories c ON p.category_id = c.id AND c.status = 'active'
+                JOIN fabric_customizations fc ON fc.fabric_id = p.id AND fc.status = 'active' AND fc.customization_enabled = 1
+                LEFT JOIN sub_categories sc ON p.sub_category_id = sc.id AND sc.status = 'active'
+                LEFT JOIN (
+                    SELECT product_id, 
+                           MIN(base_price) AS base_price,
+                           MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price 
+                    FROM product_variants GROUP BY product_id
+                ) pv_agg ON pv_agg.product_id = p.id
+                WHERE p.status = 'active' 
+                  AND p.is_customizable = 1 
+                  AND p.id != ?
+                ORDER BY (p.sub_category_id != ? AND p.sub_category_id IS NOT NULL) DESC, 
+                         (p.category_id != ?) DESC, 
+                         p.id DESC
+                LIMIT 10
+            ");
+            $candidateStmt->execute([$currentFabricId, $currentSubCatId, $catId]);
+            $relatedProducts = $candidateStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (!empty($relatedProducts)) {
+                $relPids = array_map('intval', array_column($relatedProducts, 'id'));
+                $relCids = array_filter(array_map('intval', array_column($relatedProducts, 'customization_id')));
+
+                $groupedImgs = [];
+                if (!empty($relPids)) {
+                    $pidList = implode(',', $relPids);
+                    $imgStmt = $db->query("SELECT product_id, image_path FROM product_images WHERE product_id IN ($pidList) ORDER BY is_primary DESC, sort_order ASC, id ASC");
+                    while ($r = $imgStmt->fetch(PDO::FETCH_ASSOC)) {
+                        $groupedImgs[$r['product_id']][] = $r['image_path'];
+                    }
+                }
+
+                $groupedSizes = [];
+                if (!empty($relCids)) {
+                    $cidList = implode(',', $relCids);
+                    $szStmt = $db->query("SELECT customization_id, size_name FROM fabric_customization_sizes WHERE customization_id IN ($cidList) AND enabled = 1 ORDER BY sort_order ASC, id ASC");
+                    while ($sz = $szStmt->fetch(PDO::FETCH_ASSOC)) {
+                        $groupedSizes[$sz['customization_id']][] = $sz['size_name'];
+                    }
+                }
+
+                foreach ($relatedProducts as &$relItem) {
+                    $relItem['images'] = $groupedImgs[$relItem['id']] ?? (!empty($relItem['primary_image']) ? [$relItem['primary_image']] : []);
+                    $relItem['sizes'] = $groupedSizes[$relItem['customization_id']] ?? ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
+                }
+                unset($relItem);
+            }
+        } catch (\Throwable $e) {
+            $relatedProducts = [];
+        }
+
+        $canAddToCart = ($userId && Session::get('user_status') === 'active');
+
         $savedSizes = Session::get('custom_checkout_sizes_' . $customization['id']) 
             ?? Session::get('custom_checkout_sizes_f_' . $customization['fabric_id']) 
             ?? [];
@@ -138,6 +213,8 @@ class FabricCustomizationController extends Controller
             'userId'               => $userId,
             'customizationReviews' => $customizationReviews,
             'customizationStats'   => $customizationStats,
+            'relatedProducts'      => $relatedProducts,
+            'canAddToCart'         => $canAddToCart,
             'savedSizes'           => $savedSizes,
             'savedSets'            => $savedSets,
             'savedQty'             => $savedQty,

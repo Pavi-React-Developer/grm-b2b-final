@@ -28,7 +28,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
-                    <select name="sub_category_id" id="sub_category_id" class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-2 disabled:bg-gray-50" disabled>
+                    <select name="sub_category_id" id="sub_category_id" class="w-full border border-gray-300 rounded-lg focus:ring-brand-500 focus:border-brand-500 px-3 py-2">
                         <option value="">Select Category first...</option>
                     </select>
                 </div>
@@ -401,29 +401,48 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!catId) {
             subCategorySelect.innerHTML = '<option value="">Select Category first...</option>';
             subCategorySelect.disabled = true;
+            subCategorySelect.dispatchEvent(new Event('change'));
             return;
         }
 
         subCategorySelect.disabled = true;
         subCategorySelect.innerHTML = '<option value="">Loading...</option>';
+        subCategorySelect.dispatchEvent(new Event('change'));
 
-        fetch('<?= BASE_URL ?>/admin/catalog/subcategories/api-get-by-category?category_id=' + catId)
-            .then(res => res.json())
-            .then(data => {
-                subCategorySelect.innerHTML = '<option value="">None</option>';
+        const formModule = document.querySelector('input[name="module"]')?.value || '';
+        const moduleParam = formModule ? '&module=' + encodeURIComponent(formModule) : '';
+
+        fetch('/admin/catalog/subcategories/api-get-by-category?category_id=' + encodeURIComponent(catId) + moduleParam, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            subCategorySelect.innerHTML = '<option value="">None</option>';
+            if (Array.isArray(data)) {
                 data.forEach(sub => {
                     const option = document.createElement('option');
                     option.value = sub.id;
                     option.textContent = sub.name;
                     subCategorySelect.appendChild(option);
                 });
-                subCategorySelect.disabled = false;
-            })
-            .catch(err => {
-                console.error(err);
-                subCategorySelect.innerHTML = '<option value="">Error loading subcategories</option>';
-            });
+            }
+            subCategorySelect.disabled = false;
+            subCategorySelect.dispatchEvent(new Event('change'));
+        })
+        .catch(err => {
+            console.error('Error loading subcategories:', err);
+            subCategorySelect.innerHTML = '<option value="">Error loading subcategories</option>';
+            subCategorySelect.disabled = false;
+            subCategorySelect.dispatchEvent(new Event('change'));
+        });
     });
+
+    if (categorySelect && categorySelect.value) {
+        categorySelect.dispatchEvent(new Event('change'));
+    }
 
     // Auto-add any pending text when the form is submitted
     const form = document.querySelector('form');

@@ -261,7 +261,7 @@ $renderColorField = function($label, $name, $default) use ($content) {
         </div>
         
         <!-- Filters Row -->
-        <div class="grid grid-cols-1 <?= is_vendor_module_enabled() ? 'md:grid-cols-3' : 'md:grid-cols-2' ?> gap-4">
+        <div class="grid grid-cols-1 <?= is_vendor_module_enabled() ? 'md:grid-cols-4' : 'md:grid-cols-3' ?> gap-4">
             <?php if (is_vendor_module_enabled()): ?>
             <!-- Vendor Filter -->
             <div>
@@ -286,16 +286,31 @@ $renderColorField = function($label, $name, $default) use ($content) {
             </div>
             <?php endif; ?>
 
-            <!-- Category Filter -->
+            <!-- Category Filter (Normal Categories Only) -->
             <div>
                 <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase tracking-wider flex items-center">
                     <svg class="w-4 h-4 mr-1 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
                     Filter by Category
                 </label>
                 <select id="catFilter" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-shadow text-gray-900 bg-white text-sm font-medium">
-                    <option value="all">📦 All Categories</option>
+                    <option value="all_normal">📦 All Categories</option>
                     <?php foreach ($categories as $cat): ?>
-                        <option value="<?= htmlspecialchars($cat['name']) ?>"><?= htmlspecialchars($cat['name']) ?></option>
+                        <option value="<?= htmlspecialchars(strtolower($cat['name'])) ?>"><?= htmlspecialchars($cat['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <!-- Customize Category Filter -->
+            <div>
+                <label class="block text-xs font-bold text-[#F25996] mb-1.5 uppercase tracking-wider flex items-center">
+                    <svg class="w-4 h-4 mr-1 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Customize Categories
+                </label>
+                <select id="customCatFilter" class="w-full px-4 py-2.5 border border-pink-200 rounded-lg focus:ring-2 focus:ring-[#F25996] focus:border-[#F25996] transition-shadow text-gray-900 bg-white text-sm font-medium">
+                    <option value="">-- Select Customize Category --</option>
+                    <option value="all_custom">✨ All Customize Categories</option>
+                    <?php foreach ($customCategories ?? [] as $ccat): ?>
+                        <option value="<?= htmlspecialchars(strtolower($ccat['name'])) ?>">🎨 <?= htmlspecialchars($ccat['name']) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -339,16 +354,25 @@ $renderColorField = function($label, $name, $default) use ($content) {
                 $isChecked = in_array($prod['id'], $selectedProducts ?? []) ? 'checked' : '';
                 $vendorId = $prod['vendor_id'] ?? $prod['user_id'] ?? 0;
                 $vendorStoreName = $prod['vendor_store_name'] ?? $prod['vendor_company_name'] ?? $prod['vendor_name'] ?? null;
+                $isCustom = !empty($prod['is_customizable']);
             ?>
             <label class="flex items-center px-4 py-3 hover:bg-blue-50/40 cursor-pointer transition-colors product-item group" 
                    data-cat="<?= htmlspecialchars(strtolower($prod['category_name'])) ?>" 
+                   data-is-custom="<?= $isCustom ? '1' : '0' ?>"
                    data-name="<?= htmlspecialchars(strtolower($prod['name'])) ?>"
                    data-vendor-id="<?= $vendorId ?>"
                    data-vendor-name="<?= htmlspecialchars(strtolower($vendorStoreName ?? 'in_house')) ?>">
                 <input type="checkbox" name="product_ids[]" value="<?= $prod['id'] ?>" <?= $isChecked ?> class="w-4 h-4 text-brand-600 border-gray-300 rounded focus:ring-brand-500 mr-4 cursor-pointer product-checkbox">
                 <img src="<?= htmlspecialchars($img) ?>" class="w-11 h-11 object-contain rounded-lg border border-gray-200 bg-white mr-4 p-0.5 group-hover:scale-105 transition-transform">
                 <div class="flex-1 min-w-0 pr-4">
-                    <div class="font-bold text-sm text-gray-900 truncate"><?= htmlspecialchars($prod['name']) ?></div>
+                    <div class="font-bold text-sm text-gray-900 truncate flex items-center gap-2">
+                        <span><?= htmlspecialchars($prod['name']) ?></span>
+                        <?php if ($isCustom): ?>
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-pink-100 text-pink-700 border border-pink-200">
+                                ✨ Custom
+                            </span>
+                        <?php endif; ?>
+                    </div>
                     <div class="flex items-center gap-2 mt-0.5">
                         <span class="text-xs text-gray-500 font-medium"><?= htmlspecialchars($prod['category_name']) ?></span>
                         <span class="text-xs text-gray-300">•</span>
@@ -564,6 +588,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Product Filter & Dynamic Selection Logic
     const searchInput = document.getElementById('prodSearch');
     const catSelect = document.getElementById('catFilter');
+    const customCatSelect = document.getElementById('customCatFilter');
     const vendorSelect = document.getElementById('vendorFilter');
     const showOnlySelectedToggle = document.getElementById('showOnlySelectedToggle');
     const productItems = document.querySelectorAll('.product-item');
@@ -588,19 +613,35 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function filterProducts() {
         const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
-        const selectedCat = catSelect ? catSelect.value.toLowerCase() : 'all';
+        const selectedCat = catSelect ? catSelect.value.toLowerCase() : '';
+        const selectedCustomCat = customCatSelect ? customCatSelect.value.toLowerCase() : '';
         const selectedVendor = vendorSelect ? vendorSelect.value : 'all';
         const onlySelected = showOnlySelectedToggle ? showOnlySelectedToggle.checked : false;
 
         productItems.forEach(item => {
             const name = item.getAttribute('data-name') || '';
             const cat = item.getAttribute('data-cat') || '';
+            const isCustom = item.getAttribute('data-is-custom') || '0';
             const vendorId = item.getAttribute('data-vendor-id') || '0';
             const cb = item.querySelector('.product-checkbox');
             const isChecked = cb ? cb.checked : false;
 
             const matchesSearch = name.includes(searchTerm);
-            const matchesCat = selectedCat === 'all' || cat === selectedCat;
+            
+            let matchesCat = true;
+            if (selectedCustomCat && selectedCustomCat !== '') {
+                if (selectedCustomCat === 'all_custom') {
+                    matchesCat = (isCustom === '1');
+                } else {
+                    matchesCat = (isCustom === '1' && cat === selectedCustomCat);
+                }
+            } else if (selectedCat && selectedCat !== '') {
+                if (selectedCat === 'all_normal') {
+                    matchesCat = (isCustom === '0');
+                } else {
+                    matchesCat = (isCustom === '0' && cat === selectedCat);
+                }
+            }
             
             let matchesVendor = true;
             if (selectedVendor === 'in_house') {
@@ -625,7 +666,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     if (searchInput) searchInput.addEventListener('input', filterProducts);
-    if (catSelect) catSelect.addEventListener('change', filterProducts);
+    if (catSelect) {
+        catSelect.addEventListener('change', () => {
+            if (catSelect.value !== '' && customCatSelect) {
+                customCatSelect.value = '';
+            }
+            filterProducts();
+        });
+    }
+    if (customCatSelect) {
+        customCatSelect.addEventListener('change', () => {
+            if (customCatSelect.value !== '' && catSelect) {
+                catSelect.value = '';
+            }
+            filterProducts();
+        });
+    }
     if (vendorSelect) vendorSelect.addEventListener('change', filterProducts);
     if (showOnlySelectedToggle) showOnlySelectedToggle.addEventListener('change', filterProducts);
 

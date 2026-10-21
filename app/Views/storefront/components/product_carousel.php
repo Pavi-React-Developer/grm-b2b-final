@@ -49,6 +49,29 @@ if (isset($products) && is_array($products)) {
         foreach ($products as $p) {
             $productMap[(int)$p['id']] = $p;
         }
+
+        // Fetch any missing products (such as customizable products or specific IDs)
+        $missingIds = array_diff($product_ids_int, array_keys($productMap));
+        if (!empty($missingIds)) {
+            $db = \Core\Database::getInstance();
+            $inClause = implode(',', array_map('intval', $missingIds));
+            $stmt = $db->query("
+                SELECT p.*, c.name AS category_name, c.moq AS category_moq, c.sgst AS category_sgst, c.cgst AS category_cgst,
+                       vp.store_name AS vendor_store_name, vp.company_name AS vendor_company_name,
+                       (SELECT image_path FROM product_images WHERE product_id = p.id AND is_primary = 1 LIMIT 1) AS primary_image
+                FROM products p
+                JOIN categories c ON p.category_id = c.id
+                LEFT JOIN vendor_profiles vp ON p.vendor_id = vp.user_id
+                WHERE p.id IN ($inClause) AND p.status = 'active'
+            ");
+            if ($stmt) {
+                $fetched = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                foreach ($fetched as $fp) {
+                    $productMap[(int)$fp['id']] = $fp;
+                }
+            }
+        }
+
         foreach ($product_ids_int as $pId) {
             if (isset($productMap[$pId])) {
                 $carouselProducts[] = $productMap[$pId];
@@ -64,6 +87,69 @@ if (isset($products) && is_array($products)) {
                 $carouselProducts[] = $p;
             }
         }
+    }
+}
+
+// Enrich customizable products with images, sizes, and fabric_customizations info
+$customProdIds = [];
+foreach ($carouselProducts as $cp) {
+    if (!empty($cp['is_customizable'])) {
+        $customProdIds[] = (int)$cp['id'];
+    }
+}
+if (!empty($customProdIds)) {
+    try {
+        $db = \Core\Database::getInstance();
+        $cpidList = implode(',', array_unique($customProdIds));
+        
+        $fcStmt = $db->query("SELECT fabric_id, id as customization_id, garment_type, minimum_pieces as custom_moq FROM fabric_customizations WHERE fabric_id IN ($cpidList) AND customization_enabled = 1 AND status = 'active'");
+        $fcData = [];
+        $customProgIds = [];
+        if ($fcStmt) {
+            while ($fcr = $fcStmt->fetch(\PDO::FETCH_ASSOC)) {
+                $fcData[(int)$fcr['fabric_id']] = $fcr;
+                $customProgIds[] = (int)$fcr['customization_id'];
+            }
+        }
+
+        $cimgStmt = $db->query("SELECT product_id, image_path FROM product_images WHERE product_id IN ($cpidList) ORDER BY is_primary DESC, sort_order ASC, id ASC");
+        $customImgs = [];
+        if ($cimgStmt) {
+            while ($cir = $cimgStmt->fetch(\PDO::FETCH_ASSOC)) {
+                $customImgs[$cir['product_id']][] = $cir['image_path'];
+            }
+        }
+
+        $customSizes = [];
+        if (!empty($customProgIds)) {
+            $cprogList = implode(',', array_unique($customProgIds));
+            $cszStmt = $db->query("SELECT customization_id, size_name FROM fabric_customization_sizes WHERE customization_id IN ($cprogList) AND enabled = 1 ORDER BY sort_order ASC, id ASC");
+            if ($cszStmt) {
+                while ($csz = $cszStmt->fetch(\PDO::FETCH_ASSOC)) {
+                    $customSizes[$csz['customization_id']][] = $csz['size_name'];
+                }
+            }
+        }
+
+        foreach ($carouselProducts as &$cp) {
+            if (!empty($cp['is_customizable'])) {
+                $pid = (int)$cp['id'];
+                if (isset($fcData[$pid])) {
+                    $cp['garment_type'] = $fcData[$pid]['garment_type'] ?? null;
+                    $cp['custom_moq'] = $fcData[$pid]['custom_moq'] ?? null;
+                    $custProgId = (int)$fcData[$pid]['customization_id'];
+                    $cp['sizes'] = $customSizes[$custProgId] ?? ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
+                } else {
+                    $cp['sizes'] = ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
+                }
+                if (isset($customImgs[$pid])) {
+                    $cp['images'] = $customImgs[$pid];
+                }
+            }
+        }
+        unset($cp);
+    } catch (\Exception $e) {
+        // Fallback gracefully
     }
 }
 
@@ -270,7 +356,7 @@ $tabletWidth = 100 / max(1, $tablet_count);
             padding-right: 0.25rem !important;
         }
         #<?= $id ?> .carousel-bg-wrap {
-            padding: 0.65rem 0.35rem 0.5rem 0.35rem !important;
+            padding: 0.65rem 0.35rem 0.65rem 0.35rem !important;
             border-radius: 1.25rem !important;
         }
         #track_container_<?= $id ?> {
@@ -403,13 +489,13 @@ $tabletWidth = 100 / max(1, $tablet_count);
     }
 </style>
 
-<div class="w-full relative py-2 sm:py-4 md:py-6" id="<?= $id ?>">
+<div class="w-full relative py-3 sm:py-5 md:py-6" id="<?= $id ?>">
     <div class="carousel-outer-wrap w-full max-w-full mx-auto px-1 sm:px-6 lg:px-8">
-        <div class="carousel-bg-wrap rounded-2xl md:rounded-[2rem] p-2 sm:p-4 md:p-6 lg:p-8 relative" style="<?= $bgStyle ?>">
+        <div class="carousel-bg-wrap rounded-2xl md:rounded-[2rem] px-3 sm:px-6 md:px-8 py-5 sm:py-7 md:py-8 relative" style="<?= $bgStyle ?>">
         <div class="w-full relative">
         
         <!-- Header -->
-        <div class="carousel-header-wrap flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3 mb-3 md:mb-10">
+        <div class="carousel-header-wrap flex flex-col md:flex-row items-start md:items-center justify-between gap-2 md:gap-3 mb-3 sm:mb-4 md:mb-5">
             <?php if ($cta_position === 'Center'): ?>
                 <div class="flex-1"></div>
             <?php endif; ?>
@@ -456,96 +542,241 @@ $tabletWidth = 100 / max(1, $tablet_count);
 
                             $moq = !empty($prod['moq_override']) ? $prod['moq_override'] : ($prod['category_moq'] ?? 1);
                             $isLoggedIn = \Core\Session::get('user_id') !== null;
+                            $isCustomProduct = !empty($prod['is_customizable']);
+                            $prodDetailUrl = $isCustomProduct ? (BASE_URL . '/fabrics/customize?fabric_id=' . (int)$prod['id']) : (BASE_URL . '/product?id=' . (int)$prod['id']);
                         ?>
                             <!-- Slide Item -->
                             <div class="slide-item flex-none">
-                                <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 flex flex-col h-full relative group">
-                                    
-                                    <!-- Wishlist Icon -->
-                                    <?php if ($isLoggedIn): ?>
-                                    <?php 
-                                        $inWishlist = false;
-                                        if (!empty($wishlistIds) && is_array($wishlistIds)) {
-                                            $inWishlist = in_array($prod['id'], $wishlistIds);
-                                        } elseif (!empty($wishlistItems) && is_array($wishlistItems)) {
-                                            $inWishlist = in_array($prod['id'], array_column($wishlistItems, 'product_id')) || in_array($prod['id'], array_column($wishlistItems, 'id'));
-                                        }
+                                <?php if ($isCustomProduct): ?>
+                                    <?php
+                                    $cGarmentType = !empty($prod['garment_type']) ? $prod['garment_type'] : 'CUSTOM GARMENT';
+                                    $cStock = isset($prod['stock_quantity']) ? (int)$prod['stock_quantity'] : 100;
+                                    $cImages = !empty($prod['images']) && is_array($prod['images']) ? array_values(array_filter($prod['images'])) : (!empty($img) ? [$img] : []);
+                                    if ((empty($cImages) || count($cImages) <= 1) && !empty($prod['id'])) {
+                                        try {
+                                            $cFallbackImgs = $db->query("SELECT image_path FROM product_images WHERE product_id = " . (int)$prod['id'] . " ORDER BY is_primary DESC, sort_order ASC, id ASC")->fetchAll(\PDO::FETCH_COLUMN);
+                                            if (!empty($cFallbackImgs) && count($cFallbackImgs) > 1) {
+                                                $cImages = $cFallbackImgs;
+                                            }
+                                        } catch (\Throwable $e) {}
+                                    }
+                                    $cSizes = !empty($prod['sizes']) && is_array($prod['sizes']) ? $prod['sizes'] : ['3XL', '4XL', 'L', 'M', 'XL', 'XXL'];
+                                    $cCatName = !empty($prod['category_name']) ? $prod['category_name'] : $cGarmentType;
+                                    $cMoq = !empty($prod['custom_moq']) ? $prod['custom_moq'] : $moq;
+                                    $cCleanDesc = !empty($prod['description']) 
+                                        ? trim(preg_replace('/\s+/', ' ', str_replace(["\r\n", "\r", "\n"], ' ', strip_tags($prod['description'])))) 
+                                        : 'Soft, breathable fabric perfect for custom tailoring.';
                                     ?>
-                                    <button onclick="toggleWishlist(<?= $prod['id'] ?>, this)" data-wishlist-btn-id="<?= $prod['id'] ?>" class="wishlist-btn <?= $inWishlist ? 'is-active' : '' ?> absolute top-2 right-2 w-6 h-6 sm:w-7 sm:h-7 hover:opacity-80 transition-opacity rounded-full flex items-center justify-center z-10 shadow-sm" style="background-color: <?= htmlspecialchars($wishlist_color) ?>;">
-                                        <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 <?= $inWishlist ? 'text-[#F25996] fill-[#F25996] is-active' : 'text-gray-400 fill-none' ?>" fill="<?= $inWishlist ? '#F25996' : 'none' ?>" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                                    </button>
-                                    <?php endif; ?>
-
-                                    <!-- Product Image -->
-                                    <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="product-image-wrap block w-full bg-gray-100 overflow-hidden shrink-0 relative">
-                                        <?php 
-                                        $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
-                                        if ($isLoggedIn && $discPercent > 0) {
-                                            echo render_discount_starburst($discPercent, 'transition-transform duration-300 group-hover:scale-105');
-                                        }
-                                        ?>
-                                        <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" class="w-full h-full <?= $objectFitClass ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
-                                    </a>
-
-                                    <!-- Product Details -->
-                                    <div class="product-card-body p-3 md:p-4 flex flex-col bg-white relative z-10">
-                                        <?php 
-                                        $cardBrand = !empty($prod['vendor_store_name']) ? $prod['vendor_store_name'] : (!empty($prod['vendor_company_name']) ? $prod['vendor_company_name'] : '');
-                                        ?>
-                                        <?php if (!empty($cardBrand)): ?>
-                                            <div class="mb-1">
-                                                <span class="inline-flex items-center gap-1 text-[10px] md:text-[11px] font-bold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded border border-indigo-100/70 capitalize">
-                                                    <svg class="w-2.5 h-2.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                                    <?= htmlspecialchars($cardBrand) ?>
-                                                </span>
-                                            </div>
-                                        <?php endif; ?>
-
-                                        <a href="<?= BASE_URL ?>/product?id=<?= $prod['id'] ?>" class="product-link block mb-1">
-                                            <h3 class="product-name font-bold leading-snug line-clamp-2"><?= htmlspecialchars($prod['name']) ?></h3>
-                                        </a>
+                                    <div class="product-card bg-white rounded-2xl sm:rounded-[22px] border border-gray-100 overflow-hidden shadow-xs hover:shadow-xl hover:border-pink-200 transition-all duration-300 flex flex-col h-full group transform hover:-translate-y-1 relative">
                                         
-                                        <?php if (!empty($prod['sku'])): ?>
-                                            <p class="font-medium mb-2 hidden md:block" style="font-size: 0.9375rem; color: <?= htmlspecialchars($subtitle_color) ?>;">SKU: <?= htmlspecialchars($prod['sku']) ?></p>
+                                        <!-- Top Image Area -->
+                                        <div class="relative h-48 sm:h-56 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
+                                            <img id="pc-main-img-<?= $prod['id'] ?>_<?= $id ?>" 
+                                                 src="<?= htmlspecialchars($img) ?>" 
+                                                 alt="<?= htmlspecialchars($prod['name']) ?>" 
+                                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+
+                                            <!-- Top Left Badges: CUSTOM & Garment Type -->
+                                            <div class="absolute top-2 left-2 pointer-events-none z-10 flex flex-col gap-1 items-start">
+                                                <span class="px-2 py-0.5 bg-[#F25996] text-white font-extrabold text-[8.5px] uppercase tracking-wider rounded-md shadow-sm flex items-center gap-0.5">
+                                                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/></svg>
+                                                    <span>CUSTOM</span>
+                                                </span>
+                                                <?php if (!empty($cGarmentType)): ?>
+                                                    <span class="px-1.5 py-0.5 bg-black/65 backdrop-blur-xs text-white font-bold text-[8px] uppercase tracking-wider rounded shadow-xs">
+                                                        <?= htmlspecialchars($cGarmentType) ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            </div>
+
+                                            <!-- Top Right: Stock Counter (Wishlist removed for customize card) -->
+                                            <?php if ($cStock > 0): ?>
+                                                <div class="absolute top-2 right-2 z-10 flex flex-col items-end">
+                                                    <span class="px-2 py-0.5 bg-emerald-600/95 backdrop-blur-xs text-white font-bold text-[8px] tracking-wide rounded-full shadow-sm flex items-center gap-1">
+                                                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                                                        <?= $cStock ?> Qty
+                                                    </span>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <!-- Circular Variant Swatches (when multiple images exist) -->
+                                        <?php if (count($cImages) > 1): ?>
+                                        <div class="-mt-4 mb-1.5 px-3 flex items-center gap-1.5 relative z-20 overflow-x-auto scrollbar-none pb-0.5">
+                                            <?php 
+                                                foreach (array_slice($cImages, 0, 5) as $idx => $swImg):
+                                                    $swUrl = get_image_url($swImg, 100, 100);
+                                                    $fullSwUrl = get_image_url($swImg);
+                                            ?>
+                                                <img src="<?= htmlspecialchars($swUrl) ?>" 
+                                                     alt="" 
+                                                     onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
+                                                     onclick="document.getElementById('pc-main-img-<?= $prod['id'] ?>_<?= $id ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
+                                                     class="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-110 transition-transform flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php else: ?>
+                                        <div class="h-2"></div>
                                         <?php endif; ?>
 
-                                        <?php $isLoggedIn = \Core\Session::get('user_id') !== null; ?>
-                                        <?php if ($isLoggedIn): ?>
-                                            <div class="mt-auto flex flex-col justify-end">
-                                                <!-- Selling Price, Strikethrough & Discount Badge (Same Row) -->
-                                                <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-1">
-                                                    <span class="product-price font-extrabold tracking-tight">₹<?= format_price($displayPrice) ?></span>
-                                                    <?php if ($displayOriginalPrice && $displayOriginalPrice > $displayPrice): ?>
-                                                        <span class="product-orig-price text-[0.6875rem] md:text-sm font-bold text-gray-400 line-through">₹<?= format_price($displayOriginalPrice) ?></span>
-                                                    <?php endif; ?>
+                                        <!-- Card Content Body -->
+                                        <div class="px-3 pt-0 pb-3 flex-1 flex flex-col justify-between">
+                                            <div>
+                                                <!-- Category Label in Pink -->
+                                                <div class="text-[#F25996] font-bold text-[9.5px] uppercase tracking-wide mb-0.5 truncate">
+                                                    <?= htmlspecialchars($cCatName) ?>
                                                 </div>
 
-                                                <!-- Row 4: Minimum Order Count -->
-                                                <p class="product-moq-row font-semibold flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis">
-                                                    <svg class="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                                                    <span>Min. Order: <?= htmlspecialchars($moq) ?> Pcs</span>
+                                                <!-- Product Title -->
+                                                <h3 class="font-bold text-[#1e293b] text-xs sm:text-sm leading-snug line-clamp-1 mb-1 hover:text-[#F25996] transition-colors" title="<?= htmlspecialchars($prod['name']) ?>">
+                                                    <a href="<?= $prodDetailUrl ?>"><?= htmlspecialchars($prod['name']) ?></a>
+                                                </h3>
+
+                                                <!-- Description -->
+                                                <p class="text-[10px] text-[#64748b] line-clamp-2 mb-2 leading-tight">
+                                                    <?= htmlspecialchars($cCleanDesc) ?>
                                                 </p>
 
-                                                <!-- Row 6: CTA Button -->
-                                                <form action="<?= BASE_URL ?>/cart/add" method="POST" onsubmit="ajaxAddToCart(event, this)">
-                                                    <input type="hidden" name="product_id" value="<?= $prod['id'] ?>">
-                                                    <input type="hidden" name="quantity" value="<?= htmlspecialchars($moq) ?>">
-                                                    <button type="submit" class="product-btn w-full font-bold transition-colors flex items-center justify-center gap-1.5 md:gap-1.5 lg:gap-2 hover:opacity-90 shadow-sm whitespace-nowrap">
-                                                        <svg class="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                                        <span class="whitespace-nowrap">Add to Cart</span>
-                                                    </button>
-                                                </form>
+                                                <!-- Custom Stitching & Min Stitch -->
+                                                <div class="mb-2">
+                                                    <div class="flex items-center justify-between gap-1">
+                                                        <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[10px] font-bold">
+                                                            <svg class="w-3 h-3 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
+                                                            </svg>
+                                                            <span>Custom Stitching</span>
+                                                        </div>
+
+                                                        <!-- Min Stitch Badge -->
+                                                        <div class="text-right flex-shrink-0">
+                                                            <span class="text-[6.5px] sm:text-[7px] uppercase font-bold text-gray-400 block tracking-wider leading-none">Min Stitch</span>
+                                                            <span class="px-1.5 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] rounded-md inline-block mt-0.5">
+                                                                <?= (int)$cMoq ?> Pcs
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Sizes Matrix -->
+                                                <div class="mb-2.5">
+                                                    <div class="flex items-center gap-1 flex-wrap">
+                                                        <?php foreach ($cSizes as $sIndex => $szName): ?>
+                                                            <?php if ($sIndex === 0): ?>
+                                                                <span class="px-1.5 py-0.5 bg-[#F25996] text-white font-bold text-[9px] rounded shadow-xs flex items-center justify-center min-w-[20px]">
+                                                                    <?= htmlspecialchars($szName) ?>
+                                                                </span>
+                                                            <?php else: ?>
+                                                                <span class="px-1.5 py-0.5 bg-[#fff0f6] text-[#db2777] font-bold text-[9px] rounded border border-pink-100/80 flex items-center justify-center min-w-[20px]">
+                                                                    <?= htmlspecialchars($szName) ?>
+                                                                </span>
+                                                            <?php endif; ?>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        <?php else: ?>
-                                            <div class="mt-auto pt-2 md:pt-3 lg:pt-4 md:border-t md:border-gray-100">
-                                                <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-semibold hover:underline whitespace-nowrap overflow-hidden text-ellipsis" style="font-size: clamp(0.65rem, 2.2vw, 0.8125rem);">
-                                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
-                                                    <span class="truncate">Register to view price</span>
+
+                                            <!-- Action Button: Customize & Stitch → -->
+                                            <div>
+                                                <a href="<?= $prodDetailUrl ?>" 
+                                                   class="w-full py-2 px-3 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5 group/btn active:scale-[0.98]">
+                                                    <span class="truncate">Customize & Stitch</span>
+                                                    <svg class="w-3.5 h-3.5 flex-shrink-0 transition-transform group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                                    </svg>
                                                 </a>
                                             </div>
-                                        <?php endif; ?>
+
+                                        </div>
                                     </div>
-                                </div>
+                                <?php else: ?>
+                                    <!-- Normal Product Card: 100% UNTOUCHED -->
+                                    <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-200 flex flex-col h-full relative group">
+                                        
+                                        <!-- Wishlist Icon -->
+                                        <?php if ($isLoggedIn): ?>
+                                        <?php 
+                                            $inWishlist = false;
+                                            if (!empty($wishlistIds) && is_array($wishlistIds)) {
+                                                $inWishlist = in_array($prod['id'], $wishlistIds);
+                                            } elseif (!empty($wishlistItems) && is_array($wishlistItems)) {
+                                                $inWishlist = in_array($prod['id'], array_column($wishlistItems, 'product_id')) || in_array($prod['id'], array_column($wishlistItems, 'id'));
+                                            }
+                                        ?>
+                                        <button onclick="toggleWishlist(<?= $prod['id'] ?>, this)" data-wishlist-btn-id="<?= $prod['id'] ?>" class="wishlist-btn <?= $inWishlist ? 'is-active' : '' ?> absolute top-2 right-2 w-6 h-6 sm:w-7 sm:h-7 hover:opacity-80 transition-opacity rounded-full flex items-center justify-center z-10 shadow-sm" style="background-color: <?= htmlspecialchars($wishlist_color) ?>;">
+                                            <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 <?= $inWishlist ? 'text-[#F25996] fill-[#F25996] is-active' : 'text-gray-400 fill-none' ?>" fill="<?= $inWishlist ? '#F25996' : 'none' ?>" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                                        </button>
+                                        <?php endif; ?>
+
+                                        <!-- Product Image -->
+                                        <a href="<?= $prodDetailUrl ?>" class="product-image-wrap block w-full bg-gray-100 overflow-hidden shrink-0 relative">
+                                            <?php 
+                                            $discPercent = ($displayOriginalPrice && $displayOriginalPrice > $displayPrice) ? round((($displayOriginalPrice - $displayPrice) / $displayOriginalPrice) * 100) : 0;
+                                            if ($isLoggedIn && $discPercent > 0) {
+                                                echo render_discount_starburst($discPercent, 'transition-transform duration-300 group-hover:scale-105');
+                                            }
+                                            ?>
+                                            <img src="<?= htmlspecialchars($img) ?>" alt="<?= htmlspecialchars($prod['name']) ?>" class="w-full h-full <?= $objectFitClass ?> group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async" style="object-fit: <?= htmlspecialchars($image_fit ?: 'cover') ?>; width: 100%; height: 100%; display: block;">
+                                        </a>
+
+                                        <!-- Product Details -->
+                                        <div class="product-card-body p-3 md:p-4 flex flex-col bg-white relative z-10 flex-1">
+                                            <?php 
+                                            $cardBrand = !empty($prod['vendor_store_name']) ? $prod['vendor_store_name'] : (!empty($prod['vendor_company_name']) ? $prod['vendor_company_name'] : '');
+                                            ?>
+                                            <?php if (!empty($cardBrand)): ?>
+                                                <div class="mb-1">
+                                                    <span class="inline-flex items-center gap-1 text-[10px] md:text-[11px] font-bold text-indigo-700 bg-indigo-50/80 px-2 py-0.5 rounded border border-indigo-100/70 capitalize">
+                                                        <svg class="w-2.5 h-2.5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                                        <?= htmlspecialchars($cardBrand) ?>
+                                                    </span>
+                                                </div>
+                                            <?php endif; ?>
+
+                                            <a href="<?= $prodDetailUrl ?>" class="product-link block mb-1">
+                                                <h3 class="product-name font-bold leading-snug line-clamp-2"><?= htmlspecialchars($prod['name']) ?></h3>
+                                            </a>
+                                            
+                                            <?php if (!empty($prod['sku'])): ?>
+                                                <p class="font-medium mb-2 hidden md:block" style="font-size: 0.9375rem; color: <?= htmlspecialchars($subtitle_color) ?>;">SKU: <?= htmlspecialchars($prod['sku']) ?></p>
+                                            <?php endif; ?>
+
+                                            <?php if ($isLoggedIn): ?>
+                                                <div class="mt-auto flex flex-col justify-end">
+                                                    <!-- Selling Price, Strikethrough & Discount Badge (Same Row) -->
+                                                    <div class="product-price-row flex items-baseline gap-1.5 flex-wrap mb-1">
+                                                        <span class="product-price font-extrabold tracking-tight">₹<?= format_price($displayPrice) ?></span>
+                                                        <?php if ($displayOriginalPrice && $displayOriginalPrice > $displayPrice): ?>
+                                                            <span class="product-orig-price text-[0.6875rem] md:text-sm font-bold text-gray-400 line-through">₹<?= format_price($displayOriginalPrice) ?></span>
+                                                        <?php endif; ?>
+                                                    </div>
+
+                                                    <!-- Row 4: Minimum Order Count -->
+                                                    <p class="product-moq-row font-semibold flex items-center gap-1 whitespace-nowrap overflow-hidden text-ellipsis">
+                                                        <svg class="w-3 h-3 md:w-3.5 md:h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                                                        <span>Min. Order: <?= htmlspecialchars($moq) ?> Pcs</span>
+                                                    </p>
+
+                                                    <!-- Row 6: CTA Button -->
+                                                    <form action="<?= BASE_URL ?>/cart/add" method="POST" onsubmit="ajaxAddToCart(event, this)">
+                                                        <input type="hidden" name="product_id" value="<?= $prod['id'] ?>">
+                                                        <input type="hidden" name="quantity" value="<?= htmlspecialchars($moq) ?>">
+                                                        <button type="submit" class="product-btn w-full font-bold transition-colors flex items-center justify-center gap-1.5 md:gap-1.5 lg:gap-2 hover:opacity-90 shadow-sm whitespace-nowrap">
+                                                            <svg class="w-3.5 h-3.5 md:w-4 md:h-4 lg:w-5 lg:h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                                            <span class="whitespace-nowrap">Add to Cart</span>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            <?php else: ?>
+                                                <div class="mt-auto pt-2 md:pt-3 lg:pt-4 md:border-t md:border-gray-100 flex flex-col gap-2">
+                                                    <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-semibold hover:underline whitespace-nowrap overflow-hidden text-ellipsis" style="font-size: clamp(0.65rem, 2.2vw, 0.8125rem);">
+                                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                                        <span class="truncate">Register to view price</span>
+                                                    </a>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                <?php endif; ?>
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>

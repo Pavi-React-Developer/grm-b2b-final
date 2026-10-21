@@ -1701,8 +1701,16 @@ if ($currentUserRole === 'super_admin') {
                         populateOptions();
                         const currentOpt = select.options[select.selectedIndex];
                         if (currentOpt) triggerText.textContent = currentOpt.text;
+                        if (select.disabled) {
+                            wrapper.classList.add('opacity-50', 'pointer-events-none');
+                        } else {
+                            wrapper.classList.remove('opacity-50', 'pointer-events-none');
+                        }
                     });
-                    observer.observe(select, { childList: true });
+                    observer.observe(select, { childList: true, attributes: true, attributeFilter: ['disabled'] });
+                    if (select.disabled) {
+                        wrapper.classList.add('opacity-50', 'pointer-events-none');
+                    }
 
                     // Insert in DOM
                     select.parentNode.insertBefore(wrapper, select);

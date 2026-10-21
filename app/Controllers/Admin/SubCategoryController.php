@@ -20,7 +20,16 @@ class SubCategoryController extends Controller
     public function ajaxGetByCategory()
     {
         $isCustomize = (isset($_GET['module']) && $_GET['module'] === 'customize');
-        $this->requirePermission($isCustomize ? 'customize_subcategories' : 'subcategories', 'view');
+        $hasSubcatPerm = $this->hasPermission($isCustomize ? 'customize_subcategories' : 'subcategories', 'view');
+        $hasAttrPerm   = $this->hasPermission($isCustomize ? 'customize_attributes' : 'attributes', 'view');
+        $hasProdPerm   = $this->hasPermission($isCustomize ? 'customize_products' : 'products', 'view');
+
+        if (!$hasSubcatPerm && !$hasAttrPerm && !$hasProdPerm) {
+            header('Content-Type: application/json', true, 403);
+            echo json_encode(['error' => 'Permission denied']);
+            exit;
+        }
+
         header('Content-Type: application/json');
         $categoryId = isset($_GET['category_id']) ? (int)$_GET['category_id'] : 0;
         

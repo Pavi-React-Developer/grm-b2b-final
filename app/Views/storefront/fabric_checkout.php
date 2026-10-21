@@ -1,19 +1,19 @@
 <div class="bg-gray-50/70 min-h-screen pb-16">
 
     <!-- ── Breadcrumbs Bar ── -->
-    <div class="bg-white border-b border-gray-200/80 mb-6">
+    <div class="bg-white border-t-2 border-[#FDBFDD] border-b border-gray-200/80 mb-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
             <nav class="flex flex-wrap items-center gap-1.5 text-xs sm:text-sm font-medium" aria-label="Breadcrumb">
-                <a href="<?= BASE_URL ?>/" class="inline-flex items-center gap-1 text-[#F25996] hover:text-[#d8407d] font-semibold transition-colors">
-                    <svg class="w-4 h-4 text-[#F25996]" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                <a href="<?= BASE_URL ?>/" class="inline-flex items-center gap-1 text-[#F25996] hover:text-[#d8407d] font-semibold transition-colors shrink-0">
+                    <svg class="w-4 h-4 text-[#F25996] shrink-0" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
                     <span>Home</span>
                 </a>
-                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-                <a href="<?= BASE_URL ?>/customize" class="text-gray-600 hover:text-[#F25996] font-medium transition-colors">Customize</a>
-                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-                <a href="<?= BASE_URL ?>/fabrics/customize?fabric_id=<?= (int)$customization['fabric_id'] ?>" class="text-gray-600 hover:text-[#F25996] font-medium transition-colors truncate max-w-[200px]"><?= htmlspecialchars($customization['fabric_name']) ?></a>
-                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
-                <span class="text-[#F25996] font-bold" aria-current="page">Checkout &amp; Payment</span>
+                <svg class="w-3.5 h-3.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+                <a href="<?= BASE_URL ?>/customize" class="text-[#F25996] hover:text-[#d8407d] font-semibold transition-colors shrink-0">Customize</a>
+                <svg class="w-3.5 h-3.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+                <a href="<?= BASE_URL ?>/fabrics/customize?fabric_id=<?= (int)$customization['fabric_id'] ?>" class="text-[#F25996] hover:text-[#d8407d] font-semibold transition-colors truncate max-w-[200px] shrink-0"><?= htmlspecialchars($customization['fabric_name']) ?></a>
+                <svg class="w-3.5 h-3.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
+                <span class="text-[#F25996] font-bold shrink-0" aria-current="page">Checkout &amp; Payment</span>
             </nav>
         </div>
     </div>
@@ -319,26 +319,28 @@
                         </div>
                     </div>
 
-                    <!-- Dynamic Delivery Card -->
-                    <div class="p-3.5 bg-gradient-to-br from-indigo-50/80 via-blue-50/50 to-pink-50/40 rounded-2xl border border-indigo-100 my-4 space-y-1.5 shadow-2xs">
-                        <div class="flex items-center justify-between">
-                            <span class="text-xs font-bold text-indigo-950 flex items-center gap-1.5">
-                                <span>🚚 Estimated Delivery Schedule</span>
-                            </span>
-                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-indigo-100 text-indigo-800 border border-indigo-200">
+                    <!-- Estimated Delivery Schedule Card (Clean Theme, Without Calendar Date) -->
+                    <div class="p-3.5 bg-gradient-to-br from-pink-50/50 via-white to-pink-50/30 rounded-2xl border border-pink-100/90 my-3.5 shadow-2xs">
+                        <div class="flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-2.5 min-w-0">
+                                <div class="w-8 h-8 rounded-xl bg-pink-100/80 text-[#F25996] flex items-center justify-center text-sm shrink-0 shadow-2xs">
+                                    🚚
+                                </div>
+                                <div class="min-w-0">
+                                    <span class="text-xs font-extrabold text-gray-900 block truncate">Estimated Delivery Schedule</span>
+                                    <p class="text-[10px] text-gray-500 truncate">
+                                        Dynamically calculated for <?= (int)($consumption['total_pieces'] ?? 0) ?> pcs production run
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 rounded-xl text-xs font-black bg-pink-100 text-[#F25996] border border-pink-200/80 shadow-2xs shrink-0 whitespace-nowrap">
                                 <?= (int)($delivery['total_days'] ?? 7) ?> Days
                             </span>
                         </div>
-                        <div class="text-sm font-black text-gray-900">
-                            <?= htmlspecialchars($delivery['estimated_date_formatted'] ?? date('M d, Y', strtotime('+7 days'))) ?>
-                        </div>
-                        <p class="text-[10px] text-gray-500">
-                            Dynamically calculated for <?= (int)($consumption['total_pieces'] ?? 0) ?> pcs production run.
-                        </p>
                     </div>
 
                     <!-- Action: Pay with Razorpay -->
-                    <div class="space-y-3 pt-2">
+                    <div class="space-y-3 pt-1">
                         <button type="button" 
                                 id="btnRazorpayCheckout" 
                                 onclick="executeRazorpayPayment()" 
@@ -350,13 +352,6 @@
                         <div class="flex items-center justify-center gap-1.5 text-[11px] text-gray-400 font-medium">
                             <svg class="w-3.5 h-3.5 text-emerald-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clip-rule="evenodd"/></svg>
                             <span>Secured 256-Bit Payment Gateway (UPI, Cards, NetBanking)</span>
-                        </div>
-
-                        <!-- B2B Alternate Option: Submit Quote Request -->
-                        <div class="pt-2 text-center">
-                            <button type="button" onclick="submitCustomOrderQuote()" class="text-xs font-bold text-gray-500 hover:text-gray-900 hover:underline cursor-pointer">
-                                Or submit as wholesale order request (Pay via Invoice later)
-                            </button>
                         </div>
                     </div>
 
