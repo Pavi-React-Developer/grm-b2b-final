@@ -127,29 +127,58 @@ class InvoiceService
         $html = self::buildHtml($order, $items, $modification, $modItems, $address, $cmsLogo, $cmsGst);
         $invoiceNum = 'INV-' . strtoupper($order['order_number']);
 
-        $options = new Options();
-        $options->set('isRemoteEnabled', true);
-        $options->set('chroot', PUBLIC_PATH);
-        $options->set('defaultFont', 'DejaVu Sans');
-        
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
+        if (!extension_loaded('gd')) {
+            return [
+                'is_html'    => true,
+                'html'       => $html,
+                'filename'   => $invoiceNum . '.html',
+                'order'      => $order,
+                'user'       => [
+                    'name'  => $order['buyer_name'],
+                    'email' => $order['buyer_email'],
+                    'phone' => $order['buyer_phone']
+                ]
+            ];
+        }
 
-        $pdfBinary = $dompdf->output();
+        try {
+            $options = new Options();
+            $options->set('isRemoteEnabled', true);
+            $options->set('chroot', PUBLIC_PATH);
+            $options->set('defaultFont', 'DejaVu Sans');
+            
+            $dompdf = new Dompdf($options);
+            $dompdf->loadHtml($html);
+            $dompdf->setPaper('A4', 'portrait');
+            $dompdf->render();
 
-        return [
-            'pdf_binary' => $pdfBinary,
-            'filename'   => $invoiceNum . '.pdf',
-            'order'      => $order,
-            'user'       => [
-                'name'  => $order['buyer_name'],
-                'email' => $order['buyer_email'],
-                'phone' => $order['buyer_phone']
-            ],
-            'html'       => $html
-        ];
+            $pdfBinary = $dompdf->output();
+
+            return [
+                'is_html'    => false,
+                'pdf_binary' => $pdfBinary,
+                'filename'   => $invoiceNum . '.pdf',
+                'order'      => $order,
+                'user'       => [
+                    'name'  => $order['buyer_name'],
+                    'email' => $order['buyer_email'],
+                    'phone' => $order['buyer_phone']
+                ],
+                'html'       => $html
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'is_html'    => true,
+                'html'       => $html,
+                'filename'   => $invoiceNum . '.html',
+                'order'      => $order,
+                'user'       => [
+                    'name'  => $order['buyer_name'],
+                    'email' => $order['buyer_email'],
+                    'phone' => $order['buyer_phone']
+                ]
+            ];
+        }
     }
 
     /**

@@ -1039,11 +1039,11 @@ if (!empty($variants)) {
                                         <span class="text-gray-400 font-medium text-[10px] sm:text-[11px]">Helpful?</span>
                                         <div class="flex items-center gap-1.5" data-review-id="<?= $review['id'] ?>" data-voted="<?= htmlspecialchars($votedChoice ?? '') ?>">
                                             <button type="button" data-vote-type="yes" onclick="voteReviewHelpful(<?= $review['id'] ?>, 'yes', this)" 
-                                                class="btn-vote-yes inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 hover:bg-emerald-50 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold transition-all active:scale-95">
+                                                class="btn-vote-yes inline-flex items-center gap-1 px-2.5 py-1 <?= ($votedChoice === 'yes') ? 'bg-emerald-100 text-emerald-950 border-2 border-emerald-500 font-black shadow-xs' : 'bg-gray-50 hover:bg-emerald-50 text-gray-700 border border-gray-200 font-bold' ?> rounded-full text-[10px] sm:text-[11px] transition-all active:scale-95 cursor-pointer">
                                                 <span>👍</span> <span class="vote-count-yes"><?= (int)($review['helpful_yes'] ?? 0) ?></span>
                                             </button>
                                             <button type="button" data-vote-type="no" onclick="voteReviewHelpful(<?= $review['id'] ?>, 'no', this)" 
-                                                class="btn-vote-no inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold transition-all active:scale-95">
+                                                class="btn-vote-no inline-flex items-center gap-1 px-2.5 py-1 <?= ($votedChoice === 'no') ? 'bg-rose-100 text-rose-950 border-2 border-rose-500 font-black shadow-xs' : 'bg-gray-50 hover:bg-rose-50 text-gray-700 border border-gray-200 font-bold' ?> rounded-full text-[10px] sm:text-[11px] transition-all active:scale-95 cursor-pointer">
                                                 <span>👎</span> <span class="vote-count-no"><?= (int)($review['helpful_no'] ?? 0) ?></span>
                                             </button>
                                         </div>
@@ -1250,11 +1250,11 @@ if (!empty($variants)) {
         const btnYes = container.querySelector('.btn-vote-yes');
         const btnNo = container.querySelector('.btn-vote-no');
         
-        const defaultYesClass = 'btn-vote-yes inline-flex items-center gap-1 px-2.5 py-0.5 sm:py-1 bg-gray-50 hover:bg-emerald-50 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold transition-all active:scale-95';
-        const activeYesClass  = 'btn-vote-yes inline-flex items-center gap-1 px-2.5 py-0.5 sm:py-1 bg-emerald-100 text-emerald-950 border-2 border-emerald-500 rounded-full text-[10px] sm:text-[11px] font-black shadow-xs transition-all active:scale-95';
+        const defaultYesClass = 'btn-vote-yes inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 hover:bg-emerald-50 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold transition-all active:scale-95 cursor-pointer';
+        const activeYesClass  = 'btn-vote-yes inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-950 border-2 border-emerald-500 rounded-full text-[10px] sm:text-[11px] font-black shadow-xs transition-all active:scale-95 cursor-pointer';
         
-        const defaultNoClass  = 'btn-vote-no inline-flex items-center gap-1 px-2.5 py-0.5 sm:py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold transition-all active:scale-95';
-        const activeNoClass   = 'btn-vote-no inline-flex items-center gap-1 px-2.5 py-0.5 sm:py-1 bg-rose-100 text-rose-950 border-2 border-rose-500 rounded-full text-[10px] sm:text-[11px] font-black shadow-xs transition-all active:scale-95';
+        const defaultNoClass  = 'btn-vote-no inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 hover:bg-rose-50 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold transition-all active:scale-95 cursor-pointer';
+        const activeNoClass   = 'btn-vote-no inline-flex items-center gap-1 px-2.5 py-1 bg-rose-100 text-rose-950 border-2 border-rose-500 rounded-full text-[10px] sm:text-[11px] font-black shadow-xs transition-all active:scale-95 cursor-pointer';
 
         if (btnYes) {
             btnYes.disabled = false;
@@ -1271,33 +1271,49 @@ if (!empty($variants)) {
 
     function voteReviewHelpful(reviewId, type, btnElem) {
         const container = btnElem.closest('[data-review-id]');
+        if (!container) return;
+
+        // Prevent rapid duplicate clicks
+        if (container.dataset.loading === 'true') return;
+        container.dataset.loading = 'true';
+
+        const currentVoted = container.getAttribute('data-voted') || '';
+
+        const params = new URLSearchParams();
+        params.append('review_id', reviewId);
+        params.append('type', type);
+        params.append('current_vote', currentVoted);
 
         fetch('<?= BASE_URL ?>/reviews/vote-helpful', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: 'review_id=' + reviewId + '&type=' + type
+            body: params.toString()
         })
         .then(r => r.json())
         .then(data => {
+            container.dataset.loading = 'false';
             if (data.success) {
-                const card = btnElem.closest('.review-card-item');
-                if (card) {
-                    const yesElem = card.querySelector('.vote-count-yes');
-                    const noElem = card.querySelector('.vote-count-no');
-                    if (yesElem && data.yes !== undefined) yesElem.innerText = data.yes;
-                    if (noElem && data.no !== undefined) noElem.innerText = data.no;
-                }
-                
-                const voteType = data.voted_type;
+                const voteType = data.voted_type || '';
+
+                // Update all matching review containers on the page
+                document.querySelectorAll(`[data-review-id="${reviewId}"]`).forEach(c => {
+                    const yesElem = c.querySelector('.vote-count-yes');
+                    const noElem = c.querySelector('.vote-count-no');
+                    if (yesElem && data.yes !== undefined) yesElem.textContent = data.yes;
+                    if (noElem && data.no !== undefined) noElem.textContent = data.no;
+                    c.setAttribute('data-voted', voteType);
+                    applyVotedStyle(c, voteType);
+                });
+
                 if (voteType) {
                     try { localStorage.setItem('voted_review_' + reviewId, voteType); } catch(e){}
                 } else {
                     try { localStorage.removeItem('voted_review_' + reviewId); } catch(e){}
                 }
-                applyVotedStyle(container, voteType);
             }
         })
         .catch(err => {
+            container.dataset.loading = 'false';
             console.error(err);
         });
     }
@@ -1311,6 +1327,7 @@ if (!empty($variants)) {
             
             const activeVote = localVoted || serverVoted;
             if (activeVote) {
+                container.setAttribute('data-voted', activeVote);
                 applyVotedStyle(container, activeVote);
             }
         });

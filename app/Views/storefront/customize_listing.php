@@ -178,8 +178,6 @@
                     <select name="sort" class="custom-select-pink">
                         <option value="newest" <?= ($filters['sort'] ?? '') === 'newest' ? 'selected' : '' ?>>Newest Arrivals</option>
                         <option value="stock" <?= ($filters['sort'] ?? '') === 'stock' ? 'selected' : '' ?>>Highest Fabric Stock</option>
-                        <option value="price_low" <?= ($filters['sort'] ?? '') === 'price_low' ? 'selected' : '' ?>>Price: Low to High</option>
-                        <option value="price_high" <?= ($filters['sort'] ?? '') === 'price_high' ? 'selected' : '' ?>>Price: High to Low</option>
                     </select>
 
                     <button type="submit" class="px-6 py-2.5 bg-[#F25996] hover:bg-[#d8407d] text-white text-sm font-bold rounded-2xl shadow-sm hover:shadow-md transition-all active:scale-95 cursor-pointer">
@@ -216,15 +214,6 @@
                         $fallbackImg = 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80';
                         $imgSrc = !empty($rawImg) ? $rawImg : $fallbackImg;
                         $unitLabel = htmlspecialchars($f['unit'] ?? 'Qty');
-
-                        $fBaseP = (float)($f['fabric_base_price'] ?? 0);
-                        $fDiscP = (float)($f['fabric_discount_price'] ?? 0);
-                        if ($fDiscP <= 0 && !empty($f['fabric_price'])) {
-                            $fDiscP = (float)$f['fabric_price'];
-                        }
-                        $fDiscPct = ($fBaseP > 0 && $fDiscP > 0 && $fDiscP < $fBaseP) 
-                            ? round((($fBaseP - $fDiscP) / $fBaseP) * 100) 
-                            : 0;
                     ?>
                     <div class="bg-white rounded-2xl sm:rounded-[22px] border border-gray-100 overflow-hidden shadow-xs hover:shadow-xl hover:border-pink-200 transition-all duration-300 flex flex-col group transform hover:-translate-y-1">
                         
@@ -242,13 +231,8 @@
                             </div>
                             <?php endif; ?>
                             
-                            <!-- Top Left Badges: Starburst Discount, CUSTOMIZABLE & Garment Type -->
+                            <!-- Top Left Badges: CUSTOM & Garment Type (Price & Discount badges hidden for customize fabrics) -->
                             <div class="absolute top-2 left-2 sm:top-3 sm:left-3 pointer-events-none z-10 flex flex-col gap-1 sm:gap-1.5 items-start">
-                                <?php if ($fDiscPct > 0 && function_exists('render_discount_starburst')): ?>
-                                    <div class="w-10 h-10 sm:w-12 sm:h-12 drop-shadow-md pointer-events-none mb-0.5">
-                                        <?= render_discount_starburst($fDiscPct, 'w-full h-full') ?>
-                                    </div>
-                                <?php endif; ?>
                                 <span class="px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-[#F25996] text-white font-extrabold text-[8.5px] sm:text-[10px] uppercase tracking-wider rounded sm:rounded-lg shadow-sm flex items-center gap-0.5 sm:gap-1">
                                     <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/></svg>
                                     <span>CUSTOM</span>
@@ -324,45 +308,15 @@
                                     <?= htmlspecialchars($f['fabric_description'] ?? 'Soft, breathable cotton fabric perfect for maternity wear.') ?>
                                 </p>
 
-                                <!-- Pricing & Min Stitch -->
+                                <!-- Custom Stitching & Min Stitch (Price completely hidden for customize fabrics) -->
                                 <div class="mb-2 sm:mb-3">
                                     <div class="flex items-center justify-between gap-1 sm:gap-2">
-                                        <?php 
-                                            $isLoggedIn = !empty(\Core\Session::get('user_id'));
-                                        ?>
-                                        <?php if ($isLoggedIn): ?>
-                                            <div>
-                                                <div class="flex items-baseline gap-1 sm:gap-2 flex-wrap">
-                                                    <?php if (!empty($f['fabric_discount_price']) && (float)$f['fabric_discount_price'] > 0 && (float)$f['fabric_discount_price'] < (float)$f['fabric_base_price']): ?>
-                                                        <span class="text-sm sm:text-xl font-extrabold text-[#0f172a]">
-                                                            ₹<?= number_format($f['fabric_discount_price'], 2) ?>
-                                                        </span>
-                                                        <span class="text-[10px] sm:text-xs font-medium text-[#94a3b8] line-through">
-                                                            ₹<?= number_format($f['fabric_base_price'], 2) ?>
-                                                        </span>
-                                                    <?php else: ?>
-                                                        <span class="text-sm sm:text-xl font-extrabold text-[#0f172a]">
-                                                            ₹<?= number_format($f['fabric_price'], 2) ?>
-                                                        </span>
-                                                        <?php if (!empty($f['fabric_base_price']) && (float)$f['fabric_base_price'] > (float)$f['fabric_price']): ?>
-                                                            <span class="text-[10px] sm:text-xs font-medium text-[#94a3b8] line-through">
-                                                                ₹<?= number_format($f['fabric_base_price'], 2) ?>
-                                                            </span>
-                                                        <?php endif; ?>
-                                                    <?php endif; ?>
-                                                </div>
-                                                <span class="text-[10px] sm:text-xs font-medium text-[#64748b] block mt-0.5">/ <?= $unitLabel ?></span>
-                                            </div>
-                                        <?php else: ?>
-                                            <div>
-                                                <a href="<?= BASE_URL ?>/login?redirect=<?= urlencode('/fabrics/customize?fabric_id=' . (int)$f['fabric_id']) ?>" class="inline-flex items-center gap-1.5 text-[#F25996] hover:text-[#d8407d] font-bold text-xs sm:text-sm hover:underline py-1 group/lock">
-                                                    <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#F25996] shrink-0 group-hover/lock:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-                                                    </svg>
-                                                    <span class="leading-tight">Login to view price</span>
-                                                </a>
-                                            </div>
-                                        <?php endif; ?>
+                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[10px] sm:text-xs font-bold">
+                                            <svg class="w-3.5 h-3.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
+                                            </svg>
+                                            <span>Custom Stitching</span>
+                                        </div>
 
                                         <!-- Min Stitch Badge -->
                                         <div class="text-right flex-shrink-0">
@@ -398,6 +352,7 @@
                             <!-- Action Button: Customize & Stitch → -->
                             <div>
                                 <?php 
+                                    $isLoggedIn = !empty(\Core\Session::get('user_id'));
                                     $customizeUrl = $isLoggedIn 
                                         ? BASE_URL . '/fabrics/customize?fabric_id=' . (int)$f['fabric_id'] 
                                         : BASE_URL . '/login?redirect=' . urlencode('/fabrics/customize?fabric_id=' . (int)$f['fabric_id']);

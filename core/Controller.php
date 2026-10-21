@@ -106,6 +106,40 @@ class Controller
             return false;
         }
 
+        // Fabric Customization Rules: check explicit perms, then customization_labels, then customize_products
+        if ($module === 'fabric_customizations') {
+            if (!empty($this->userPermissions['fabric_customizations'][$action])) {
+                return true;
+            }
+            if (!empty($this->userPermissions['customization_labels'][$action])) {
+                return true;
+            }
+            if (!empty($this->userPermissions['customize_products'][$action])) {
+                return true;
+            }
+            if (!empty($this->userPermissions['products'][$action])) {
+                return true;
+            }
+            return false;
+        }
+
+        // Customization Labels: check explicit perms, then fabric_customizations, then customize_products
+        if ($module === 'customization_labels') {
+            if (!empty($this->userPermissions['customization_labels'][$action])) {
+                return true;
+            }
+            if (!empty($this->userPermissions['fabric_customizations'][$action])) {
+                return true;
+            }
+            if (!empty($this->userPermissions['customize_products'][$action])) {
+                return true;
+            }
+            if (!empty($this->userPermissions['products'][$action])) {
+                return true;
+            }
+            return false;
+        }
+
         // If the specific module key is set in userPermissions, strictly use its configured permissions
         if (isset($this->userPermissions[$module])) {
             return !empty($this->userPermissions[$module][$action]);
@@ -117,14 +151,19 @@ class Controller
             'customize_subcategories' => 'subcategories',
             'customize_attributes' => 'attributes',
             'customize_products' => 'products',
-            'customization_labels' => 'fabric_customizations',
-            'fabric_customizations' => 'customization_labels',
             'custom_orders' => 'all_orders'
         ];
 
         // If not explicitly set, check fallback module
-        if (isset($fallbacks[$module]) && isset($this->userPermissions[$fallbacks[$module]][$action])) {
-            return !empty($this->userPermissions[$fallbacks[$module]][$action]);
+        if (isset($fallbacks[$module])) {
+            $fallbackModule = $fallbacks[$module];
+            if (isset($this->userPermissions[$fallbackModule][$action])) {
+                return !empty($this->userPermissions[$fallbackModule][$action]);
+            }
+            // If the fallback module itself has a fallback (e.g. customize_products -> products)
+            if (isset($fallbacks[$fallbackModule]) && isset($this->userPermissions[$fallbacks[$fallbackModule]][$action])) {
+                return !empty($this->userPermissions[$fallbacks[$fallbackModule]][$action]);
+            }
         }
 
         return false;
@@ -155,6 +194,24 @@ class Controller
             return in_array($module, $vendorAllowedModules);
         }
 
+        if ($module === 'fabric_customizations') {
+            foreach (['view', 'create', 'edit', 'delete'] as $action) {
+                if ($this->hasPermission('fabric_customizations', $action)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if ($module === 'customization_labels') {
+            foreach (['view', 'create', 'edit', 'delete'] as $action) {
+                if ($this->hasPermission('customization_labels', $action)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         if (isset($this->userPermissions[$module])) {
             foreach (['view', 'create', 'edit', 'delete'] as $action) {
                 if (!empty($this->userPermissions[$module][$action])) {
@@ -169,8 +226,6 @@ class Controller
             'customize_subcategories' => 'subcategories',
             'customize_attributes' => 'attributes',
             'customize_products' => 'products',
-            'customization_labels' => 'fabric_customizations',
-            'fabric_customizations' => 'customization_labels',
             'custom_orders' => 'all_orders'
         ];
 
@@ -238,7 +293,7 @@ class Controller
                     'customize_products'      => '/admin/catalog/products?module=customize',
                     'customization_labels'    => '/admin/customization-labels',
                     'custom_orders'           => '/admin/customize/orders',
-                    'fabric_customizations' => '/admin/catalog/products?module=customize',
+                    'fabric_customizations' => '/admin/fabric-customizations',
                     'inventory'             => '/admin/inventory',
                     'order_rules'           => '/admin/order-rules',
                     'fee_rules'             => '/admin/fee-rules',

@@ -43,6 +43,12 @@ class InvoiceController extends Controller
             ob_end_clean();
         }
 
+        if (!empty($result['is_html'])) {
+            header('Content-Type: text/html; charset=UTF-8');
+            echo $result['html'];
+            exit;
+        }
+
         header('Content-Type: application/pdf');
         header('Cache-Control: private, no-cache, no-store, must-revalidate, max-age=0');
         header('Pragma: no-cache');

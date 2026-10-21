@@ -48,64 +48,68 @@
 
         <!-- Global Cart Value / Overall Order Limit Card -->
         <?php if (empty($isCustomize)): ?>
-        <div class="mb-6 bg-gradient-to-r from-brand-900 via-brand-800 to-indigo-900 rounded-2xl p-6 text-white shadow-xl shadow-brand-900/10 border border-brand-700/40 relative overflow-hidden">
-            <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-brand-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="mb-6 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden" style="background: linear-gradient(135deg, #1e1b4b 0%, #4a044e 50%, #831843 100%) !important; border: 1px solid rgba(242, 89, 150, 0.35) !important;">
+            <div class="absolute -right-10 -bottom-10 w-48 h-48 rounded-full blur-2xl pointer-events-none" style="background: rgba(242, 89, 150, 0.2);"></div>
             <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
                 <div class="max-w-xl">
-                    <div class="flex items-center gap-2 mb-1.5">
-                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-500/30 text-brand-200 border border-brand-400/30">Global Cart Requirement</span>
+                    <div class="flex items-center gap-2 mb-2 flex-wrap">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider" style="background: rgba(242, 89, 150, 0.25) !important; color: #fce7f3 !important; border: 1px solid rgba(242, 89, 150, 0.4) !important;">
+                            Global Cart Requirement
+                        </span>
                         <?php if (!empty($globalMinCartValue) && $globalMinCartValue > 0): ?>
-                            <span class="inline-flex items-center text-xs font-bold text-emerald-300 bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-400/30">
-                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5 animate-pulse"></span>
+                            <span class="inline-flex items-center text-xs font-bold px-2.5 py-0.5 rounded-full" style="background: rgba(16, 185, 129, 0.25) !important; color: #6ee7b7 !important; border: 1px solid rgba(52, 211, 153, 0.4) !important;">
+                                <span class="w-1.5 h-1.5 rounded-full mr-1.5 animate-pulse" style="background: #34d399;"></span>
                                 Active: ₹<?= number_format($globalMinCartValue, 2) ?>
                             </span>
                         <?php else: ?>
-                            <span class="text-xs font-medium text-gray-300 bg-white/10 px-2.5 py-0.5 rounded-full">No Global Limit (₹0.00)</span>
+                            <span class="text-xs font-medium px-2.5 py-0.5 rounded-full" style="background: rgba(255, 255, 255, 0.15) !important; color: #e5e7eb !important; border: 1px solid rgba(255, 255, 255, 0.25) !important;">
+                                No Global Limit (₹0.00)
+                            </span>
                         <?php endif; ?>
                     </div>
-                    <h3 class="text-xl font-display font-extrabold tracking-tight text-white flex items-center gap-2">
-                        <svg class="w-6 h-6 text-brand-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                    <h3 class="text-xl font-display font-extrabold tracking-tight flex items-center gap-2" style="color: #ffffff !important;">
+                        <svg class="w-6 h-6 shrink-0" style="color: #f472b6 !important;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                         Overall Order Cart Value
                     </h3>
-                    <p class="text-xs text-brand-200/80 mt-1 leading-relaxed">
-                        This amount applies to the overall cart limit across <strong>all categories combined</strong>. If a category order rule is not mentioned or if category amounts are reached, the customer's total cart amount must reach at least this value to place an order.
+                    <p class="text-xs mt-1.5 leading-relaxed" style="color: rgba(255, 255, 255, 0.88) !important;">
+                        This amount applies to the overall cart limit across <strong style="color: #ffffff;">all categories combined</strong>. If a category order rule is not mentioned or if category amounts are reached, the customer's total cart amount must reach at least this value to place an order.
                     </p>
                 </div>
 
                 <!-- Saved Display View (Default) -->
-                <div id="global-cart-limit-view" class="flex items-center gap-4 shrink-0 bg-white/10 p-3 sm:px-5 sm:py-3 rounded-2xl border border-white/10 backdrop-blur-md">
+                <div id="global-cart-limit-view" class="flex items-center gap-4 shrink-0 p-3 sm:px-5 sm:py-3 rounded-2xl backdrop-blur-md" style="background: rgba(255, 255, 255, 0.12) !important; border: 1px solid rgba(255, 255, 255, 0.22) !important;">
                     <div class="text-left mr-1">
-                        <div class="text-[10px] uppercase font-bold tracking-wider text-brand-200/70">Current Limit</div>
-                        <div class="text-xl sm:text-2xl font-display font-black text-white">
+                        <div class="text-[10px] uppercase font-bold tracking-wider" style="color: #fbcfe8 !important;">Current Limit</div>
+                        <div class="text-xl sm:text-2xl font-display font-black" style="color: #ffffff !important;">
                             <?php if (!empty($globalMinCartValue) && $globalMinCartValue > 0): ?>
                                 ₹<?= number_format($globalMinCartValue, 2) ?>
                             <?php else: ?>
-                                <span class="text-sm font-semibold text-gray-300">₹0.00 (No Limit)</span>
+                                <span class="text-sm font-semibold" style="color: rgba(255, 255, 255, 0.75) !important;">₹0.00 (No Limit)</span>
                             <?php endif; ?>
                         </div>
                     </div>
                     <?php if ($this->hasPermission($permCatMod, 'edit')): ?>
-                    <button type="button" onclick="toggleCartLimitEdit(true)" class="bg-white hover:bg-gray-100 text-brand-900 px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-md transition-all flex items-center gap-1.5 transform hover:-translate-y-0.5">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        Edit
+                    <button type="button" onclick="toggleCartLimitEdit(true)" class="px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-md transition-all flex items-center gap-1.5 transform hover:-translate-y-0.5 cursor-pointer" style="background: #ffffff !important; color: #831843 !important;">
+                        <svg class="w-3.5 h-3.5" style="color: #831843 !important;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                        <span>Edit</span>
                     </button>
                     <?php endif; ?>
                 </div>
 
                 <!-- Editable Form View (Hidden by default, shown on Edit) -->
-                <form id="global-cart-limit-edit" action="<?= BASE_URL ?>/admin/catalog/categories/global-cart-limit" method="POST" class="hidden flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 bg-white/15 p-2 sm:p-2.5 rounded-2xl border border-white/20 backdrop-blur-md">
+                <form id="global-cart-limit-edit" action="<?= BASE_URL ?>/admin/catalog/categories/global-cart-limit" method="POST" class="hidden flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0 p-2 sm:p-2.5 rounded-2xl backdrop-blur-md" style="background: rgba(255, 255, 255, 0.16) !important; border: 1px solid rgba(255, 255, 255, 0.28) !important;">
                     <input type="hidden" name="module" value="<?= !empty($isCustomize) ? 'customize' : '' ?>">
                     <div class="relative flex-1 sm:w-56">
                         <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                            <span class="text-brand-300 font-bold text-sm">₹</span>
+                            <span class="font-bold text-sm" style="color: #f472b6 !important;">₹</span>
                         </div>
-                        <input type="number" step="0.01" min="0" id="min_order_cart_value_input" name="min_order_cart_value" value="<?= !empty($globalMinCartValue) && $globalMinCartValue > 0 ? (float)$globalMinCartValue : '' ?>" placeholder="0.00 (No Limit)" class="w-full pl-8 pr-4 py-2.5 bg-black/30 hover:bg-black/40 focus:bg-black/50 border border-white/30 focus:border-brand-300 rounded-xl text-white placeholder-white/40 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-brand-400/40 transition-all">
+                        <input type="number" step="0.01" min="0" id="min_order_cart_value_input" name="min_order_cart_value" value="<?= !empty($globalMinCartValue) && $globalMinCartValue > 0 ? (float)$globalMinCartValue : '' ?>" placeholder="0.00 (No Limit)" class="w-full pl-8 pr-4 py-2.5 rounded-xl text-sm font-bold focus:outline-none transition-all" style="background: rgba(0, 0, 0, 0.4) !important; border: 1px solid rgba(255, 255, 255, 0.3) !important; color: #ffffff !important;">
                     </div>
                     <div class="flex items-center gap-1.5">
-                        <button type="submit" class="bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg shadow-brand-900/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap">
+                        <button type="submit" class="text-white px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-widest shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap cursor-pointer" style="background: linear-gradient(135deg, #F25996 0%, #d94480 100%) !important;">
                             Save
                         </button>
-                        <button type="button" onclick="toggleCartLimitEdit(false)" class="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-3.5 py-2.5 rounded-xl font-semibold text-xs transition-all">
+                        <button type="button" onclick="toggleCartLimitEdit(false)" class="text-white px-3.5 py-2.5 rounded-xl font-semibold text-xs transition-all cursor-pointer" style="background: rgba(255, 255, 255, 0.15) !important; border: 1px solid rgba(255, 255, 255, 0.25) !important;">
                             Cancel
                         </button>
                     </div>

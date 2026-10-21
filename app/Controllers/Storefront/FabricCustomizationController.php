@@ -246,6 +246,12 @@ class FabricCustomizationController extends Controller
             $fabricQuantity,
             $sets
         );
+        if (!$consumption['is_valid']) {
+            $msg = !empty($consumption['errors']) ? implode(' ', $consumption['errors']) : 'Customization piece requirements not met.';
+            Session::setFlash('error', $msg);
+            $this->redirect('/fabrics/customize?' . ($fabricId > 0 ? 'fabric_id=' . $fabricId : 'id=' . $customization['id']));
+            return;
+        }
         $fabricQuantity = (int)($consumption['fabric_quantity'] ?? $fabricQuantity);
         Session::set('custom_checkout_qty_' . $customization['id'], $fabricQuantity);
         Session::set('custom_checkout_qty_f_' . $customization['fabric_id'], $fabricQuantity);

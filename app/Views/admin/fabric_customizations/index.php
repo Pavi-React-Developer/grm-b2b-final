@@ -20,10 +20,12 @@
                 <svg class="w-4 h-4 text-[#F25996]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 <span>Custom Orders</span>
             </a>
+            <?php if ($this->hasPermission('fabric_customizations', 'create')): ?>
             <a href="<?= BASE_URL ?>/admin/fabric-customizations/create" class="inline-flex items-center gap-2 px-5 py-2.5 bg-[#F25996] hover:bg-[#d8407d] text-white text-xs font-bold rounded-full shadow-md uppercase tracking-widest transition-all">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                 <span>Add Fabric Rule</span>
             </a>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -99,9 +101,11 @@
             </div>
             <h3 class="text-lg font-bold text-gray-900">No Fabric Customization Rules Found</h3>
             <p class="text-sm text-gray-500 max-w-md mx-auto mt-1 mb-6">Create rules mapping fabric products to garment types, allowed size distributions, and consumption formulas.</p>
+            <?php if ($this->hasPermission('fabric_customizations', 'create')): ?>
             <a href="<?= BASE_URL ?>/admin/fabric-customizations/create" class="inline-flex items-center gap-2 px-6 py-2.5 bg-[#F25996] hover:bg-[#d8407d] text-white font-bold text-xs rounded-full shadow-md uppercase tracking-widest transition-all">
                 + Create First Fabric Rule
             </a>
+            <?php endif; ?>
         </div>
     <?php else: ?>
         <div class="space-y-4">
@@ -173,15 +177,19 @@
                                 <span>Preview Workshop</span>
                                 <svg class="w-3 h-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                             </a>
+                            <?php if ($this->hasPermission('fabric_customizations', 'edit')): ?>
                             <a href="<?= BASE_URL ?>/admin/fabric-customizations/edit?id=<?= $r['id'] ?>" class="px-4 py-1.5 bg-pink-50 hover:bg-[#F25996] hover:text-white text-[#F25996] text-xs font-bold rounded-full border border-pink-200 transition-all">
                                 Edit Rule
                             </a>
+                            <?php endif; ?>
+                            <?php if ($this->hasPermission('fabric_customizations', 'delete')): ?>
                             <form action="<?= BASE_URL ?>/admin/fabric-customizations/delete" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this fabric customization rule?');">
                                 <input type="hidden" name="id" value="<?= $r['id'] ?>">
                                 <button type="submit" class="px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-full transition-colors cursor-pointer">
                                     Delete
                                 </button>
                             </form>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

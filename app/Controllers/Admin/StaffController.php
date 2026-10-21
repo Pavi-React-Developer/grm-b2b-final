@@ -40,6 +40,7 @@ class StaffController extends Controller
             'customize_subcategories' => ['label' => 'Sub Category', 'actions' => ['view', 'create', 'edit', 'delete']],
             'customize_attributes' => ['label' => 'Attributes', 'actions' => ['view', 'create', 'edit', 'delete']],
             'customize_products' => ['label' => 'Products / Fabrics', 'actions' => ['view', 'create', 'edit', 'delete']],
+            'fabric_customizations' => ['label' => 'Fabric Customization Rules', 'actions' => ['view', 'create', 'edit', 'delete']],
             'customization_labels' => ['label' => 'Customization Labels', 'actions' => ['view', 'create', 'edit', 'delete']],
             'custom_orders' => ['label' => 'Custom Orders', 'actions' => ['view', 'edit']],
         ],
@@ -133,7 +134,7 @@ class StaffController extends Controller
             'role' => 'staff', // Base role
             'role_id' => $isCustom ? null : $roleId, // Custom RBAC role
             'status' => $_POST['status'] ?? 'active',
-            'permissions' => $isCustom ? ($_POST['permissions'] ?? []) : null
+            'permissions' => $isCustom ? $this->sanitizePermissions($_POST['permissions'] ?? []) : null
         ];
 
         // Validation
@@ -210,7 +211,7 @@ class StaffController extends Controller
             'role' => 'staff',
             'role_id' => $isCustom ? null : $roleId,
             'status' => $_POST['status'] ?? 'active',
-            'permissions' => $isCustom ? ($_POST['permissions'] ?? []) : null
+            'permissions' => $isCustom ? $this->sanitizePermissions($_POST['permissions'] ?? []) : null
         ];
         
         if (!empty($_POST['password'])) {
@@ -335,7 +336,7 @@ class StaffController extends Controller
         }
         
         $roleName = trim($_POST['role_name'] ?? '');
-        $permissions = $_POST['permissions'] ?? [];
+        $permissions = $this->sanitizePermissions($_POST['permissions'] ?? []);
         
         if (empty($roleName)) {
             Session::setFlash('error', 'Role name is required.');
@@ -382,5 +383,38 @@ class StaffController extends Controller
         }
 
         $this->redirect('/admin/staff/roles');
+    }
+
+    /**
+     * Sanitize and format permissions against all known modules
+     */
+    private function sanitizePermissions($submittedPermissions)
+    {
+        $sanitized = [];
+        if (!is_array($submittedPermissions)) {
+            $submittedPermissions = [];
+        }
+        foreach ($this->modules as $group => $subModules) {
+            foreach ($subModules as $key => $details) {
+                if (isset($submittedPermissions[$key]) && is_array($submittedPermissions[$key])) {
+                    $actions = [];
+                    foreach ($details['actions'] as $act) {
+                        if (!empty($submittedPermissions[$key][$act])) {
+                            $actions[$act] = '1';
+                        }
+                    }
+                    $sanitized[$key] = $actions;
+                } else {
+                    $sanitized[$key] = [];
+                }
+            }
+        }
+
+        // If fabric_customizations was not explicitly set but customization_labels has permissions, sync it
+        if (empty($sanitized['fabric_customizations']) && !empty($sanitized['customization_labels'])) {
+            $sanitized['fabric_customizations'] = $sanitized['customization_labels'];
+        }
+
+        return $sanitized;
     }
 }

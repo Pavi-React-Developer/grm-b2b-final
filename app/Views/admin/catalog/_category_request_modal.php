@@ -9,7 +9,7 @@
         <!-- Modal Dialog -->
         <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full border border-gray-100">
             <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-brand-600 to-indigo-700 px-6 py-5 text-white flex items-center justify-between">
+            <div class="bg-gradient-to-r from-brand-600 to-indigo-700 px-6 py-5 text-white flex items-center justify-between" style="background: linear-gradient(135deg, #e04481 0%, #4338ca 100%) !important;">
                 <div class="flex items-center space-x-3">
                     <div class="p-2 bg-white/10 rounded-xl">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

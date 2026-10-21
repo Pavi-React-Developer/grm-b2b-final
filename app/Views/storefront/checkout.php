@@ -17,6 +17,23 @@
         box-shadow: 0 0 0 3px rgba(242, 89, 150, 0.2) !important;
         outline: none !important;
     }
+    .form-input.has-error,
+    .cs-trigger.has-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+    }
+    .field-error-msg {
+        color: #ef4444;
+        font-size: 0.75rem;
+        font-weight: 500;
+        margin-top: 0.375rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    .field-error-msg.hidden {
+        display: none !important;
+    }
 
     /* ── Custom Select Dropdown ── */
     .cs-wrapper {
@@ -182,25 +199,33 @@
                                 <!-- Manual entry (hidden by default when saved addresses exist) -->
                                 <div id="manual-entry" class="hidden space-y-4 border-t border-gray-100 pt-4 mt-2">
                                     <div>
-                                        <label class="form-label">Address Line 1 <span class="text-[#F25996]">*</span></label>
-                                        <input type="text" id="ship_line1" class="form-input" placeholder="House/Flat no., Building, Street">
+                                        <label class="form-label" for="ship_line1">Address Line 1 <span class="text-[#F25996]">*</span></label>
+                                        <input type="text" id="ship_line1" required class="form-input" placeholder="House/Flat no., Building, Street">
+                                        <div id="ship_line1-error" class="field-error-msg hidden">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span class="error-msg">Please enter Address Line 1</span>
+                                        </div>
                                     </div>
                                     <div>
-                                        <label class="form-label">Address Line 2 <span class="text-gray-400 font-normal">(optional)</span></label>
+                                        <label class="form-label" for="ship_line2">Address Line 2 <span class="text-gray-400 font-normal">(optional)</span></label>
                                         <input type="text" id="ship_line2" class="form-input" placeholder="Area, Locality, Landmark">
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label class="form-label">State <span class="text-[#F25996]">*</span></label>
-                                            <select id="ship_state" name="state" onchange="toggleShipDistrictFields()" class="form-input">
+                                            <label class="form-label" for="ship_state">State <span class="text-[#F25996]">*</span></label>
+                                            <select id="ship_state" name="state" required onchange="toggleShipDistrictFields()" class="form-input">
                                                 <option value="">Select State</option>
                                                 <option value="Tamil Nadu">Tamil Nadu</option>
                                                 <option value="Others">Others</option>
                                             </select>
+                                            <div id="ship_state-error" class="field-error-msg hidden">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span class="error-msg">Please select a State</span>
+                                            </div>
                                         </div>
                                         <!-- When TN: District Select Dropdown beside State -->
                                         <div id="ship_tn_district_container">
-                                            <label class="form-label" id="ship_district_label">District/City <span class="text-[#F25996]">*</span></label>
+                                            <label class="form-label" id="ship_district_label" for="ship_district_select">District/City <span class="text-[#F25996]">*</span></label>
                                             <select id="ship_district_select" name="city" class="form-input">
                                                 <option value="">Select District</option>
                                                 <option value="Ariyalur">Ariyalur</option>
@@ -242,27 +267,43 @@
                                                 <option value="Viluppuram">Viluppuram</option>
                                                 <option value="Virudhunagar">Virudhunagar</option>
                                             </select>
+                                            <div id="ship_district_select-error" class="field-error-msg hidden">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span class="error-msg">Please select your District</span>
+                                            </div>
                                         </div>
 
                                         <!-- When Others: State Name Input beside State (UP) -->
                                         <div id="ship_other_state_container" class="hidden">
-                                            <label class="form-label">State Name <span class="text-[#F25996]">*</span></label>
+                                            <label class="form-label" for="ship_other_state_name">State Name <span class="text-[#F25996]">*</span></label>
                                             <input id="ship_other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter state name (e.g. Kerala, Karnataka)" autocomplete="off" class="form-input w-full" disabled>
+                                            <div id="ship_other_state_name-error" class="field-error-msg hidden">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span class="error-msg">Please enter State Name</span>
+                                            </div>
                                         </div>
 
                                         <!-- When Others: District/City Input below State & State Name (DOWN) -->
                                         <div id="ship_other_district_container" class="hidden sm:col-span-2">
-                                            <label class="form-label">District/City <span class="text-[#F25996]">*</span></label>
+                                            <label class="form-label" for="ship_district_text">District/City <span class="text-[#F25996]">*</span></label>
                                             <input id="ship_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="form-input w-full" disabled>
+                                            <div id="ship_district_text-error" class="field-error-msg hidden">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span class="error-msg">Please enter District / City</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label class="form-label">Pincode <span class="text-[#F25996]">*</span></label>
-                                            <input type="text" id="ship_pincode" pattern="[0-9]{6}" maxlength="6" oninput="this.value=this.value.replace(/\D/g,'')" class="form-input" placeholder="6-digit pincode">
+                                            <label class="form-label" for="ship_pincode">Pincode <span class="text-[#F25996]">*</span></label>
+                                            <input type="text" id="ship_pincode" required pattern="[0-9]{6}" maxlength="6" oninput="this.value=this.value.replace(/\D/g,'')" class="form-input" placeholder="6-digit pincode">
+                                            <div id="ship_pincode-error" class="field-error-msg hidden">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span class="error-msg">Please enter a valid 6-digit Pincode</span>
+                                            </div>
                                         </div>
                                         <div>
-                                            <label class="form-label">Country</label>
+                                            <label class="form-label" for="ship_country">Country</label>
                                             <input type="text" id="ship_country" value="India" class="form-input" readonly>
                                         </div>
                                     </div>
@@ -285,17 +326,25 @@
                                         <input type="text" id="ship_name" required class="form-input" value="<?= htmlspecialchars($user['name'] ?? '') ?>">
                                     </div>
                                     <div>
-                                        <label class="form-label">Complete Address</label>
+                                        <label class="form-label">Complete Address <span class="text-[#F25996]">*</span></label>
                                         <textarea id="ship_line1" rows="3" required class="form-input" placeholder="Enter full address..."><?= htmlspecialchars($profile['shop_location'] ?? '') ?></textarea>
+                                        <div id="ship_line1-error-fallback" class="field-error-msg hidden">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                            <span class="error-msg">Please enter your Address</span>
+                                        </div>
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
-                                            <label class="form-label">State</label>
+                                            <label class="form-label">State <span class="text-[#F25996]">*</span></label>
                                             <select id="ship_state" name="state" required onchange="toggleShipDistrictFields()" class="form-input">
                                                 <option value="">Select State</option>
                                                 <option value="Tamil Nadu">Tamil Nadu</option>
                                                 <option value="Others">Others</option>
                                             </select>
+                                            <div id="ship_state-error-fallback" class="field-error-msg hidden">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span class="error-msg">Please select a State</span>
+                                            </div>
                                         </div>
                                         <!-- When TN: District Select Dropdown beside State -->
                                         <div id="ship_fallback_tn_district_container">
@@ -341,24 +390,40 @@
                                                 <option value="Viluppuram">Viluppuram</option>
                                                 <option value="Virudhunagar">Virudhunagar</option>
                                             </select>
+                                            <div id="ship_fallback_district_select-error" class="field-error-msg hidden">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span class="error-msg">Please select your District</span>
+                                            </div>
                                         </div>
 
                                         <!-- When Others: State Name Input beside State (UP) -->
                                         <div id="ship_fallback_other_state_container" class="hidden">
                                             <label class="form-label" id="ship_fallback_other_state_label">State Name <span class="text-[#F25996]">*</span></label>
                                             <input id="ship_fallback_other_state_name" name="other_state_name" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter state name (e.g. Kerala, Karnataka)" autocomplete="off" class="form-input w-full" disabled>
+                                            <div id="ship_fallback_other_state_name-error" class="field-error-msg hidden">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span class="error-msg">Please enter your State Name</span>
+                                            </div>
                                         </div>
 
                                         <!-- When Others: District/City Input below State & State Name (DOWN) -->
                                         <div id="ship_fallback_other_district_container" class="hidden sm:col-span-2">
                                             <label class="form-label">District/City <span class="text-[#F25996]">*</span></label>
                                             <input id="ship_fallback_district_text" name="city" type="text" pattern="[A-Za-z\s]+" oninput="this.value=this.value.replace(/[^A-Za-z\s]/g,'')" placeholder="Enter District / City Name" autocomplete="off" class="form-input w-full" disabled>
+                                            <div id="ship_fallback_district_text-error" class="field-error-msg hidden">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span class="error-msg">Please enter District / City</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                         <div>
                                             <label class="form-label">Pincode <span class="text-[#F25996]">*</span></label>
-                                            <input type="text" id="ship_pincode" pattern="[0-9]{6}" maxlength="6" oninput="this.value=this.value.replace(/\D/g,'')" class="form-input" placeholder="6-digit pincode">
+                                            <input type="text" id="ship_pincode" required pattern="[0-9]{6}" maxlength="6" oninput="this.value=this.value.replace(/\D/g,'')" class="form-input" placeholder="6-digit pincode">
+                                            <div id="ship_pincode-error-fallback" class="field-error-msg hidden">
+                                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                                <span class="error-msg">Please enter a valid 6-digit Pincode</span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-gray-100">
@@ -603,6 +668,87 @@
         }
     }
 
+    /* ---- Inline Validation Helpers ---- */
+    function showInlineError(inputEl, message) {
+        if (!inputEl) return;
+        inputEl.classList.add('has-error');
+
+        const wrapper = inputEl.closest('.cs-wrapper');
+        if (wrapper) {
+            const trigger = wrapper.querySelector('.cs-trigger');
+            if (trigger) trigger.classList.add('has-error');
+        }
+
+        let errEl = document.getElementById(inputEl.id + '-error') ||
+                    document.getElementById(inputEl.id + '-error-fallback');
+        if (!errEl) {
+            const parent = wrapper ? wrapper.parentElement : inputEl.parentElement;
+            if (parent) {
+                errEl = parent.querySelector('.field-error-msg');
+                if (!errEl) {
+                    errEl = document.createElement('div');
+                    errEl.id = inputEl.id + '-error';
+                    errEl.className = 'field-error-msg';
+                    errEl.innerHTML = '<svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><span class="error-msg"></span>';
+                    parent.appendChild(errEl);
+                }
+            }
+        }
+        if (errEl) {
+            const span = errEl.querySelector('.error-msg') || errEl;
+            span.textContent = message;
+            errEl.classList.remove('hidden');
+        }
+
+        const clearThis = function() {
+            clearInlineError(inputEl);
+            inputEl.removeEventListener('input', clearThis);
+            inputEl.removeEventListener('change', clearThis);
+        };
+        inputEl.addEventListener('input', clearThis);
+        inputEl.addEventListener('change', clearThis);
+    }
+
+    function clearInlineError(inputEl) {
+        if (!inputEl) return;
+        inputEl.classList.remove('has-error');
+        const wrapper = inputEl.closest('.cs-wrapper');
+        if (wrapper) {
+            const trigger = wrapper.querySelector('.cs-trigger');
+            if (trigger) trigger.classList.remove('has-error');
+        }
+        const errEl = document.getElementById(inputEl.id + '-error') || 
+                      document.getElementById(inputEl.id + '-error-fallback') ||
+                      (wrapper ? wrapper.parentElement.querySelector('.field-error-msg') : (inputEl.parentElement ? inputEl.parentElement.querySelector('.field-error-msg') : null));
+        if (errEl) {
+            errEl.classList.add('hidden');
+            const span = errEl.querySelector('.error-msg');
+            if (span) span.textContent = '';
+        }
+    }
+
+    function clearAllAddressErrors(container) {
+        const root = container || document;
+        root.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+        root.querySelectorAll('.field-error-msg').forEach(el => {
+            el.classList.add('hidden');
+            const span = el.querySelector('.error-msg');
+            if (span) span.textContent = '';
+        });
+    }
+
+    function focusFirstAddressError(firstErrorEl) {
+        if (!firstErrorEl) return;
+        const wrapper = firstErrorEl.closest('.cs-wrapper');
+        const target = wrapper ? wrapper.querySelector('.cs-trigger') : firstErrorEl;
+        if (target) {
+            if (typeof target.focus === 'function') target.focus();
+            if (typeof target.scrollIntoView === 'function') {
+                target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    }
+
     /* ---- Proceed from Step 1 ---- */
     function proceedFromAddress() {
         let fullAddr = '';
@@ -612,81 +758,79 @@
         if (selectedRadio) {
             if (selectedRadio.value === 'new') {
                 // Manual entry mode
-                const line1  = ((document.getElementById('ship_line1')  || {}).value || '').trim();
+                const manualContainer = document.getElementById('manual-entry');
+                clearAllAddressErrors(manualContainer);
+                let firstErrorEl = null;
+
+                const line1El = document.getElementById('ship_line1');
+                const line1  = (line1El ? line1El.value : '').trim();
                 const line2  = ((document.getElementById('ship_line2')  || {}).value || '').trim();
-                const state  = ((document.getElementById('ship_state')  || {}).value || '').trim();
+                const stateEl = document.getElementById('ship_state');
+                const state  = (stateEl ? stateEl.value : '').trim();
                 
                 if (!line1) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Missing Address', text: 'Please enter Address Line 1' });
-                    } else {
-                        alert('Please enter Address Line 1');
-                    }
-                    return;
+                    showInlineError(line1El, 'Please enter Address Line 1');
+                    if (!firstErrorEl) firstErrorEl = line1El;
                 }
 
                 if (!state) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Missing State', text: 'Please select a State' });
-                    } else {
-                        alert('Please select a State');
-                    }
-                    return;
+                    showInlineError(stateEl, 'Please select a State');
+                    if (!firstErrorEl) firstErrorEl = stateEl;
                 }
                 
                 let city = '';
                 if (state === 'Tamil Nadu') {
-                    city = ((document.getElementById('ship_district_select') || {}).value || '').trim();
+                    const distSel = document.getElementById('ship_district_select');
+                    city = (distSel ? distSel.value : '').trim();
                     if (!city) {
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({ icon: 'warning', title: 'Missing District', text: 'Please select your District' });
-                        } else {
-                            alert('Please select your District');
-                        }
-                        return;
+                        showInlineError(distSel, 'Please select your District');
+                        if (!firstErrorEl) firstErrorEl = distSel;
                     }
                 } else if (state === 'Others') {
-                    const dist = ((document.getElementById('ship_district_text') || {}).value || '').trim();
-                    const cty  = ((document.getElementById('ship_city_text') || {}).value || '').trim();
-                    
-                    if (!dist || !cty) {
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter both District and City' });
-                        } else {
-                            alert('Please enter both District and City');
-                        }
-                        return;
+                    const otherStateEl = document.getElementById('ship_other_state_name');
+                    const otherState = (otherStateEl ? otherStateEl.value : '').trim();
+                    const distTextEl = document.getElementById('ship_district_text');
+                    const dist = (distTextEl ? distTextEl.value : '').trim();
+
+                    if (!otherState) {
+                        showInlineError(otherStateEl, 'Please enter State Name');
+                        if (!firstErrorEl) firstErrorEl = otherStateEl;
+                    }
+
+                    if (!dist) {
+                        showInlineError(distTextEl, 'Please enter District / City');
+                        if (!firstErrorEl) firstErrorEl = distTextEl;
                     }
 
                     const tnRegex = /tamil\s*nadu/i;
-                    if (tnRegex.test(dist) || tnRegex.test(cty)) {
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Invalid State Entry',
-                                text: 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.'
-                            });
-                        } else {
-                            alert('If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
-                        }
-                        return;
+                    if (tnRegex.test(dist) || tnRegex.test(otherState)) {
+                        const targetEl = tnRegex.test(otherState) ? otherStateEl : distTextEl;
+                        showInlineError(targetEl, 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
+                        if (!firstErrorEl) firstErrorEl = targetEl;
                     }
-                    
-                    city = [dist, cty].filter(Boolean).join(', ');
+
+                    city = dist;
                 }
-                const pin    = ((document.getElementById('ship_pincode') || {}).value || '').trim();
-                const country= ((document.getElementById('ship_country') || {}).value || 'India').trim();
+
+                const pinEl = document.getElementById('ship_pincode');
+                const pin = (pinEl ? pinEl.value : '').trim();
+                const country = ((document.getElementById('ship_country') || {}).value || 'India').trim();
 
                 if (!pin || pin.length !== 6) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Invalid Pincode', text: 'Please enter a valid 6-digit Pincode' });
-                    } else {
-                        alert('Please enter a valid 6-digit Pincode');
-                    }
+                    showInlineError(pinEl, 'Please enter a valid 6-digit Pincode');
+                    if (!firstErrorEl) firstErrorEl = pinEl;
+                }
+
+                if (firstErrorEl) {
+                    focusFirstAddressError(firstErrorEl);
                     return;
                 }
 
-                const parts = [line1, line2, city + (state ? ', ' + state : ''), pin, country].filter(Boolean);
+                const stateDisplayName = (state === 'Others' && document.getElementById('ship_other_state_name'))
+                    ? (document.getElementById('ship_other_state_name').value.trim() || state)
+                    : state;
+
+                const parts = [line1, line2, city + (stateDisplayName ? ', ' + stateDisplayName : ''), pin, country].filter(Boolean);
                 fullAddr = parts.join('\n');
                 
                 const saveCheck = document.getElementById('save_manual_address_check');
@@ -713,88 +857,75 @@
             }
         } else {
             // Fallback: no radio buttons (no saved addresses) — use manual fields
-            const line1 = ((document.getElementById('ship_line1') || document.getElementById('ship_address') || {}).value || '').trim();
-            const state = ((document.getElementById('ship_state') || {}).value || '').trim();
+            const formContainer = document.getElementById('shipping-form') || document;
+            clearAllAddressErrors(formContainer);
+            let firstErrorEl = null;
+
+            const line1El = document.getElementById('ship_line1') || document.getElementById('ship_address');
+            const line1 = (line1El ? line1El.value : '').trim();
+            const stateEl = document.getElementById('ship_state');
+            const state = (stateEl ? stateEl.value : '').trim();
             
             if (!line1) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'warning', title: 'Missing Address', text: 'Please enter your Address' });
-                } else {
-                    alert('Please enter your Address');
-                }
-                return;
+                showInlineError(line1El, 'Please enter your Address');
+                if (!firstErrorEl) firstErrorEl = line1El;
             }
 
             if (!state) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'warning', title: 'Missing State', text: 'Please select a State' });
-                } else {
-                    alert('Please select a State');
-                }
-                return;
+                showInlineError(stateEl, 'Please select a State');
+                if (!firstErrorEl) firstErrorEl = stateEl;
             }
 
             let city = '';
             if (state === 'Tamil Nadu') {
-                city = ((document.getElementById('ship_fallback_district_select') || {}).value || '').trim();
+                const distSel = document.getElementById('ship_fallback_district_select');
+                city = (distSel ? distSel.value : '').trim();
                 if (!city) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Missing District', text: 'Please select your District' });
-                    } else {
-                        alert('Please select your District');
-                    }
-                    return;
+                    showInlineError(distSel, 'Please select your District');
+                    if (!firstErrorEl) firstErrorEl = distSel;
                 }
             } else if (state === 'Others') {
-                city = ((document.getElementById('ship_fallback_district_text') || {}).value || '').trim();
-                const otherSt = ((document.getElementById('ship_fallback_other_state_name') || {}).value || '').trim();
+                const distTextEl = document.getElementById('ship_fallback_district_text');
+                city = (distTextEl ? distTextEl.value : '').trim();
+                const otherStEl = document.getElementById('ship_fallback_other_state_name');
+                const otherSt = (otherStEl ? otherStEl.value : '').trim();
                 
-                if (!city) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter your District / City' });
-                    } else {
-                        alert('Please enter your District / City');
-                    }
-                    return;
+                if (!otherSt) {
+                    showInlineError(otherStEl, 'Please enter your State Name');
+                    if (!firstErrorEl) firstErrorEl = otherStEl;
                 }
 
-                if (!otherSt) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Missing State Name', text: 'Please enter your State Name' });
-                    } else {
-                        alert('Please enter your State Name');
-                    }
-                    return;
+                if (!city) {
+                    showInlineError(distTextEl, 'Please enter District / City');
+                    if (!firstErrorEl) firstErrorEl = distTextEl;
                 }
 
                 const tnRegex = /tamil\s*nadu/i;
                 if (tnRegex.test(city) || tnRegex.test(otherSt)) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Invalid State Entry',
-                            text: 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.'
-                        });
-                    } else {
-                        alert('If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
-                    }
-                    return;
+                    const targetEl = tnRegex.test(otherSt) ? otherStEl : distTextEl;
+                    showInlineError(targetEl, 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
+                    if (!firstErrorEl) firstErrorEl = targetEl;
                 }
             }
             
-            const pin   = ((document.getElementById('ship_pincode') || {}).value || '').trim();
+            const pinEl = document.getElementById('ship_pincode');
+            const pin   = (pinEl ? pinEl.value : '').trim();
             const name  = ((document.getElementById('ship_name')  || {}).value || '').trim();
 
             if (!pin || pin.length !== 6) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'warning', title: 'Invalid Pincode', text: 'Please enter a valid 6-digit Pincode' });
-                } else {
-                    alert('Please enter a valid 6-digit Pincode');
-                }
+                showInlineError(pinEl, 'Please enter a valid 6-digit Pincode');
+                if (!firstErrorEl) firstErrorEl = pinEl;
+            }
+
+            if (firstErrorEl) {
+                focusFirstAddressError(firstErrorEl);
                 return;
             }
 
-            fullAddr = [name, line1, city + ' - ' + pin].filter(Boolean).join('\n');
+            const otherStVal = (document.getElementById('ship_fallback_other_state_name') || {}).value || '';
+            const fallbackStateName = state === 'Others' ? (otherStVal.trim() || state) : state;
+
+            fullAddr = [name, line1, city + (fallbackStateName ? ', ' + fallbackStateName : '') + ' - ' + pin].filter(Boolean).join('\n');
             
             const fallbackSave = document.getElementById('save_fallback_address_check');
             const shouldSaveFallback = fallbackSave ? (fallbackSave.checked ? '1' : '0') : '1';
@@ -1095,85 +1226,71 @@
         }
     })();
     function saveManualAddressAjax() {
-        const line1 = ((document.getElementById('ship_line1') || document.getElementById('ship_address') || {}).value || '').trim();
+        const isFallback = !document.getElementById('manual-entry') || document.getElementById('manual-entry').classList.contains('hidden');
+        const container = isFallback ? (document.querySelector('#shipping-form') || document) : document.getElementById('manual-entry');
+        clearAllAddressErrors(container);
+
+        let firstErrorEl = null;
+
+        const line1El = document.getElementById('ship_line1') || document.getElementById('ship_address');
+        const line1 = (line1El ? line1El.value : '').trim();
         const line2 = ((document.getElementById('ship_line2') || {}).value || '').trim();
-        const state = ((document.getElementById('ship_state') || {}).value || '').trim();
-        const pin   = ((document.getElementById('ship_pincode') || {}).value || '').trim();
+        const stateEl = document.getElementById('ship_state');
+        const state = (stateEl ? stateEl.value : '').trim();
+        const pinEl = document.getElementById('ship_pincode');
+        const pin   = (pinEl ? pinEl.value : '').trim();
         const country = ((document.getElementById('ship_country') || {}).value || 'India').trim();
 
         if (!line1) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({ icon: 'warning', title: 'Missing Address', text: 'Please enter Address Line 1 / Complete Address' });
-            } else {
-                alert('Please enter Address Line 1 / Complete Address');
-            }
-            return;
+            showInlineError(line1El, 'Please enter Address Line 1 / Complete Address');
+            if (!firstErrorEl) firstErrorEl = line1El;
         }
 
         if (!state) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({ icon: 'warning', title: 'Missing State', text: 'Please select a State' });
-            } else {
-                alert('Please select a State');
-            }
-            return;
+            showInlineError(stateEl, 'Please select a State');
+            if (!firstErrorEl) firstErrorEl = stateEl;
         }
 
         let city = '';
         let otherStateName = '';
         if (state === 'Tamil Nadu') {
-            city = ((document.getElementById('ship_district_select') || document.getElementById('ship_fallback_district_select') || {}).value || '').trim();
+            const distSel = document.getElementById('ship_district_select') || document.getElementById('ship_fallback_district_select');
+            city = (distSel ? distSel.value : '').trim();
             if (!city) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'warning', title: 'Missing District', text: 'Please select your District' });
-                } else {
-                    alert('Please select your District');
-                }
-                return;
+                showInlineError(distSel, 'Please select your District');
+                if (!firstErrorEl) firstErrorEl = distSel;
             }
         } else if (state === 'Others') {
-            city = ((document.getElementById('ship_district_text') || document.getElementById('ship_fallback_district_text') || {}).value || '').trim();
-            otherStateName = ((document.getElementById('ship_other_state_name') || document.getElementById('ship_fallback_other_state_name') || {}).value || '').trim();
+            const distTextEl = document.getElementById('ship_district_text') || document.getElementById('ship_fallback_district_text');
+            city = (distTextEl ? distTextEl.value : '').trim();
+            const otherStEl = document.getElementById('ship_other_state_name') || document.getElementById('ship_fallback_other_state_name');
+            otherStateName = (otherStEl ? otherStEl.value : '').trim();
             
-            if (!city) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter District / City' });
-                } else {
-                    alert('Please enter District / City');
-                }
-                return;
+            if (!otherStateName) {
+                showInlineError(otherStEl, 'Please enter your State Name');
+                if (!firstErrorEl) firstErrorEl = otherStEl;
             }
 
-            if (!otherStateName) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({ icon: 'warning', title: 'Missing State Name', text: 'Please enter your State Name' });
-                } else {
-                    alert('Please enter your State Name');
-                }
-                return;
+            if (!city) {
+                showInlineError(distTextEl, 'Please enter District / City');
+                if (!firstErrorEl) firstErrorEl = distTextEl;
             }
 
             const tnRegex = /tamil\s*nadu/i;
             if (tnRegex.test(city) || tnRegex.test(otherStateName)) {
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Invalid State Entry',
-                        text: 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.'
-                    });
-                } else {
-                    alert('If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
-                }
-                return;
+                const targetEl = tnRegex.test(otherStateName) ? otherStEl : distTextEl;
+                showInlineError(targetEl, 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
+                if (!firstErrorEl) firstErrorEl = targetEl;
             }
         }
 
         if (!pin || pin.length !== 6) {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({ icon: 'warning', title: 'Invalid Pincode', text: 'Please enter a valid 6-digit Pincode' });
-            } else {
-                alert('Please enter a valid 6-digit Pincode');
-            }
+            showInlineError(pinEl, 'Please enter a valid 6-digit Pincode');
+            if (!firstErrorEl) firstErrorEl = pinEl;
+        }
+
+        if (firstErrorEl) {
+            focusFirstAddressError(firstErrorEl);
             return;
         }
 
@@ -1255,6 +1372,12 @@
         const otherStateInput = document.getElementById('ship_other_state_name') || document.getElementById('ship_fallback_other_state_name');
         const otherDistContainer = document.getElementById('ship_other_district_container') || document.getElementById('ship_fallback_other_district_container');
         const distText = document.getElementById('ship_district_text') || document.getElementById('ship_fallback_district_text');
+
+        // Clear existing errors on district/state inputs when state changes
+        if (stateEl) clearInlineError(stateEl);
+        if (select) clearInlineError(select);
+        if (otherStateInput) clearInlineError(otherStateInput);
+        if (distText) clearInlineError(distText);
 
         if (state === 'Tamil Nadu') {
             if (tnContainer) tnContainer.classList.remove('hidden');
@@ -1409,74 +1532,61 @@
             editForm.addEventListener('submit', function(e) {
                 e.preventDefault();
 
-                const line1 = (document.getElementById('edit_line1') || {}).value || '';
-                const state = (document.getElementById('edit_state') || {}).value || '';
-                const pin = (document.getElementById('edit_pincode') || {}).value || '';
+                clearAllAddressErrors(editForm);
+                let firstErrorEl = null;
 
-                if (!line1.trim()) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Missing Address', text: 'Please enter Address Line 1' });
-                    } else {
-                        alert('Please enter Address Line 1');
-                    }
-                    return;
+                const line1El = document.getElementById('edit_line1');
+                const line1 = (line1El ? line1El.value : '').trim();
+                const stateEl = document.getElementById('edit_state');
+                const state = (stateEl ? stateEl.value : '').trim();
+                const pinEl = document.getElementById('edit_pincode');
+                const pin = (pinEl ? pinEl.value : '').trim();
+
+                if (!line1) {
+                    showInlineError(line1El, 'Please enter Address Line 1');
+                    if (!firstErrorEl) firstErrorEl = line1El;
                 }
                 if (!state) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Missing State', text: 'Please select a State' });
-                    } else {
-                        alert('Please select a State');
-                    }
-                    return;
+                    showInlineError(stateEl, 'Please select a State');
+                    if (!firstErrorEl) firstErrorEl = stateEl;
                 }
 
                 let city = '';
                 let otherState = '';
                 if (state === 'Tamil Nadu') {
-                    city = (document.getElementById('edit_district_select') || {}).value || '';
+                    const distSel = document.getElementById('edit_district_select');
+                    city = (distSel ? distSel.value : '').trim();
                     if (!city) {
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({ icon: 'warning', title: 'Missing District', text: 'Please select your District' });
-                        } else {
-                            alert('Please select your District');
-                        }
-                        return;
+                        showInlineError(distSel, 'Please select your District');
+                        if (!firstErrorEl) firstErrorEl = distSel;
                     }
                 } else if (state === 'Others') {
-                    city = ((document.getElementById('edit_district_text') || {}).value || '').trim();
-                    otherState = ((document.getElementById('edit_other_state_name') || {}).value || '').trim();
+                    const distTextEl = document.getElementById('edit_district_text');
+                    city = (distTextEl ? distTextEl.value : '').trim();
+                    const otherStEl = document.getElementById('edit_other_state_name');
+                    otherState = (otherStEl ? otherStEl.value : '').trim();
                     if (!city) {
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({ icon: 'warning', title: 'Missing District/City', text: 'Please enter District / City' });
-                        } else {
-                            alert('Please enter District / City');
-                        }
-                        return;
+                        showInlineError(distTextEl, 'Please enter District / City');
+                        if (!firstErrorEl) firstErrorEl = distTextEl;
                     }
                     if (!otherState) {
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({ icon: 'warning', title: 'Missing State Name', text: 'Please enter State Name' });
-                        } else {
-                            alert('Please enter State Name');
-                        }
-                        return;
+                        showInlineError(otherStEl, 'Please enter State Name');
+                        if (!firstErrorEl) firstErrorEl = otherStEl;
                     }
                     if (/tamil\s*nadu/i.test(city) || /tamil\s*nadu/i.test(otherState)) {
-                        if (typeof Swal !== 'undefined') {
-                            Swal.fire({ icon: 'error', title: 'Invalid State Entry', text: 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.' });
-                        } else {
-                            alert('If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
-                        }
-                        return;
+                        const targetEl = /tamil\s*nadu/i.test(otherState) ? otherStEl : distTextEl;
+                        showInlineError(targetEl, 'If you are from Tamil Nadu, please select "Tamil Nadu" from the State dropdown.');
+                        if (!firstErrorEl) firstErrorEl = targetEl;
                     }
                 }
 
-                if (!pin.trim() || pin.trim().length !== 6) {
-                    if (typeof Swal !== 'undefined') {
-                        Swal.fire({ icon: 'warning', title: 'Invalid Pincode', text: 'Please enter a valid 6-digit Pincode' });
-                    } else {
-                        alert('Please enter a valid 6-digit Pincode');
-                    }
+                if (!pin || pin.length !== 6) {
+                    showInlineError(pinEl, 'Please enter a valid 6-digit Pincode');
+                    if (!firstErrorEl) firstErrorEl = pinEl;
+                }
+
+                if (firstErrorEl) {
+                    focusFirstAddressError(firstErrorEl);
                     return;
                 }
 

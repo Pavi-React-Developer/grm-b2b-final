@@ -90,6 +90,9 @@ class ReviewController extends Controller
                 'review_text'      => $reviewText,
                 'photos'           => !empty($photos) ? $photos : null
             ]);
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::delete('product_details_bundle_' . (int)$productId);
+            }
             echo json_encode([
                 'success' => true, 
                 'message' => 'Thank you! Your review has been submitted and is pending verification.'
@@ -115,7 +118,13 @@ class ReviewController extends Controller
             $votedReviews = [];
         }
 
-        $currentVote = $votedReviews[$reviewId] ?? null;
+        $sessionVote = $votedReviews[$reviewId] ?? null;
+        $clientCurrentVote = trim($_POST['current_vote'] ?? '');
+        if (!in_array($clientCurrentVote, ['yes', 'no'])) {
+            $clientCurrentVote = null;
+        }
+        $currentVote = $sessionVote ?: $clientCurrentVote;
+
         $db = \Core\Database::getInstance();
         $votedType = null;
 
@@ -151,9 +160,13 @@ class ReviewController extends Controller
         }
 
         // Fetch updated counts
-        $stmt2 = $db->prepare("SELECT helpful_yes, helpful_no FROM reviews WHERE id = :id");
+        $stmt2 = $db->prepare("SELECT product_id, helpful_yes, helpful_no FROM reviews WHERE id = :id");
         $stmt2->execute(['id' => $reviewId]);
         $row = $stmt2->fetch(\PDO::FETCH_ASSOC);
+
+        if (!empty($row['product_id']) && class_exists('\Core\Cache')) {
+            \Core\Cache::delete('product_details_bundle_' . (int)$row['product_id']);
+        }
 
         echo json_encode([
             'success' => true,

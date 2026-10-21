@@ -12,6 +12,8 @@ class CustomizationLabelController extends Controller
 
     public function __construct()
     {
+        parent::__construct();
+
         // Require admin login
         if (!Session::get('user_id') || !in_array(Session::get('user_role'), ['super_admin', 'manager', 'staff'])) {
             Session::setFlash('error', 'Unauthorized access. Please login as admin.');

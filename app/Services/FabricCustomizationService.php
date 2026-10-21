@@ -21,10 +21,10 @@ class FabricCustomizationService
         $wastagePct = (float)($customization['wastage_percentage'] ?? 0.00);
         $unit = $customization['unit'] ?? 'Meter';
         $stock = $availableStock !== null ? (float)$availableStock : (float)($customization['fabric_stock'] ?? 0);
-        $minPieces = $baseMin; // Base minimum to enable payment
+        $minPieces = $baseMin * $fabricQuantity; // Total required minimum to enable payment
         $maxPieces = $baseMax * $fabricQuantity;
         $perSetMin = $baseMin;
-        $perSetMax = $maxPieces;
+        $perSetMax = $baseMax;
 
         // Map configured sizes and limits
         $configuredSizes = [];
@@ -110,9 +110,12 @@ class FabricCustomizationService
                 } elseif (isset($setData['total_pieces'])) {
                     $setPcs = (int)$setData['total_pieces'];
                 }
-                if ($setPcs > $maxPieces) {
-                    $excess = $setPcs - $maxPieces;
-                    $errors[] = "Fabric Set #{$setNum}: Selected {$setPcs} pcs, which exceeds the allowed {$maxPieces} pieces ({$excess} pcs in excess).";
+                if ($setPcs < $perSetMin) {
+                    $missing = $perSetMin - $setPcs;
+                    $errors[] = "Roll #{$setNum}: Currently has {$setPcs} pcs, but needs {$perSetMin} pcs (Please add {$missing} more pcs to this roll).";
+                } elseif ($setPcs > $perSetMax) {
+                    $excess = $setPcs - $perSetMax;
+                    $errors[] = "Roll #{$setNum}: Has {$setPcs} pcs, which exceeds the limit of {$perSetMax} pieces per roll ({$excess} pcs extra).";
                 }
             }
         }
@@ -125,13 +128,13 @@ class FabricCustomizationService
         $isStockSufficient = ($stock >= $fabricQuantity);
 
         if ($totalPieces === 0) {
-            $errors[] = "Please select size variants. A minimum of {$minPieces} pieces is required to enable payment.";
+            $errors[] = "Please select size variants. A total of {$minPieces} pieces ({$perSetMin} pieces per container) is required to enable checkout.";
         } elseif (!$isMinMet) {
             $remaining = $minPieces - $totalPieces;
-            $errors[] = "Minimum {$minPieces} pieces required to enable payment. You currently have {$totalPieces} pieces (Please select {$remaining} more pcs).";
+            $errors[] = "Minimum {$minPieces} pieces required for {$fabricQuantity} Fabric Quantity ({$perSetMin} pieces per container). You currently have {$totalPieces} pieces (Please select {$remaining} more pcs).";
         } elseif ($totalPieces > $maxPieces) {
             $excess = $totalPieces - $maxPieces;
-            $errors[] = "Maximum {$maxPieces} pieces allowed for {$fabricQuantity} Fabric Quantity. You currently have {$totalPieces} pieces ({$excess} pcs in excess). Please reduce variant quantities or increase Fabric Quantity.";
+            $errors[] = "Maximum {$maxPieces} pieces allowed for {$fabricQuantity} Fabric Quantity ({$perSetMax} pieces per container). You currently have {$totalPieces} pieces ({$excess} pcs in excess).";
         }
         if (!$isStockSufficient) {
             $shortage = (int)($fabricQuantity - $stock);

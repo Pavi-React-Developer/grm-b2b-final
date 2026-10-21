@@ -78,10 +78,11 @@ if ($hasDynamicNavbar) {
         window.escapeHtmlStr = escapeHtmlStr;
     </script>
 
-    <!-- Compiled Tailwind CSS -->
+    <!-- Compiled Tailwind CSS (Fast, Minified, Fully Pre-Rendered) -->
     <link rel="stylesheet" href="<?= BASE_URL ?>/css/app.css">
     
-    <!-- Tailwind CDN for JIT classes -->
+    <?php if (!empty($isPreview)): ?>
+    <!-- Tailwind CDN only for CMS Live Preview Editor -->
     <script>
         (function() {
             var _w = console.warn;
@@ -105,6 +106,7 @@ if ($hasDynamicNavbar) {
         };
     </script>
     <script src="https://cdn.tailwindcss.com" defer></script>
+    <?php endif; ?>
     
     <!-- Global Font & Layout Override -->
     <style>
@@ -113,8 +115,11 @@ if ($hasDynamicNavbar) {
             font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
             font-size: 1rem;
         }
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Outfit', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        }
         .font-display {
-            font-family: 'Outfit', 'Inter', sans-serif !important;
+            font-family: 'Outfit', 'Inter', system-ui, -apple-system, sans-serif !important;
         }
         
         /* Hide scrollbar for horizontal scroll containers */

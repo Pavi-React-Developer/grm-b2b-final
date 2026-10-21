@@ -172,31 +172,11 @@ class CatalogController extends Controller
 
     public function view()
     {
-        $id = $_GET['id'] ?? null;
+        $id = (int)($_GET['id'] ?? 0);
         if (!$id) {
             $this->redirect('/catalog');
-        }
-
-        $productModel = new Product();
-        $product = $productModel->findById($id);
-
-        if (!$product || $product['status'] !== 'active') {
-            $this->redirect('/catalog');
-        }
-
-        // Customizable fabrics belong ONLY to the customization module
-        if (!empty($product['is_customizable'])) {
-            $this->redirect('/customize/fabric/' . (int)$product['id']);
             return;
         }
-
-        $categoryModel = new Category();
-        $category = !empty($product['category_id']) ? $categoryModel->findById($product['category_id']) : null;
-        if (empty($category) || ($category['status'] ?? '') !== 'active') {
-            $this->redirect('/catalog');
-            return;
-        }
-        $subCategory = !empty($product['sub_category_id']) ? $categoryModel->findById($product['sub_category_id']) : null;
 
         // Remember return URL for guest visitors (e.g. from Instagram / direct link)
         if (!\Core\Session::get('user_id')) {
@@ -204,164 +184,204 @@ class CatalogController extends Controller
             \Core\Session::set('return_to', $currentUri);
         }
 
-        $images = $productModel->getImages($id);
-        
-        // Ensure there's a primary image available in $product for easy access
-        $product['primary_image'] = null;
-        foreach ($images as $img) {
-            if ($img['is_primary']) {
-                $product['primary_image'] = $img['image_path'];
-                break;
-            }
-        }
-        if (!$product['primary_image'] && !empty($images)) {
-            $product['primary_image'] = $images[0]['image_path'];
-        }
+        // Cache the entire product view bundle for 5 minutes (invalidated on product/review updates)
+        $prodCacheKey = 'product_details_bundle_' . $id;
+        $bundle = class_exists('\Core\Cache') ? \Core\Cache::get($prodCacheKey) : null;
 
-        // Fetch variants if applicable (or mock available variants for UI)
-        $variants = $productModel->getInventoryProductVariants($id);
-        foreach ($variants as &$v) {
-            if (!empty($v['images'])) {
-                $v['images'] = array_map(function($img) {
-                    return get_image_url($img);
-                }, $v['images']);
-            }
-        }
+        if ($bundle === null) {
+            $productModel = new Product();
+            $product = $productModel->findById($id);
 
-        // Fetch up to 5 related products from DIFFERENT categories/subcategories for Frequently Bought Together
-        $relKey = 'rel_prods_diff_' . (int)$id;
-        $relatedProducts = class_exists('\Core\Cache') ? \Core\Cache::get($relKey) : null;
-        if ($relatedProducts === null) {
-            $db = \Core\Database::getInstance();
-            $subCatId = !empty($product['sub_category_id']) ? (int)$product['sub_category_id'] : null;
-            $catId = !empty($product['category_id']) ? (int)$product['category_id'] : null;
-
-            $params = ['id' => $id];
-            $whereClause = "WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) AND p.id != :id";
-            
-            if ($subCatId) {
-                // Strictly exclude the current product's subcategory so it shows DIFFERENT categories (never the same category)
-                $whereClause .= " AND (p.sub_category_id IS NULL OR p.sub_category_id != :exclude_sub_id)";
-                $params['exclude_sub_id'] = $subCatId;
-            } elseif ($catId) {
-                // Exclude current category
-                $whereClause .= " AND p.category_id != :exclude_cat_id";
-                $params['exclude_cat_id'] = $catId;
+            if (!$product || $product['status'] !== 'active') {
+                $this->redirect('/catalog');
+                return;
             }
 
-            $stmt = $db->prepare("
-                SELECT p.*, c.name AS category_name,
-                       img.image_path AS primary_image,
-                       pv_agg.base_price,
-                       pv_agg.discount_price
-                FROM products p
-                JOIN categories c ON p.category_id = c.id AND c.status = 'active'
-                LEFT JOIN product_images img ON img.product_id = p.id AND img.is_primary = 1
-                LEFT JOIN (
-                    SELECT product_id, 
-                           MIN(base_price) AS base_price,
-                           MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price 
-                    FROM product_variants GROUP BY product_id
-                ) pv_agg ON pv_agg.product_id = p.id
-                $whereClause
-                ORDER BY p.id DESC
-            ");
-            $stmt->execute($params);
-            $candidateProducts = $stmt->fetchAll();
+            // Customizable fabrics belong ONLY to the customization module
+            if (!empty($product['is_customizable'])) {
+                $this->redirect('/customize/fabric/' . (int)$product['id']);
+                return;
+            }
 
-            $relatedProducts = [];
-            $usedCats = [];
+            $categoryModel = new Category();
+            $category = !empty($product['category_id']) ? $categoryModel->findById($product['category_id']) : null;
+            if (empty($category) || ($category['status'] ?? '') !== 'active') {
+                $this->redirect('/catalog');
+                return;
+            }
+            $subCategory = !empty($product['sub_category_id']) ? $categoryModel->findById($product['sub_category_id']) : null;
 
-            // Pass 1: Pick 1 product per distinct different category/subcategory
-            foreach ($candidateProducts as $cp) {
-                $grp = $cp['sub_category_id'] ?? $cp['category_id'];
-                if (!in_array($grp, $usedCats)) {
-                    $usedCats[] = $grp;
-                    $relatedProducts[] = $cp;
-                    if (count($relatedProducts) >= 5) break;
+            $images = $productModel->getImages($id);
+            $product['primary_image'] = null;
+            foreach ($images as $img) {
+                if ($img['is_primary']) {
+                    $product['primary_image'] = $img['image_path'];
+                    break;
                 }
             }
+            if (!$product['primary_image'] && !empty($images)) {
+                $product['primary_image'] = $images[0]['image_path'];
+            }
 
-            // Pass 2: If fewer than 5 categories found, fill remaining slots from candidates
-            if (count($relatedProducts) < 5) {
-                $existingIds = array_column($relatedProducts, 'id');
+            // Fetch variants
+            $variants = $productModel->getInventoryProductVariants($id);
+            foreach ($variants as &$v) {
+                if (!empty($v['images'])) {
+                    $v['images'] = array_map(function($img) {
+                        return get_image_url($img);
+                    }, $v['images']);
+                }
+            }
+            unset($v);
+
+            // Fetch up to 5 related products from DIFFERENT categories/subcategories for Frequently Bought Together
+            $relKey = 'rel_prods_diff_' . (int)$id;
+            $relatedProducts = class_exists('\Core\Cache') ? \Core\Cache::get($relKey) : null;
+            if ($relatedProducts === null) {
+                $db = \Core\Database::getInstance();
+                $subCatId = !empty($product['sub_category_id']) ? (int)$product['sub_category_id'] : null;
+                $catId = !empty($product['category_id']) ? (int)$product['category_id'] : null;
+
+                $params = ['id' => $id];
+                $whereClause = "WHERE p.status = 'active' AND p.category_id IS NOT NULL AND (p.is_customizable = 0 OR p.is_customizable IS NULL) AND p.id != :id";
+                
+                if ($subCatId) {
+                    $whereClause .= " AND (p.sub_category_id IS NULL OR p.sub_category_id != :exclude_sub_id)";
+                    $params['exclude_sub_id'] = $subCatId;
+                } elseif ($catId) {
+                    $whereClause .= " AND p.category_id != :exclude_cat_id";
+                    $params['exclude_cat_id'] = $catId;
+                }
+
+                $stmt = $db->prepare("
+                    SELECT p.*, c.name AS category_name,
+                           img.image_path AS primary_image,
+                           pv_agg.base_price,
+                           pv_agg.discount_price
+                    FROM products p
+                    JOIN categories c ON p.category_id = c.id AND c.status = 'active'
+                    LEFT JOIN product_images img ON img.product_id = p.id AND img.is_primary = 1
+                    LEFT JOIN (
+                        SELECT product_id, 
+                               MIN(base_price) AS base_price,
+                               MIN(CASE WHEN discount_price > 0 THEN discount_price ELSE NULL END) AS discount_price 
+                        FROM product_variants GROUP BY product_id
+                    ) pv_agg ON pv_agg.product_id = p.id
+                    $whereClause
+                    ORDER BY p.id DESC
+                ");
+                $stmt->execute($params);
+                $candidateProducts = $stmt->fetchAll();
+
+                $relatedProducts = [];
+                $usedCats = [];
+
                 foreach ($candidateProducts as $cp) {
-                    if (!in_array($cp['id'], $existingIds)) {
+                    $grp = $cp['sub_category_id'] ?? $cp['category_id'];
+                    if (!in_array($grp, $usedCats)) {
+                        $usedCats[] = $grp;
                         $relatedProducts[] = $cp;
                         if (count($relatedProducts) >= 5) break;
                     }
                 }
+
+                if (count($relatedProducts) < 5) {
+                    $existingIds = array_column($relatedProducts, 'id');
+                    foreach ($candidateProducts as $cp) {
+                        if (!in_array($cp['id'], $existingIds)) {
+                            $relatedProducts[] = $cp;
+                            if (count($relatedProducts) >= 5) break;
+                        }
+                    }
+                }
+
+                if (class_exists('\Core\Cache')) {
+                    \Core\Cache::set($relKey, $relatedProducts, 1800);
+                }
             }
 
-            if (class_exists('\Core\Cache')) {
-                \Core\Cache::set($relKey, $relatedProducts, 1800);
+            $reviewModel = new Review();
+            $reviews = $reviewModel->getApprovedProductReviews($id);
+
+            // Fetch any active B2B Category-to-Subcategory Offer Rules for this product's category
+            $categoryOfferRule = null;
+            if (!empty($product['category_id'])) {
+                $ruleModel = new \App\Models\OrderRule();
+                $activeRules = $ruleModel->getActiveRules();
+                foreach ($activeRules as $r) {
+                    if ($r['category_id'] == $product['category_id']) {
+                        $allCats = class_exists('\Core\Cache') ? \Core\Cache::get('catalog_all_categories_list') : null;
+                        if ($allCats === null) {
+                            $categoryModel = new Category();
+                            $allCats = $categoryModel->getAll();
+                            if (class_exists('\Core\Cache')) {
+                                \Core\Cache::set('catalog_all_categories_list', $allCats, 3600);
+                            }
+                        }
+                        $catsById = [];
+                        foreach ($allCats as $ac) {
+                            $catsById[$ac['id']] = $ac;
+                        }
+
+                        $secondRulesRaw = json_decode($r['second_category_rules'], true) ?? [];
+                        $secondaryOffers = [];
+                        foreach ($secondRulesRaw as $scId => $sAmt) {
+                            $scId = (int)$scId;
+                            if (isset($catsById[$scId])) {
+                                $secondaryOffers[] = [
+                                    'id' => $scId,
+                                    'name' => $catsById[$scId]['name'],
+                                    'slug' => $catsById[$scId]['slug'],
+                                    'min_amount' => (float)$sAmt
+                                ];
+                            }
+                        }
+
+                        $categoryOfferRule = [
+                            'min_amount' => (float)$r['min_amount'],
+                            'main_category_name' => $r['category_name'],
+                            'secondary_offers' => $secondaryOffers
+                        ];
+                        break;
+                    }
+                }
             }
+
+            // Fetch Volume Pricing Tiers for this product
+            $tierCacheKey = 'prod_tiers_' . (int)$id;
+            $volumeTiers = class_exists('\Core\Cache') ? \Core\Cache::get($tierCacheKey) : null;
+            if ($volumeTiers === null) {
+                $db = \Core\Database::getInstance();
+                $tierStmt = $db->prepare("SELECT * FROM product_volume_tiers WHERE product_id = ? ORDER BY min_qty ASC");
+                $tierStmt->execute([$id]);
+                $volumeTiers = $tierStmt->fetchAll(\PDO::FETCH_ASSOC);
+                if (class_exists('\Core\Cache')) {
+                    \Core\Cache::set($tierCacheKey, $volumeTiers, 1800);
+                }
+            }
+
+            $bundle = compact('product', 'category', 'subCategory', 'images', 'variants', 'relatedProducts', 'reviews', 'categoryOfferRule', 'volumeTiers');
+            if (class_exists('\Core\Cache')) {
+                \Core\Cache::set($prodCacheKey, $bundle, 300);
+            }
+        } else {
+            // Unpack from fast local cache
+            $product = $bundle['product'];
+            $category = $bundle['category'];
+            $subCategory = $bundle['subCategory'];
+            $images = $bundle['images'];
+            $variants = $bundle['variants'];
+            $relatedProducts = $bundle['relatedProducts'];
+            $reviews = $bundle['reviews'];
+            $categoryOfferRule = $bundle['categoryOfferRule'];
+            $volumeTiers = $bundle['volumeTiers'];
         }
 
+        // User-specific data (not cached across users)
         $wishlistIds = [];
         if (Session::get('user_id')) {
             $wishlistModel = new Wishlist();
             $wishlistIds = $wishlistModel->getProductIds(Session::get('user_id'));
-        }
-
-        $reviewModel = new Review();
-        $reviews = $reviewModel->getApprovedProductReviews($id);
-
-        // Fetch any active B2B Category-to-Subcategory Offer Rules for this product's category
-        $categoryOfferRule = null;
-        if (!empty($product['category_id'])) {
-            $ruleModel = new \App\Models\OrderRule();
-            $activeRules = $ruleModel->getActiveRules();
-            foreach ($activeRules as $r) {
-                if ($r['category_id'] == $product['category_id']) {
-                    $allCats = class_exists('\Core\Cache') ? \Core\Cache::get('catalog_all_categories_list') : null;
-                    if ($allCats === null) {
-                        $categoryModel = new Category();
-                        $allCats = $categoryModel->getAll();
-                        if (class_exists('\Core\Cache')) {
-                            \Core\Cache::set('catalog_all_categories_list', $allCats, 3600);
-                        }
-                    }
-                    $catsById = [];
-                    foreach ($allCats as $ac) {
-                        $catsById[$ac['id']] = $ac;
-                    }
-
-                    $secondRulesRaw = json_decode($r['second_category_rules'], true) ?? [];
-                    $secondaryOffers = [];
-                    foreach ($secondRulesRaw as $scId => $sAmt) {
-                        $scId = (int)$scId;
-                        if (isset($catsById[$scId])) {
-                            $secondaryOffers[] = [
-                                'id' => $scId,
-                                'name' => $catsById[$scId]['name'],
-                                'slug' => $catsById[$scId]['slug'],
-                                'min_amount' => (float)$sAmt
-                            ];
-                        }
-                    }
-
-                    $categoryOfferRule = [
-                        'min_amount' => (float)$r['min_amount'],
-                        'main_category_name' => $r['category_name'],
-                        'secondary_offers' => $secondaryOffers
-                    ];
-                    break;
-                }
-            }
-        }
-
-        // Fetch Volume Pricing Tiers for this product (cached)
-        $tierCacheKey = 'prod_tiers_' . (int)$id;
-        $volumeTiers = class_exists('\Core\Cache') ? \Core\Cache::get($tierCacheKey) : null;
-        if ($volumeTiers === null) {
-            $db = \Core\Database::getInstance();
-            $tierStmt = $db->prepare("SELECT * FROM product_volume_tiers WHERE product_id = ? ORDER BY min_qty ASC");
-            $tierStmt->execute([$id]);
-            $volumeTiers = $tierStmt->fetchAll(\PDO::FETCH_ASSOC);
-            if (class_exists('\Core\Cache')) {
-                \Core\Cache::set($tierCacheKey, $volumeTiers, 1800);
-            }
         }
 
         $this->render('storefront/product_details', [

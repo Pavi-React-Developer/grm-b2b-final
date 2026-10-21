@@ -695,15 +695,21 @@
                                             <?php endif; ?>
 
                                             <!-- Card Footer: Helpful Feedback -->
+                                            <?php 
+                                                $votedReviewsSession = \Core\Session::get('voted_reviews') ?: [];
+                                                $votedChoice = $votedReviewsSession[$rev['id']] ?? null;
+                                            ?>
                                             <div class="pt-2.5 border-t border-gray-100 flex items-center justify-between mt-auto text-xs">
                                                 <span class="text-gray-400 font-medium text-[10px] sm:text-[11px]">Helpful?</span>
-                                                <div class="flex items-center gap-1.5">
-                                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold">
-                                                        <span>👍</span> <span><?= (int)($rev['helpful_yes'] ?? 0) ?></span>
-                                                    </span>
-                                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold">
-                                                        <span>👎</span> <span><?= (int)($rev['helpful_no'] ?? 0) ?></span>
-                                                    </span>
+                                                <div class="flex items-center gap-1.5" data-review-id="<?= $rev['id'] ?>" data-voted="<?= htmlspecialchars($votedChoice ?? '') ?>">
+                                                    <button type="button" data-vote-type="yes" onclick="voteReviewHelpful(<?= $rev['id'] ?>, 'yes', this)" 
+                                                        class="btn-vote-yes inline-flex items-center gap-1 px-2.5 py-1 <?= ($votedChoice === 'yes') ? 'bg-emerald-100 text-emerald-950 border-2 border-emerald-500 font-black shadow-xs' : 'bg-gray-50 hover:bg-emerald-50 text-gray-700 border border-gray-200 font-bold' ?> rounded-full text-[10px] sm:text-[11px] transition-all active:scale-95 cursor-pointer">
+                                                        <span>👍</span> <span class="vote-count-yes"><?= (int)($rev['helpful_yes'] ?? 0) ?></span>
+                                                    </button>
+                                                    <button type="button" data-vote-type="no" onclick="voteReviewHelpful(<?= $rev['id'] ?>, 'no', this)" 
+                                                        class="btn-vote-no inline-flex items-center gap-1 px-2.5 py-1 <?= ($votedChoice === 'no') ? 'bg-rose-100 text-rose-950 border-2 border-rose-500 font-black shadow-xs' : 'bg-gray-50 hover:bg-rose-50 text-gray-700 border border-gray-200 font-bold' ?> rounded-full text-[10px] sm:text-[11px] transition-all active:scale-95 cursor-pointer">
+                                                        <span>👎</span> <span class="vote-count-no"><?= (int)($rev['helpful_no'] ?? 0) ?></span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -769,6 +775,92 @@
                 if (nextBtn) nextBtn.disabled = (index >= cards.length - 1);
             }
         }
+
+        function applyVotedStyle(container, type) {
+            if (!container) return;
+            const btnYes = container.querySelector('.btn-vote-yes');
+            const btnNo = container.querySelector('.btn-vote-no');
+            
+            const defaultYesClass = 'btn-vote-yes inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 hover:bg-emerald-50 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold transition-all active:scale-95 cursor-pointer';
+            const activeYesClass  = 'btn-vote-yes inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-950 border-2 border-emerald-500 rounded-full text-[10px] sm:text-[11px] font-black shadow-xs transition-all active:scale-95 cursor-pointer';
+            
+            const defaultNoClass  = 'btn-vote-no inline-flex items-center gap-1 px-2.5 py-1 bg-gray-50 hover:bg-rose-50 text-gray-700 rounded-full border border-gray-200 text-[10px] sm:text-[11px] font-bold transition-all active:scale-95 cursor-pointer';
+            const activeNoClass   = 'btn-vote-no inline-flex items-center gap-1 px-2.5 py-1 bg-rose-100 text-rose-950 border-2 border-rose-500 rounded-full text-[10px] sm:text-[11px] font-black shadow-xs transition-all active:scale-95 cursor-pointer';
+
+            if (btnYes) {
+                btnYes.disabled = false;
+                btnYes.style.pointerEvents = 'auto';
+                btnYes.className = (type === 'yes') ? activeYesClass : defaultYesClass;
+            }
+            
+            if (btnNo) {
+                btnNo.disabled = false;
+                btnNo.style.pointerEvents = 'auto';
+                btnNo.className = (type === 'no') ? activeNoClass : defaultNoClass;
+            }
+        }
+
+        function voteReviewHelpful(reviewId, type, btnElem) {
+            const container = btnElem.closest('[data-review-id]');
+            if (!container) return;
+
+            if (container.dataset.loading === 'true') return;
+            container.dataset.loading = 'true';
+
+            const currentVoted = container.getAttribute('data-voted') || '';
+
+            const params = new URLSearchParams();
+            params.append('review_id', reviewId);
+            params.append('type', type);
+            params.append('current_vote', currentVoted);
+
+            fetch('<?= BASE_URL ?>/reviews/vote-helpful', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString()
+            })
+            .then(r => r.json())
+            .then(data => {
+                container.dataset.loading = 'false';
+                if (data.success) {
+                    const voteType = data.voted_type || '';
+
+                    document.querySelectorAll(`[data-review-id="${reviewId}"]`).forEach(c => {
+                        const yesElem = c.querySelector('.vote-count-yes');
+                        const noElem = c.querySelector('.vote-count-no');
+                        if (yesElem && data.yes !== undefined) yesElem.textContent = data.yes;
+                        if (noElem && data.no !== undefined) noElem.textContent = data.no;
+                        c.setAttribute('data-voted', voteType);
+                        applyVotedStyle(c, voteType);
+                    });
+
+                    if (voteType) {
+                        try { localStorage.setItem('voted_review_' + reviewId, voteType); } catch(e){}
+                    } else {
+                        try { localStorage.removeItem('voted_review_' + reviewId); } catch(e){}
+                    }
+                }
+            })
+            .catch(err => {
+                container.dataset.loading = 'false';
+                console.error(err);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('[data-review-id]').forEach(container => {
+                const reviewId = container.getAttribute('data-review-id');
+                const serverVoted = container.getAttribute('data-voted');
+                let localVoted = null;
+                try { localVoted = localStorage.getItem('voted_review_' + reviewId); } catch(e){}
+                
+                const activeVote = localVoted || serverVoted;
+                if (activeVote) {
+                    container.setAttribute('data-voted', activeVote);
+                    applyVotedStyle(container, activeVote);
+                }
+            });
+        });
         </script>
 
     </div>
@@ -1369,7 +1461,7 @@ function updateFabricMultiplierDisplay(mult) {
         badge.textContent = mult === 1 ? '1 Set (1x)' : `${mult} Sets (${mult}x)`;
     }
 
-    const reqMinPcs = MIN_PIECES;
+    const reqMinPcs = MIN_PIECES * mult;
     const reqMaxPcs = MAX_PIECES * mult;
     const reqBadge = document.getElementById('fabricRequiredPcs');
     if (reqBadge) reqBadge.textContent = `${reqMinPcs} Pcs`;
@@ -1389,6 +1481,32 @@ function adjustSetQty(setIndex, sizeName, delta) {
     const currentMult = getFabricQuantity();
     const currentMaxPieces = currentMult * MAX_PIECES;
 
+    // Calculate current pieces inside THIS specific container/set
+    const setSizes = setData.selected_sizes || [];
+    let otherSizesInThisSet = 0;
+    setSizes.forEach(s => {
+        if (s !== sizeName) {
+            otherSizesInThisSet += (parseInt(setData.sizes ? setData.sizes[s] : 0) || 0);
+        }
+    });
+
+    const projectedSetTotal = otherSizesInThisSet + newVal;
+
+    if (delta > 0 && projectedSetTotal > MAX_PIECES) {
+        if (typeof Swal !== 'undefined') {
+            const nextRollNotice = currentMult > 1 
+                ? `Please add more pieces to Roll #${setIndex === 1 ? 2 : 1} or the other rolls.` 
+                : `To order more pieces, please increase the Fabric Quantity.`;
+            Swal.fire({
+                icon: 'warning',
+                title: `Roll #${setIndex} is Full (${MAX_PIECES} Pcs)`,
+                text: `Roll #${setIndex} already has the maximum of ${MAX_PIECES} pieces. ${nextRollNotice}`,
+                confirmButtonColor: '#F25996'
+            });
+        }
+        return;
+    }
+
     // Calculate projected total across all sets
     let projectedTotal = 0;
     fabricSetsData.forEach((st, sIdx) => {
@@ -1406,8 +1524,8 @@ function adjustSetQty(setIndex, sizeName, delta) {
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'warning',
-                title: 'Maximum Pieces Limit Reached',
-                text: `Maximum ${currentMaxPieces} pieces allowed for Fabric Quantity ${currentMult}. To add more pieces, please increase the Fabric Quantity first.`,
+                title: 'Total Pieces Limit Reached',
+                text: `Maximum ${currentMaxPieces} pieces allowed for ${currentMult} Set(s). To add more pieces, please increase the Fabric Quantity.`,
                 confirmButtonColor: '#F25996'
             });
         }
@@ -1419,7 +1537,7 @@ function adjustSetQty(setIndex, sizeName, delta) {
     const input = document.getElementById(`qty_set_${setIndex}_${sizeName}`);
     if (input) {
         input.value = newVal;
-        input.max = currentMaxPieces;
+        input.max = MAX_PIECES;
     }
 
     const sub = document.getElementById(`sub_set_${setIndex}_${sizeName}`);
@@ -1446,6 +1564,31 @@ function onSetQtyInput(setIndex, sizeName, inp) {
     const currentMult = getFabricQuantity();
     const currentMaxPieces = currentMult * MAX_PIECES;
 
+    // Per-container capacity check
+    const setSizes = setData.selected_sizes || [];
+    let otherSizesInThisSet = 0;
+    setSizes.forEach(s => {
+        if (s !== sizeName) {
+            otherSizesInThisSet += (parseInt(setData.sizes ? setData.sizes[s] : 0) || 0);
+        }
+    });
+
+    if (otherSizesInThisSet + val > MAX_PIECES) {
+        val = Math.max(0, MAX_PIECES - otherSizesInThisSet);
+        inp.value = val;
+        if (typeof Swal !== 'undefined') {
+            const nextRollNotice = currentMult > 1 
+                ? `Please add more pieces to the other roll(s).` 
+                : `To order more pieces, please increase the Fabric Quantity.`;
+            Swal.fire({
+                icon: 'warning',
+                title: `Roll #${setIndex} is Full (${MAX_PIECES} Pcs)`,
+                text: `Roll #${setIndex} already has the maximum of ${MAX_PIECES} pieces. ${nextRollNotice}`,
+                confirmButtonColor: '#F25996'
+            });
+        }
+    }
+
     // Calculate projected total across all sets
     let projectedTotal = 0;
     fabricSetsData.forEach((st, sIdx) => {
@@ -1462,12 +1605,11 @@ function onSetQtyInput(setIndex, sizeName, inp) {
     if (projectedTotal > currentMaxPieces) {
         val = Math.max(0, val - (projectedTotal - currentMaxPieces));
         inp.value = val;
-        projectedTotal = currentMaxPieces;
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'warning',
                 title: 'Maximum Pieces Limit Reached',
-                text: `Maximum ${currentMaxPieces} pieces allowed for Fabric Quantity ${currentMult}. To add more pieces, please increase the Fabric Quantity first.`,
+                text: `Maximum ${currentMaxPieces} pieces allowed for Fabric Quantity ${currentMult}.`,
                 confirmButtonColor: '#F25996'
             });
         }
@@ -1505,7 +1647,7 @@ function updateSetBadge(setIndex) {
         badge.className = isMet 
             ? 'text-xs font-bold px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 whitespace-nowrap shadow-2xs'
             : 'text-xs font-bold px-2.5 py-1 rounded-xl bg-pink-50 text-[#F25996] border border-pink-200 whitespace-nowrap shadow-2xs';
-        badge.textContent = isMet ? `✅ ${setTotalPcs} Pcs` : `${setTotalPcs} / ${MIN_PIECES} Pcs`;
+        badge.textContent = isMet ? `✅ ${setTotalPcs} / ${MIN_PIECES} Pcs` : `⏳ ${setTotalPcs} / ${MIN_PIECES} Pcs`;
     }
 }
 
@@ -1522,6 +1664,23 @@ function toggleSetSize(setIdx, sizeName) {
         targetSet.selected_sizes = targetSet.selected_sizes.filter(s => s !== sizeName);
         targetSet.sizes[sizeName] = 0;
     } else {
+        const currentSetTotal = (targetSet.selected_sizes || []).reduce((a, s) => a + (parseInt(targetSet.sizes ? targetSet.sizes[s] : 0) || 0), 0);
+        if (currentSetTotal + limits.baseMin > MAX_PIECES) {
+            if (typeof Swal !== 'undefined') {
+                const currentMult = getFabricQuantity();
+                const nextRollNotice = currentMult > 1 
+                    ? `Please add this size to Roll #${setIdx === 1 ? 2 : 1} or the other rolls.` 
+                    : `To order more sizes, please increase the Fabric Quantity.`;
+                Swal.fire({
+                    icon: 'warning',
+                    title: `Roll #${setIdx} is Full (${MAX_PIECES} Pcs)`,
+                    text: `Adding Size ${sizeName} (${limits.baseMin} pcs) exceeds the ${MAX_PIECES} pcs limit for Roll #${setIdx}. ${nextRollNotice}`,
+                    confirmButtonColor: '#F25996'
+                });
+            }
+            return;
+        }
+
         const currentMult = getFabricQuantity();
         const currentMaxPieces = currentMult * MAX_PIECES;
         const currentTotal = Object.values(getSelectedSizes()).reduce((a, b) => a + b, 0);
@@ -1609,16 +1768,16 @@ function onFabricMultiplierChange(inp) {
     }
 
     // Update required pieces Min & Max labels dynamically
-    const reqMinPcs = MIN_PIECES;
+    const reqMinPcs = MIN_PIECES * mult;
     const reqMaxPcs = MAX_PIECES * mult;
     const reqBadge = document.getElementById('fabricRequiredPcs');
     if (reqBadge) reqBadge.textContent = `${reqMinPcs} Pcs`;
     const maxBadge = document.getElementById('fabricMaxPcs');
     if (maxBadge) maxBadge.textContent = `${reqMaxPcs} Pcs`;
 
-    // Also update tracker badges (Min: MIN_PIECES, Max: MAX_PIECES * mult)
+    // Also update tracker badges (Min: reqMinPcs, Max: reqMaxPcs)
     const summaryMin = document.getElementById('summaryMinPcsDisplay');
-    if (summaryMin) summaryMin.textContent = `${MIN_PIECES} Pcs`;
+    if (summaryMin) summaryMin.textContent = `${reqMinPcs} Pcs`;
     const summaryMax = document.getElementById('summaryMaxPcsDisplay');
     if (summaryMax) summaryMax.textContent = `${reqMaxPcs} Pcs`;
 
@@ -1660,11 +1819,14 @@ function toggleSizeVariant(sizeName) {
                 st.selected_sizes = st.selected_sizes.filter(s => s !== sizeName);
                 st.sizes[sizeName] = 0;
             } else {
-                if (!st.selected_sizes.includes(sizeName)) {
-                    st.selected_sizes.push(sizeName);
-                }
-                if (!st.sizes[sizeName] || st.sizes[sizeName] === 0) {
-                    st.sizes[sizeName] = limits.baseMin;
+                const currentSetTotal = (st.selected_sizes || []).reduce((a, s) => a + (parseInt(st.sizes ? st.sizes[s] : 0) || 0), 0);
+                if (currentSetTotal + limits.baseMin <= MAX_PIECES) {
+                    if (!st.selected_sizes.includes(sizeName)) {
+                        st.selected_sizes.push(sizeName);
+                    }
+                    if (!st.sizes[sizeName] || st.sizes[sizeName] === 0) {
+                        st.sizes[sizeName] = limits.baseMin;
+                    }
                 }
             }
         });
@@ -1680,6 +1842,22 @@ function toggleSizeVariant(sizeName) {
                 targetSet.selected_sizes = targetSet.selected_sizes.filter(s => s !== sizeName);
                 targetSet.sizes[sizeName] = 0;
             } else {
+                const currentSetTotal = (targetSet.selected_sizes || []).reduce((a, s) => a + (parseInt(targetSet.sizes ? targetSet.sizes[s] : 0) || 0), 0);
+                if (currentSetTotal + limits.baseMin > MAX_PIECES) {
+                    if (typeof Swal !== 'undefined') {
+                        const nextRollNotice = currentMult > 1 
+                            ? `Please add this size to Roll #${setIdx === 1 ? 2 : 1} or the other rolls.` 
+                            : `To order more sizes, please increase the Fabric Quantity.`;
+                        Swal.fire({
+                            icon: 'warning',
+                            title: `Roll #${setIdx} is Full (${MAX_PIECES} Pcs)`,
+                            text: `Adding Size ${sizeName} (${limits.baseMin} pcs) exceeds the ${MAX_PIECES} pcs limit for Roll #${setIdx}. ${nextRollNotice}`,
+                            confirmButtonColor: '#F25996'
+                        });
+                    }
+                    return;
+                }
+
                 const currentTotal = Object.values(getSelectedSizes()).reduce((a, b) => a + b, 0);
                 if (currentTotal + limits.baseMin > currentMaxPieces) {
                     if (typeof Swal !== 'undefined') {
@@ -1987,8 +2165,9 @@ function triggerRecalc() {
 }
 
 function renderCalculation(c, p, delivery) {
-    const effectiveMin = c.minimum_pieces || MIN_PIECES;
-    const effectiveMax = c.maximum_pieces || (MAX_PIECES * getFabricQuantity());
+    const mult = getFabricQuantity();
+    const effectiveMin = c.minimum_pieces || (MIN_PIECES * mult);
+    const effectiveMax = c.maximum_pieces || (MAX_PIECES * mult);
     const totalPieces = c.total_pieces || 0;
 
     // Piece Tracker Text & Progress (Matches Image 3)
@@ -2083,18 +2262,14 @@ function renderCalculation(c, p, delivery) {
         grandElem.textContent = `₹${Number(p.total).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
     }
 
-    const isOverStock = (getFabricQuantity() > FABRIC_STOCK) || !c.is_stock_sufficient;
+    const isOverStock = (mult > FABRIC_STOCK) || !c.is_stock_sufficient;
     const reqFabricElem = document.getElementById('summaryRequiredFabric');
     const reqFabricContainer = reqFabricElem ? reqFabricElem.parentElement : null;
     const statusBadge = document.getElementById('liveStatusBadge');
     const btnPay = document.getElementById('btnPayRazorpay');
     const btnProceed = document.getElementById('btnProceedCheckout');
     const errorBox = document.getElementById('errorAlertBox');
-
-    // Progress bar for minimum pieces
     const bar = document.getElementById('pieceProgressBar');
-    const pct = effectiveMax > 0 ? Math.min(100, Math.round((totalPieces / effectiveMax) * 100)) : 100;
-    if (bar) bar.style.width = pct + '%';
 
     const setBtnState = (enabled) => {
         [btnPay, btnProceed].forEach(btn => {
@@ -2109,6 +2284,22 @@ function renderCalculation(c, p, delivery) {
             }
         });
     };
+
+    // Check individual container status
+    let emptySet = null;
+    let incompleteSet = null;
+    let excessSet = null;
+    fabricSetsData.forEach((st, idx) => {
+        const sSizes = st.selected_sizes || [];
+        const setPcs = sSizes.reduce((a, sz) => a + (parseInt(st.sizes ? st.sizes[sz] : 0) || 0), 0);
+        if (setPcs === 0 && !emptySet) {
+            emptySet = { setIndex: idx + 1, setPcs: 0, needed: MIN_PIECES };
+        } else if (setPcs < MIN_PIECES && !incompleteSet) {
+            incompleteSet = { setIndex: idx + 1, setPcs: setPcs, needed: MIN_PIECES - setPcs };
+        } else if (setPcs > MAX_PIECES && !excessSet) {
+            excessSet = { setIndex: idx + 1, setPcs: setPcs, excess: setPcs - MAX_PIECES };
+        }
+    });
 
     if (isOverStock) {
         // Exceeded Fabric stock
@@ -2125,7 +2316,7 @@ function renderCalculation(c, p, delivery) {
                     <span class="text-base">⚠️</span>
                     <div>
                         <strong class="font-bold block mb-1">Fabric Stock Exceeded!</strong>
-                        <span>You selected <strong>${getFabricQuantity()} Sets</strong>, but only <strong>${FABRIC_STOCK} Qty</strong> are available in inventory. Please reduce the fabric set quantity.</span>
+                        <span>You selected <strong>${mult} Sets</strong>, but only <strong>${FABRIC_STOCK} Qty</strong> are available in inventory. Please reduce the fabric set quantity.</span>
                     </div>
                 </div>
             `;
@@ -2151,7 +2342,7 @@ function renderCalculation(c, p, delivery) {
                     <div>
                         <strong class="font-bold block mb-0.5 text-rose-900">Maximum ${effectiveMax} Pieces Allowed</strong>
                         <span class="text-rose-800 text-xs leading-relaxed">
-                            You currently have <strong>${totalPieces} pcs</strong> selected (${excess} pcs in excess). Maximum allowed is <strong>${effectiveMax} pcs</strong> for ${getFabricQuantity()} Set(s). Please reduce variant quantities to enable checkout.
+                            You currently have <strong>${totalPieces} pcs</strong> selected (${excess} pcs in excess). Maximum allowed is <strong>${effectiveMax} pcs</strong> for ${mult} Set(s). Please reduce variant quantities to enable checkout.
                         </span>
                     </div>
                 </div>
@@ -2161,24 +2352,63 @@ function renderCalculation(c, p, delivery) {
 
         setBtnState(false);
 
-    } else if (totalPieces < effectiveMin && totalPieces > 0) {
-        // Under minimum pieces - show clear message to take required pieces
-        const remainingPcs = effectiveMin - totalPieces;
-        if (bar) bar.className = 'h-full bg-[#F25996] transition-all duration-300';
-        if (reqFabricContainer) reqFabricContainer.className = 'flex items-center justify-between font-bold bg-pink-50/60 p-2.5 rounded-xl border border-pink-100 text-[#db2777]';
+    } else if (excessSet) {
+        // A single container has exceeded its capacity
+        if (bar) bar.className = 'h-full bg-rose-600 transition-all duration-300';
         if (statusBadge) {
-            statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0 whitespace-nowrap';
-            statusBadge.textContent = `⏳ Need ${remainingPcs} More Pcs`;
+            statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-300 shrink-0 whitespace-nowrap';
+            statusBadge.textContent = `❌ Roll #${excessSet.setIndex} Exceeds Limit`;
         }
 
         if (errorBox) {
             errorBox.innerHTML = `
                 <div class="flex items-start gap-2.5">
+                    <span class="text-base">⚠️</span>
+                    <div>
+                        <strong class="font-bold block mb-0.5 text-rose-900">Roll #${excessSet.setIndex} is Full (${MAX_PIECES} Pieces Max)</strong>
+                        <span class="text-rose-800 text-xs leading-relaxed">
+                            Roll #${excessSet.setIndex} has <strong>${excessSet.setPcs} pieces</strong>, but each roll can only hold up to <strong>${MAX_PIECES} pieces</strong> (${excessSet.excess} pcs extra). Please reduce pieces in Roll #${excessSet.setIndex}.
+                        </span>
+                    </div>
+                </div>
+            `;
+            errorBox.classList.remove('hidden');
+        }
+
+        setBtnState(false);
+
+    } else if (emptySet || incompleteSet || totalPieces < effectiveMin || !c.is_valid) {
+        // Under minimum pieces or an incomplete container
+        const targetProblem = emptySet || incompleteSet;
+        const remainingPcs = effectiveMin - totalPieces;
+        if (bar) bar.className = 'h-full bg-amber-400 transition-all duration-300';
+        if (reqFabricContainer) reqFabricContainer.className = 'flex items-center justify-between font-bold bg-amber-50/70 p-2.5 rounded-xl border border-amber-200 text-amber-900';
+        
+        let badgeMsg = `⏳ Need ${remainingPcs > 0 ? remainingPcs : 'More'} Pcs`;
+        if (targetProblem && targetProblem.needed > 0) {
+            badgeMsg = `⏳ Roll #${targetProblem.setIndex} Needs ${targetProblem.needed} More Pcs`;
+        }
+        
+        if (statusBadge) {
+            statusBadge.className = 'text-[10px] sm:text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 shrink-0 whitespace-nowrap';
+            statusBadge.textContent = badgeMsg;
+        }
+
+        if (errorBox) {
+            let detailMsg = `Minimum <strong>${effectiveMin} pieces</strong> required across all ${mult} roll containers (${MIN_PIECES} pieces in each container). You currently have <strong>${totalPieces} pieces</strong> selected.`;
+            if (targetProblem) {
+                detailMsg += ` Roll #${targetProblem.setIndex} currently has ${targetProblem.setPcs} pcs and needs <strong>${targetProblem.needed} more pcs</strong> to meet its required ${MIN_PIECES} pcs.`;
+            } else if (remainingPcs > 0) {
+                detailMsg += ` Please add <strong>${remainingPcs} more pcs</strong> from the size variants to proceed to checkout.`;
+            }
+
+            errorBox.innerHTML = `
+                <div class="flex items-start gap-2.5">
                     <span class="text-base">⏳</span>
                     <div>
-                        <strong class="font-bold block mb-0.5 text-pink-900">Minimum ${effectiveMin} Pieces Required to Enable Checkout</strong>
-                        <span class="text-pink-800 text-xs leading-relaxed">
-                            You currently have <strong>${totalPieces} pcs</strong> selected. Please add <strong>${remainingPcs} more pcs</strong> from the sizes above to proceed to checkout.
+                        <strong class="font-bold block mb-0.5 text-amber-900">Total ${effectiveMin} Pieces Required to Enable Checkout</strong>
+                        <span class="text-amber-800 text-xs leading-relaxed">
+                            ${detailMsg}
                         </span>
                     </div>
                 </div>
@@ -2292,20 +2522,42 @@ function proceedToCheckout() {
     }
 
     const mult = fabricQuantity;
-    const effectiveMin = MIN_PIECES;
+    const effectiveMin = MIN_PIECES * mult;
     const effectiveMax = MAX_PIECES * mult;
 
-    // Check if any individual set is completely empty (only if multiple sets were added)
-    if (fabricSetsData.length > 1) {
-        const emptySet = fabricSetsData.find(st => {
-            const setSizes = st.selected_sizes || [];
-            const setPcs = setSizes.reduce((a, sz) => a + (parseInt(st.sizes ? st.sizes[sz] : 0) || 0), 0);
-            return setPcs === 0;
-        });
-        if (emptySet) {
+    // Check each container individually
+    for (let i = 0; i < fabricSetsData.length; i++) {
+        const st = fabricSetsData[i];
+        const setNum = st.set_id || (i + 1);
+        const setSizes = st.selected_sizes || [];
+        const setPcs = setSizes.reduce((a, sz) => a + (parseInt(st.sizes ? st.sizes[sz] : 0) || 0), 0);
+        
+        if (setPcs === 0) {
             Swal.fire({
-                title: `Set #${emptySet.set_id} is Empty`,
-                text: `Please allocate pieces for Fabric Set #${emptySet.set_id} before proceeding to checkout.`,
+                title: `Roll #${setNum} is Empty`,
+                text: `Please select ${MIN_PIECES} pieces for Roll #${setNum} before proceeding to checkout.`,
+                icon: 'warning',
+                confirmButtonColor: '#F25996'
+            });
+            return;
+        }
+
+        if (setPcs < MIN_PIECES) {
+            const need = MIN_PIECES - setPcs;
+            Swal.fire({
+                title: `Roll #${setNum} Needs More Pieces`,
+                text: `Roll #${setNum} currently has ${setPcs} pieces, but needs ${MIN_PIECES} pieces (please add ${need} more pcs to this roll).`,
+                icon: 'warning',
+                confirmButtonColor: '#F25996'
+            });
+            return;
+        }
+
+        if (setPcs > MAX_PIECES) {
+            const excess = setPcs - MAX_PIECES;
+            Swal.fire({
+                title: `Roll #${setNum} is Over Limit`,
+                text: `Roll #${setNum} has ${setPcs} pieces (${excess} pcs extra). Maximum allowed is ${MAX_PIECES} pieces per roll.`,
                 icon: 'warning',
                 confirmButtonColor: '#F25996'
             });
@@ -2314,9 +2566,10 @@ function proceedToCheckout() {
     }
 
     if (totalPcs < effectiveMin) {
+        const remaining = effectiveMin - totalPcs;
         Swal.fire({
             title: 'Minimum Pieces Required',
-            text: `Please select at least ${effectiveMin} total pieces to continue (currently ${totalPcs} pcs).`,
+            text: `Please select at least ${effectiveMin} total pieces (${MIN_PIECES} pcs per roll × ${mult} rolls) to continue (currently ${totalPcs} pcs, need ${remaining} more pcs).`,
             icon: 'warning',
             confirmButtonColor: '#F25996'
         });
