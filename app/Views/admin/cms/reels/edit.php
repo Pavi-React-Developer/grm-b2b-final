@@ -62,7 +62,7 @@ $items = !empty($content['items']) && is_array($content['items']) ? $content['it
         </div>
 
         <!-- Section Dimensions & Responsive Card Counts -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5 mb-6">
 
             <!-- Desktop Height in VH -->
             <div class="bg-gray-50/70 p-4 rounded-2xl border border-gray-100 flex flex-col justify-between">
@@ -100,7 +100,20 @@ $items = !empty($content['items']) && is_array($content['items']) ? $content['it
                     <input type="text" inputmode="decimal" pattern="[0-9.]*" name="desktop_count" value="<?= htmlspecialchars((string)$deskCols) ?>" required class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:ring-2 focus:ring-[#F25996]/30 outline-none" placeholder="4">
                     <span class="text-xs font-bold text-gray-500">Cards</span>
                 </div>
-                <p class="text-[11px] text-gray-400 mt-1.5">Cards visible on desktop (e.g. 3, 4, 5)</p>
+                <p class="text-[11px] text-gray-400 mt-1.5">Cards visible on desktop (e.g. 4, 5)</p>
+            </div>
+
+            <!-- Tablet Count -->
+            <div class="bg-white p-4 rounded-2xl border border-gray-100 flex flex-col justify-between shadow-2xs">
+                <div class="flex items-center justify-between mb-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-gray-700">Tablet Count</label>
+                    <span class="text-[10px] bg-purple-50 text-purple-700 px-2 py-0.5 rounded font-black">Tablet View</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="text" inputmode="decimal" pattern="[0-9.]*" name="tablet_view_count" value="<?= htmlspecialchars((string)($tabCols ?: 3)) ?>" required class="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-sm font-bold text-gray-800 focus:ring-2 focus:ring-[#F25996]/30 outline-none" placeholder="3">
+                    <span class="text-xs font-bold text-gray-500">Cards</span>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-1.5">Cards visible on tablet (e.g. 3)</p>
             </div>
 
             <!-- Mobile Count -->
@@ -119,19 +132,18 @@ $items = !empty($content['items']) && is_array($content['items']) ? $content['it
 
         <!-- Video Player Controls -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-gray-100">
-                <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100/70 transition-colors">
-                    <input type="checkbox" name="autoplay" value="1" <?= $autoplay ? 'checked' : '' ?> class="w-4 h-4 text-[#F25996] rounded border-gray-300 focus:ring-[#F25996]">
-                    <span class="text-xs font-semibold text-gray-700">Autoplay on Scroll / Hover</span>
-                </label>
-                <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100/70 transition-colors">
-                    <input type="checkbox" name="muted" value="1" <?= $muted ? 'checked' : '' ?> class="w-4 h-4 text-[#F25996] rounded border-gray-300 focus:ring-[#F25996]">
-                    <span class="text-xs font-semibold text-gray-700">Muted by Default</span>
-                </label>
-                <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100/70 transition-colors">
-                    <input type="checkbox" name="loop" value="1" <?= $loop ? 'checked' : '' ?> class="w-4 h-4 text-[#F25996] rounded border-gray-300 focus:ring-[#F25996]">
-                    <span class="text-xs font-semibold text-gray-700">Continuous Loop Playback</span>
-                </label>
-            </div>
+            <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100/70 transition-colors">
+                <input type="checkbox" name="autoplay" value="1" <?= $autoplay ? 'checked' : '' ?> class="w-4 h-4 text-[#F25996] rounded border-gray-300 focus:ring-[#F25996]">
+                <span class="text-xs font-semibold text-gray-700">Autoplay on Scroll / Hover</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100/70 transition-colors">
+                <input type="checkbox" name="muted" value="1" <?= $muted ? 'checked' : '' ?> class="w-4 h-4 text-[#F25996] rounded border-gray-300 focus:ring-[#F25996]">
+                <span class="text-xs font-semibold text-gray-700">Muted by Default</span>
+            </label>
+            <label class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100/70 transition-colors">
+                <input type="checkbox" name="loop" value="1" <?= $loop ? 'checked' : '' ?> class="w-4 h-4 text-[#F25996] rounded border-gray-300 focus:ring-[#F25996]">
+                <span class="text-xs font-semibold text-gray-700">Continuous Loop Playback</span>
+            </label>
         </div>
     </div>
 
