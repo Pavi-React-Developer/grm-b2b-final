@@ -81,7 +81,7 @@ if ($hasDynamicNavbar) {
     </script>
 
     <!-- Compiled Tailwind CSS (Fast, Minified, Fully Pre-Rendered) -->
-    <link rel="stylesheet" href="<?= BASE_URL ?>/css/app.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/app.css?v=<?= defined('APP_VERSION') ? APP_VERSION : '1.0.0' ?>">
     
     <?php if (!empty($isPreview)): ?>
     <!-- Tailwind CDN only for CMS Live Preview Editor -->

@@ -57,6 +57,55 @@ if (!function_exists('getAnnouncementIcon')) {
     }
 }
 
+// Helper to format announcement text supporting highlights, badges, pills, and bold
+if (!function_exists('formatAnnouncementText')) {
+    function formatAnnouncementText($text) {
+        if (empty($text)) return '';
+
+        // 1. [highlight]text[/highlight] -> Radiant Gold / Yellow Accent
+        $formatted = preg_replace(
+            '/\[highlight\](.*?)\[\/highlight\]/is', 
+            '<span class="text-yellow-300 font-extrabold drop-shadow-sm tracking-wide">$1</span>', 
+            $text
+        );
+
+        // 2. [badge]text[/badge] -> Solid White Capsule Badge with Pink Text
+        $formatted = preg_replace(
+            '/\[badge\](.*?)\[\/badge\]/is', 
+            '<span class="inline-flex items-center px-2.5 py-0.5 mx-1.5 rounded-full text-xs font-black bg-white text-[#f25996] shadow-sm tracking-wider uppercase align-middle leading-normal">$1</span>', 
+            $formatted
+        );
+
+        // 3. [pill]text[/pill] -> Semi-transparent Glassmorphic Badge
+        $formatted = preg_replace(
+            '/\[pill\](.*?)\[\/pill\]/is', 
+            '<span class="inline-flex items-center px-2 py-0.5 mx-1 rounded-md text-xs font-bold bg-white/20 text-white border border-white/30 backdrop-blur-sm align-middle tracking-wide leading-normal">$1</span>', 
+            $formatted
+        );
+
+        // 4. [underline]text[/underline] -> Yellow Accent Underline
+        $formatted = preg_replace(
+            '/\[underline\](.*?)\[\/underline\]/is', 
+            '<span class="underline decoration-yellow-300 decoration-2 underline-offset-4 font-bold">$1</span>', 
+            $formatted
+        );
+
+        // 5. **text** -> Bold White Text
+        $formatted = preg_replace(
+            '/\*\*(.*?)\*\*/is', 
+            '<strong class="font-bold text-white tracking-wide">$1</strong>', 
+            $formatted
+        );
+
+        // Disallow dangerous event handlers
+        $formatted = preg_replace('/<([a-z]+)[^>]*?(on\w+\s*=)[^>]*?>/i', '<$1>', $formatted);
+
+        // Allow safe inline HTML tags
+        $allowedTags = '<span><strong><b><em><mark><a><small><font><u><i>';
+        return strip_tags($formatted, $allowedTags);
+    }
+}
+
 // Single announcement pass duration across the screen (ultra-slow, graceful drift ~50s-65s)
 $passDuration = max(50, (int)$speed * 15);
 ?>
@@ -93,7 +142,8 @@ $passDuration = max(50, (int)$speed * 15);
     transform: translate3d(0, -50%, 0);
     will-change: left, transform;
     font-size: <?= (int)$fontSize ?>px;
-    font-weight: 500;
+    font-weight: 600;
+    letter-spacing: 0.02em;
     display: none;
 }
 
@@ -156,12 +206,12 @@ $passDuration = max(50, (int)$speed * 15);
                             <?php if (!empty($item['cta_url'])): ?>
                                 <a href="<?= htmlspecialchars($item['cta_url']) ?>" class="hover:underline inline-flex items-center gap-2">
                                     <?= getAnnouncementIcon($item['icon'] ?? 'none') ?>
-                                    <span><?= htmlspecialchars($item['text']) ?></span>
+                                    <span><?= formatAnnouncementText($item['text']) ?></span>
                                 </a>
                             <?php else: ?>
                                 <span class="inline-flex items-center gap-2">
                                     <?= getAnnouncementIcon($item['icon'] ?? 'none') ?>
-                                    <span><?= htmlspecialchars($item['text']) ?></span>
+                                    <span><?= formatAnnouncementText($item['text']) ?></span>
                                 </span>
                             <?php endif; ?>
                         </div>
@@ -207,17 +257,17 @@ $passDuration = max(50, (int)$speed * 15);
                 <!-- Smooth Fade Transition -->
                 <div class="w-full overflow-hidden flex items-center justify-center relative h-full" id="fadeContainer_<?= $id ?>">
                     <?php if (count($activeAnnouncements) === 1): ?>
-                        <div class="grm-topbar-pulse flex items-center justify-center font-medium tracking-wide text-center px-4" style="font-size: <?= (int)$fontSize ?>px;">
+                        <div class="grm-topbar-pulse flex items-center justify-center font-semibold tracking-wide text-center px-4" style="font-size: <?= (int)$fontSize ?>px;">
                             <?php $item = $activeAnnouncements[0]; ?>
                             <?php if (!empty($item['cta_url'])): ?>
                                 <a href="<?= htmlspecialchars($item['cta_url']) ?>" class="hover:underline inline-flex items-center gap-2">
                                     <?= getAnnouncementIcon($item['icon'] ?? 'none') ?>
-                                    <span><?= htmlspecialchars($item['text']) ?></span>
+                                    <span><?= formatAnnouncementText($item['text']) ?></span>
                                 </a>
                             <?php else: ?>
                                 <span class="inline-flex items-center gap-2">
                                     <?= getAnnouncementIcon($item['icon'] ?? 'none') ?>
-                                    <span><?= htmlspecialchars($item['text']) ?></span>
+                                    <span><?= formatAnnouncementText($item['text']) ?></span>
                                 </span>
                             <?php endif; ?>
                         </div>
@@ -226,14 +276,14 @@ $passDuration = max(50, (int)$speed * 15);
                             <?php foreach ($activeAnnouncements as $idx => $item): ?>
                                 <div class="topbar-fade-item-<?= $id ?> <?= $idx === 0 ? 'active' : '' ?>" data-fade="<?= $idx ?>">
                                     <?php if (!empty($item['cta_url'])): ?>
-                                        <a href="<?= htmlspecialchars($item['cta_url']) ?>" class="hover:underline inline-flex items-center gap-2 font-medium tracking-wide text-center px-4" style="font-size: <?= (int)$fontSize ?>px;">
-                                            <?= getAnnouncementIcon($item['icon'] ?? 'none') ?>
-                                            <span><?= htmlspecialchars($item['text']) ?></span>
+                                        <a href="<?= htmlspecialchars($item['cta_url']) ?>" class="hover:underline inline-flex items-center gap-2 font-semibold tracking-wide text-center px-4" style="font-size: <?= (int)$fontSize ?>px;">
+                                             <?= getAnnouncementIcon($item['icon'] ?? 'none') ?>
+                                            <span><?= formatAnnouncementText($item['text']) ?></span>
                                         </a>
                                     <?php else: ?>
-                                        <span class="inline-flex items-center gap-2 font-medium tracking-wide text-center px-4" style="font-size: <?= (int)$fontSize ?>px;">
+                                        <span class="inline-flex items-center gap-2 font-semibold tracking-wide text-center px-4" style="font-size: <?= (int)$fontSize ?>px;">
                                             <?= getAnnouncementIcon($item['icon'] ?? 'none') ?>
-                                            <span><?= htmlspecialchars($item['text']) ?></span>
+                                            <span><?= formatAnnouncementText($item['text']) ?></span>
                                         </span>
                                     <?php endif; ?>
                                 </div>
@@ -278,14 +328,14 @@ $passDuration = max(50, (int)$speed * 15);
                 <div class="flex items-center justify-center w-full h-full px-4 overflow-hidden">
                     <?php $singleItem = $activeAnnouncements[0]; ?>
                     <?php if (!empty($singleItem['cta_url'])): ?>
-                        <a href="<?= htmlspecialchars($singleItem['cta_url']) ?>" class="hover:underline inline-flex items-center justify-center gap-2 text-center font-medium tracking-wide truncate max-w-full" style="font-size: <?= (int)$fontSize ?>px;">
+                        <a href="<?= htmlspecialchars($singleItem['cta_url']) ?>" class="hover:underline inline-flex items-center justify-center gap-2 text-center font-semibold tracking-wide truncate max-w-full" style="font-size: <?= (int)$fontSize ?>px;">
                             <?= getAnnouncementIcon($singleItem['icon'] ?? 'none') ?>
-                            <span class="truncate"><?= htmlspecialchars($singleItem['text']) ?></span>
+                            <span class="truncate"><?= formatAnnouncementText($singleItem['text']) ?></span>
                         </a>
                     <?php else: ?>
-                        <span class="inline-flex items-center justify-center gap-2 text-center font-medium tracking-wide truncate max-w-full" style="font-size: <?= (int)$fontSize ?>px;">
+                        <span class="inline-flex items-center justify-center gap-2 text-center font-semibold tracking-wide truncate max-w-full" style="font-size: <?= (int)$fontSize ?>px;">
                             <?= getAnnouncementIcon($singleItem['icon'] ?? 'none') ?>
-                            <span class="truncate"><?= htmlspecialchars($singleItem['text']) ?></span>
+                            <span class="truncate"><?= formatAnnouncementText($singleItem['text']) ?></span>
                         </span>
                     <?php endif; ?>
                 </div>

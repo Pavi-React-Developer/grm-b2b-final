@@ -308,8 +308,8 @@ if (empty($carouselCategories) && isset($categories) && is_array($categories)) {
                 <!-- Slider Container -->
                 <div class="relative group/carousel pb-1 sm:pb-2" id="track_container_<?= $id ?>">
                     
-                    <!-- Track -->
-                    <div class="overflow-hidden touch-pan-y" id="track_<?= $id ?>">
+                    <!-- Track with touch-action pan-y -->
+                    <div class="overflow-hidden touch-pan-y" id="track_<?= $id ?>" style="touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; overscroll-behavior-y: auto;">
                         <div class="flex transition-transform duration-500 ease-out" id="inner_<?= $id ?>" style="transform: translateX(0%);">
                             <?php if (empty($carouselCategories)): ?>
                                 <div class="w-full py-20 text-center text-gray-500 bg-white/50 rounded-2xl">
@@ -350,10 +350,10 @@ if (empty($carouselCategories) && isset($categories) && is_array($categories)) {
 
                     <!-- Arrows -->
                     <?php if ($show_arrows && count($carouselCategories) > 1): ?>
-                        <button id="prev_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:cursor-not-allowed z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
+                        <button id="prev_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
                         </button>
-                        <button id="next_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:cursor-not-allowed z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
+                        <button id="next_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
                         </button>
                     <?php endif; ?>
@@ -371,7 +371,7 @@ if (empty($carouselCategories) && isset($categories) && is_array($categories)) {
     </div>
 </div>
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+function initCategoryCarousel_<?= $id ?>() {
     const track = document.getElementById('track_<?= $id ?>');
     const inner = document.getElementById('inner_<?= $id ?>');
     if (!inner || !track) return;
@@ -424,6 +424,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 prevBtn.disabled = currentIndex === 0;
                 prevBtn.style.opacity = currentIndex === 0 ? '0.35' : '1';
                 prevBtn.style.cursor = currentIndex === 0 ? 'not-allowed' : 'pointer';
+                prevBtn.style.pointerEvents = currentIndex === 0 ? 'none' : 'auto';
             }
         }
         if (nextBtn) {
@@ -434,6 +435,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 nextBtn.disabled = currentIndex >= maxIndex;
                 nextBtn.style.opacity = currentIndex >= maxIndex ? '0.35' : '1';
                 nextBtn.style.cursor = currentIndex >= maxIndex ? 'not-allowed' : 'pointer';
+                nextBtn.style.pointerEvents = currentIndex >= maxIndex ? 'none' : 'auto';
             }
         }
         
@@ -510,33 +512,38 @@ document.addEventListener('DOMContentLoaded', function() {
         manageAutoPlay();
     });
 
-    // Touch swipe support for smooth mobile interaction
+    // Touch swipe support with vertical scroll protection
     let touchStartX = 0;
-    let touchEndX = 0;
+    let touchStartY = 0;
 
     track.addEventListener('touchstart', (e) => {
         if (autoPlayInterval) clearInterval(autoPlayInterval);
-        touchStartX = e.changedTouches[0].screenX;
+        if (e.changedTouches && e.changedTouches[0]) {
+            touchStartX = e.changedTouches[0].clientX;
+            touchStartY = e.changedTouches[0].clientY;
+        }
     }, {passive: true});
 
     track.addEventListener('touchend', (e) => {
-        touchEndX = e.changedTouches[0].screenX;
-        handleSwipe();
-        manageAutoPlay();
-    }, {passive: true});
-
-    function handleSwipe() {
-        const diff = touchStartX - touchEndX;
-        if (Math.abs(diff) > 40) {
-            if (diff > 0 && currentIndex < maxIndex) {
-                currentIndex++;
-                updateSlider();
-            } else if (diff < 0 && currentIndex > 0) {
-                currentIndex--;
-                updateSlider();
+        if (e.changedTouches && e.changedTouches[0]) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const diffX = touchStartX - touchEndX;
+            const diffY = touchStartY - touchEndY;
+            // If gesture is vertical, allow smooth vertical scroll without switching slides
+            if (Math.abs(diffY) > Math.abs(diffX)) return;
+            if (Math.abs(diffX) > 40) {
+                if (diffX > 0 && currentIndex < maxIndex) {
+                    currentIndex++;
+                    updateSlider();
+                } else if (diffX < 0 && currentIndex > 0) {
+                    currentIndex--;
+                    updateSlider();
+                }
             }
         }
-    }
+        manageAutoPlay();
+    }, {passive: true});
 
     // Auto-play logic for mobile only
     let autoPlayInterval;
@@ -562,5 +569,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize autoplay
     manageAutoPlay();
-});
+}
+
+// Resilient initialization: execute immediately if DOM is ready, otherwise on DOMContentLoaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCategoryCarousel_<?= $id ?>);
+} else {
+    initCategoryCarousel_<?= $id ?>();
+}
+window.addEventListener('load', initCategoryCarousel_<?= $id ?>);
 </script>

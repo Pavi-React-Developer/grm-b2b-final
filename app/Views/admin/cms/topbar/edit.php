@@ -120,12 +120,12 @@ $socialSvgMap = [
 
                     <div>
                         <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">BAR HEIGHT (PX)</label>
-                        <input type="number" id="barHeightInput" name="height" value="<?= (int)$height ?>" min="28" max="70" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:border-[#0b3c7c] outline-none transition-colors text-sm">
+                        <input type="number" id="barHeightInput" name="height" value="<?= (int)$height ?>" min="28" max="90" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:border-[#0b3c7c] outline-none transition-colors text-sm">
                     </div>
 
                     <div>
                         <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">FONT SIZE (PX)</label>
-                        <input type="number" id="fontSizeInput" name="font_size" value="<?= (int)$fontSize ?>" min="10" max="20" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:border-[#0b3c7c] outline-none transition-colors text-sm">
+                        <input type="number" id="fontSizeInput" name="font_size" value="<?= (int)$fontSize ?>" min="10" max="32" class="w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:border-[#0b3c7c] outline-none transition-colors text-sm">
                     </div>
 
                     <div>
@@ -185,6 +185,14 @@ $socialSvgMap = [
                             <div class="md:col-span-6">
                                 <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">ANNOUNCEMENT TEXT *</label>
                                 <input type="text" name="announcement_text[]" value="<?= htmlspecialchars($item['text'] ?? '') ?>" placeholder="e.g. Free Shipping on orders over $50" required class="announcement-input w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:border-[#0b3c7c] outline-none transition-colors text-sm">
+                                <div class="mt-2 text-xs text-gray-500 flex flex-wrap items-center gap-1.5">
+                                    <span class="font-bold text-gray-600 text-[11px]">Click to apply:</span>
+                                    <button type="button" data-tag-open="[highlight]" data-tag-close="[/highlight]" data-tag-default="Text" class="tag-insert-btn bg-yellow-100 hover:bg-yellow-200 active:scale-95 text-yellow-900 border border-yellow-300/80 px-2 py-0.5 rounded font-mono text-[11px] transition-all cursor-pointer font-semibold shadow-xs" title="Highlight in vibrant yellow">[highlight]Text[/highlight]</button>
+                                    <button type="button" data-tag-open="[badge]" data-tag-close="[/badge]" data-tag-default="Badge" class="tag-insert-btn bg-pink-100 hover:bg-pink-200 active:scale-95 text-pink-800 border border-pink-300/80 px-2 py-0.5 rounded font-mono text-[11px] transition-all cursor-pointer font-semibold shadow-xs" title="Wrap in white capsule badge">[badge]Badge[/badge]</button>
+                                    <button type="button" data-tag-open="[pill]" data-tag-close="[/pill]" data-tag-default="Pill" class="tag-insert-btn bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 border border-gray-300 px-2 py-0.5 rounded font-mono text-[11px] transition-all cursor-pointer font-semibold shadow-xs" title="Wrap in frosted glass pill">[pill]Pill[/pill]</button>
+                                    <button type="button" data-tag-open="**" data-tag-close="**" data-tag-default="Bold" class="tag-insert-btn bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 border border-gray-300 px-2 py-0.5 rounded font-mono text-[11px] transition-all cursor-pointer font-semibold shadow-xs" title="Make text bold">**Bold**</button>
+                                    <button type="button" data-tag-open="[underline]" data-tag-close="[/underline]" data-tag-default="Text" class="tag-insert-btn bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 border border-gray-300 px-2 py-0.5 rounded font-mono text-[11px] transition-all cursor-pointer font-semibold shadow-xs" title="Underline text">[underline]Text[/underline]</button>
+                                </div>
                             </div>
                             <div class="md:col-span-3">
                                 <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">CLICKABLE LINK URL (OPTIONAL)</label>
@@ -270,6 +278,18 @@ document.addEventListener('DOMContentLoaded', function() {
         return div.innerHTML;
     }
 
+    function parseLiveText(raw) {
+        if (!raw) return '';
+        let s = escapeHtml(raw);
+
+        s = s.replace(/\[highlight\](.*?)\[\/highlight\]/gi, '<span class="text-yellow-300 font-extrabold drop-shadow-sm tracking-wide">$1</span>');
+        s = s.replace(/\[badge\](.*?)\[\/badge\]/gi, '<span class="inline-flex items-center px-2 py-0.5 mx-1.5 rounded-full text-xs font-black bg-white text-[#f25996] shadow-sm uppercase leading-normal align-middle">$1</span>');
+        s = s.replace(/\[pill\](.*?)\[\/pill\]/gi, '<span class="inline-flex items-center px-2 py-0.5 mx-1 rounded-md text-xs font-bold bg-white/20 text-white border border-white/30 backdrop-blur-sm align-middle leading-normal">$1</span>');
+        s = s.replace(/\[underline\](.*?)\[\/underline\]/gi, '<span class="underline decoration-yellow-300 decoration-2 underline-offset-4 font-bold">$1</span>');
+        s = s.replace(/\*\*(.*?)\*\*/gi, '<strong class="font-bold text-white tracking-wide">$1</strong>');
+        return s;
+    }
+
     function updateLivePreview() {
         if (livePreviewContainer) {
             livePreviewContainer.style.backgroundColor = bgColorPicker.value;
@@ -301,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const rawText = (firstInput && firstInput.value) ? firstInput.value : 'Announcement text preview...';
             const iconKey = firstSelect ? firstSelect.value : 'none';
             const emoji = iconEmojis[iconKey] || '';
-            livePreviewText.innerHTML = (emoji ? '<span class="mr-1.5">' + emoji + '</span>' : '') + '<span>' + escapeHtml(rawText) + '</span>';
+            livePreviewText.innerHTML = (emoji ? '<span class="mr-1.5">' + emoji + '</span>' : '') + '<span>' + parseLiveText(rawText) + '</span>';
         }
     }
 
@@ -365,6 +385,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="md:col-span-6">
                         <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">ANNOUNCEMENT TEXT *</label>
                         <input type="text" name="announcement_text[]" value="" placeholder="e.g. Extra 10% Off on Bulk Orders" required class="announcement-input w-full border border-gray-200 rounded-lg px-4 py-2.5 focus:border-[#0b3c7c] outline-none transition-colors text-sm">
+                        <div class="mt-2 text-xs text-gray-500 flex flex-wrap items-center gap-1.5">
+                            <span class="font-bold text-gray-600 text-[11px]">Click to apply:</span>
+                            <button type="button" data-tag-open="[highlight]" data-tag-close="[/highlight]" data-tag-default="Text" class="tag-insert-btn bg-yellow-100 hover:bg-yellow-200 active:scale-95 text-yellow-900 border border-yellow-300/80 px-2 py-0.5 rounded font-mono text-[11px] transition-all cursor-pointer font-semibold shadow-xs" title="Highlight in vibrant yellow">[highlight]Text[/highlight]</button>
+                            <button type="button" data-tag-open="[badge]" data-tag-close="[/badge]" data-tag-default="Badge" class="tag-insert-btn bg-pink-100 hover:bg-pink-200 active:scale-95 text-pink-800 border border-pink-300/80 px-2 py-0.5 rounded font-mono text-[11px] transition-all cursor-pointer font-semibold shadow-xs" title="Wrap in white capsule badge">[badge]Badge[/badge]</button>
+                            <button type="button" data-tag-open="[pill]" data-tag-close="[/pill]" data-tag-default="Pill" class="tag-insert-btn bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 border border-gray-300 px-2 py-0.5 rounded font-mono text-[11px] transition-all cursor-pointer font-semibold shadow-xs" title="Wrap in frosted glass pill">[pill]Pill[/pill]</button>
+                            <button type="button" data-tag-open="**" data-tag-close="**" data-tag-default="Bold" class="tag-insert-btn bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 border border-gray-300 px-2 py-0.5 rounded font-mono text-[11px] transition-all cursor-pointer font-semibold shadow-xs" title="Make text bold">**Bold**</button>
+                            <button type="button" data-tag-open="[underline]" data-tag-close="[/underline]" data-tag-default="Text" class="tag-insert-btn bg-gray-100 hover:bg-gray-200 active:scale-95 text-gray-800 border border-gray-300 px-2 py-0.5 rounded font-mono text-[11px] transition-all cursor-pointer font-semibold shadow-xs" title="Underline text">[underline]Text[/underline]</button>
+                        </div>
                     </div>
                     <div class="md:col-span-3">
                         <label class="block text-xs font-serif font-bold text-gray-500 uppercase tracking-wider mb-2">CLICKABLE LINK URL (OPTIONAL)</label>
@@ -403,6 +431,43 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Interactive Tag Insertion Handler
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.tag-insert-btn');
+        if (!btn) return;
+
+        e.preventDefault();
+        const block = btn.closest('.announcement-item-block');
+        if (!block) return;
+        const input = block.querySelector('.announcement-input');
+        if (!input) return;
+
+        const tagOpen = btn.getAttribute('data-tag-open') || '';
+        const tagClose = btn.getAttribute('data-tag-close') || '';
+
+        const start = input.selectionStart || 0;
+        const end = input.selectionEnd || 0;
+        const val = input.value;
+
+        const selectedText = val.substring(start, end);
+
+        if (selectedText.length > 0) {
+            const replacement = tagOpen + selectedText + tagClose;
+            input.value = val.substring(0, start) + replacement + val.substring(end);
+            input.focus();
+            input.setSelectionRange(start, start + replacement.length);
+        } else {
+            // No selection: insert open and close tags cleanly without dummy words
+            const replacement = tagOpen + tagClose;
+            input.value = val.substring(0, start) + replacement + val.substring(end);
+            input.focus();
+            // Place cursor right inside the tags so anything user types is highlighted!
+            input.setSelectionRange(start + tagOpen.length, start + tagOpen.length);
+        }
+
+        updateLivePreview();
+    });
 
     updateLivePreview();
 });

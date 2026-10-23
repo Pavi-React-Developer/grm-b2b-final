@@ -606,20 +606,20 @@
                                     <?= htmlspecialchars($cleanDesc) ?>
                                 </p>
 
-                                <!-- Custom Stitching & Min Stitch (Price completely hidden for customize fabrics) -->
+                                <!-- Custom Stitching & Min Stitch (Row 1 & 2 on mobile/tablet, same row on desktop) -->
                                 <div class="mb-2 sm:mb-3">
-                                    <div class="flex items-center justify-between gap-1 sm:gap-2">
-                                        <div class="inline-flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[10px] sm:text-xs font-bold">
-                                            <svg class="w-3.5 h-3.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1.5 lg:gap-1">
+                                        <div class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[9.5px] sm:text-xs font-bold shrink-0 w-fit">
+                                            <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
                                             </svg>
                                             <span>Custom Stitching</span>
                                         </div>
 
-                                        <!-- Min Stitch Badge -->
-                                        <div class="text-right flex-shrink-0">
-                                            <span class="text-[6.5px] sm:text-[7px] uppercase font-bold text-gray-400 block tracking-wider leading-none">Min Stitch</span>
-                                            <span class="px-1.5 sm:px-2 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] sm:text-[11px] rounded-md inline-block mt-0.5">
+                                        <!-- Min Stitch & Count Badge: Next row on mobile & tablet, right on desktop -->
+                                        <div class="inline-flex items-center gap-1 shrink-0 whitespace-nowrap self-start lg:self-auto">
+                                            <span class="uppercase font-semibold text-gray-400 tracking-wider" style="font-size: 7.5px; line-height: 1;">Min Stitch</span>
+                                            <span class="px-1.5 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] sm:text-[10.5px] rounded-md leading-none">
                                                 <?= (int)$relMoq ?> Pcs
                                             </span>
                                         </div>

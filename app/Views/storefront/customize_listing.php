@@ -214,11 +214,13 @@
                         $fallbackImg = 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=800&auto=format&fit=crop&q=80';
                         $imgSrc = !empty($rawImg) ? $rawImg : $fallbackImg;
                         $unitLabel = htmlspecialchars($f['unit'] ?? 'Qty');
+                        $isLoggedIn = !empty(\Core\Session::get('user_id'));
+                        $customizeDetailUrl = BASE_URL . '/fabrics/customize?fabric_id=' . (int)$f['fabric_id'];
                     ?>
                     <div class="bg-white rounded-2xl sm:rounded-[22px] border border-gray-100 overflow-hidden shadow-xs hover:shadow-xl hover:border-pink-200 transition-all duration-300 flex flex-col group transform hover:-translate-y-1">
                         
                         <!-- Top Image Area -->
-                        <div class="relative h-44 sm:h-64 md:h-72 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
+                        <a href="<?= $customizeDetailUrl ?>" class="block relative h-44 sm:h-64 md:h-72 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden group/img">
                             <?php if (!empty($imgSrc)): ?>
                             <img id="fabric-main-img-<?= $f['id'] ?>" 
                                  src="<?= htmlspecialchars($imgSrc) ?>" 
@@ -245,7 +247,7 @@
                             </div>
 
                             <!-- Top Right: Stock Counter -->
-                            <div class="absolute top-2 right-2 sm:top-3.5 sm:right-3.5 z-10 flex flex-col items-end gap-1 sm:gap-2">
+                            <div class="absolute top-2 right-2 sm:top-3.5 sm:right-3.5 z-10 flex flex-col items-end gap-1 sm:gap-2 pointer-events-none">
                                 <?php if (isset($f['fabric_stock']) && (float)$f['fabric_stock'] > 0): ?>
                                     <span class="px-1.5 sm:px-2.5 py-0.5 bg-emerald-600/95 backdrop-blur-xs text-white font-bold text-[8px] sm:text-[10px] tracking-wide rounded-full shadow-sm flex items-center gap-1">
                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
@@ -257,7 +259,7 @@
                                     </span>
                                 <?php endif; ?>
                             </div>
-                        </div>
+                        </a>
 
                         <!-- Circular Variant Swatches Overlapping Border (only when multiple images exist) -->
                         <?php 
@@ -282,7 +284,7 @@
                                 <img src="<?= htmlspecialchars($swUrl) ?>" 
                                      alt="" 
                                      onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
-                                     onclick="document.getElementById('fabric-main-img-<?= $f['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
+                                     onclick="event.stopPropagation(); document.getElementById('fabric-main-img-<?= $f['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
                                      class="w-7 h-7 sm:w-11 sm:h-11 rounded-full border-2 border-white shadow-sm sm:shadow-md object-cover cursor-pointer hover:scale-110 transition-transform flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
                             <?php endforeach; ?>
                         </div>
@@ -300,7 +302,7 @@
 
                                 <!-- Product Title -->
                                 <h2 class="font-bold text-[#1e293b] text-xs sm:text-base leading-snug line-clamp-1 mb-0.5 sm:mb-1 hover:text-[#F25996] transition-colors" title="<?= htmlspecialchars($f['fabric_name']) ?>">
-                                    <?= htmlspecialchars($f['fabric_name']) ?>
+                                    <a href="<?= $customizeDetailUrl ?>"><?= htmlspecialchars($f['fabric_name']) ?></a>
                                 </h2>
 
                                 <!-- Description -->
@@ -308,56 +310,51 @@
                                     <?= htmlspecialchars($f['fabric_description'] ?? 'Soft, breathable cotton fabric perfect for maternity wear.') ?>
                                 </p>
 
-                                <!-- Custom Stitching & Min Stitch (Price completely hidden for customize fabrics) -->
-                                <div class="mb-2 sm:mb-3">
-                                    <div class="flex items-center justify-between gap-1 sm:gap-2">
-                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[10px] sm:text-xs font-bold">
-                                            <svg class="w-3.5 h-3.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
-                                            </svg>
-                                            <span>Custom Stitching</span>
-                                        </div>
+                                <?php if ($isLoggedIn): ?>
+                                    <!-- Custom Stitching & Min Stitch (Row 1 & 2 on mobile/tablet, same row on desktop) -->
+                                    <div class="mb-2 sm:mb-3">
+                                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1.5 lg:gap-1">
+                                            <div class="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[9.5px] sm:text-xs font-bold shrink-0 w-fit">
+                                                <svg class="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
+                                                </svg>
+                                                <span>Custom Stitching</span>
+                                            </div>
 
-                                        <!-- Min Stitch Badge -->
-                                        <div class="text-right flex-shrink-0">
-                                            <span class="text-[6.5px] sm:text-[7px] uppercase font-bold text-gray-400 block tracking-wider leading-none">Min Stitch</span>
-                                            <span class="px-1.5 sm:px-2 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] sm:text-[11px] rounded-md inline-block mt-0.5">
-                                                <?= (int)($f['minimum_pieces'] ?? 10) ?> Pcs
-                                            </span>
+                                            <!-- Min Stitch & Count Badge: Next row on mobile & tablet, right on desktop -->
+                                            <div class="inline-flex items-center gap-1 shrink-0 whitespace-nowrap self-start lg:self-auto">
+                                                <span class="uppercase font-semibold text-gray-400 tracking-wider" style="font-size: 7.5px; line-height: 1;">Min Stitch</span>
+                                                <span class="px-1.5 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] sm:text-[10.5px] rounded-md leading-none">
+                                                    <?= (int)($f['minimum_pieces'] ?? 10) ?> Pcs
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
 
-                                <!-- Sizes Matrix -->
-                                <div class="mb-2.5 sm:mb-4">
-                                    <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap">
-                                        <?php 
-                                            $sizeList = !empty($f['sizes']) ? array_column($f['sizes'], 'size_name') : ['M', 'L', 'XL', 'XXL', '3XL', '4XL'];
-                                        ?>
-                                        <?php foreach ($sizeList as $sIndex => $szName): ?>
-                                            <?php if ($sIndex === 0): ?>
-                                                <span class="px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-[#F25996] text-white font-bold text-[9px] sm:text-[11px] rounded sm:rounded-md shadow-xs flex items-center justify-center min-w-[20px] sm:min-w-[28px]">
-                                                    <?= htmlspecialchars($szName) ?>
-                                                </span>
-                                            <?php else: ?>
-                                                <span class="px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-[#fff0f6] text-[#db2777] font-bold text-[9px] sm:text-[11px] rounded sm:rounded-md border border-pink-100/80 flex items-center justify-center min-w-[20px] sm:min-w-[28px]">
-                                                    <?= htmlspecialchars($szName) ?>
-                                                </span>
-                                            <?php endif; ?>
-                                        <?php endforeach; ?>
+                                    <!-- Sizes Matrix -->
+                                    <div class="mb-2.5 sm:mb-4">
+                                        <div class="flex items-center gap-1 sm:gap-1.5 flex-wrap">
+                                            <?php 
+                                                $sizeList = !empty($f['sizes']) ? array_column($f['sizes'], 'size_name') : ['M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+                                            ?>
+                                            <?php foreach ($sizeList as $sIndex => $szName): ?>
+                                                <?php if ($sIndex === 0): ?>
+                                                    <span class="px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-[#F25996] text-white font-bold text-[9px] sm:text-[11px] rounded sm:rounded-md shadow-xs flex items-center justify-center min-w-[20px] sm:min-w-[28px]">
+                                                        <?= htmlspecialchars($szName) ?>
+                                                    </span>
+                                                <?php else: ?>
+                                                    <span class="px-1.5 sm:px-2.5 py-0.5 sm:py-1 bg-[#fff0f6] text-[#db2777] font-bold text-[9px] sm:text-[11px] rounded sm:rounded-md border border-pink-100/80 flex items-center justify-center min-w-[20px] sm:min-w-[28px]">
+                                                        <?= htmlspecialchars($szName) ?>
+                                                    </span>
+                                                <?php endif; ?>
+                                            <?php endforeach; ?>
+                                        </div>
                                     </div>
-                                </div>
                             </div>
 
                             <!-- Action Button: Customize & Stitch → -->
                             <div>
-                                <?php 
-                                    $isLoggedIn = !empty(\Core\Session::get('user_id'));
-                                    $customizeUrl = $isLoggedIn 
-                                        ? BASE_URL . '/fabrics/customize?fabric_id=' . (int)$f['fabric_id'] 
-                                        : BASE_URL . '/login?redirect=' . urlencode('/fabrics/customize?fabric_id=' . (int)$f['fabric_id']);
-                                ?>
-                                <a href="<?= $customizeUrl ?>" 
+                                <a href="<?= $customizeDetailUrl ?>" 
                                    class="w-full py-2 sm:py-3 px-2 sm:px-4 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-bold text-xs sm:text-sm rounded-xl sm:rounded-2xl shadow-sm sm:shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-1 sm:gap-2 group/btn active:scale-[0.98]">
                                     <span class="truncate">Customize & Stitch</span>
                                     <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0 transition-transform group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -365,6 +362,15 @@
                                     </svg>
                                 </a>
                             </div>
+                                <?php else: ?>
+                            </div>
+                            <div class="mt-auto pt-2 md:pt-3 lg:pt-4 md:border-t md:border-gray-100 flex flex-col gap-2">
+                                <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-semibold hover:underline whitespace-nowrap overflow-hidden text-ellipsis" style="font-size: clamp(0.65rem, 2.2vw, 0.8125rem);">
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                    <span class="truncate">Register to view price</span>
+                                </a>
+                            </div>
+                                <?php endif; ?>
 
                         </div>
 

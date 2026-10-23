@@ -40,7 +40,9 @@ class HomeController extends Controller
         // Fetch layout dynamically without curl to avoid PHP dev server deadlock
         $db = \Core\Database::getInstance();
         $isPreview = isset($_GET['preview']) && $_GET['preview'] == '1';
-        $cachedData = $isPreview ? null : \Core\Cache::get('cms_layout_home');
+        $isAdmin = in_array(\Core\Session::get('user_role'), ['super_admin', 'manager', 'staff']);
+        $noCache = $isPreview || $isAdmin || isset($_GET['nocache']);
+        $cachedData = $noCache ? null : (class_exists('\Core\Cache') ? \Core\Cache::get('cms_layout_home') : null);
         
         if ($cachedData !== null) {
             $layoutSections = $cachedData;
@@ -74,8 +76,8 @@ class HomeController extends Controller
                         $layoutSections[] = $componentsMap[$id];
                     }
                 }
-                if (!$isPreview) {
-                    \Core\Cache::set('cms_layout_home', $layoutSections, 3600);
+                if (!$isPreview && class_exists('\Core\Cache')) {
+                    \Core\Cache::set('cms_layout_home', $layoutSections, 300);
                 }
             }
         }
@@ -126,7 +128,7 @@ class HomeController extends Controller
     public function privacyPolicy()
     {
         $this->render('storefront/privacy_policy', [
-            'title' => 'Privacy & Return Policy'
+            'title' => 'GRM B2B Wholesale Privacy Policy'
         ]);
     }
 

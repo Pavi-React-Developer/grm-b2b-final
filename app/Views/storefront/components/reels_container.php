@@ -14,9 +14,13 @@ $title = $reelsData['title'] ?? '';
 $subtitle = $reelsData['subtitle'] ?? '';
 $deskHeight = !empty($reelsData['desktop_height_vh']) ? (float)$reelsData['desktop_height_vh'] : 70;
 $mobHeight = !empty($reelsData['mobile_height_vh']) ? (float)$reelsData['mobile_height_vh'] : 55;
-$deskCols = max(1, min(10, (float)(!empty($reelsData['desktop_count']) ? $reelsData['desktop_count'] : (!empty($reelsData['desktop_view_count']) ? $reelsData['desktop_view_count'] : (!empty($reelsData['cards_desktop']) ? $reelsData['cards_desktop'] : 4)))));
-$tabCols  = 3; // Fixed 3 reels in tablet mode on landing page
-$mobCols  = max(1, min(6, (float)(!empty($reelsData['mobile_count']) ? $reelsData['mobile_count'] : (!empty($reelsData['mobile_view_count']) ? $reelsData['mobile_view_count'] : (!empty($reelsData['cards_mobile']) ? $reelsData['cards_mobile'] : 2)))));
+$deskVal = $reelsData['desktop_count'] ?? $reelsData['desktop_view_count'] ?? $reelsData['cards_desktop'] ?? 4;
+$tabVal  = $reelsData['tablet_view_count'] ?? $reelsData['cards_tablet'] ?? 3;
+$mobVal  = $reelsData['mobile_count'] ?? $reelsData['mobile_view_count'] ?? $reelsData['cards_mobile'] ?? 1;
+
+$deskCols = max(1, min(10, (float)$deskVal));
+$tabCols  = max(1, min(8, (float)$tabVal));
+$mobCols  = max(1, min(6, (float)$mobVal));
 $autoplay = !empty($reelsData['autoplay']);
 $isMuted = !empty($reelsData['muted']);
 $isLoop = !empty($reelsData['loop']);
@@ -42,9 +46,9 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
     display: none;
 }
 #<?= $uniqueId ?> .reel-card {
-    height: <?= $mobHeight ?>vh;
-    min-height: 280px;
-    max-height: 600px;
+    height: <?= max(58, (float)$mobHeight) ?>vh;
+    min-height: 440px;
+    max-height: 620px;
     width: calc((100% - ((var(--mob-cols) - 1) * var(--reel-gap))) / var(--mob-cols)) !important;
     max-width: calc((100% - ((var(--mob-cols) - 1) * var(--reel-gap))) / var(--mob-cols)) !important;
     min-width: 0 !important;
@@ -57,6 +61,7 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
         --reel-gap: 1.125rem;
     }
     #<?= $uniqueId ?> .reel-card {
+        height: <?= max($mobHeight, round(($mobHeight + $deskHeight) / 2)) ?>vh;
         width: calc((100% - ((var(--tab-cols) - 1) * var(--reel-gap))) / var(--tab-cols)) !important;
         max-width: calc((100% - ((var(--tab-cols) - 1) * var(--reel-gap))) / var(--tab-cols)) !important;
         flex: 0 0 calc((100% - ((var(--tab-cols) - 1) * var(--reel-gap))) / var(--tab-cols)) !important;
@@ -81,40 +86,61 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
 <section id="<?= $uniqueId ?>" class="py-3 sm:py-5 md:py-6 relative overflow-hidden" style="background-color: <?= htmlspecialchars($bgColor) ?>;">
     <div class="w-full px-3 sm:px-5 lg:px-6">
         
-        <!-- Header (without top arrows) -->
+        <!-- Header with Mobile Compact Navigation Arrows -->
         <?php if (!empty($title) || !empty($subtitle)): ?>
-            <div class="mb-4 sm:mb-6">
-                <?php if (!empty($title)): ?>
-                    <div class="flex items-center gap-2.5 mb-1">
-                        <span class="w-2.5 h-2.5 rounded-full bg-[#F25996] animate-pulse"></span>
-                        <h2 class="text-2xl sm:text-3xl font-display font-extrabold text-gray-900 tracking-tight">
-                            <?= htmlspecialchars($title) ?>
-                        </h2>
+            <div class="mb-3 sm:mb-6 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                    <?php if (!empty($title)): ?>
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-2.5 h-2.5 rounded-full bg-[#F25996] animate-pulse shrink-0"></span>
+                            <h2 class="text-xl sm:text-3xl font-display font-extrabold text-gray-900 tracking-tight">
+                                <?= htmlspecialchars($title) ?>
+                            </h2>
+                        </div>
+                    <?php endif; ?>
+                    <?php if (!empty($subtitle)): ?>
+                        <p class="text-xs sm:text-sm text-gray-500 font-medium max-w-2xl">
+                            <?= htmlspecialchars($subtitle) ?>
+                        </p>
+                    <?php endif; ?>
+                </div>
+
+                <?php if (count($items) > 1): ?>
+                    <!-- Mobile Compact Header Arrows (Never blocks the reels!) -->
+                    <div class="flex sm:hidden items-center gap-1.5 shrink-0">
+                        <button type="button" 
+                                onclick="scrollReelsTrack('<?= $uniqueId ?>', -1)" 
+                                class="w-8 h-8 rounded-full bg-white text-gray-700 shadow-sm border border-gray-200 flex items-center justify-center active:scale-95 transition-all"
+                                aria-label="Previous Reel">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                        </button>
+                        <button type="button" 
+                                onclick="scrollReelsTrack('<?= $uniqueId ?>', 1)" 
+                                class="w-8 h-8 rounded-full bg-white text-gray-700 shadow-sm border border-gray-200 flex items-center justify-center active:scale-95 transition-all"
+                                aria-label="Next Reel">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
                     </div>
-                <?php endif; ?>
-                <?php if (!empty($subtitle)): ?>
-                    <p class="text-xs sm:text-sm text-gray-500 font-medium max-w-2xl">
-                        <?= htmlspecialchars($subtitle) ?>
-                    </p>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
 
-        <!-- Track Wrapper with Navigation Arrows Positioned OUTSIDE the Reels -->
-        <div class="relative px-9 sm:px-14">
+        <!-- Track Wrapper with Desktop Navigation Arrows -->
+        <div class="relative px-0.5 sm:px-14">
             
             <?php if (count($items) > 1): ?>
-                <!-- Left Nav Arrow Button (Outside Reels) -->
+                <!-- Left Nav Arrow Button (Desktop Only - Outside Reels) -->
                 <button type="button" 
+                        id="reels-prev-<?= $uniqueId ?>"
                         onclick="scrollReelsTrack('<?= $uniqueId ?>', -1)" 
-                        class="absolute left-0 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white text-gray-800 shadow-xl border border-gray-200 flex items-center justify-center transition-all duration-300 hover:bg-gray-50 hover:scale-110 active:scale-95 focus:outline-none"
+                        class="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white text-gray-800 shadow-xl border border-gray-200 items-center justify-center transition-all duration-300 hover:bg-gray-50 hover:scale-110 active:scale-95 focus:outline-none disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none"
                         aria-label="Previous Reels">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+                    <svg class="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
             <?php endif; ?>
 
-            <!-- Horizontal Scrollable Snap Track -->
-            <div class="reels-track flex items-stretch overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 pt-1 <?= count($items) < $deskCols ? 'justify-start lg:justify-center' : 'justify-start' ?>" id="track-<?= $uniqueId ?>">
+            <!-- Horizontal Scrollable Snap Track with touch-action pan-y for smooth vertical scrolling -->
+            <div class="reels-track flex items-stretch overflow-x-auto scroll-smooth snap-x snap-mandatory pb-4 pt-1 <?= count($items) < $deskCols ? 'justify-start lg:justify-center' : 'justify-start' ?>" id="track-<?= $uniqueId ?>" style="touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; overscroll-behavior-y: auto;">
                 <?php foreach ($items as $idx => $item): 
                     $reelTitle = !empty($item['title']) ? $item['title'] : 'Explore Style';
                     $ctaUrl = !empty($item['cta_url']) ? $item['cta_url'] : '#';
@@ -141,9 +167,9 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
                         <?php if (!empty($videoUrl)): ?>
                             <video class="reel-bg-video w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                                    src="<?= htmlspecialchars($videoUrl) ?>"
-                                   autoplay
-                                   loop
-                                   muted
+                                   <?= $autoplay ? 'autoplay' : '' ?>
+                                   <?= $isLoop ? 'loop' : '' ?>
+                                   <?= $isMuted ? 'muted' : '' ?>
                                    playsinline
                                    webkit-playsinline
                                    preload="none"
@@ -180,7 +206,7 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
                         </div>
 
                         <!-- Bottom Content & CTA -->
-                        <div class="absolute bottom-0 inset-x-0 p-4 sm:p-5 flex flex-col justify-end text-white pointer-events-none z-20">
+                        <div class="absolute bottom-0 inset-x-0 p-4 pb-5 sm:p-5 flex flex-col justify-end text-white pointer-events-none z-20">
                             <h3 class="font-display font-bold text-sm sm:text-base leading-snug line-clamp-2 drop-shadow-md mb-2">
                                 <?= htmlspecialchars($reelTitle) ?>
                             </h3>
@@ -199,12 +225,13 @@ $uniqueId = 'reels_' . substr(md5(uniqid()), 0, 8);
             </div>
 
             <?php if (count($items) > 1): ?>
-                <!-- Right Nav Arrow Button (Outside Reels) -->
+                <!-- Right Nav Arrow Button (Desktop Only - Outside Reels) -->
                 <button type="button" 
+                        id="reels-next-<?= $uniqueId ?>"
                         onclick="scrollReelsTrack('<?= $uniqueId ?>', 1)" 
-                        class="absolute right-0 top-1/2 -translate-y-1/2 z-30 w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white text-gray-800 shadow-xl border border-gray-200 flex items-center justify-center transition-all duration-300 hover:bg-gray-50 hover:scale-110 active:scale-95 focus:outline-none"
+                        class="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-30 w-11 h-11 rounded-full bg-white text-gray-800 shadow-xl border border-gray-200 items-center justify-center transition-all duration-300 hover:bg-gray-50 hover:scale-110 active:scale-95 focus:outline-none disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none"
                         aria-label="Next Reels">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+                    <svg class="w-5 h-5 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
                 </button>
             <?php endif; ?>
 
@@ -220,12 +247,44 @@ window.reelsComponentsData['<?= $uniqueId ?>'] = {
     autoplay: <?= $autoplay ? 'true' : 'false' ?>
 };
 
+function getReelsCardStep(track) {
+    const cards = track.querySelectorAll('.reel-card');
+    if (cards.length > 1) {
+        return cards[1].offsetLeft - cards[0].offsetLeft;
+    }
+    return cards.length === 1 ? cards[0].offsetWidth : (track.clientWidth * 0.85);
+}
+
+function updateReelsLock(containerId) {
+    const track = document.getElementById(`track-${containerId}`);
+    const prevBtn = document.getElementById(`reels-prev-${containerId}`);
+    const nextBtn = document.getElementById(`reels-next-${containerId}`);
+    if (!track) return;
+    
+    const isAtStart = track.scrollLeft <= 5;
+    const isAtEnd = (track.scrollLeft + track.clientWidth) >= (track.scrollWidth - 8);
+    
+    if (prevBtn) {
+        prevBtn.disabled = isAtStart;
+        prevBtn.style.opacity = isAtStart ? '0.35' : '1';
+        prevBtn.style.cursor = isAtStart ? 'not-allowed' : 'pointer';
+        prevBtn.style.pointerEvents = isAtStart ? 'none' : 'auto';
+    }
+    if (nextBtn) {
+        nextBtn.disabled = isAtEnd;
+        nextBtn.style.opacity = isAtEnd ? '0.35' : '1';
+        nextBtn.style.cursor = isAtEnd ? 'not-allowed' : 'pointer';
+        nextBtn.style.pointerEvents = isAtEnd ? 'none' : 'auto';
+    }
+}
+
 function scrollReelsTrack(containerId, direction) {
     const track = document.getElementById(`track-${containerId}`);
     if (track) {
-        const card = track.querySelector('.reel-card');
-        const scrollAmount = card ? (card.getBoundingClientRect().width + 16) * direction : (track.clientWidth * 0.75 * direction);
-        track.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        const step = getReelsCardStep(track);
+        track.scrollBy({ left: step * direction, behavior: 'smooth' });
+        setTimeout(() => updateReelsLock(containerId), 150);
+        setTimeout(() => updateReelsLock(containerId), 400);
     }
 }
 
@@ -251,6 +310,9 @@ function toggleReelCardSound(e, btn) {
 function init24HrVideoLoop_<?= $uniqueId ?>() {
     const track = document.getElementById('track-<?= $uniqueId ?>');
     if (!track) return;
+    updateReelsLock('<?= $uniqueId ?>');
+    track.addEventListener('scroll', () => updateReelsLock('<?= $uniqueId ?>'), { passive: true });
+    window.addEventListener('resize', () => updateReelsLock('<?= $uniqueId ?>'));
     const cards = track.querySelectorAll('.reel-card');
     
     // IntersectionObserver to ensure playback starts as soon as card is in viewport
@@ -269,19 +331,25 @@ function init24HrVideoLoop_<?= $uniqueId ?>() {
         const video = card.querySelector('video.reel-bg-video');
         if (!video) return;
 
-        video.muted = true;
-        video.defaultMuted = true;
-        video.loop = true;
+        const isMutedSetting = <?= $isMuted ? 'true' : 'false' ?>;
+        const isLoopSetting = <?= $isLoop ? 'true' : 'false' ?>;
+        const isAutoplaySetting = <?= $autoplay ? 'true' : 'false' ?>;
+
+        video.muted = isMutedSetting;
+        video.defaultMuted = isMutedSetting;
+        video.loop = isLoopSetting;
         video.playsInline = true;
-        video.setAttribute('muted', '');
-        video.setAttribute('loop', '');
+        if (isMutedSetting) video.setAttribute('muted', '');
+        if (isLoopSetting) video.setAttribute('loop', '');
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
-        video.setAttribute('autoplay', '');
+        if (isAutoplaySetting) video.setAttribute('autoplay', '');
 
         const startPlayback = () => {
-            video.muted = true;
-            video.defaultMuted = true;
+            if (isMutedSetting) {
+                video.muted = true;
+                video.defaultMuted = true;
+            }
             const playPromise = video.play();
             if (playPromise !== undefined) {
                 playPromise.catch(() => {
@@ -338,15 +406,13 @@ function init24HrVideoLoop_<?= $uniqueId ?>() {
         const startAutoScroll = () => {
             if (autoScrollInterval) return;
             autoScrollInterval = setInterval(() => {
-                const firstCard = track.querySelector('.reel-card');
-                if (!firstCard) return;
-                const cardWidth = firstCard.getBoundingClientRect().width + 16;
+                const step = getReelsCardStep(track);
                 const maxScroll = track.scrollWidth - track.clientWidth;
 
                 if (track.scrollLeft >= maxScroll - 10) {
                     track.scrollTo({ left: 0, behavior: 'smooth' });
                 } else {
-                    track.scrollBy({ left: cardWidth, behavior: 'smooth' });
+                    track.scrollBy({ left: step, behavior: 'smooth' });
                 }
             }, 3500);
         };
@@ -361,10 +427,17 @@ function init24HrVideoLoop_<?= $uniqueId ?>() {
         // Pause auto-scroll on hover or touch, resume on leave
         track.addEventListener('mouseenter', stopAutoScroll);
         track.addEventListener('mouseleave', startAutoScroll);
-        track.addEventListener('touchstart', stopAutoScroll, { passive: true });
-        track.addEventListener('touchend', () => setTimeout(startAutoScroll, 2000), { passive: true });
+        // Attach scroll and resize listeners for dynamic left & right scroll lock
+        updateReelsLock('<?= $uniqueId ?>');
+        track.addEventListener('scroll', () => updateReelsLock('<?= $uniqueId ?>'), { passive: true });
+        window.addEventListener('resize', () => updateReelsLock('<?= $uniqueId ?>'), { passive: true });
 
         startAutoScroll();
+    } else {
+        // Even when no autoplay, initialize the boundary lock and listeners
+        updateReelsLock('<?= $uniqueId ?>');
+        track.addEventListener('scroll', () => updateReelsLock('<?= $uniqueId ?>'), { passive: true });
+        window.addEventListener('resize', () => updateReelsLock('<?= $uniqueId ?>'), { passive: true });
     }
 }
 

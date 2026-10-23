@@ -13,7 +13,7 @@
                 <svg class="w-4 h-4 text-[#F25996] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
                 </svg>
-                <span class="text-[#F25996] font-bold">Privacy &amp; Policies</span>
+                <span class="text-[#F25996] font-bold">Privacy Policy</span>
             </nav>
         </div>
     </div>
@@ -38,7 +38,7 @@
                     </div>
 
                     <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0f2963] font-display tracking-tight leading-tight">
-                        Privacy &amp; <span class="text-[#F25996]">Policies</span>
+                        GRM B2B WHOLESALE <span class="text-[#F25996]">Privacy Policy</span>
                     </h1>
 
                     <p class="text-slate-600 text-base sm:text-lg max-w-xl leading-relaxed pt-1">
@@ -100,119 +100,163 @@
         <div class="bg-white rounded-3xl border border-gray-200/90 shadow-sm p-6 sm:p-10 lg:p-12">
             
             <!-- Card Header -->
-            <div class="mb-8">
+            <div class="mb-8 pb-6 border-b border-gray-200/80">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-pink-100/80 border border-pink-200/60 text-[#F25996] text-xs font-bold uppercase tracking-wider mb-3">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    <span>Official Privacy Policy</span>
+                </div>
                 <h2 class="text-2xl sm:text-3xl font-extrabold text-[#0f2963] tracking-tight font-display">
-                    Privacy &amp; Policies
+                    GRM B2B WHOLESALE Privacy Policy
                 </h2>
                 <p class="text-slate-600 text-sm sm:text-base mt-2 leading-relaxed max-w-4xl">
-                    At GRM B2B Wholesale, we are committed to protecting the privacy and security of our customers. This policy explains how we collect, use, and safeguard your information.
+                    At GRM B2B Wholesale, we are committed to protecting the privacy and security of our business customers. This policy explains how we collect, use, and safeguard your information.
                 </p>
             </div>
 
-            <!-- List of 6 Policy Points -->
-            <div class="divide-y divide-gray-100">
+            <!-- List of 8 Privacy Policy Sections -->
+            <div class="space-y-6 sm:space-y-8 divide-y divide-gray-100">
 
-                <!-- Point 1: Information We Collect -->
-                <div class="py-5 sm:py-6 flex items-start gap-4 sm:gap-6 hover:bg-pink-50/40 px-3 sm:px-4 rounded-2xl transition-colors">
-                    <div class="w-12 h-12 rounded-full bg-pink-100/90 text-[#F25996] flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                            <path d="M18 10c1.66 0 3-1.34 3-3s-1.34-3-3-3c-.35 0-.68.06-1 .17 1.22.86 2 2.28 2 3.83s-.78 2.97-2 3.83c.32.11.65.17 1 .17zm1 4.5c1.78.89 3 2.37 3 3.5v2h-4v-2c0-1.36-.6-2.55-1.63-3.41.87-.06 1.78-.09 2.63-.09z"/>
-                        </svg>
-                    </div>
-                    <div class="space-y-1">
-                        <h3 class="text-base sm:text-lg font-bold text-[#0f2963]">
+                <!-- Section 1 -->
+                <div class="pt-6 first:pt-0">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-3">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-pink-50 border border-pink-200/80 text-[#F25996] font-extrabold text-sm shrink-0">
+                            1
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-[#0f2963] tracking-tight">
                             Information We Collect
                         </h3>
-                        <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
-                            We collect personal and business information such as your name, company details, contact information, shipping address, and order history when you register or place an order.
-                        </p>
+                    </div>
+                    <div class="space-y-3 pl-11 text-slate-700 text-sm sm:text-base leading-relaxed">
+                        <p>We collect only the information we need to serve you as a business customer. This includes:</p>
+                        <ul class="space-y-1.5 pl-2">
+                            <li><strong class="text-gray-900">&bull; Contact details:</strong> your name, email address, phone number, and designation.</li>
+                            <li><strong class="text-gray-900">&bull; Business details:</strong> company name, GST number, business address, and other registration details.</li>
+                            <li><strong class="text-gray-900">&bull; Order information:</strong> shipping and billing addresses, products ordered, order history, and payment status.</li>
+                            <li><strong class="text-gray-900">&bull; Technical information:</strong> IP address, browser type, device information, and pages visited, collected automatically when you use our website.</li>
+                        </ul>
+                        <p class="font-medium text-slate-800">We do not store complete card or bank details. Payments are processed securely by our authorised payment partners.</p>
                     </div>
                 </div>
 
-                <!-- Point 2: How We Use Your Information -->
-                <div class="py-5 sm:py-6 flex items-start gap-4 sm:gap-6 hover:bg-pink-50/40 px-3 sm:px-4 rounded-2xl transition-colors">
-                    <div class="w-12 h-12 rounded-full bg-pink-100/90 text-[#F25996] flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </div>
-                    <div class="space-y-1">
-                        <h3 class="text-base sm:text-lg font-bold text-[#0f2963]">
+                <!-- Section 2 -->
+                <div class="pt-6">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-3">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-pink-50 border border-pink-200/80 text-[#F25996] font-extrabold text-sm shrink-0">
+                            2
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-[#0f2963] tracking-tight">
                             How We Use Your Information
                         </h3>
-                        <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
-                            Your information is used to process orders, provide customer support, improve our services, and keep you updated about products, offers, and important announcements.
-                        </p>
+                    </div>
+                    <div class="space-y-3 pl-11 text-slate-700 text-sm sm:text-base leading-relaxed">
+                        <p>We use your information to:</p>
+                        <ul class="space-y-1.5 pl-2">
+                            <li><strong class="text-gray-900">&bull;</strong> Process, fulfil, and deliver your orders</li>
+                            <li><strong class="text-gray-900">&bull;</strong> Create and manage your business account</li>
+                            <li><strong class="text-gray-900">&bull;</strong> Generate invoices and meet tax and legal requirements</li>
+                            <li><strong class="text-gray-900">&bull;</strong> Provide customer support and respond to your enquiries</li>
+                            <li><strong class="text-gray-900">&bull;</strong> Improve our products, website, and services</li>
+                            <li><strong class="text-gray-900">&bull;</strong> Send you updates about products, pricing, offers, and important announcements</li>
+                        </ul>
+                        <p>You can opt out of promotional messages at any time by using the unsubscribe link in our emails or by contacting us. Service-related messages, such as order confirmations, will still be sent.</p>
                     </div>
                 </div>
 
-                <!-- Point 3: Data Security -->
-                <div class="py-5 sm:py-6 flex items-start gap-4 sm:gap-6 hover:bg-pink-50/40 px-3 sm:px-4 rounded-2xl transition-colors">
-                    <div class="w-12 h-12 rounded-full bg-pink-100/90 text-[#F25996] flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" />
-                        </svg>
-                    </div>
-                    <div class="space-y-1">
-                        <h3 class="text-base sm:text-lg font-bold text-[#0f2963]">
-                            Data Security
-                        </h3>
-                        <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
-                            We take appropriate security measures to protect your information from unauthorized access, alteration, disclosure, or misuse.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Point 4: Sharing of Information -->
-                <div class="py-5 sm:py-6 flex items-start gap-4 sm:gap-6 hover:bg-pink-50/40 px-3 sm:px-4 rounded-2xl transition-colors">
-                    <div class="w-12 h-12 rounded-full bg-pink-100/90 text-[#F25996] flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
-                        </svg>
-                    </div>
-                    <div class="space-y-1">
-                        <h3 class="text-base sm:text-lg font-bold text-[#0f2963]">
+                <!-- Section 3 -->
+                <div class="pt-6">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-3">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-pink-50 border border-pink-200/80 text-[#F25996] font-extrabold text-sm shrink-0">
+                            3
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-[#0f2963] tracking-tight">
                             Sharing of Information
                         </h3>
-                        <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
-                            We do not sell, rent, or share your personal information with third parties, except when required by law or to complete your order (e.g., shipping partners).
-                        </p>
+                    </div>
+                    <div class="space-y-3 pl-11 text-slate-700 text-sm sm:text-base leading-relaxed">
+                        <p>We do not sell or rent your personal information. We share it only when necessary, and only with:</p>
+                        <ul class="space-y-1.5 pl-2">
+                            <li><strong class="text-gray-900">&bull;</strong> Logistics and shipping partners, to deliver your orders</li>
+                            <li><strong class="text-gray-900">&bull;</strong> Payment processors, to complete transactions securely</li>
+                            <li><strong class="text-gray-900">&bull;</strong> Service providers who help us run our website and business, under confidentiality obligations</li>
+                            <li><strong class="text-gray-900">&bull;</strong> Government or legal authorities, when required by law or to protect our legal rights</li>
+                        </ul>
                     </div>
                 </div>
 
-                <!-- Point 5: Cookies -->
-                <div class="py-5 sm:py-6 flex items-start gap-4 sm:gap-6 hover:bg-pink-50/40 px-3 sm:px-4 rounded-2xl transition-colors">
-                    <div class="w-12 h-12 rounded-full bg-pink-100/90 text-[#F25996] flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-                        </svg>
+                <!-- Section 4 -->
+                <div class="pt-6">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-3">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-pink-50 border border-pink-200/80 text-[#F25996] font-extrabold text-sm shrink-0">
+                            4
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-[#0f2963] tracking-tight">
+                            Data Security
+                        </h3>
                     </div>
-                    <div class="space-y-1">
-                        <h3 class="text-base sm:text-lg font-bold text-[#0f2963]">
+                    <div class="pl-11 text-slate-700 text-sm sm:text-base leading-relaxed">
+                        <p>We use reasonable technical and organisational measures to protect your information from unauthorised access, alteration, disclosure, or misuse. These include secure servers, encrypted connections (SSL), and restricted access to customer data. While we work hard to protect your data, no method of online transmission or storage is completely secure.</p>
+                    </div>
+                </div>
+
+                <!-- Section 5 -->
+                <div class="pt-6">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-3">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-pink-50 border border-pink-200/80 text-[#F25996] font-extrabold text-sm shrink-0">
+                            5
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-[#0f2963] tracking-tight">
+                            Data Retention
+                        </h3>
+                    </div>
+                    <div class="pl-11 text-slate-700 text-sm sm:text-base leading-relaxed">
+                        <p>We keep your information only for as long as your account is active or as needed to provide our services, resolve disputes, and meet legal, tax, and accounting obligations. After that, it is securely deleted or anonymised.</p>
+                    </div>
+                </div>
+
+                <!-- Section 6 -->
+                <div class="pt-6">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-3">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-pink-50 border border-pink-200/80 text-[#F25996] font-extrabold text-sm shrink-0">
+                            6
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-[#0f2963] tracking-tight">
                             Cookies
                         </h3>
-                        <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
-                            Our website may use cookies to enhance your browsing experience, remember your preferences, and analyze site usage.
-                        </p>
+                    </div>
+                    <div class="pl-11 text-slate-700 text-sm sm:text-base leading-relaxed">
+                        <p>Our website uses cookies to remember your preferences, keep you signed in, and understand how visitors use our site so we can improve it. You can manage or disable cookies through your browser settings, though some features of the website may not work properly without them.</p>
                     </div>
                 </div>
 
-                <!-- Point 6: Policy Updates -->
-                <div class="py-5 sm:py-6 flex items-start gap-4 sm:gap-6 hover:bg-pink-50/40 px-3 sm:px-4 rounded-2xl transition-colors">
-                    <div class="w-12 h-12 rounded-full bg-pink-100/90 text-[#F25996] flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                    </div>
-                    <div class="space-y-1">
-                        <h3 class="text-base sm:text-lg font-bold text-[#0f2963]">
-                            Policy Updates
+                <!-- Section 7 -->
+                <div class="pt-6">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-3">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-pink-50 border border-pink-200/80 text-[#F25996] font-extrabold text-sm shrink-0">
+                            7
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-[#0f2963] tracking-tight">
+                            Third-Party Links
                         </h3>
-                        <p class="text-slate-600 text-sm sm:text-base leading-relaxed">
-                            We may update this Privacy &amp; Policies page from time to time. Any changes will be posted on this page with the updated date.
-                        </p>
+                    </div>
+                    <div class="pl-11 text-slate-700 text-sm sm:text-base leading-relaxed">
+                        <p>Our website may contain links to third-party websites. We are not responsible for the privacy practices or content of those sites and encourage you to review their policies.</p>
+                    </div>
+                </div>
+
+                <!-- Section 8 -->
+                <div class="pt-6">
+                    <div class="flex items-start gap-3 sm:gap-4 mb-3">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-pink-50 border border-pink-200/80 text-[#F25996] font-extrabold text-sm shrink-0">
+                            8
+                        </span>
+                        <h3 class="text-lg sm:text-xl font-bold text-[#0f2963] tracking-tight">
+                            Changes to This Policy
+                        </h3>
+                    </div>
+                    <div class="pl-11 text-slate-700 text-sm sm:text-base leading-relaxed">
+                        <p>We may update this Privacy Policy from time to time to reflect changes in our practices or legal requirements. Any updates will be posted on this page with a revised &ldquo;Last Updated&rdquo; date. We encourage you to review this page periodically.</p>
                     </div>
                 </div>
 

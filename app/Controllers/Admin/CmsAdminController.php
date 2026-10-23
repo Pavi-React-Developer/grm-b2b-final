@@ -88,6 +88,11 @@ class CmsAdminController extends Controller
             $stmt3->execute([json_encode($ids)]);
         }
 
+        if (class_exists('\Core\Cache')) {
+            \Core\Cache::delete('cms_layout_home');
+            \Core\Cache::clear();
+        }
+
         if ($isAjax) {
             header('Content-Type: application/json');
             echo json_encode(['success' => true]);

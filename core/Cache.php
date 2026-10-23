@@ -17,10 +17,19 @@ class Cache
         self::init();
         $file = self::$cacheDir . '/' . md5($key) . '.json';
         if (file_exists($file)) {
-            $data = json_decode(file_get_contents($file), true);
-            // Check expiry (set to 1 hour for now, or indefinitely if no expiry)
+            $raw = @file_get_contents($file);
+            if ($raw === false || $raw === '') {
+                @unlink($file);
+                return $default;
+            }
+            $data = json_decode($raw, true);
+            if (!$data || !is_array($data)) {
+                @unlink($file);
+                return $default;
+            }
+            // Check expiry
             if (isset($data['expiry']) && $data['expiry'] < time()) {
-                unlink($file);
+                @unlink($file);
                 return $default;
             }
             return $data['content'] ?? $default;
@@ -45,6 +54,7 @@ class Cache
         self::init();
         $file = self::$cacheDir . '/' . md5($key) . '.json';
         if (file_exists($file)) {
+            @file_put_contents($file, '');
             @unlink($file);
         }
     }

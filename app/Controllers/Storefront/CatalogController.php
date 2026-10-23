@@ -190,9 +190,9 @@ class CatalogController extends Controller
         }
 
         // Remember return URL for guest visitors (e.g. from Instagram / direct link)
-        if (!\Core\Session::get('user_id')) {
+        if (!Session::get('user_id')) {
             $currentUri = $_SERVER['REQUEST_URI'] ?? ('/product?id=' . (int)$id);
-            \Core\Session::set('return_to', $currentUri);
+            Session::set('return_to', $currentUri);
         }
 
         // Cache the entire product view bundle for 5 minutes (invalidated on product/review updates)

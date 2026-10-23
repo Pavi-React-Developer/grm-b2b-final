@@ -122,8 +122,8 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
 <?php endif; ?>
 
 <section class="cms-reviews-section w-full relative py-3 sm:py-4 md:py-6 <?= $hasCustomHeight ? 'flex flex-col justify-center' : '' ?>" id="<?= $sectionUid ?>">
-    <div class="carousel-outer-wrap w-full max-w-full mx-auto px-1 sm:px-6 lg:px-8">
-        <div class="reviews-bg-wrap rounded-2xl md:rounded-[2rem] p-3.5 sm:p-5 md:p-6 lg:p-8 relative w-full" style="background-color: <?= htmlspecialchars($bgColor) ?>;">
+    <div class="carousel-outer-wrap w-full max-w-full mx-auto px-3 sm:px-6 lg:px-8">
+        <div class="reviews-bg-wrap rounded-2xl md:rounded-[2rem] p-4 sm:p-5 md:p-6 lg:p-8 pb-7 sm:pb-8 md:pb-8 lg:p-8 relative w-full" style="background-color: <?= htmlspecialchars($bgColor) ?>;">
             
             <!-- Section Header -->
             <div class="mb-4 sm:mb-6 px-1 sm:px-2">
@@ -150,16 +150,16 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
             <!-- Carousel Outer Container with Left & Right Side Arrows -->
             <div class="relative px-0 sm:px-1">
                 <?php if ($showArrows): ?>
-                    <button type="button" class="rev-prev-btn absolute left-0.5 sm:left-1 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full border border-gray-200/90 shadow-md flex items-center justify-center transition-all duration-200 focus:outline-none hover:scale-105 active:scale-95 cursor-pointer" style="background-color: <?= htmlspecialchars($arrowBgColor) ?>; color: <?= htmlspecialchars($arrowIconColor) ?>;" aria-label="Previous Reviews">
+                    <button type="button" class="rev-prev-btn absolute left-0.5 sm:left-1 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full border border-gray-200/90 shadow-md flex items-center justify-center transition-all duration-200 focus:outline-none hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none" style="background-color: <?= htmlspecialchars($arrowBgColor) ?>; color: <?= htmlspecialchars($arrowIconColor) ?>;" aria-label="Previous Reviews">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
                     </button>
-                    <button type="button" class="rev-next-btn absolute right-0.5 sm:right-1 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full border border-gray-200/90 shadow-md flex items-center justify-center transition-all duration-200 focus:outline-none hover:scale-105 active:scale-95 cursor-pointer" style="background-color: <?= htmlspecialchars($arrowBgColor) ?>; color: <?= htmlspecialchars($arrowIconColor) ?>;" aria-label="Next Reviews">
+                    <button type="button" class="rev-next-btn absolute right-0.5 sm:right-1 top-1/2 -translate-y-1/2 z-30 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-full border border-gray-200/90 shadow-md flex items-center justify-center transition-all duration-200 focus:outline-none hover:scale-105 active:scale-95 cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none" style="background-color: <?= htmlspecialchars($arrowBgColor) ?>; color: <?= htmlspecialchars($arrowIconColor) ?>;" aria-label="Next Reviews">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
                     </button>
                 <?php endif; ?>
 
-                <!-- Carousel Viewport -->
-                <div class="rev-carousel-viewport overflow-hidden relative mx-6 sm:mx-8 md:mx-10">
+                <!-- Carousel Viewport with touch-action pan-y -->
+                <div class="rev-carousel-viewport overflow-hidden relative mx-6 sm:mx-8 md:mx-10" style="touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; overscroll-behavior-y: auto;">
                     <div class="rev-track flex transition-transform duration-500 ease-out" data-animation="<?= htmlspecialchars($animation) ?>">
                     <?php foreach ($displayReviews as $idx => $rev): 
                         $rating = max(1, min(5, (int)$rev['rating']));
@@ -336,15 +336,79 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
     animation: revZoomAnim 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* Responsive adjustments for desktop/tablet/mobile */
+/* Responsive adjustments strictly for tablet and mobile (Desktop > 1024px remains completely untouched) */
 @media (max-width: 1024px) {
+    #<?= $sectionUid ?> .reviews-bg-wrap {
+        padding-bottom: 28px !important;
+    }
+    #<?= $sectionUid ?> .rev-prev-btn {
+        left: 4px !important;
+        width: 36px !important;
+        height: 36px !important;
+    }
+    #<?= $sectionUid ?> .rev-next-btn {
+        right: 4px !important;
+        width: 36px !important;
+        height: 36px !important;
+    }
+    #<?= $sectionUid ?> .rev-carousel-viewport {
+        margin-left: 46px !important;
+        margin-right: 46px !important;
+    }
     #<?= $sectionUid ?> .rev-slide {
         width: <?= 100 / $cardsTablet ?>% !important;
     }
+    #<?= $sectionUid ?> .rev-dots {
+        margin-top: 18px !important;
+    }
 }
 @media (max-width: 640px) {
+    #<?= $sectionUid ?> .carousel-outer-wrap {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+    #<?= $sectionUid ?> .reviews-bg-wrap {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+        padding-bottom: 26px !important;
+        border-radius: 1.25rem !important;
+    }
+    #<?= $sectionUid ?> .rev-prev-btn {
+        left: 3px !important;
+        width: 30px !important;
+        height: 30px !important;
+    }
+    #<?= $sectionUid ?> .rev-next-btn {
+        right: 3px !important;
+        width: 30px !important;
+        height: 30px !important;
+    }
+    #<?= $sectionUid ?> .rev-prev-btn svg,
+    #<?= $sectionUid ?> .rev-next-btn svg {
+        width: 14px !important;
+        height: 14px !important;
+    }
+    #<?= $sectionUid ?> .rev-carousel-viewport {
+        margin-left: 36px !important;
+        margin-right: 36px !important;
+    }
     #<?= $sectionUid ?> .rev-slide {
         width: <?= 100 / $cardsMobile ?>% !important;
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+    #<?= $sectionUid ?> .rev-dots {
+        margin-top: 14px !important;
+    }
+    #<?= $sectionUid ?> .rev-dot-btn {
+        width: 7px !important;
+        height: 7px !important;
+    }
+    #<?= $sectionUid ?> .rev-dot-btn.active {
+        width: 9px !important;
+        height: 9px !important;
+        outline-width: 2px !important;
+        outline-offset: 2px !important;
     }
 }
 </style>
@@ -363,11 +427,8 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
 
     const totalSlides = slides.length;
     let currentIndex = 0;
-    let autoplayTimer = null;
 
     const animationType = '<?= $animation ?>';
-    const isAutoplay = <?= $autoplay ? 'true' : 'false' ?>;
-    const autoplaySpeed = <?= $autoplaySpeed * 1000 ?>;
 
     function getVisibleCount() {
         if (window.innerWidth <= 640) return <?= $cardsMobile ?>;
@@ -392,7 +453,6 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
             dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
             dot.addEventListener('click', () => {
                 goToSlide(i);
-                restartAutoplay();
             });
             dotsContainer.appendChild(dot);
         }
@@ -422,12 +482,29 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
         });
     }
 
+    // Scroll Lock removed: buttons are never disabled or locked
+    function updateReviewLock() {
+        if (prevBtn) {
+            prevBtn.disabled = false;
+            prevBtn.style.opacity = '1';
+            prevBtn.style.cursor = 'pointer';
+            prevBtn.style.pointerEvents = 'auto';
+        }
+        if (nextBtn) {
+            nextBtn.disabled = false;
+            nextBtn.style.opacity = '1';
+            nextBtn.style.cursor = 'pointer';
+            nextBtn.style.pointerEvents = 'auto';
+        }
+    }
+
     function goToSlide(index) {
         const max = getMaxIndex();
-        if (index < 0) {
-            currentIndex = max;
-        } else if (index > max) {
+        // Continuous wrap-around loop without scroll lock
+        if (index > max) {
             currentIndex = 0;
+        } else if (index < 0) {
+            currentIndex = max;
         } else {
             currentIndex = index;
         }
@@ -439,45 +516,109 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
 
         applyAnimation();
         updateDots();
+        updateReviewLock();
     }
 
+    // Navigation buttons without scroll lock (infinite loop)
     if (prevBtn) {
         prevBtn.addEventListener('click', () => {
             goToSlide(currentIndex - 1);
-            restartAutoplay();
         });
     }
 
     if (nextBtn) {
         nextBtn.addEventListener('click', () => {
             goToSlide(currentIndex + 1);
-            restartAutoplay();
         });
     }
 
-    function startAutoplay() {
-        if (!isAutoplay || totalSlides <= getVisibleCount()) return;
-        stopAutoplay();
-        autoplayTimer = setInterval(() => {
-            goToSlide(currentIndex + 1);
-        }, autoplaySpeed);
-    }
-
-    function stopAutoplay() {
-        if (autoplayTimer) {
-            clearInterval(autoplayTimer);
-            autoplayTimer = null;
+    // Cursor Vertical Scroll: converts vertical mouse wheel scroll to left-to-right slide navigation
+    let wheelTimeout = null;
+    let isWheeling = false;
+    sec.addEventListener('wheel', (e) => {
+        const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+        if (Math.abs(delta) > 8) {
+            if (isWheeling) return;
+            isWheeling = true;
+            if (delta > 0) {
+                // Wheel down -> next slide (left to right)
+                goToSlide(currentIndex + 1);
+            } else {
+                // Wheel up -> prev slide (right to left)
+                goToSlide(currentIndex - 1);
+            }
+            clearTimeout(wheelTimeout);
+            wheelTimeout = setTimeout(() => { isWheeling = false; }, 200);
         }
-    }
+    }, { passive: true });
 
-    function restartAutoplay() {
-        stopAutoplay();
-        startAutoplay();
-    }
+    // Cursor Drag Scroll (Click and Drag Left to Right with Cursor)
+    let isDragging = false;
+    let dragStartX = 0;
+    let hasMoved = false;
 
-    // Pause on hover
-    sec.addEventListener('mouseenter', stopAutoplay);
-    sec.addEventListener('mouseleave', startAutoplay);
+    track.style.cursor = 'grab';
+
+    track.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button, a, input, select, textarea, form, label')) return;
+        isDragging = true;
+        hasMoved = false;
+        dragStartX = e.pageX;
+        track.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        if (Math.abs(e.pageX - dragStartX) > 6) {
+            hasMoved = true;
+        }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        track.style.cursor = 'grab';
+        if (hasMoved) {
+            const diffX = e.pageX - dragStartX;
+            if (Math.abs(diffX) > 35) {
+                if (diffX < 0) {
+                    goToSlide(currentIndex + 1);
+                } else {
+                    goToSlide(currentIndex - 1);
+                }
+            }
+        }
+    });
+
+    // Touch swipe support with vertical scroll protection for mobile and tablet
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const minSwipeDistance = 35;
+
+    sec.addEventListener('touchstart', (e) => {
+        if (e.changedTouches && e.changedTouches[0]) {
+            touchStartX = e.changedTouches[0].clientX;
+            touchStartY = e.changedTouches[0].clientY;
+        }
+    }, { passive: true });
+
+    sec.addEventListener('touchend', (e) => {
+        if (e.changedTouches && e.changedTouches[0]) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const diffX = touchStartX - touchEndX;
+            const diffY = touchStartY - touchEndY;
+            // If the gesture is vertical, allow smooth vertical scroll without switching slides
+            if (Math.abs(diffY) > Math.abs(diffX)) return;
+            if (Math.abs(diffX) >= minSwipeDistance) {
+                if (diffX > 0) {
+                    goToSlide(currentIndex + 1);
+                } else {
+                    goToSlide(currentIndex - 1);
+                }
+            }
+        }
+    }, { passive: true });
 
     // Responsive resize handling
     window.addEventListener('resize', () => {
@@ -485,9 +626,9 @@ $hasCustomHeight = ($containerHeight !== 'auto' || $mobileContainerHeight !== 'a
         goToSlide(Math.min(currentIndex, getMaxIndex()));
     });
 
-    // Initial setup
+    // Initial setup (No automatic scroll!)
     buildDots();
     applyAnimation();
-    startAutoplay();
+    updateReviewLock();
 })();
 </script>

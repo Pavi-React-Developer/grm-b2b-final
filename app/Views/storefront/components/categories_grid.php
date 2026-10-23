@@ -524,16 +524,16 @@ if (!empty($category_ids)) {
                     <?php else: ?>
                         <!-- Slider Controls (Left / Right Arrow buttons) -->
                         <?php if (count($gridPaneProducts) > 2): ?>
-                        <button type="button" onclick="scrollCatGrid('<?= $paneId ?>_track', -1)" class="catgrid-nav-btn catgrid-prev-btn absolute -left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 border border-gray-200 shadow-md flex items-center justify-center text-[#F25996] hover:text-[#e04481] hover:scale-105 transition-all focus:outline-none" title="Previous">
+                        <button type="button" onclick="scrollCatGrid('<?= $paneId ?>_track', -1)" class="catgrid-nav-btn catgrid-prev-btn absolute -left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 border border-gray-200 shadow-md flex items-center justify-center text-[#F25996] hover:text-[#e04481] hover:scale-105 transition-all focus:outline-none disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none" title="Previous">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/></svg>
                         </button>
-                        <button type="button" onclick="scrollCatGrid('<?= $paneId ?>_track', 1)" class="catgrid-nav-btn catgrid-next-btn absolute -right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 border border-gray-200 shadow-md flex items-center justify-center text-[#F25996] hover:text-[#e04481] hover:scale-105 transition-all focus:outline-none" title="Next">
+                        <button type="button" onclick="scrollCatGrid('<?= $paneId ?>_track', 1)" class="catgrid-nav-btn catgrid-next-btn absolute -right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 border border-gray-200 shadow-md flex items-center justify-center text-[#F25996] hover:text-[#e04481] hover:scale-105 transition-all focus:outline-none disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none" title="Next">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/></svg>
                         </button>
                         <?php endif; ?>
 
-                        <!-- Horizontal Slider Track -->
-                        <div id="<?= $paneId ?>_track" class="catgrid-desktop-track flex flex-row items-stretch gap-4 overflow-x-auto scroll-smooth py-1 px-1" style="scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory;">
+                        <!-- Horizontal Slider Track with touch-action pan-y -->
+                        <div id="<?= $paneId ?>_track" class="catgrid-desktop-track flex flex-row items-stretch gap-4 overflow-x-auto scroll-smooth py-1 px-1" style="scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: x mandatory; touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; overscroll-behavior-y: auto;">
                             <?php foreach ($gridPaneProducts as $prod): 
                                 $imgPath = $prod['main_image'] ?? '';
                                 $rawImg = !empty($imgPath) ? (str_starts_with($imgPath, 'http') ? $imgPath : (BASE_URL . '/' . ltrim($imgPath, '/'))) : 'https://placehold.co/400?text=No+Image';
@@ -575,7 +575,7 @@ if (!empty($category_ids)) {
                                 <div class="product-card catgrid-slide-card bg-white rounded-2xl sm:rounded-[22px] border border-gray-100 overflow-hidden shadow-xs hover:shadow-xl hover:border-pink-200 transition-all duration-300 flex flex-col group transform hover:-translate-y-1 relative shrink-0" style="width: 250px; min-width: 250px; max-width: 250px; scroll-snap-align: start;">
                                     
                                     <!-- Top Image Area -->
-                                    <div class="relative h-48 sm:h-56 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
+                                    <a href="<?= $prodDetailUrl ?>" class="block relative h-48 sm:h-56 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden group/img">
                                         <img id="cg-main-img-<?= $prod['id'] ?>" 
                                              src="<?= htmlspecialchars($img) ?>" 
                                              alt="<?= htmlspecialchars($prod['name']) ?>" 
@@ -600,14 +600,14 @@ if (!empty($category_ids)) {
 
                                         <!-- Top Right: Stock Counter (Wishlist removed for customize card) -->
                                         <?php if ($cStock > 0): ?>
-                                            <div class="absolute top-2 right-2 z-10 flex flex-col items-end">
+                                            <div class="absolute top-2 right-2 z-10 flex flex-col items-end pointer-events-none">
                                                 <span class="px-2 py-0.5 bg-emerald-600/95 backdrop-blur-xs text-white font-bold text-[8px] tracking-wide rounded-full shadow-sm flex items-center gap-1">
                                                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
                                                     <?= $cStock ?> Qty
                                                 </span>
                                             </div>
                                         <?php endif; ?>
-                                    </div>
+                                    </a>
 
                                     <!-- Circular Variant Swatches Overlapping Border (when multiple images exist) -->
                                     <?php if (count($cImages) > 1): ?>
@@ -624,7 +624,7 @@ if (!empty($category_ids)) {
                                                  width="32"
                                                  height="32"
                                                  onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
-                                                 onclick="document.getElementById('cg-main-img-<?= $prod['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
+                                                 onclick="event.stopPropagation(); document.getElementById('cg-main-img-<?= $prod['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
                                                  class="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-110 transition-transform flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
                                         <?php endforeach; ?>
                                     </div>
@@ -650,54 +650,64 @@ if (!empty($category_ids)) {
                                                 <?= htmlspecialchars($cCleanDesc) ?>
                                             </p>
 
-                                            <!-- Custom Stitching & Min Stitch -->
-                                            <div class="mb-2">
-                                                <div class="flex items-center justify-between gap-1">
-                                                    <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[10px] font-bold">
-                                                        <svg class="w-3 h-3 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
-                                                        </svg>
-                                                        <span>Custom Stitching</span>
+                                                <?php if ($isLoggedIn): ?>
+                                                    <!-- Custom Stitching & Min Stitch (Row 1 & 2 on mobile/tablet, same row on desktop) -->
+                                                    <div class="mb-2">
+                                                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1.5 lg:gap-1">
+                                                            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[10px] font-bold shrink-0 w-fit">
+                                                                <svg class="w-3 h-3 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
+                                                                </svg>
+                                                                <span>Custom Stitching</span>
+                                                            </div>
+
+                                                            <!-- Min Stitch & Count Badge: Next row on mobile & tablet, right on desktop -->
+                                                            <div class="inline-flex items-center gap-1 shrink-0 whitespace-nowrap self-start lg:self-auto">
+                                                                <span class="uppercase font-semibold text-gray-400 tracking-wider" style="font-size: 7.5px; line-height: 1;">Min Stitch</span>
+                                                                <span class="px-1.5 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9.5px] rounded-md leading-none">
+                                                                    <?= (int)$moq ?> Pcs
+                                                                </span>
+                                                            </div>
+                                                        </div>
                                                     </div>
 
-                                                    <!-- Min Stitch Badge -->
-                                                    <div class="text-right flex-shrink-0">
-                                                        <span class="text-[6.5px] sm:text-[7px] uppercase font-bold text-gray-400 block tracking-wider leading-none">Min Stitch</span>
-                                                        <span class="px-1.5 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] rounded-md inline-block mt-0.5">
-                                                            <?= (int)$moq ?> Pcs
-                                                        </span>
+                                                    <!-- Sizes Matrix -->
+                                                    <div class="mb-2.5">
+                                                        <div class="flex items-center gap-1 flex-wrap">
+                                                            <?php foreach ($cSizes as $sIndex => $szName): ?>
+                                                                <?php if ($sIndex === 0): ?>
+                                                                    <span class="px-1.5 py-0.5 bg-[#F25996] text-white font-bold text-[9px] rounded shadow-xs flex items-center justify-center min-w-[20px]">
+                                                                        <?= htmlspecialchars($szName) ?>
+                                                                    </span>
+                                                                <?php else: ?>
+                                                                    <span class="px-1.5 py-0.5 bg-[#fff0f6] text-[#db2777] font-bold text-[9px] rounded border border-pink-100/80 flex items-center justify-center min-w-[20px]">
+                                                                        <?= htmlspecialchars($szName) ?>
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                            <?php endforeach; ?>
+                                                        </div>
                                                     </div>
-                                                </div>
                                             </div>
 
-                                            <!-- Sizes Matrix -->
-                                            <div class="mb-2.5">
-                                                <div class="flex items-center gap-1 flex-wrap">
-                                                    <?php foreach ($cSizes as $sIndex => $szName): ?>
-                                                        <?php if ($sIndex === 0): ?>
-                                                            <span class="px-1.5 py-0.5 bg-[#F25996] text-white font-bold text-[9px] rounded shadow-xs flex items-center justify-center min-w-[20px]">
-                                                                <?= htmlspecialchars($szName) ?>
-                                                            </span>
-                                                        <?php else: ?>
-                                                            <span class="px-1.5 py-0.5 bg-[#fff0f6] text-[#db2777] font-bold text-[9px] rounded border border-pink-100/80 flex items-center justify-center min-w-[20px]">
-                                                                <?= htmlspecialchars($szName) ?>
-                                                            </span>
-                                                        <?php endif; ?>
-                                                    <?php endforeach; ?>
-                                                </div>
+                                            <!-- Action Button: Customize & Stitch → -->
+                                            <div>
+                                                <a href="<?= $prodDetailUrl ?>" 
+                                                   class="w-full py-2 px-3 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5 group/btn active:scale-[0.98]">
+                                                    <span class="truncate">Customize & Stitch</span>
+                                                    <svg class="w-3.5 h-3.5 flex-shrink-0 transition-transform group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                                    </svg>
+                                                </a>
                                             </div>
-                                        </div>
-
-                                        <!-- Action Button: Customize & Stitch → -->
-                                        <div>
-                                            <a href="<?= $prodDetailUrl ?>" 
-                                               class="w-full py-2 px-3 bg-gradient-to-r from-[#F25996] via-[#ea3c85] to-[#db2777] hover:opacity-95 text-white font-bold text-xs rounded-xl shadow-xs hover:shadow-md transition-all flex items-center justify-center gap-1.5 group/btn active:scale-[0.98]">
-                                                <span class="truncate">Customize & Stitch</span>
-                                                <svg class="w-3.5 h-3.5 flex-shrink-0 transition-transform group-hover/btn:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                                                </svg>
-                                            </a>
-                                        </div>
+                                                <?php else: ?>
+                                            </div>
+                                            <div class="mt-auto pt-2 md:pt-3 lg:pt-4 md:border-t md:border-gray-100 flex flex-col gap-2">
+                                                <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-semibold hover:underline whitespace-nowrap overflow-hidden text-ellipsis" style="font-size: clamp(0.65rem, 2.2vw, 0.8125rem);">
+                                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                                    <span class="truncate">Register to view price</span>
+                                                </a>
+                                            </div>
+                                                <?php endif; ?>
 
                                     </div>
                                 </div>
@@ -877,7 +887,7 @@ if (!empty($category_ids)) {
                         ?>
                         <div class="product-card mobile-product-card bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-xs flex flex-col group">
                             <!-- Top Image Area -->
-                            <div class="relative h-40 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
+                            <a href="<?= $mobProdUrl ?>" class="block relative h-40 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
                                 <img id="cg-mob-img-<?= $prod['id'] ?>" 
                                      src="<?= htmlspecialchars($img) ?>" 
                                      alt="<?= htmlspecialchars($prod['name']) ?>" 
@@ -902,14 +912,14 @@ if (!empty($category_ids)) {
 
                                 <!-- Badges top right: Stock (Wishlist removed for customize card) -->
                                 <?php if ($cStock > 0): ?>
-                                    <div class="absolute top-1.5 right-1.5 z-10 flex flex-col items-end">
+                                    <div class="absolute top-1.5 right-1.5 z-10 flex flex-col items-end pointer-events-none">
                                         <span class="px-1.5 py-0.5 bg-emerald-600/95 backdrop-blur-xs text-white font-bold text-[7.5px] tracking-wide rounded-full shadow-sm flex items-center gap-0.5">
                                             <span class="w-1 h-1 rounded-full bg-emerald-300 animate-pulse"></span>
                                             <?= $cStock ?> Qty
                                         </span>
                                     </div>
                                 <?php endif; ?>
-                            </div>
+                            </a>
 
                             <!-- Circular Swatches Overlapping -->
                             <?php if (count($cImages) > 1): ?>
@@ -926,7 +936,7 @@ if (!empty($category_ids)) {
                                          width="24"
                                          height="24"
                                          onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
-                                         onclick="document.getElementById('cg-mob-img-<?= $prod['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
+                                         onclick="event.stopPropagation(); document.getElementById('cg-mob-img-<?= $prod['id'] ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
                                          class="w-6 h-6 rounded-full border-2 border-white shadow-xs object-cover cursor-pointer flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
                                 <?php endforeach; ?>
                             </div>
@@ -947,25 +957,29 @@ if (!empty($category_ids)) {
                                         <?= htmlspecialchars($cCleanDesc) ?>
                                     </p>
 
-                                    <!-- Custom Stitching & Min Stitch -->
-                                    <div class="flex items-center justify-between gap-1 mb-1.5">
-                                        <div class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[8.5px] font-bold">
-                                            <svg class="w-2.5 h-2.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/></svg>
-                                            <span>Stitching</span>
+                                    <?php if ($isLoggedIn): ?>
+                                        <!-- Custom Stitching & Min Stitch on Mobile: Next Row -->
+                                        <div class="flex flex-col gap-1 mb-1.5">
+                                            <div class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[8.5px] font-bold shrink-0 w-fit">
+                                                <svg class="w-2.5 h-2.5 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/></svg>
+                                                <span>Custom Stitching</span>
+                                            </div>
+                                            <div class="inline-flex items-center gap-0.5 shrink-0 whitespace-nowrap self-start">
+                                                <span class="uppercase font-semibold text-gray-400 tracking-wider" style="font-size: 6.5px; line-height: 1;">Min Stitch</span>
+                                                <span class="px-1 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[8px] rounded leading-none">
+                                                    <?= (int)$moq ?> Pcs
+                                                </span>
+                                            </div>
                                         </div>
-                                        <span class="px-1 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[8px] rounded">
-                                            Min <?= (int)$moq ?> Pcs
-                                        </span>
-                                    </div>
 
-                                    <!-- Sizes Matrix -->
-                                    <div class="flex items-center gap-1 flex-wrap mb-2">
-                                        <?php foreach (array_slice($cSizes, 0, 5) as $sIndex => $szName): ?>
-                                            <span class="px-1 py-0.5 <?= $sIndex === 0 ? 'bg-[#F25996] text-white' : 'bg-[#fff0f6] text-[#db2777] border border-pink-100/80' ?> font-bold text-[8px] rounded flex items-center justify-center min-w-[16px]">
-                                                <?= htmlspecialchars($szName) ?>
-                                            </span>
-                                        <?php endforeach; ?>
-                                    </div>
+                                        <!-- Sizes Matrix -->
+                                        <div class="flex items-center gap-1 flex-wrap mb-2">
+                                            <?php foreach (array_slice($cSizes, 0, 5) as $sIndex => $szName): ?>
+                                                <span class="px-1 py-0.5 <?= $sIndex === 0 ? 'bg-[#F25996] text-white' : 'bg-[#fff0f6] text-[#db2777] border border-pink-100/80' ?> font-bold text-[8px] rounded flex items-center justify-center min-w-[16px]">
+                                                    <?= htmlspecialchars($szName) ?>
+                                                </span>
+                                            <?php endforeach; ?>
+                                        </div>
                                 </div>
 
                                 <!-- CTA Button -->
@@ -974,6 +988,15 @@ if (!empty($category_ids)) {
                                     <span>Customize &amp; Stitch</span>
                                     <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                 </a>
+                                    <?php else: ?>
+                                </div>
+                                <div class="mt-auto pt-1.5 border-t border-gray-100">
+                                    <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1 text-[#F25996] font-semibold text-[9.5px] hover:underline whitespace-nowrap overflow-hidden text-ellipsis">
+                                        <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                        <span class="truncate">Register to view price</span>
+                                    </a>
+                                </div>
+                                    <?php endif; ?>
                             </div>
                         </div>
                     <?php else: ?>
@@ -1082,7 +1105,7 @@ if (!empty($category_ids)) {
 
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+function initCatGrid_<?= $id ?>() {
     const container = document.getElementById('<?= $id ?>');
     if (!container) return;
 
@@ -1156,9 +1179,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 setTimeout(() => {
                     targetPane.classList.remove('opacity-0');
                     targetPane.classList.add('opacity-100');
+                    const track = targetPane.querySelector('.catgrid-desktop-track');
+                    if (track) updateCatGridLock(track);
                 }, 50);
             }
         });
+    });
+
+    // Initialize all desktop tracks with scroll boundary lock
+    const desktopTracks = container.querySelectorAll('.catgrid-desktop-track');
+    desktopTracks.forEach(track => {
+        track.addEventListener('scroll', () => updateCatGridLock(track), { passive: true });
+        updateCatGridLock(track);
+    });
+    window.addEventListener('resize', () => {
+        desktopTracks.forEach(track => updateCatGridLock(track));
     });
 
     // ---- Mobile Tab Switching ----
@@ -1189,7 +1224,39 @@ document.addEventListener('DOMContentLoaded', function() {
             if (targetPane) targetPane.style.display = '';
         });
     });
-});
+}
+
+// Resilient initialization: execute immediately if DOM is ready, otherwise on DOMContentLoaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCatGrid_<?= $id ?>);
+} else {
+    initCatGrid_<?= $id ?>();
+}
+window.addEventListener('load', initCatGrid_<?= $id ?>);
+
+function updateCatGridLock(track) {
+    if (!track) return;
+    const pane = track.closest('.cat-pane');
+    if (!pane) return;
+    const prevBtn = pane.querySelector('.catgrid-prev-btn');
+    const nextBtn = pane.querySelector('.catgrid-next-btn');
+
+    const isAtStart = track.scrollLeft <= 5;
+    const isAtEnd = (track.scrollLeft + track.clientWidth) >= (track.scrollWidth - 8);
+
+    if (prevBtn) {
+        prevBtn.disabled = isAtStart;
+        prevBtn.style.opacity = isAtStart ? '0.35' : '1';
+        prevBtn.style.cursor = isAtStart ? 'not-allowed' : 'pointer';
+        prevBtn.style.pointerEvents = isAtStart ? 'none' : 'auto';
+    }
+    if (nextBtn) {
+        nextBtn.disabled = isAtEnd;
+        nextBtn.style.opacity = isAtEnd ? '0.35' : '1';
+        nextBtn.style.cursor = isAtEnd ? 'not-allowed' : 'pointer';
+        nextBtn.style.pointerEvents = isAtEnd ? 'none' : 'auto';
+    }
+}
 
 function scrollCatGrid(trackId, direction) {
     const track = document.getElementById(trackId);
@@ -1199,5 +1266,7 @@ function scrollCatGrid(trackId, direction) {
         left: direction * scrollAmount,
         behavior: 'smooth'
     });
+    setTimeout(() => updateCatGridLock(track), 150);
+    setTimeout(() => updateCatGridLock(track), 400);
 }
 </script>

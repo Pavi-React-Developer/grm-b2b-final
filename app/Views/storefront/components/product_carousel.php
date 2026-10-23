@@ -527,8 +527,8 @@ $tabletWidth = 100 / max(1, $tablet_count);
         <!-- Slider Container -->
         <div class="relative group/carousel" id="track_container_<?= $id ?>">
             
-            <!-- Track -->
-            <div class="overflow-hidden touch-pan-y" id="track_<?= $id ?>">
+            <!-- Track with touch-action pan-y -->
+            <div class="overflow-hidden touch-pan-y" id="track_<?= $id ?>" style="touch-action: pan-y; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; overscroll-behavior-y: auto;">
                 <div class="flex transition-transform duration-500 ease-out items-stretch" id="inner_<?= $id ?>" style="transform: translateX(0%);">
                     <?php if (empty($carouselProducts)): ?>
                         <div class="w-full py-20 text-center text-gray-500 bg-white/50 rounded-2xl">
@@ -582,7 +582,7 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                     <div class="product-card bg-white rounded-2xl sm:rounded-[22px] border border-gray-100 overflow-hidden shadow-xs hover:shadow-xl hover:border-pink-200 transition-all duration-300 flex flex-col h-full group transform hover:-translate-y-1 relative">
                                         
                                         <!-- Top Image Area -->
-                                        <div class="relative h-48 sm:h-56 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden">
+                                        <a href="<?= $prodDetailUrl ?>" class="block relative h-48 sm:h-56 w-full bg-gradient-to-br from-pink-50 to-rose-50 overflow-hidden group/img">
                                             <img id="pc-main-img-<?= $prod['id'] ?>_<?= $id ?>" 
                                                  src="<?= htmlspecialchars($img) ?>" 
                                                  alt="<?= htmlspecialchars($prod['name']) ?>" 
@@ -607,14 +607,14 @@ $tabletWidth = 100 / max(1, $tablet_count);
 
                                             <!-- Top Right: Stock Counter (Wishlist removed for customize card) -->
                                             <?php if ($cStock > 0): ?>
-                                                <div class="absolute top-2 right-2 z-10 flex flex-col items-end">
+                                                <div class="absolute top-2 right-2 z-10 flex flex-col items-end pointer-events-none">
                                                     <span class="px-2 py-0.5 bg-emerald-600/95 backdrop-blur-xs text-white font-bold text-[8px] tracking-wide rounded-full shadow-sm flex items-center gap-1">
                                                         <span class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
                                                         <?= $cStock ?> Qty
                                                     </span>
                                                 </div>
                                             <?php endif; ?>
-                                        </div>
+                                        </a>
 
                                         <!-- Circular Variant Swatches (when multiple images exist) -->
                                         <?php if (count($cImages) > 1): ?>
@@ -631,7 +631,7 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                                      width="32"
                                                      height="32"
                                                      onerror="if(!this.dataset.retried){this.dataset.retried='1';this.src='<?= htmlspecialchars($fullSwUrl) ?>';}else{this.style.display='none';}"
-                                                     onclick="document.getElementById('pc-main-img-<?= $prod['id'] ?>_<?= $id ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
+                                                     onclick="event.stopPropagation(); document.getElementById('pc-main-img-<?= $prod['id'] ?>_<?= $id ?>').src='<?= htmlspecialchars($fullSwUrl) ?>'; this.parentElement.querySelectorAll('img').forEach(function(i){i.classList.remove('ring-2', 'ring-[#F25996]')}); this.classList.add('ring-2', 'ring-[#F25996]');"
                                                      class="w-8 h-8 rounded-full border-2 border-white shadow-sm object-cover cursor-pointer hover:scale-110 transition-transform flex-shrink-0 <?= $idx === 0 ? 'ring-2 ring-[#F25996]' : '' ?>">
                                             <?php endforeach; ?>
                                         </div>
@@ -657,42 +657,43 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                                     <?= htmlspecialchars($cCleanDesc) ?>
                                                 </p>
 
-                                                <!-- Custom Stitching & Min Stitch -->
-                                                <div class="mb-2">
-                                                    <div class="flex items-center justify-between gap-1">
-                                                        <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[10px] font-bold">
-                                                            <svg class="w-3 h-3 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
-                                                            </svg>
-                                                            <span>Custom Stitching</span>
-                                                        </div>
+                                                <?php if ($isLoggedIn): ?>
+                                                    <!-- Custom Stitching & Min Stitch (Row 1 & 2 on mobile/tablet, same row on desktop) -->
+                                                    <div class="mb-2">
+                                                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1.5 lg:gap-1">
+                                                            <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-pink-50/80 border border-pink-100/90 text-[#F25996] text-[10px] font-bold shrink-0 w-fit">
+                                                                <svg class="w-3 h-3 text-[#F25996] shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0L12 10.5m0 0l2.879-2.879a3 3 0 114.242 4.242 3 3 0 01-4.242 0L12 10.5z"/>
+                                                                </svg>
+                                                                <span>Custom Stitching</span>
+                                                            </div>
 
-                                                        <!-- Min Stitch Badge -->
-                                                        <div class="text-right flex-shrink-0">
-                                                            <span class="text-[6.5px] sm:text-[7px] uppercase font-bold text-gray-400 block tracking-wider leading-none">Min Stitch</span>
-                                                            <span class="px-1.5 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9px] rounded-md inline-block mt-0.5">
-                                                                <?= (int)$cMoq ?> Pcs
-                                                            </span>
+                                                            <!-- Min Stitch & Count Badge: Next row on mobile & tablet, right on desktop -->
+                                                            <div class="inline-flex items-center gap-1 shrink-0 whitespace-nowrap self-start lg:self-auto">
+                                                                <span class="uppercase font-semibold text-gray-400 tracking-wider" style="font-size: 7.5px; line-height: 1;">Min Stitch</span>
+                                                                <span class="px-1.5 py-0.5 bg-pink-50 text-[#F25996] border border-pink-200/80 font-extrabold text-[9.5px] rounded-md leading-none">
+                                                                    <?= (int)$cMoq ?> Pcs
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <!-- Sizes Matrix -->
-                                                <div class="mb-2.5">
-                                                    <div class="flex items-center gap-1 flex-wrap">
-                                                        <?php foreach ($cSizes as $sIndex => $szName): ?>
-                                                            <?php if ($sIndex === 0): ?>
-                                                                <span class="px-1.5 py-0.5 bg-[#F25996] text-white font-bold text-[9px] rounded shadow-xs flex items-center justify-center min-w-[20px]">
-                                                                    <?= htmlspecialchars($szName) ?>
-                                                                </span>
-                                                            <?php else: ?>
-                                                                <span class="px-1.5 py-0.5 bg-[#fff0f6] text-[#db2777] font-bold text-[9px] rounded border border-pink-100/80 flex items-center justify-center min-w-[20px]">
-                                                                    <?= htmlspecialchars($szName) ?>
-                                                                </span>
-                                                            <?php endif; ?>
-                                                        <?php endforeach; ?>
+                                                    <!-- Sizes Matrix -->
+                                                    <div class="mb-2.5">
+                                                        <div class="flex items-center gap-1 flex-wrap">
+                                                            <?php foreach ($cSizes as $sIndex => $szName): ?>
+                                                                <?php if ($sIndex === 0): ?>
+                                                                    <span class="px-1.5 py-0.5 bg-[#F25996] text-white font-bold text-[9px] rounded shadow-xs flex items-center justify-center min-w-[20px]">
+                                                                        <?= htmlspecialchars($szName) ?>
+                                                                    </span>
+                                                                <?php else: ?>
+                                                                    <span class="px-1.5 py-0.5 bg-[#fff0f6] text-[#db2777] font-bold text-[9px] rounded border border-pink-100/80 flex items-center justify-center min-w-[20px]">
+                                                                        <?= htmlspecialchars($szName) ?>
+                                                                    </span>
+                                                                <?php endif; ?>
+                                                            <?php endforeach; ?>
+                                                        </div>
                                                     </div>
-                                                </div>
                                             </div>
 
                                             <!-- Action Button: Customize & Stitch → -->
@@ -705,6 +706,15 @@ $tabletWidth = 100 / max(1, $tablet_count);
                                                     </svg>
                                                 </a>
                                             </div>
+                                                <?php else: ?>
+                                            </div>
+                                            <div class="mt-auto pt-2 md:pt-3 lg:pt-4 md:border-t md:border-gray-100 flex flex-col gap-2">
+                                                <a href="<?= BASE_URL ?>/login" class="flex items-center gap-1.5 text-[#F25996] font-semibold hover:underline whitespace-nowrap overflow-hidden text-ellipsis" style="font-size: clamp(0.65rem, 2.2vw, 0.8125rem);">
+                                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                                                    <span class="truncate">Register to view price</span>
+                                                </a>
+                                            </div>
+                                                <?php endif; ?>
 
                                         </div>
                                     </div>
@@ -805,10 +815,10 @@ $tabletWidth = 100 / max(1, $tablet_count);
 
             <!-- Arrows -->
             <?php if ($show_arrows && !empty($carouselProducts)): ?>
-                <button id="prev_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-0 disabled:cursor-not-allowed z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
+                <button id="prev_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
                 </button>
-                <button id="next_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-0 disabled:cursor-not-allowed z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
+                <button id="next_<?= $id ?>" class="carousel-btn absolute -translate-y-1/2 rounded-full flex items-center justify-center shadow-md border border-gray-200 hover:shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-35 disabled:cursor-not-allowed disabled:pointer-events-none z-20" style="color: <?= htmlspecialchars($arrow_color) ?>; background-color: <?= htmlspecialchars($arrow_bg_color) ?>;">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
                 </button>
             <?php endif; ?>
@@ -827,7 +837,7 @@ $tabletWidth = 100 / max(1, $tablet_count);
      </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+function initProductCarousel_<?= $id ?>() {
     const track = document.getElementById('track_<?= $id ?>');
     const inner = document.getElementById('inner_<?= $id ?>');
     if (!inner || !track) return;
@@ -868,16 +878,20 @@ document.addEventListener('DOMContentLoaded', function() {
         
         inner.style.transform = `translateX(-${currentIndex * slideWidth}px)`;
         
-        // Update Buttons
+        // Buttons active with no scroll lock (continuous wrap-around loop)
         if (prevBtn) {
-            prevBtn.disabled = currentIndex === 0;
+            prevBtn.disabled = false;
             prevBtn.style.opacity = '1';
+            prevBtn.style.cursor = 'pointer';
+            prevBtn.style.pointerEvents = 'auto';
             prevBtn.style.visibility = 'visible';
             prevBtn.style.display = 'flex';
         }
         if (nextBtn) {
-            nextBtn.disabled = currentIndex >= maxIndex;
+            nextBtn.disabled = false;
             nextBtn.style.opacity = '1';
+            nextBtn.style.cursor = 'pointer';
+            nextBtn.style.pointerEvents = 'auto';
             nextBtn.style.visibility = 'visible';
             nextBtn.style.display = 'flex';
         }
@@ -917,12 +931,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     initDots();
 
+    // Navigation buttons without scroll lock (infinite wrap-around)
     if (prevBtn) {
         prevBtn.onclick = () => {
             if (currentIndex > 0) {
                 currentIndex--;
-                updateSlider();
+            } else {
+                currentIndex = maxIndex;
             }
+            updateSlider();
         };
     }
 
@@ -930,8 +947,10 @@ document.addEventListener('DOMContentLoaded', function() {
         nextBtn.onclick = () => {
             if (currentIndex < maxIndex) {
                 currentIndex++;
-                updateSlider();
+            } else {
+                currentIndex = 0;
             }
+            updateSlider();
         };
     }
 
@@ -947,37 +966,129 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             updateSlider();
         }
-        manageAutoPlay();
     });
 
     updateSlider();
 
-    // Auto-play logic for mobile only
-    let autoPlayInterval;
-
-    function manageAutoPlay() {
-        if (autoPlayInterval) clearInterval(autoPlayInterval);
-        
-        // Only autoplay on mobile (width < 768px) and if there are slides to move
-        if (window.innerWidth < 768 && maxIndex > 0) {
-            autoPlayInterval = setInterval(() => {
+    // Cursor Vertical Scroll: converts vertical mouse wheel scroll to left-to-right carousel movement
+    let wheelTimeout = null;
+    let isWheeling = false;
+    track.addEventListener('wheel', (e) => {
+        const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+        if (Math.abs(delta) > 8) {
+            if (isWheeling) return;
+            isWheeling = true;
+            if (delta > 0) {
+                // Wheel down -> scroll left to right (next)
                 if (currentIndex < maxIndex) {
                     currentIndex++;
                 } else {
                     currentIndex = 0;
                 }
-                updateSlider();
-            }, 3000); // 3 seconds
+            } else {
+                // Wheel up -> scroll right to left (prev)
+                if (currentIndex > 0) {
+                    currentIndex--;
+                } else {
+                    currentIndex = maxIndex;
+                }
+            }
+            updateSlider();
+            clearTimeout(wheelTimeout);
+            wheelTimeout = setTimeout(() => { isWheeling = false; }, 180);
         }
-    }
+    }, { passive: true });
 
-    // Pause auto-play on user interaction
-    track.addEventListener('touchstart', () => { if (autoPlayInterval) clearInterval(autoPlayInterval); }, {passive: true});
-    track.addEventListener('touchend', manageAutoPlay);
-    track.addEventListener('mouseenter', () => { if (autoPlayInterval) clearInterval(autoPlayInterval); });
-    track.addEventListener('mouseleave', manageAutoPlay);
+    // Cursor Drag Scroll (Click and Drag Left to Right with Cursor)
+    let isDragging = false;
+    let dragStartX = 0;
+    let hasMoved = false;
 
-    // Initialize autoplay
-    manageAutoPlay();
-});
+    track.style.cursor = 'grab';
+
+    track.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button, a, input, select, textarea, form, label')) return;
+        isDragging = true;
+        hasMoved = false;
+        dragStartX = e.pageX;
+        track.style.cursor = 'grabbing';
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        if (Math.abs(e.pageX - dragStartX) > 6) {
+            hasMoved = true;
+        }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        track.style.cursor = 'grab';
+        if (hasMoved) {
+            const diffX = e.pageX - dragStartX;
+            if (Math.abs(diffX) > 35) {
+                if (diffX < 0) {
+                    if (currentIndex < maxIndex) {
+                        currentIndex++;
+                    } else {
+                        currentIndex = 0;
+                    }
+                } else {
+                    if (currentIndex > 0) {
+                        currentIndex--;
+                    } else {
+                        currentIndex = maxIndex;
+                    }
+                }
+                updateSlider();
+            }
+        }
+    });
+
+    // Touch swipe with wrap-around
+    let touchStartX = 0;
+    let touchStartY = 0;
+    track.addEventListener('touchstart', (e) => {
+        if (e.changedTouches && e.changedTouches[0]) {
+            touchStartX = e.changedTouches[0].clientX;
+            touchStartY = e.changedTouches[0].clientY;
+        }
+    }, {passive: true});
+
+    track.addEventListener('touchend', (e) => {
+        if (e.changedTouches && e.changedTouches[0]) {
+            const touchEndX = e.changedTouches[0].clientX;
+            const touchEndY = e.changedTouches[0].clientY;
+            const diffX = touchStartX - touchEndX;
+            const diffY = touchStartY - touchEndY;
+            // If gesture is vertical, allow smooth vertical scroll without switching slides
+            if (Math.abs(diffY) > Math.abs(diffX)) return;
+            if (Math.abs(diffX) > 35) {
+                if (diffX > 0) {
+                    if (currentIndex < maxIndex) {
+                        currentIndex++;
+                    } else {
+                        currentIndex = 0;
+                    }
+                } else {
+                    if (currentIndex > 0) {
+                        currentIndex--;
+                    } else {
+                        currentIndex = maxIndex;
+                    }
+                }
+                updateSlider();
+            }
+        }
+    }, {passive: true});
+}
+
+// Resilient initialization: execute immediately if DOM is ready, otherwise on DOMContentLoaded
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initProductCarousel_<?= $id ?>);
+} else {
+    initProductCarousel_<?= $id ?>();
+}
+window.addEventListener('load', initProductCarousel_<?= $id ?>);
 </script>

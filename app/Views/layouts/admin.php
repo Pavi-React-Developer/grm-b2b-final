@@ -107,8 +107,12 @@ if ($currentUserRole === 'super_admin') {
         window.escapeHtmlStr = escapeHtmlStr;
     </script>
     
-    <!-- Compiled Tailwind CSS -->
-    <link rel="stylesheet" href="<?= BASE_URL ?>/css/app.css?v=<?= APP_VERSION ?>">
+    <?php 
+    $adminCssFile = defined('BASE_PATH') ? BASE_PATH . '/css/app.css' : __DIR__ . '/../../../css/app.css';
+    $adminAssetVersion = file_exists($adminCssFile) ? filemtime($adminCssFile) : (defined('APP_VERSION') ? APP_VERSION : time());
+    ?>
+    <!-- Compiled Tailwind CSS with Auto Cache-Busting -->
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/app.css?v=<?= $adminAssetVersion ?>">
     
     <!-- Tailwind CDN for JIT & dynamic classes -->
     <script>
